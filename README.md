@@ -58,7 +58,7 @@ ToolKnit Desktop 是 ToolKnit 网页端的开源桌面配套版本。它面向�
 
 ## 支持作者
 
-如果 ToolKnit 帮到了你，欢迎支持作者继续维护。支持会用于测试设备、运行依赖镜像、文档维护、版本发布和后续功能开发。
+如果 ToolKnit 帮到了你，欢迎支持作者继续维护。独立开发不容易，但我希望桌面端能继续保持开源、纯净、可离线、可被 Agent 调用。你的支持会用于测试设备、运行依赖镜像、文档维护、版本发布和后续功能开发。
 
 <p align="center">
   <strong>当前公开捐赠总额：23.88 元</strong><br />
@@ -67,17 +67,43 @@ ToolKnit Desktop 是 ToolKnit 网页端的开源桌面配套版本。它面向�
 
 <table>
   <tr>
-    <th width="50%">微信支付</th>
-    <th width="50%">支付宝</th>
+    <th width="30%">微信支付</th>
+    <th width="30%">支付宝</th>
+    <th width="40%">支持会带来什么</th>
   </tr>
   <tr>
     <td align="center"><img src="assets/alipay-qr.png" alt="微信支付支持 ToolKnit" width="230" /></td>
     <td align="center"><img src="assets/wechat-qr.jpg" alt="支付宝支持 ToolKnit" width="230" /></td>
+    <td valign="top">
+      <p>
+        <img src="https://img.shields.io/badge/功能建议-优先评估-111827" alt="功能建议优先评估" />
+        <img src="https://img.shields.io/badge/Bug%20修复-持续打磨-111827" alt="Bug 修复持续打磨" />
+        <img src="https://img.shields.io/badge/依赖镜像-更快下载-111827" alt="依赖镜像更快下载" />
+      </p>
+      <ul>
+        <li><strong>创作不易，开源更不易。</strong> 每一份支持都会让 ToolKnit 更有动力继续维护。</li>
+        <li>如果你有很想要的新工具、新格式或工作流优化，可以在捐赠留言、Issue 或网页端联系我。</li>
+        <li>明确、可复现、可维护的需求会被优先评估和排期，让好想法更快进入版本计划。</li>
+      </ul>
+      <sub>捐赠不是付费外包承诺，但它会帮助我把更多时间投入到 ToolKnit 的开源开发里。</sub>
+    </td>
   </tr>
 </table>
 
 <p align="center">
   想免安装使用更完整的在线能力？访问 <a href="https://toolknit.com"><strong>toolknit.com</strong></a>
+</p>
+
+<p align="center">
+  <a href="https://toolknit.com">
+    <img src="assets/readme/web-version.png" alt="ToolKnit web version preview" width="100%" />
+  </a>
+  <br />
+  <a href="https://fmhy.net/misc">
+    <img src="https://img.shields.io/badge/FMHY-已收录-111827" alt="FMHY 已收录 ToolKnit 网页端" />
+  </a>
+  <img src="https://img.shields.io/badge/网页端-免安装使用-111827" alt="网页端免安装使用" />
+  <img src="https://img.shields.io/badge/桌面端-本地优先-111827" alt="桌面端本地优先" />
 </p>
 
 ## v1.0 到 v1.2
@@ -235,7 +261,7 @@ toolknit --help
 
 ## 网页端
 
-ToolKnit 网页端提供免安装、跨平台的在线体验与更多持续更新的能力：[toolknit.com](https://toolknit.com)。
+ToolKnit 网页端提供免安装、跨平台的在线体验与更多持续更新的能力：[toolknit.com](https://toolknit.com)。网页端已被 [FMHY](https://fmhy.net/misc) 收录在工具导航中，条目为 ToolKnit 的图片、视频、PDF、音频与文件处理能力。
 
 桌面端开源仓库专注于 Windows 本地文件处理、CLI 和 MCP。网页端的服务、域名、账号、视觉品牌和运营能力不属于本仓库的开源授权范围。
 

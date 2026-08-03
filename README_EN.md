@@ -58,7 +58,7 @@ Only AI-specific workflows send text to the model provider you configure yoursel
 
 ## Support
 
-If ToolKnit helps you, supporting the author keeps testing, mirrors, documentation, releases, and future development moving.
+If ToolKnit helps you, supporting the author keeps testing, mirrors, documentation, releases, and future development moving. Independent development takes time; support helps ToolKnit stay open-source, clean, local-first, and useful for Agent workflows.
 
 <p align="center">
   <strong>Public donations so far: 23.88 CNY</strong><br />
@@ -67,17 +67,43 @@ If ToolKnit helps you, supporting the author keeps testing, mirrors, documentati
 
 <table>
   <tr>
-    <th width="50%">WeChat Pay</th>
-    <th width="50%">Alipay</th>
+    <th width="30%">WeChat Pay</th>
+    <th width="30%">Alipay</th>
+    <th width="40%">What support helps with</th>
   </tr>
   <tr>
     <td align="center"><img src="assets/alipay-qr.png" alt="Support ToolKnit with WeChat Pay" width="230" /></td>
     <td align="center"><img src="assets/wechat-qr.jpg" alt="Support ToolKnit with Alipay" width="230" /></td>
+    <td valign="top">
+      <p>
+        <img src="https://img.shields.io/badge/Feature%20requests-priority%20review-111827" alt="Feature requests priority review" />
+        <img src="https://img.shields.io/badge/Bug%20fixes-continuous%20polish-111827" alt="Bug fixes continuous polish" />
+        <img src="https://img.shields.io/badge/Dependency%20mirrors-faster%20downloads-111827" alt="Dependency mirrors faster downloads" />
+      </p>
+      <ul>
+        <li><strong>Building is hard; maintaining open source is harder.</strong> Every bit of support helps ToolKnit keep moving.</li>
+        <li>If you have a tool, format, or workflow improvement you really want, leave a note with your donation, open an Issue, or contact me through the web version.</li>
+        <li>Clear, reproducible, maintainable requests are easier to evaluate and schedule for upcoming versions.</li>
+      </ul>
+      <sub>Support is not a paid outsourcing contract, but it does help me spend more focused time on ToolKnit.</sub>
+    </td>
   </tr>
 </table>
 
 <p align="center">
   Prefer a no-install online experience? Visit <a href="https://toolknit.com"><strong>toolknit.com</strong></a>
+</p>
+
+<p align="center">
+  <a href="https://toolknit.com">
+    <img src="assets/readme/web-version.png" alt="ToolKnit web version preview" width="100%" />
+  </a>
+  <br />
+  <a href="https://fmhy.net/misc">
+    <img src="https://img.shields.io/badge/FMHY-listed-111827" alt="ToolKnit web version listed on FMHY" />
+  </a>
+  <img src="https://img.shields.io/badge/Web%20version-no%20install-111827" alt="Web version no install" />
+  <img src="https://img.shields.io/badge/Desktop-local%20first-111827" alt="Desktop local first" />
 </p>
 
 ## v1.0 to v1.2
@@ -235,7 +261,7 @@ Docs:
 
 ## Web Version
 
-The ToolKnit web version provides a no-install cross-platform experience with more continuously updated online capabilities: [toolknit.com](https://toolknit.com).
+The ToolKnit web version provides a no-install cross-platform experience with more continuously updated online capabilities: [toolknit.com](https://toolknit.com). It is also listed on [FMHY](https://fmhy.net/misc) as a tool for image, video, PDF, audio, and file workflows.
 
 This repository focuses on the Windows local desktop app, CLI, and MCP layer. The web service, domains, accounts, visual brand, and hosted operations are outside this repository's open-source license.
 
