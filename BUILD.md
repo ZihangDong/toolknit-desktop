@@ -1,113 +1,118 @@
 # ToolKnit Desktop 构建指南
 
-本文档面向希望从源码构建 ToolKnit 桌面端的开发者。
+本文档面向希望从源码运行或构建 ToolKnit 桌面端的开发者。
 
 ## 环境要求
 
-- Windows 10 或更高版本
-- [Node.js](https://nodejs.org/) 18+
-- [Rust](https://www.rust-lang.org/tools/install) (stable)
-- 稳定的网络连接(用于下载 Rust 依赖)
+- Windows 10/11
+- [Node.js](https://nodejs.org/) `20.12.0` 或更高版本
+- [Rust](https://www.rust-lang.org/tools/install) stable
+- 稳定网络连接，用于下载 npm、Rust 依赖，以及按需下载 FFmpeg/离线识别模型
 
-## 推荐开发工具
+## 项目位置
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri 官方插件](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode)
-- 或 [Trae](https://www.trae.ai/) / [Cursor](https://cursor.sh/) 等 AI IDE
+仓库根目录用于 README、素材、协议和发布文档；桌面端源码位于内层目录：
 
-## 前置准备
-
-### 1. 克隆仓库
-
-```bash
-git clone https://github.com/ZihangDong/toolknit-desktop.git
-cd toolknit-desktop
-```
-
-### 2. 下载 ffmpeg.exe
-
-由于 GitHub 单文件 100MB 限制,ffmpeg.exe 没有包含在仓库中,需要手动下载:
-
-1. 下载 [ffmpeg-master-latest-win64-gpl.zip](https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip)
-2. 解压后将 `bin/ffmpeg.exe` 放到以下路径:
-
-```
+```text
 toolknit-desktop/
-└── src-tauri/
-    └── resources/
-        └── ffmpeg/
-            └── ffmpeg.exe
+└── toolknit-desktop/
+    ├── src/
+    ├── src-tauri/
+    ├── cli/
+    ├── docs/
+    └── package.json
 ```
 
 ## 开发模式
 
-```bash
-cd toolknit-desktop
-npm install
+```powershell
+git clone https://github.com/ZihangDong/toolknit-desktop.git
+Set-Location toolknit-desktop\toolknit-desktop
+npm ci
 npm run tauri dev
 ```
 
-开发服务器启动后,会自动打开应用窗口。前端代码修改后会热更新,Rust 代码修改后需要重新编译。
+开发服务器启动后会自动打开应用窗口。前端代码修改后会热更新；Rust/Tauri 后端代码修改后通常需要重新编译。
+
+## CLI 本地测试
+
+```powershell
+Set-Location toolknit-desktop\toolknit-desktop
+npm ci
+npm run cli -- doctor
+npm run cli -- help
+npm run cli -- help pdf split
+```
+
+MCP/Agent 说明见：
+
+- [toolknit-desktop/docs/cli-agent.md](toolknit-desktop/docs/cli-agent.md)
+- [toolknit-desktop/docs/agent-guide.zh-CN.md](toolknit-desktop/docs/agent-guide.zh-CN.md)
+- [toolknit-desktop/docs/agent-guide.en.md](toolknit-desktop/docs/agent-guide.en.md)
 
 ## 生产构建
 
-```bash
-cd toolknit-desktop
+```powershell
+Set-Location toolknit-desktop\toolknit-desktop
+npm ci
+npm run build
 npm run tauri build
 ```
 
-构建产物:
+构建产物位于：
 
-- 单文件 exe: `src-tauri/target/release/toolknit-desktop.exe`
-- NSIS 安装包: `src-tauri/target/release/bundle/nsis/toolknit-desktop_*_x64-setup.exe`
+- 可执行文件：`toolknit-desktop/src-tauri/target/release/toolknit-desktop.exe`
+- NSIS 安装包：`toolknit-desktop/src-tauri/target/release/bundle/nsis/`
+
+## FFmpeg 与离线模型
+
+v1.2 不要求把 FFmpeg 或 Whisper 模型提交进仓库。桌面端会在进入相关功能时提示用户去设置中按需下载，支持官方源和镜像源。
+
+如果你正在开发音视频相关能力，可先在桌面端设置页下载依赖；也可以使用 CLI 的依赖检查能力确认状态：
+
+```powershell
+npm run cli -- doctor
+```
+
+不要提交以下内容：
+
+- `ffmpeg.exe`
+- Whisper 模型文件
+- 构建产物
+- 用户输出文件
+- API Key、Token、密码或个人凭据
 
 ## 常见问题
 
-### 1. 构建时提示 ffmpeg.exe 不存在
+### 构建时提示依赖缺失
 
-确认 `src-tauri/resources/ffmpeg/ffmpeg.exe` 是否存在。这是音视频处理必需的。
+先执行：
 
-### 2. Rust 编译非常慢
+```powershell
+npm ci
+npm run cli -- doctor
+```
 
-首次编译需要下载大量依赖,可能需要 10-20 分钟。后续增量编译会快很多(约 40 秒)。
+如果是音视频工具缺少 FFmpeg，请进入桌面端设置页下载，或按 CLI 提示补齐依赖。
 
-### 3. 提示 `toolknit-desktop.exe` 正在运行无法覆盖
+### Rust 编译很慢
 
-关闭正在运行的 ToolKnit 进程后再重新构建:
+首次编译需要下载和构建较多依赖，时间会比较久。后续增量编译会明显变快。
 
-```bash
+### 提示 exe 正在运行无法覆盖
+
+关闭 ToolKnit 窗口后它可能仍在系统托盘后台运行。请从 Windows 右下角托盘菜单显式退出，或在开发机上执行：
+
+```powershell
 taskkill /F /IM toolknit-desktop.exe
 ```
 
-### 4. 网络问题导致依赖下载失败
+### 网络问题导致依赖下载失败
 
-如果 Rust crates 下载失败,可以配置国内镜像,例如 [rsproxy](https://rsproxy.cn/) 或 [中科大镜像](https://mirrors.ustc.edu.cn/help/crates.io-index.html)。
+可以在桌面端设置页选择镜像源。Rust crates 下载慢时，可按需配置国内镜像，例如 rsproxy 或中科大镜像。
 
-## 项目结构
+## 需要帮助
 
-```
-toolknit-desktop/
-├── src/                    # 前端源码
-│   ├── main.js            # 主逻辑
-│   ├── styles.css         # 样式
-│   ├── locales/           # 中英文语言包
-│   └── ...
-├── src-tauri/             # Tauri/Rust 后端
-│   ├── src/               # Rust 源码
-│   ├── resources/         # 资源文件(ffmpeg.exe)
-│   └── tauri.conf.json    # Tauri 配置
-├── index.html             # 应用入口
-└── package.json
-```
-
-## 打包配置
-
-安装包配置位于 `src-tauri/tauri.conf.json` 的 `bundle` 部分:
-
-- `targets`: `["app", "nsis"]` 同时生成单文件 exe 和安装包
-- `resources`: 指定 ffmpeg.exe 作为内置资源
-- `windows.nsis`: NSIS 安装器配置,支持中英文
-
-## 需要帮助?
-
-- 查看 [README.md](README.md)
-- 提交 [Issue](https://github.com/ZihangDong/toolknit-desktop/issues)
+- [README.md](README.md)
+- [GitHub Issues](https://github.com/ZihangDong/toolknit-desktop/issues)
+- [toolknit.com](https://toolknit.com)

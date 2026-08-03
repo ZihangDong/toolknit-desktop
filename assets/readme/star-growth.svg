@@ -1,0 +1,37 @@
+<svg width="440" height="300" viewBox="0 0 440 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ToolKnit GitHub Star growth</title>
+  <desc id="desc">An upward line chart representing growth in GitHub Stars. The adjacent live GitHub badge is the source of truth for the current count.</desc>
+  <defs>
+    <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="440" height="300" rx="14" fill="#0d0d0f"/>
+  <text x="28" y="40" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700">STAR GROWTH</text>
+  <text x="28" y="64" fill="#9ca3af" font-family="Arial, sans-serif" font-size="12">GitHub open-source journey</text>
+  <g transform="translate(34 88)">
+    <g stroke="#2a2a2e" stroke-width="1">
+      <line x1="0" y1="164" x2="372" y2="164"/>
+      <line x1="0" y1="123" x2="372" y2="123"/>
+      <line x1="0" y1="82" x2="372" y2="82"/>
+      <line x1="0" y1="41" x2="372" y2="41"/>
+      <line x1="0" y1="0" x2="372" y2="0"/>
+    </g>
+    <path d="M0 164 L55 158 L110 143 L166 119 L224 87 L286 44 L372 8 L372 164 Z" fill="url(#fill)"/>
+    <path d="M0 164 L55 158 L110 143 L166 119 L224 87 L286 44 L372 8" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <g fill="#ffffff" stroke="#0d0d0f" stroke-width="2">
+      <circle cx="0" cy="164" r="4"/>
+      <circle cx="55" cy="158" r="4"/>
+      <circle cx="110" cy="143" r="4"/>
+      <circle cx="166" cy="119" r="4"/>
+      <circle cx="224" cy="87" r="4"/>
+      <circle cx="286" cy="44" r="4"/>
+      <circle cx="372" cy="8" r="5"/>
+    </g>
+    <g fill="#a1a1aa" font-family="Arial, sans-serif" font-size="11">
+      <text x="0" y="191">launch</text>
+      <text x="300" y="191">today</text>
+    </g>
+  </g>
+</svg>
