@@ -11,10 +11,7 @@ After installing the CLI, add this server in your IDE's MCP settings. Save the c
   "mcpServers": {
     "toolknit": {
       "command": "toolknit",
-      "args": ["mcp", "serve"],
-      "env": {
-        "DEEPSEEK_API_KEY": "<your DeepSeek API key>"
-      }
+      "args": ["mcp", "serve"]
     }
   }
 }
@@ -26,7 +23,7 @@ If the IDE cannot find `toolknit`, configure the absolute Node.js path and CLI e
 C:\Users\<your-user-name>\AppData\Roaming\npm\node_modules\@toolknit\cli\toolknit.mjs
 ```
 
-`DEEPSEEK_API_KEY` is available only to the MCP process and is used by both AI document and AI table tools. Never place it in an Agent message, document brief, output path, or filename. The CLI/MCP package never reads the key stored by ToolKnit Desktop. `<your DeepSeek API key>` is a placeholder, not a valid value; ToolKnit reports it before sending a provider request.
+Local PDF, image, audio/video, and text tools do not need an AI key. AI documents, AI tables, and transcription with `refine` require a real `DEEPSEEK_API_KEY` (or `TOOLKNIT_AI_API_KEY`) in the IDE's MCP environment/secret settings; restart the IDE after setting it. Never place the key in an Agent message, document brief, output path, or filename. CLI/MCP does not read the credential stored by ToolKnit Desktop.
 
 After a successful connection, the Agent exposes 30 ToolKnit tools: eight PDF tools, four audio tools, four offline model and transcription tools, three video tools, one text tool, two image tools, four AI document project tools, and four AI table project tools:
 

@@ -1,12 +1,12 @@
 {
   "name": "@toolknit/cli",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "@toolknit/cli",
-      "version": "1.2.7",
+      "version": "1.2.8",
       "dependencies": {
         "@napi-rs/canvas": "^1.0.1",
         "chart.js": "^4.5.1",

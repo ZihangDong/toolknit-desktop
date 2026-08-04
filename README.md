@@ -213,6 +213,8 @@ ToolKnit Desktop 是 ToolKnit 网页端的开源桌面配套版本。它面向�
 
 从 [GitHub Releases](https://github.com/ZihangDong/toolknit-desktop/releases) 下载 Windows 安装包。首次运行不强制下载附加组件；进入需要 FFmpeg 或离线转写模型的工具时，桌面端会解释原因并提供设置入口。
 
+当前 Windows 安装包暂未购买商业代码签名证书，SmartScreen 可能显示“未知发布者”。请只从本仓库 Releases 下载，并先核对同页提供的 `.sha256` 文件；校验一致后再选择“更多信息 -> 仍要运行”。
+
 在设置中可以：
 
 - 选择全局输出根目录，所有工具自动进入对应二级目录。
@@ -240,9 +242,15 @@ v1.2 将桌面端核心文件处理能力抽成可验证的 CLI/MCP 契约。桌
 ### 正式 npm 安装（推荐）
 
 ```powershell
-npm install --global @toolknit/cli@1.2.7
+npm install --global @toolknit/cli
 toolknit doctor --json
 toolknit --help
+```
+
+如果国内镜像暂未同步新版本，安装时可能出现 `404 Not Found`。这不是包不存在，改用 npm 官方源即可：
+
+```powershell
+npm install --global @toolknit/cli --registry=https://registry.npmjs.org
 ```
 
 CLI 默认不覆盖已有文件；JSON 与 MCP 输出不会混入 ASCII 横幅；PDF 密码等敏感输入会走受保护输入方式，避免进入命令历史。
@@ -266,14 +274,13 @@ npm run cli -- help pdf split
   "mcpServers": {
     "toolknit": {
       "command": "toolknit",
-      "args": ["mcp", "serve"],
-      "env": {
-        "DEEPSEEK_API_KEY": "<仅 AI 文档、AI 表格或 AI 润色需要>"
-      }
+      "args": ["mcp", "serve"]
     }
   }
 }
 ```
+
+PDF、图片、音视频和文本等本地工具不需要 AI Key。只有使用 AI 文档、AI 表格或转写后的 `refine` 二次校对时，才需要在 IDE 的 MCP 环境变量/密钥设置中为 `toolknit` 添加真实的 `DEEPSEEK_API_KEY`（也支持 `TOOLKNIT_AI_API_KEY`），然后重启 IDE。不要保留说明文字或把密钥写进 Agent 对话；桌面端保存的密钥不会自动共享给 CLI/MCP。
 
 推荐对 Agent 这样说：
 

@@ -11,10 +11,7 @@
   "mcpServers": {
     "toolknit": {
       "command": "toolknit",
-      "args": ["mcp", "serve"],
-      "env": {
-        "DEEPSEEK_API_KEY": "<你的 DeepSeek API Key>"
-      }
+      "args": ["mcp", "serve"]
     }
   }
 }
@@ -26,7 +23,7 @@
 C:\Users\<你的用户名>\AppData\Roaming\npm\node_modules\@toolknit\cli\toolknit.mjs
 ```
 
-`DEEPSEEK_API_KEY` 同时供 MCP 的 AI 文档和 AI 表格工具调用。不要把密钥写进 Agent 对话、文档需求、输出路径或文件名。桌面端保存的密钥不会被 CLI/MCP 读取。示例中的 `<你的 DeepSeek API Key>` 只是占位符，必须替换为真实密钥；保留占位符时 ToolKnit 会在发出请求前明确报错。
+基础 PDF、图片、音视频和文本工具不需要 AI Key。使用 AI 文档、AI 表格或转写后的 `refine` 二次校对时，请在 IDE 的 MCP 环境变量/密钥设置中为 `toolknit` 添加真实的 `DEEPSEEK_API_KEY`（也支持 `TOOLKNIT_AI_API_KEY`），再重启 IDE。不要把密钥写进 Agent 对话、文档需求、输出路径或文件名；桌面端保存的密钥不会被 CLI/MCP 读取。
 
 连接成功后，Agent 会显示 30 项 ToolKnit 工具：8 项 PDF 工具、4 项音频工具、4 项离线模型与转写工具、3 项视频工具、1 项文本工具、2 项图像工具、4 项 AI 文档工程工具，以及 4 项 AI 表格工程工具：
 

@@ -45,17 +45,6 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Validate help, CLI, and dependency contracts
-        run: |
-          npm run test:help
-          npm run test:cli-agent
-          npm run test:dependencies
-
-      - name: Validate AI document and table project contracts
-        run: |
-          npm run test:ai-doc
-          npm run test:ai-table
-
       - name: Prepare locked FFmpeg for native integration tests
         shell: pwsh
         run: |
@@ -94,6 +83,9 @@ jobs:
           }
 
           & $ffmpegExecutable -version
+
+      - name: Run complete release test suite
+        run: npm run test:release
 
       - name: Run native tests
         working-directory: toolknit-desktop/src-tauri

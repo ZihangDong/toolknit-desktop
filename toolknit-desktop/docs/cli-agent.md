@@ -4,18 +4,24 @@ ToolKnit Desktop and `@toolknit/cli` are separate v1.2 deliverables. The CLI run
 
 ## Installation and checks
 
-The CLI requires Node.js 20.12 or later. The Windows release artifact carries the qpdf runtime and qpdf license notices for PDF decrypt and compress operations. On another platform, install qpdf separately or set `TOOLKNIT_QPDF_PATH` to its executable. Audio/video operations and local transcription preparation require FFmpeg: the development repository reuses `src-tauri/resources/ffmpeg/ffmpeg.exe`; an installed CLI uses `ffmpeg` from `PATH` or an absolute `TOOLKNIT_FFMPEG_PATH`.
+The CLI requires Node.js 20.12 or later. The Windows release artifact carries the qpdf runtime and qpdf license notices for PDF decrypt and compress operations. On another platform, install qpdf separately or set `TOOLKNIT_QPDF_PATH` to its executable. Audio/video operations and local transcription preparation require FFmpeg. The CLI resolves, in order, an absolute `TOOLKNIT_FFMPEG_PATH`, the managed runtime downloaded by ToolKnit Desktop, the development repository fixture, and finally `ffmpeg` from `PATH`.
 
 ```powershell
 npm install --global @toolknit/cli
 toolknit doctor --json
 ```
 
+If a regional npm mirror has not synced the newest release yet, install from the official npm registry:
+
+```powershell
+npm install --global @toolknit/cli --registry=https://registry.npmjs.org
+```
+
 For a local release archive, install with npm's optional network checks disabled. The first installation still needs to resolve the CLI dependencies; npm does not provide a reliable per-package percentage, so ToolKnit does not show a misleading progress bar during installation.
 
 ```powershell
 npm pack .\cli
-npm install --global --no-audit --no-fund --prefer-offline .\toolknit-cli-1.2.7.tgz
+npm install --global --no-audit --no-fund --prefer-offline .\toolknit-cli-1.2.8.tgz
 ```
 
 ## Command help
@@ -31,9 +37,9 @@ toolknit help pdf merge
 
 Each operation help describes its required parameters, optional parameters, examples, output behavior, and relevant safety constraints. This document contains the same contract for IDE and release integration.
 
-Inside this repository, use `npm run cli -- doctor --json` (or replace `doctor --json` with any documented CLI command) before the package is published.
+Inside this repository, maintainers can use `npm run cli -- doctor --json` (or replace `doctor --json` with any documented CLI command) to test the source tree directly.
 
-`doctor` reports both `qpdf.available` and `ffmpeg.available`. `qpdf` is required for decrypt/compress; `ffmpeg` is required for audio conversion. A custom qpdf executable can be selected with `TOOLKNIT_QPDF_PATH`; set `TOOLKNIT_FFMPEG_PATH` to an absolute FFmpeg executable path when it is not on `PATH`.
+`doctor` reports both `qpdf.available` and `ffmpeg.available`. `qpdf` is required for decrypt/compress; FFmpeg is required for audio and video processing. A custom qpdf executable can be selected with `TOOLKNIT_QPDF_PATH`; `TOOLKNIT_FFMPEG_PATH` overrides the managed desktop runtime and system `PATH` when an explicit executable is required.
 
 ## CLI contract
 
@@ -76,14 +82,13 @@ The MCP server uses newline-delimited JSON-RPC over stdio. It writes no diagnost
   "mcpServers": {
     "toolknit": {
       "command": "toolknit",
-      "args": ["mcp", "serve"],
-      "env": {
-        "DEEPSEEK_API_KEY": "<your DeepSeek API key>"
-      }
+      "args": ["mcp", "serve"]
     }
   }
 }
 ```
+
+Local file tools do not need an AI credential. AI documents, AI tables, and transcription with `refine=true` require a real `DEEPSEEK_API_KEY` or `TOOLKNIT_AI_API_KEY` in the IDE's MCP environment/secret settings. Restart the IDE after setting it. Never leave explanatory placeholder text or place the key in an Agent message; the desktop application's stored credential is not shared with CLI/MCP.
 
 The current MCP tools are:
 
@@ -126,7 +131,7 @@ Tools reject unknown arguments and return structured success or error data. When
 
 `toolknit_ai_document` accepts a natural-language `prompt`, an explicit PDF `output_path`, an exact `page_count` from 1 through 8, a `zh-CN` or `en` locale, and an optional explicit `overwrite` decision. Its default page count is 3. The tool validates the model layout, renders the document with bundled MiSans fonts, verifies the actual PDF page count, and only then publishes the output atomically.
 
-The MCP process reads its provider credential from `DEEPSEEK_API_KEY` or `TOOLKNIT_AI_API_KEY`. Optional OpenAI-compatible overrides are `TOOLKNIT_AI_API_URL` and `TOOLKNIT_AI_MODEL`. These values are process configuration, never tool arguments. The desktop application's provider key remains isolated in desktop-local storage and is never read by CLI/MCP. The `<your DeepSeek API key>` value in the MCP example is a placeholder and must be replaced; ToolKnit rejects known placeholder values before contacting a provider.
+The MCP process reads its provider credential from `DEEPSEEK_API_KEY` or `TOOLKNIT_AI_API_KEY`. Optional OpenAI-compatible overrides are `TOOLKNIT_AI_API_URL` and `TOOLKNIT_AI_MODEL`. These values are process configuration, never tool arguments. The desktop application's provider key remains isolated in desktop-local storage and is never read by CLI/MCP. ToolKnit rejects known placeholder values before contacting a provider.
 
 Progress covers request validation, generation, layout validation, A4 rendering, and publication. Missing provider configuration, provider timeouts, invalid or oversized model layouts, page-count mismatches, unsafe paths, existing outputs, and failed writes return structured errors. Retryable provider, response, content-grounding, and layout failures receive up to five bounded attempts; configuration, authorization, unsafe-path, existing-output, and local-write failures do not retry. ToolKnit never publishes a PDF whose real page count differs from `page_count`.
 
@@ -190,7 +195,7 @@ It intentionally excludes BMP and GIF sources because static icon output cannot 
 
 The runtime rejects empty batches, duplicate or symbolic-link inputs, non-regular or empty files, inputs above 10 GB, unsupported targets, unsafe output directories, unavailable FFmpeg, and concurrent ToolKnit batches. It processes files sequentially, reports progress at validation, per-file preparation/encoding, and completion, and returns a structured record for each success or failure. A partial batch is successful when at least one file completes and includes warnings for failed files; a batch with no successful outputs returns a processing error.
 
-Every encode writes into a newly created temporary directory inside the requested output directory. Only a non-empty successful FFmpeg output is published through an exclusive same-volume link, so it cannot replace an existing file or leave a named partial result. Existing names receive `_1`, `_2`, and so on. The input is never modified. An installed CLI must have FFmpeg on `PATH` or configure `TOOLKNIT_FFMPEG_PATH`; `doctor --json` exposes its availability before a job starts.
+Every encode writes into a newly created temporary directory inside the requested output directory. Only a non-empty successful FFmpeg output is published through an exclusive same-volume link, so it cannot replace an existing file or leave a named partial result. Existing names receive `_1`, `_2`, and so on. The input is never modified. An installed CLI can reuse the managed FFmpeg downloaded by ToolKnit Desktop, resolve it from `PATH`, or use `TOOLKNIT_FFMPEG_PATH`; `doctor --json` exposes availability and the selected executable before a job starts.
 
 ## Audio clip contract
 

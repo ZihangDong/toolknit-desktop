@@ -22,7 +22,7 @@ import { generateAiDocument } from './lib/ai-document-runtime.mjs';
 import { editAiTableProject, generateAiTableProject, inspectAiTableProjectFile, renderAiTableProject } from './lib/ai-table-project-runtime.mjs';
 import { installTranscriptionModel, listTranscriptionModels, setCurrentTranscriptionModel, transcribeMedia } from './lib/transcription-runtime.mjs';
 
-const VERSION = '1.2.7';
+const VERSION = '1.2.8';
 const HELP = `ToolKnit CLI ${VERSION}
 
 用法：
@@ -220,7 +220,7 @@ const AUDIO_OVERVIEW = `ToolKnit 音频工具
   toolknit audio bpm --input <file> [--json]
   toolknit audio clip --input <file> --start <seconds> --end <seconds> --output-dir <directory> [--format mp3] [--json]
   toolknit audio extract --input <video> --output-dir <directory> --format <mp3|aac|wav|flac|ogg> [--track-index <0-31>] [--quality <low|medium|high>] [--json]
-  toolknit transcribe --input <audio-or-video> --output-dir <directory> [--language auto|zh|en] [--json]
+  toolknit transcribe --input <audio-or-video> --output-dir <directory> [--language auto|zh|en] [--refine] [--json]
 
 说明：
   转换会逐个处理最多 100 个本地常见音频文件。AAC 与 ALAC 输出为 .m4a；WAV 和 ALAC 为固定无损编码，质量档位不改变其编码。
@@ -235,7 +235,7 @@ const AUDIO_OVERVIEW = `ToolKnit 音频工具
   toolknit transcribe --input .\\meeting.mp4 --output-dir .\\toolknit-output --language zh
 
 运行时：
-  音频转换需要 FFmpeg。开发仓库会自动使用 src-tauri/resources/ffmpeg；已安装 CLI 请安装 ffmpeg 到 PATH，或配置 TOOLKNIT_FFMPEG_PATH 为 ffmpeg 可执行文件的绝对路径。
+  音频转换需要 FFmpeg。CLI 会依次使用 TOOLKNIT_FFMPEG_PATH、ToolKnit Desktop 设置页下载的共享运行时、开发仓库资源或系统 PATH。
 
 详细参数：
   toolknit audio <convert|bpm|clip|extract> --help
@@ -246,15 +246,15 @@ const TRANSCRIBE_HELP = `音视频提取文字（transcribe）
 用法：
   toolknit model install <base|small|medium> [--source auto|official|china]
   toolknit model use <base|small|medium>
-  toolknit transcribe --input <audio-or-video> --output-dir <directory> [--language auto|zh|en] [--json]
+  toolknit transcribe --input <audio-or-video> --output-dir <directory> [--language auto|zh|en] [--refine] [--json]
 
 首次使用先下载一个模型。推荐 small：中英文识别质量和体积更平衡。模型下载到当前用户的 ToolKnit 数据目录，桌面端和 CLI 共用，不需要 Python、CUDA 或 Hugging Face CLI。
 
-转写始终在本地进行，输出始终包含原始 JSON、SRT、TXT。识别支持 MP3、M4A、WAV、FLAC、OGG 以及 MP4、MKV、MOV、AVI、WebM 等常见音视频。
+转写始终在本地进行，输出始终包含原始 JSON、SRT、TXT。识别支持 MP3、M4A、WAV、FLAC、OGG 以及 MP4、MKV、MOV、AVI、WebM 等常见音视频。可选 --refine 只把已识别文字发送给配置的 AI 服务进行标点和语法校对，不上传媒体文件，并保留原始结果、分段编号与时间码。
 
 示例：
   toolknit model install small --source auto
-  toolknit transcribe --input .\\interview.mp4 --output-dir .\\toolknit-output --language zh --json`;
+  toolknit transcribe --input .\\interview.mp4 --output-dir .\\toolknit-output --language zh --refine --json`;
 
 const MODEL_HELP = `离线模型管理（model）
 
@@ -315,7 +315,7 @@ const AUDIO_COMMAND_HELP = {
   toolknit audio bpm --input .\\song.wav --json
 
 运行时：
-  此功能需要 FFmpeg。开发仓库会自动使用 src-tauri/resources/ffmpeg；已安装 CLI 请安装 ffmpeg 到 PATH，或配置 TOOLKNIT_FFMPEG_PATH 为 ffmpeg 可执行文件的绝对路径。`
+  此功能需要 FFmpeg。CLI 会依次使用 TOOLKNIT_FFMPEG_PATH、ToolKnit Desktop 设置页下载的共享运行时、开发仓库资源或系统 PATH。`
 ,
 
   clip: `音频剪辑（clip）

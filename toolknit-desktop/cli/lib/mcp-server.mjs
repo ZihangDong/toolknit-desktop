@@ -1,7 +1,7 @@
 import { errorPayload, ToolKnitError } from './errors.mjs';
 import { executeTool, listTools } from './tool-registry.mjs';
 
-const SERVER_INFO = Object.freeze({ name: 'toolknit', version: '1.2.7' });
+const SERVER_INFO = Object.freeze({ name: 'toolknit', version: '1.2.8' });
 const SUPPORTED_PROTOCOLS = new Set(['2024-11-05', '2025-03-26', '2025-06-18']);
 
 function response(id, result) {

@@ -213,6 +213,8 @@ Calculator tools and the typing test remain desktop-first because CLI/MCP would 
 
 Download the Windows installer from [GitHub Releases](https://github.com/ZihangDong/toolknit-desktop/releases). Optional components are not forced on first launch; when a tool needs FFmpeg or a local transcription model, the app explains why and points you to Settings.
 
+The current Windows installer is not commercially code-signed, so SmartScreen may show an “Unknown publisher” warning. Download only from this repository's Releases page and verify the accompanying `.sha256` file before choosing **More info -> Run anyway**.
+
 In Settings, you can:
 
 - Choose a global output root. ToolKnit then writes into per-tool subfolders.
@@ -240,9 +242,15 @@ v1.2 extracts the desktop app's core file-processing capabilities into verifiabl
 ### Install from npm (recommended)
 
 ```powershell
-npm install --global @toolknit/cli@1.2.7
+npm install --global @toolknit/cli
 toolknit doctor --json
 toolknit --help
+```
+
+If a regional npm mirror has not synced the newest release yet, install from the official npm registry:
+
+```powershell
+npm install --global @toolknit/cli --registry=https://registry.npmjs.org
 ```
 
 The CLI does not overwrite existing files by default. JSON and MCP output are kept clean without ASCII banners. Sensitive inputs such as PDF passwords use protected input paths instead of command history.
@@ -266,14 +274,13 @@ Add this to Trae, Cursor, VS Code, or another MCP-capable client after `toolknit
   "mcpServers": {
     "toolknit": {
       "command": "toolknit",
-      "args": ["mcp", "serve"],
-      "env": {
-        "DEEPSEEK_API_KEY": "<only needed for AI document, AI table, or AI polish>"
-      }
+      "args": ["mcp", "serve"]
     }
   }
 }
 ```
+
+Local PDF, image, audio/video, and text tools do not need an AI key. Only AI documents, AI tables, and transcription with `refine` require a real `DEEPSEEK_API_KEY` (or `TOOLKNIT_AI_API_KEY`) in the IDE's MCP environment/secret settings; restart the IDE after setting it. Do not leave explanatory placeholder text or paste the key into an Agent conversation. Credentials saved by the desktop app are not shared with CLI/MCP.
 
 Recommended natural-language prompt:
 

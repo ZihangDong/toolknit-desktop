@@ -14,8 +14,8 @@
 
 在提交 Issue 前,请先搜索是否已有类似问题。如果没有,请使用我们提供的 Issue 模板:
 
-- [Bug 反馈](https://github.com/ZihangDong/toolknit-desktop/issues/new?template=bug_report.md)
-- [功能建议](https://github.com/ZihangDong/toolknit-desktop/issues/new?template=feature_request.md)
+- [Bug 反馈](https://github.com/ZihangDong/toolknit-desktop/issues/new?template=bug_report.yml)
+- [功能建议](https://github.com/ZihangDong/toolknit-desktop/issues/new?template=feature_request.yml)
 
 ### 2. 提交 Pull Request
 

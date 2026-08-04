@@ -12,6 +12,12 @@ toolknit --help
 toolknit doctor --json
 ```
 
+如果国内镜像暂未同步新版本，安装时可能出现 `404 Not Found`。这不是包不存在，改用 npm 官方源即可：
+
+```bash
+npm install -g @toolknit/cli --registry=https://registry.npmjs.org
+```
+
 需要 Node.js `>= 20.12.0`。
 
 ## 适合谁
@@ -27,22 +33,22 @@ toolknit doctor --json
 toolknit pdf split --input "D:\Backup\下载\朱自清-背影，荷塘月色.pdf" --pages 2 --output-dir ".\output"
 
 # PDF：合并多个文件
-toolknit pdf merge --inputs ".\a.pdf" ".\b.pdf" --output ".\output\merged.pdf"
+toolknit pdf merge --input ".\a.pdf" --input ".\b.pdf" --output ".\output\merged.pdf"
 
 # 视频：截取高清单帧图
-toolknit video frame --input ".\demo.mp4" --time 00:00:03.500 --output ".\output\frame.png"
+toolknit video frame --input ".\demo.mp4" --timestamp-ms 3500 --output-dir ".\output\frames" --format png
 
 # 视频：截取 GIF
-toolknit video gif --input ".\demo.mp4" --start 00:00:02 --end 00:00:07 --fps 12 --width 720 --output ".\output\clip.gif"
+toolknit video gif --input ".\demo.mp4" --start-ms 2000 --end-ms 7000 --frame-rate 12 --width 720 --quality small --output-dir ".\output\gif"
 
 # 音视频：离线提取字幕/文字
-toolknit transcribe --input ".\meeting.mp4" --output-dir ".\output\transcribe" --language auto
+toolknit transcribe --input ".\meeting.mp4" --output-dir ".\output\transcribe" --language auto --refine
 
 # AI 文档：生成可编辑工程、PDF、预览图、编号图
-toolknit ai-doc create --prompt "生成一份产品发布复盘报告" --output-dir ".\output\ai-doc"
+toolknit ai-doc create --prompt "生成一份产品发布复盘报告" --output ".\output\ai-doc\review.pdf" --page-count 3
 
 # AI 表格：生成表格工程和导出文件
-toolknit ai-table create --prompt "生成一份季度销售复盘表，包含图表" --output-dir ".\output\ai-table"
+toolknit ai-table create --prompt "生成一份季度销售复盘表，包含图表" --output ".\output\ai-table\sales.xlsx"
 ```
 
 ## AI Agent / MCP
@@ -60,14 +66,13 @@ toolknit mcp serve
   "mcpServers": {
     "toolknit": {
       "command": "toolknit",
-      "args": ["mcp", "serve"],
-      "env": {
-        "DEEPSEEK_API_KEY": "你的 DeepSeek Key"
-      }
+      "args": ["mcp", "serve"]
     }
   }
 }
 ```
+
+PDF、图片、音视频和文本等本地工具不需要 AI Key。使用 AI 文档、AI 表格或转写后的 `refine` 二次校对时，请在 IDE 的 MCP 环境变量/密钥设置中为 `toolknit` 添加真实的 `DEEPSEEK_API_KEY`（也支持 `TOOLKNIT_AI_API_KEY`），再重启 IDE。不要把密钥写进 Agent 对话；桌面端保存的密钥不会自动共享给 CLI/MCP。
 
 给 Agent 的自然语言示例：
 
@@ -91,8 +96,8 @@ toolknit agent guide --lang en
 - 写入操作必须显式指定输出位置。
 - 已存在文件默认不会覆盖，需要显式传入覆盖参数。
 - 密码不通过命令行参数传递，避免出现在历史记录里。
-- FFmpeg 不随 npm 包内置，按需从 ToolKnit Desktop 设置页下载，或由系统 PATH 提供。
-- 文件处理默认本地执行；只有 AI 文档、AI 表格、AI 润色等能力会调用你自己配置的 AI 服务。
+- FFmpeg 不随 npm 包内置；CLI 会依次使用 `TOOLKNIT_FFMPEG_PATH`、ToolKnit Desktop 设置页下载的共享运行时或系统 PATH。
+- 文件处理默认本地执行；只有 AI 文档、AI 表格和转写后的可选 `refine` 校对会调用你自己配置的 AI 服务。
 
 ## 许可证
 

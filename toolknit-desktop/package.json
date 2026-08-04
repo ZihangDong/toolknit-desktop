@@ -1,7 +1,7 @@
 {
   "name": "toolknit-desktop",
   "private": true,
-  "version": "1.2.7",
+  "version": "1.2.8",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -36,6 +36,8 @@
     "test:image-stitch": "node scripts/test-image-stitch-core.mjs && node scripts/test-image-stitch-runtime.mjs",
     "test:dependencies": "node scripts/test-dependency-contract.mjs",
     "test:help": "node scripts/test-help-center.mjs",
+    "test:cli-package": "npm run stage:cli-resources && node scripts/test-cli-package.mjs",
+    "test:release": "node scripts/run-release-tests.mjs",
     "qa:image-stitch-native": "node scripts/qa-image-stitch-native.mjs",
     "test:cli-agent": "node scripts/test-cli-mcp.mjs",
     "qa:ai-doc-agent": "node scripts/qa-ai-document-user-workflows.mjs",

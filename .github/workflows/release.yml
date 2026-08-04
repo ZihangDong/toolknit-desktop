@@ -5,32 +5,161 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-windows:
     runs-on: windows-latest
+    timeout-minutes: 45
     permissions:
       contents: write
+    defaults:
+      run:
+        working-directory: toolknit-desktop
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate release tag and versions
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -notmatch '^v(?<version>\d+\.\d+\.\d+)$') {
+            throw "Release tag must use vMAJOR.MINOR.PATCH: $tag"
+          }
+          $releaseVersion = $Matches.version
+
+          git fetch origin main --no-tags
+          git merge-base --is-ancestor $env:GITHUB_SHA origin/main
+          if ($LASTEXITCODE -ne 0) {
+            throw "Release tag must point to a commit contained in origin/main"
+          }
+
+          $packageVersion = (Get-Content package.json -Raw | ConvertFrom-Json -AsHashtable)['version']
+          $packageLockVersion = (Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable)['version']
+          $cliVersion = (Get-Content cli/package.json -Raw | ConvertFrom-Json -AsHashtable)['version']
+          $cliLockVersion = (Get-Content cli/npm-shrinkwrap.json -Raw | ConvertFrom-Json -AsHashtable)['version']
+          $tauriVersion = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json -AsHashtable)['version']
+          $cargoText = Get-Content src-tauri/Cargo.toml -Raw
+          if ($cargoText -notmatch '(?m)^version = "(?<cargoVersion>\d+\.\d+\.\d+)"\r?$') {
+            throw "Unable to read the desktop version from Cargo.toml"
+          }
+          $cargoVersion = $Matches.cargoVersion
+          $cargoLockText = Get-Content src-tauri/Cargo.lock -Raw
+          if ($cargoLockText -notmatch '(?ms)\[\[package\]\]\r?\nname = "toolknit-desktop"\r?\nversion = "(?<cargoLockVersion>\d+\.\d+\.\d+)"') {
+            throw "Unable to read the desktop version from Cargo.lock"
+          }
+
+          $versions = [ordered]@{
+            package = $packageVersion
+            packageLock = $packageLockVersion
+            cli = $cliVersion
+            cliLock = $cliLockVersion
+            tauri = $tauriVersion
+            cargo = $cargoVersion
+            cargoLock = $Matches.cargoLockVersion
+          }
+          foreach ($entry in $versions.GetEnumerator()) {
+            if ($entry.Value -ne $releaseVersion) {
+              throw "$($entry.Key) version $($entry.Value) does not match tag $tag"
+            }
+          }
+
+          $ui = Get-Content index.html -Raw
+          $settingsPattern = 'settings-version">v{0}<' -f [regex]::Escape($releaseVersion)
+          $sidebarPattern = 'sidebarVersion">v{0}<' -f [regex]::Escape($releaseVersion)
+          if ($ui -notmatch $settingsPattern -or $ui -notmatch $sidebarPattern) {
+            throw "The desktop UI version labels do not match tag $tag"
+          }
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: toolknit-desktop/package-lock.json
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install dependencies
-        run: cd toolknit-desktop && npm ci
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Prepare locked FFmpeg for native integration tests
+        shell: pwsh
+        run: |
+          $ffmpegDirectory = Join-Path $PWD "src-tauri/resources/ffmpeg"
+          $ffmpegArchive = Join-Path $env:RUNNER_TEMP "ffmpeg-win32-x64.gz"
+          $ffmpegExecutable = Join-Path $ffmpegDirectory "ffmpeg.exe"
+          $ffmpegUrl = "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-win32-x64.gz"
+          $expectedHash = "8883a3dffbd0a16cf4ef95206ea05283f78908dbfb118f73c83f4951dcc06d77"
+
+          New-Item -ItemType Directory -Path $ffmpegDirectory -Force | Out-Null
+          Invoke-WebRequest -Uri $ffmpegUrl -OutFile $ffmpegArchive -MaximumRetryCount 3 -RetryIntervalSec 5
+
+          $actualHash = (Get-FileHash -LiteralPath $ffmpegArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne $expectedHash) {
+            throw "FFmpeg archive integrity check failed: expected $expectedHash, got $actualHash"
+          }
+
+          $inputStream = [System.IO.File]::OpenRead($ffmpegArchive)
+          try {
+            $gzipStream = [System.IO.Compression.GZipStream]::new(
+              $inputStream,
+              [System.IO.Compression.CompressionMode]::Decompress
+            )
+            try {
+              $outputStream = [System.IO.File]::Create($ffmpegExecutable)
+              try {
+                $gzipStream.CopyTo($outputStream)
+              } finally {
+                $outputStream.Dispose()
+              }
+            } finally {
+              $gzipStream.Dispose()
+            }
+          } finally {
+            $inputStream.Dispose()
+          }
+
+          & $ffmpegExecutable -version
+
+      - name: Run complete release test suite
+        run: npm run test:release
+
+      - name: Run native tests
+        working-directory: toolknit-desktop/src-tauri
+        run: cargo test --locked
 
       - name: Build Tauri
-        run: cd toolknit-desktop && npm run tauri build
+        run: npm run tauri build
+
+      - name: Generate installer checksum
+        shell: pwsh
+        run: |
+          $installers = @(Get-ChildItem "src-tauri/target/release/bundle/nsis/*.exe" -File)
+          if ($installers.Count -ne 1) {
+            throw "Expected exactly one NSIS installer, found $($installers.Count)"
+          }
+          $installer = $installers[0]
+          $hash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($installer.Name)" | Set-Content -LiteralPath "$($installer.FullName).sha256" -Encoding ascii
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: toolknit-desktop/src-tauri/target/release/bundle/nsis/*.exe
-          draft: false
+          name: ToolKnit Desktop ${{ github.ref_name }}
+          files: |
+            toolknit-desktop/src-tauri/target/release/bundle/nsis/*.exe
+            toolknit-desktop/src-tauri/target/release/bundle/nsis/*.exe.sha256
+          draft: true
           prerelease: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
