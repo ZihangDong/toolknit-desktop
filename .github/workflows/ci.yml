@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - "codex/**"
   pull_request:
     branches:
       - main
@@ -56,6 +55,45 @@ jobs:
         run: |
           npm run test:ai-doc
           npm run test:ai-table
+
+      - name: Prepare locked FFmpeg for native integration tests
+        shell: pwsh
+        run: |
+          $ffmpegDirectory = Join-Path $PWD "src-tauri/resources/ffmpeg"
+          $ffmpegArchive = Join-Path $env:RUNNER_TEMP "ffmpeg-win32-x64.gz"
+          $ffmpegExecutable = Join-Path $ffmpegDirectory "ffmpeg.exe"
+          $ffmpegUrl = "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-win32-x64.gz"
+          $expectedHash = "8883a3dffbd0a16cf4ef95206ea05283f78908dbfb118f73c83f4951dcc06d77"
+
+          New-Item -ItemType Directory -Path $ffmpegDirectory -Force | Out-Null
+          Invoke-WebRequest -Uri $ffmpegUrl -OutFile $ffmpegArchive -MaximumRetryCount 3 -RetryIntervalSec 5
+
+          $actualHash = (Get-FileHash -LiteralPath $ffmpegArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne $expectedHash) {
+            throw "FFmpeg archive integrity check failed: expected $expectedHash, got $actualHash"
+          }
+
+          $inputStream = [System.IO.File]::OpenRead($ffmpegArchive)
+          try {
+            $gzipStream = [System.IO.Compression.GZipStream]::new(
+              $inputStream,
+              [System.IO.Compression.CompressionMode]::Decompress
+            )
+            try {
+              $outputStream = [System.IO.File]::Create($ffmpegExecutable)
+              try {
+                $gzipStream.CopyTo($outputStream)
+              } finally {
+                $outputStream.Dispose()
+              }
+            } finally {
+              $gzipStream.Dispose()
+            }
+          } finally {
+            $inputStream.Dispose()
+          }
+
+          & $ffmpegExecutable -version
 
       - name: Run native tests
         working-directory: toolknit-desktop/src-tauri
