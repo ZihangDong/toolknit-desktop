@@ -12,7 +12,7 @@
       <br />
       <strong>Open tools, shared with care.</strong>
       <br />
-      <sub>Live Star badge from GitHub · Public donations: 23.88 CNY</sub>
+      <sub>Live Star badge from GitHub · Public donations: 25.88 CNY</sub>
     </td>
   </tr>
 </table>
@@ -63,7 +63,7 @@ Only AI-specific workflows send text to the model provider you configure yoursel
 If ToolKnit helps you, supporting the author keeps testing, mirrors, documentation, releases, and future development moving. Independent development takes time; support helps ToolKnit stay open-source, clean, local-first, and useful for Agent workflows.
 
 <p align="center">
-  <strong>Public donations so far: 23.88 CNY</strong><br />
+  <strong>Public donations so far: 25.88 CNY</strong><br />
   <sub>Public record: <a href="toolknit-desktop/public/contributors.json">contributors.json</a></sub>
 </p>
 
@@ -237,7 +237,17 @@ Requirements: Windows 10/11, Node.js `20.12.0` or newer, and Rust stable for nat
 
 v1.2 extracts the desktop app's core file-processing capabilities into verifiable CLI/MCP contracts. The desktop app is best for preview and visual editing; CLI is best for scripts, batch processing, and CI; IDE Agents can call the same capabilities through MCP without keeping the desktop window open.
 
-### Test from the Source Tree
+### Install from npm (recommended)
+
+```powershell
+npm install --global @toolknit/cli@1.2.7
+toolknit doctor --json
+toolknit --help
+```
+
+The CLI does not overwrite existing files by default. JSON and MCP output are kept clean without ASCII banners. Sensitive inputs such as PDF passwords use protected input paths instead of command history.
+
+### Debug from the Source Tree (maintainers)
 
 ```powershell
 Set-Location toolknit-desktop\toolknit-desktop
@@ -245,16 +255,6 @@ npm ci
 npm run cli -- doctor
 npm run cli -- help
 npm run cli -- help pdf split
-```
-
-The CLI does not overwrite existing files by default. JSON and MCP output are kept clean without ASCII banners. Sensitive inputs such as PDF passwords use protected input paths instead of command history.
-
-### After the npm Package Is Published
-
-```powershell
-npm install --global @toolknit/cli
-toolknit doctor --json
-toolknit --help
 ```
 
 ### MCP Example

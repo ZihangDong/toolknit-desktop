@@ -6,13 +6,14 @@ ToolKnit Desktop is independently maintained. Financial support helps fund testi
 
 Official donation links and QR codes are published only in this document and in the repository README. Do not trust payment QR codes or links copied from third-party issues, comments, or mirrors.
 
-The current public release branch is preparing its official support assets. When they are available, this page will list the exact channel and the matching asset under `docs/assets/`.
+The repository README contains the official WeChat and Alipay QR assets. If a mirror or third-party page shows different payment details, prefer the upstream repository.
 
 ## Public support record
 
 | Date | Supporter | Amount | Note |
 | --- | --- | ---: | --- |
 | 2026-08-03 | Anonymous open-source supporter | CNY 23.88 | Thank you for supporting ToolKnit. |
+| 2026-08-04 | Anonymous open-source supporter | CNY 2.00 | Thanks for the sausage fund and for keeping ToolKnit warm. |
 
 The machine-readable record used by the desktop home page is [public/contributors.json](../public/contributors.json). Personal information is not published without permission.
 

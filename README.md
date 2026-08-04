@@ -12,7 +12,7 @@
       <br />
       <strong>不以私藏缚代码，愿将利器赠人间。</strong>
       <br />
-      <sub>Star 数由 GitHub 实时徽章展示 · 已获捐赠 23.88 元</sub>
+      <sub>Star 数由 GitHub 实时徽章展示 · 已获捐赠 25.88 元</sub>
     </td>
   </tr>
 </table>
@@ -63,7 +63,7 @@ ToolKnit Desktop 是 ToolKnit 网页端的开源桌面配套版本。它面向�
 如果 ToolKnit 帮到了你，欢迎支持作者继续维护。独立开发不容易，但我希望桌面端能继续保持开源、纯净、可离线、可被 Agent 调用。你的支持会用于测试设备、运行依赖镜像、文档维护、版本发布和后续功能开发。
 
 <p align="center">
-  <strong>当前公开捐赠总额：23.88 元</strong><br />
+  <strong>当前公开捐赠总额：25.88 元</strong><br />
   <sub>公开记录见 <a href="toolknit-desktop/public/contributors.json">contributors.json</a></sub>
 </p>
 
@@ -237,7 +237,17 @@ npm run tauri dev
 
 v1.2 将桌面端核心文件处理能力抽成可验证的 CLI/MCP 契约。桌面端适合预览与可视化编辑；CLI 适合脚本、批处理和 CI；IDE Agent 可以通过 MCP 调用同一套能力，不需要一直打开桌面程序。
 
-### 当前源码内测试
+### 正式 npm 安装（推荐）
+
+```powershell
+npm install --global @toolknit/cli@1.2.7
+toolknit doctor --json
+toolknit --help
+```
+
+CLI 默认不覆盖已有文件；JSON 与 MCP 输出不会混入 ASCII 横幅；PDF 密码等敏感输入会走受保护输入方式，避免进入命令历史。
+
+### 从源码调试（维护者可选）
 
 ```powershell
 Set-Location toolknit-desktop\toolknit-desktop
@@ -245,16 +255,6 @@ npm ci
 npm run cli -- doctor
 npm run cli -- help
 npm run cli -- help pdf split
-```
-
-CLI 默认不覆盖已有文件；JSON 与 MCP 输出不会混入 ASCII 横幅；PDF 密码等敏感输入会走受保护输入方式，避免进入命令历史。
-
-### npm 包发布后
-
-```powershell
-npm install --global @toolknit/cli
-toolknit doctor --json
-toolknit --help
 ```
 
 ### MCP 配置示例

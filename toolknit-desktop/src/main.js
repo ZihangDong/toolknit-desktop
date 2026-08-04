@@ -7539,12 +7539,12 @@
 
       const GITHUB_REPOSITORY = 'ZihangDong/toolknit-desktop';
       const GITHUB_STATS_CACHE_KEY = 'toolknit_github_home_stats';
-      const GITHUB_CONTRIBUTORS_URL = `https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/public/contributors.json`;
+      const GITHUB_CONTRIBUTORS_URL = `https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/toolknit-desktop/public/contributors.json`;
       const GITHUB_LOCAL_CONTRIBUTORS_URL = new URL('contributors.json', document.baseURI).href;
       const GITHUB_FIXED_ACTIVITY_POINTS = '0,62 248,62 280,8';
       // A shipped snapshot prevents a blank metric on first launch without a network connection.
       const DEFAULT_GITHUB_STAR_COUNT = 216;
-      const DEFAULT_DONATION_TOTAL = 23.88;
+      const DEFAULT_DONATION_TOTAL = 25.88;
       const GITHUB_REQUEST_TIMEOUT_MS = 8_000;
 
       async function fetchGithubJson(url, options = {}) {

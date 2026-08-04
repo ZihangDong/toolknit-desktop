@@ -176,7 +176,7 @@ v1.2 将桌面端核心文件处理能力抽成可验证的 CLI/MCP 契约。桌
 
 ### CLI
 
-发布 npm 包后可全局安装：
+npm 包已发布，普通用户可直接全局安装：
 
 ```powershell
 npm install --global @toolknit/cli@1.2.7
