@@ -1,7 +1,3 @@
-import pdfLibPlusEncrypt from 'pdf-lib-plus-encrypt';
-
-const { PDFDocument } = pdfLibPlusEncrypt;
-
 export const PDF_ENCRYPT_LIMITS = Object.freeze({
   maxInputBytes: 150 * 1024 * 1024,
   maxPages: 200,
@@ -75,12 +71,22 @@ function createOwnerPassword() {
   return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
+async function loadPdfDocument() {
+  const pdfLib = await import('pdf-lib-plus-encrypt');
+  const pdfLibModule = pdfLib.PDFDocument ? pdfLib : pdfLib.default;
+  if (!pdfLibModule?.PDFDocument) {
+    throw new Error('PDF encryption engine is unavailable');
+  }
+  return pdfLibModule.PDFDocument;
+}
+
 export async function encryptPdf({ fileData, password, permissions, onProgress }) {
   assertPdfEncryptInput(fileData);
   assertPdfEncryptPassword(password);
   await onProgress?.({ stage: 'loading', percent: 20 });
 
   // Existing protected files must be explicitly unlocked by PDF Decrypt first.
+  const PDFDocument = await loadPdfDocument();
   const pdfDocument = await PDFDocument.load(fileData.slice());
   assertPdfEncryptPageCount(pdfDocument.getPageCount());
   await onProgress?.({ stage: 'encrypting', percent: 60 });
