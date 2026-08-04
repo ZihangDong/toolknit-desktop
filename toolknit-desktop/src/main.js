@@ -1,15 +1,120 @@
       import { getCurrentWindow } from '@tauri-apps/api/window';
       import { createIcons, icons } from 'lucide';
+      import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
       import { initDarkVeil } from './darkveil.js';
       import { initLightRays } from './lightrays.js';
       import { initPlasma } from './plasma.js';
       import { initFerrofluid } from './ferrofluid.js';
       import { initDither } from './dither.js';
       import { getLang, setLang, applyTranslations, onLangChange, t } from './i18n.js';
-      import changelog from './data/changelog.json';
       import typingWordsData from './data/typing-words.json';
       import { HELP_CONTENT, getHelpContent } from './help-data.js';
       import { getLegalContent } from './legal-data.js';
+      import { AiProviderError, normalizeAiProviderConfig, requestAiCompletion } from './ai-provider-core.js';
+      import {
+        AI_DOC_LIMITS,
+        AiDocLayoutError,
+        assertAiDocImageBudget,
+        cloneAiDocLayout,
+        compactAiDocHistoryMessage,
+        ensureAiDocEditorIds,
+        isSupportedAiDocImage,
+        moveAiDocRegionInFlow,
+        normalizeAiDocLayout
+      } from './ai-doc-core.js';
+      import { buildAiDocPdf } from './ai-doc-pdf-core.js';
+      import {
+        AI_TABLE_LIMITS,
+        AiTableDataError,
+        assertAiTableTextBudget,
+        compactAiTableHistoryMessage,
+        isAiTableResponseReady,
+        makeAiTableCsv,
+        normalizeAiTableData,
+        normalizeAiTableSheetName,
+        parseAiTableNumber,
+        safeSpreadsheetCellValue
+      } from './ai-table-core.js';
+      import {
+        AI_TRANSLATE_LIMITS,
+        AiTranslateError,
+        aiTranslateOriginalsMatch,
+        detectAiTranslateSourceLanguage,
+        normalizeAiTranslatePairs
+      } from './ai-translate-core.js';
+      import {
+        AI_POLISH_LIMITS,
+        AiPolishError,
+        normalizeAiPolishedText,
+        normalizeAiPolishDirections
+      } from './ai-polish-core.js';
+      import {
+        TEXT_FORMAT_LIMITS,
+        TextFormatError,
+        executeTextFormat
+      } from './text-format-core.js';
+      import {
+        TEXT_STATS_LIMITS,
+        calculateTextStats
+      } from './text-stats-core.js';
+      import {
+        assessPasswordStrength,
+        generatePassword as generateSecurePassword
+      } from './password-core.js';
+      import {
+        COLOR_EXTRACTOR_LIMITS,
+        assertColorExtractorImageBytes,
+        assertColorExtractorDimensions,
+        assertColorExtractorFile,
+        readColorExtractorImageDimensions
+      } from './color-extractor-core.js';
+      import {
+        ImageBatchError,
+        normalizeImageCompressionQuality,
+        normalizeImageTargetFormat,
+        validateImageCompressionSelection,
+        validateImageBatchSelection
+      } from './image-batch-core.js';
+      import {
+        IconGenerationError,
+        assertIconArchiveSize,
+        assertIconSource,
+        assertIconSourceDimensions
+      } from './icon-gen-core.js';
+      import {
+        AudioConvertError,
+        normalizeAudioTargetFormat,
+        validateAudioBatchSelection
+      } from './audio-convert-core.js';
+      import {
+        BpmDetectError,
+        assertBpmAudioBuffer,
+        assertBpmInputSize,
+        getBpmAnalysisSpec,
+        isBpmSupportedAudioName,
+        normalizeBpmCandidates
+      } from './bpm-detect-core.js';
+      import {
+        AudioExtractError,
+        assertAudioExtractInput,
+        normalizeAudioExtractFormat,
+        normalizeAudioTrackIndex
+      } from './audio-extract-core.js';
+      import {
+        AudioClipError,
+        assertAudioClipBuffer,
+        assertAudioClipInput,
+        assertAudioClipSelection,
+        isAudioClipSupportedName
+      } from './audio-clip-core.js';
+      import {
+        VideoConvertError,
+        normalizeVideoTargetFormat,
+        validateVideoBatchSelection
+      } from './video-convert-core.js';
+      import { frameTimeLabel, normalizeVideoFrameFormat, normalizeVideoFrameTimestamp, validateVideoFrameInput } from './video-frame-core.js';
+      import { createDefaultVideoGifSelection, normalizeVideoGifRequest, validateVideoGifInput, videoGifTimeLabel } from './video-gif-core.js';
+      import { calculateImageStitchLayout, normalizeImageStitchRequest } from './image-stitch-core.js';
       import JSZip from 'jszip';
 
       // Disable context menu globally, but allow on tool items for favorites
@@ -22,7 +127,27 @@
 
       createIcons({ icons });
       applyTranslations();
-      renderChangelog();
+
+      function enablePdfPageStageHorizontalWheel(stage) {
+        if (!stage) return;
+        stage.addEventListener('wheel', (event) => {
+          if (event.ctrlKey || event.metaKey || stage.scrollWidth <= stage.clientWidth) return;
+          const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
+            ? event.deltaX
+            : event.deltaY;
+          if (!delta) return;
+
+          const maxScrollLeft = stage.scrollWidth - stage.clientWidth;
+          const nextScrollLeft = Math.max(0, Math.min(maxScrollLeft, stage.scrollLeft + delta));
+          if (nextScrollLeft === stage.scrollLeft) return;
+
+          event.preventDefault();
+          stage.scrollLeft = nextScrollLeft;
+        }, { passive: false });
+      }
+
+      document.querySelectorAll('.pdf-merge-page-stage').forEach(enablePdfPageStageHorizontalWheel);
+
       const darkveilBg = document.getElementById('darkveilBg');
       if (darkveilBg) {
         // Randomly choose between the original dark color and a blue variant on each entry
@@ -40,28 +165,91 @@
 
       const isTauri = typeof window !== 'undefined' && !!window.__TAURI_INTERNALS__;
       const appWindow = isTauri ? getCurrentWindow() : null;
+      const OUTPUT_ROOT_KEY = 'toolknit.output-root.v1';
+      const BACKGROUND_KEY = 'toolknit.custom-background.v1';
+
+      // Tauri uses data-tauri-drag-region. The older WebKit-only CSS hint was not
+      // reliable on every Windows WebView, especially after opening an overlay.
+      if (isTauri && appWindow) {
+        const dragRegions = '.main-header-drag-region, .settings-header, .api-key-header, .feedback-header, .audio-convert-header, .audio-clip-header, .help-sidebar-header, .help-content-header, .transcription-model-header, .pdf-merge-page-picker-header, .pdf-page-workspace-header, .pdf-preview-drawer-header';
+        document.querySelectorAll(dragRegions).forEach(region => {
+          region.setAttribute('data-tauri-drag-region', '');
+        });
+      }
+
+      function configuredOutputRoot() {
+        try { return localStorage.getItem(OUTPUT_ROOT_KEY)?.trim() || ''; } catch { return ''; }
+      }
+
+      async function syncConfiguredOutputRoot() {
+        if (!isTauri) return;
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const savedInBrowser = configuredOutputRoot();
+          let savedInApp = await invoke('get_output_root');
+          // Migrate the earlier browser-only setting once, then always use the native record.
+          if (!savedInApp && savedInBrowser) {
+            await invoke('set_output_root', { outputDir: savedInBrowser });
+            savedInApp = savedInBrowser;
+          }
+          if (savedInApp) localStorage.setItem(OUTPUT_ROOT_KEY, savedInApp);
+          else localStorage.removeItem(OUTPUT_ROOT_KEY);
+        } catch (error) {
+          console.error('Failed to sync output folder:', error);
+        }
+      }
 
       async function getOutputDir(subFolder) {
+        const joinOutputSubFolder = (root, child) => {
+          const separator = root.includes('\\') ? '\\' : '/';
+          const normalizedChild = String(child || '')
+            .replace(/[\\/]+/g, separator)
+            .replace(separator === '\\' ? /^\\+|\\+$/g : /^\/+|\/+$/g, '');
+          const normalizedRoot = root.replace(/[\/\\]+$/, '');
+          return normalizedChild ? normalizedRoot + separator + normalizedChild : normalizedRoot;
+        };
+        let configuredRoot = configuredOutputRoot();
+        if (isTauri) {
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            const savedInApp = await invoke('get_output_root');
+            configuredRoot = typeof savedInApp === 'string' ? savedInApp.trim() : '';
+            if (configuredRoot) localStorage.setItem(OUTPUT_ROOT_KEY, configuredRoot);
+            else localStorage.removeItem(OUTPUT_ROOT_KEY);
+          } catch (error) {
+            // Keep the last known path as a temporary fallback when native config is unavailable.
+            console.error('Failed to read output folder:', error);
+          }
+        }
+        if (configuredRoot) {
+          return joinOutputSubFolder(configuredRoot, subFolder);
+        }
         if (!isTauri) return '~/Downloads/ToolKnit/' + subFolder;
         try {
           const { invoke } = await import('@tauri-apps/api/core');
-          const config = await invoke('get_install_config');
-          if (config.install_path) {
-            const sep = config.install_path.includes('\\') ? '\\' : '/';
-            return config.install_path.replace(/[\/\\]+$/, '') + sep + subFolder;
-          }
-        } catch (e) { console.error('Failed to get install config:', e); }
-        try {
-          const { invoke } = await import('@tauri-apps/api/core');
-          const docsDir = await invoke('get_documents_dir').catch(() => 'C:\\Users\\Downloads');
-          return docsDir + '\\ToolKnit\\' + subFolder;
+          const defaultRoot = await invoke('get_default_output_root');
+          return joinOutputSubFolder(defaultRoot, subFolder);
         } catch (e) {
+          console.error('Failed to get default output folder:', e);
           return 'C:\\Users\\Downloads\\ToolKnit\\' + subFolder;
         }
+      }
+      function outputParentFolder(outputPath) {
+        const value = String(outputPath || '').trim();
+        if (!value) return '';
+        const normalized = value.replace(/[\\/]+$/, '');
+        const parent = normalized.replace(/[/\\][^/\\]+$/, '');
+        return parent && parent !== normalized ? parent : normalized;
+      }
+      async function openOutputFolder(outputPath) {
+        if (!isTauri || !outputPath) return;
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('open_path', { path: outputParentFolder(outputPath) });
       }
       const transitionMask = document.getElementById('transitionMask');
       const navItems = document.querySelectorAll('.nav-item');
       const contentSections = document.querySelectorAll('.content-section');
+      const mainContent = document.querySelector('.main-content');
       let isSwitching = false;
 
       // Tool card mouse spotlight effect and accessibility
@@ -217,6 +405,7 @@
       });
 
       let navigatedFromHome = false;
+      let homeToolLaunchToken = 0;
 
       function switchCategory(category) {
         if (isSwitching) return;
@@ -226,23 +415,51 @@
         const targetNav = document.querySelector(`.nav-item[data-category="${category}"]`);
         if (targetNav) targetNav.classList.add('active');
 
-        if (transitionMask) transitionMask.classList.add('visible');
+        contentSections.forEach(section => section.classList.remove('active', 'section-entering'));
+        const targetSection = document.querySelector(`.content-section[data-category="${category}"]`);
+        if (targetSection) {
+          targetSection.classList.add('active');
+          mainContent.scrollTop = 0;
 
-        setTimeout(() => {
-          contentSections.forEach(section => section.classList.remove('active'));
-          const targetSection = document.querySelector(`.content-section[data-category="${category}"]`);
-          if (targetSection) targetSection.classList.add('active');
+          // A short root-level transition keeps navigation responsive while giving every category a shared rhythm.
+          void targetSection.offsetWidth;
+          targetSection.classList.add('section-entering');
+          const clearEnteringState = event => {
+            if (event.target !== targetSection || event.animationName !== 'sectionMicroEnter') return;
+            targetSection.classList.remove('section-entering');
+            targetSection.removeEventListener('animationend', clearEnteringState);
+          };
+          targetSection.addEventListener('animationend', clearEnteringState);
+        }
+        isSwitching = false;
+      }
 
-          if (transitionMask) transitionMask.classList.remove('visible');
-          isSwitching = false;
-        }, 1000);
+      function clearHomeToolNavigation() {
+        navigatedFromHome = false;
+        homeToolLaunchToken += 1;
+      }
+
+      function launchToolFromHome(toolId, category, delay = 0) {
+        if (!toolId || !category) return;
+        const launchToken = ++homeToolLaunchToken;
+        navigatedFromHome = true;
+        switchCategory(category);
+
+        const openTool = () => {
+          if (!navigatedFromHome || launchToken !== homeToolLaunchToken) return;
+          const toolItem = Array.from(document.querySelectorAll('.audio-list-item'))
+            .find(item => item.dataset.tool === toolId);
+          toolItem?.click();
+        };
+        if (delay > 0) window.setTimeout(openTool, delay);
+        else openTool();
       }
 
       navItems.forEach(item => {
         item.addEventListener('click', () => {
           const category = item.dataset.category;
           if (category && !item.classList.contains('active')) {
-            navigatedFromHome = false;
+            clearHomeToolNavigation();
             switchCategory(category);
           }
         });
@@ -250,6 +467,7 @@
 
       if (isTauri && appWindow) {
         document.querySelectorAll('.ctrl-btn[data-action]').forEach(btn => {
+          btn.addEventListener('pointerdown', (e) => e.stopPropagation());
           btn.addEventListener('mousedown', (e) => e.stopPropagation());
           btn.addEventListener('click', async () => {
             const action = btn.dataset.action;
@@ -257,10 +475,9 @@
               if (action === 'minimize') {
                 await appWindow.minimize();
               } else if (action === 'maximize') {
-                const isFullscreen = await appWindow.isFullscreen();
-                await appWindow.setFullscreen(!isFullscreen);
+                await appWindow.toggleMaximize();
               } else if (action === 'close') {
-                await appWindow.close();
+                await appWindow.hide();
               }
             } catch (e) {
               console.error('Window control failed:', e);
@@ -272,6 +489,7 @@
       const settingsOverlay = document.getElementById('settingsOverlay');
       const settingsBtn = document.getElementById('settingsBtn');
       const settingsBack = document.getElementById('settingsBack');
+      const settingsContent = settingsOverlay?.querySelector('.settings-content');
 
       // Language selection in settings
       const langOptionBtns = document.querySelectorAll('.settings-row.lang-options .lang-option');
@@ -324,49 +542,978 @@
       // Intercept tool entry: check ffmpeg before opening the tool overlay
       async function openToolWithFfmpegCheck(openFn) {
         const ready = await ensureFfmpegAvailable();
-        if (ready) openFn();
+        if (ready) { openFn(); return; }
+        showDependencyGate({ openFn, needsFfmpeg: true, needsModel: false });
       }
 
       // Storage path display + open folder
       const storagePathDisplay = document.getElementById('storagePathDisplay');
       const openStorageFolder = document.getElementById('openStorageFolder');
-      if (storagePathDisplay) {
-        if (isTauri) {
-          import('@tauri-apps/api/core').then(({ invoke }) => {
-            invoke('get_install_config').then((config) => {
-              storagePathDisplay.textContent = config.install_path || '--';
-            }).catch(() => {
-              storagePathDisplay.textContent = '--';
-            });
-          });
-        }
+      const chooseStorageFolder = document.getElementById('chooseStorageFolder');
+      async function refreshStoragePath() {
+        if (!storagePathDisplay) return;
+        if (!isTauri) { storagePathDisplay.textContent = '~/Downloads/ToolKnit'; return; }
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const customRoot = await invoke('get_output_root');
+          if (typeof customRoot === 'string' && customRoot.trim()) {
+            localStorage.setItem(OUTPUT_ROOT_KEY, customRoot);
+            storagePathDisplay.textContent = customRoot;
+            return;
+          }
+          localStorage.removeItem(OUTPUT_ROOT_KEY);
+          storagePathDisplay.textContent = await invoke('get_default_output_root');
+        } catch { storagePathDisplay.textContent = '--'; }
       }
+      if (storagePathDisplay) {
+        void syncConfiguredOutputRoot().then(refreshStoragePath);
+      }
+      chooseStorageFolder?.addEventListener('click', async () => {
+        if (!isTauri) return;
+        try {
+          const { open } = await import('@tauri-apps/plugin-dialog');
+          const selected = await open({ directory: true, multiple: false, title: '选择 ToolKnit 输出位置' });
+          if (!selected || Array.isArray(selected)) return;
+          const { invoke } = await import('@tauri-apps/api/core');
+          await invoke('set_output_root', { outputDir: selected });
+          localStorage.setItem(OUTPUT_ROOT_KEY, selected);
+          await refreshStoragePath();
+        } catch (error) { console.error('Choose output folder failed:', error); }
+      });
       if (openStorageFolder) {
         openStorageFolder.addEventListener('click', async () => {
           if (!isTauri) return;
           try {
             const { invoke } = await import('@tauri-apps/api/core');
-            const config = await invoke('get_install_config');
-            if (config.install_path) {
-              await invoke('open_path', { path: config.install_path });
-            }
+            const customRoot = await invoke('get_output_root');
+            const defaultRoot = await invoke('get_default_output_root');
+            await invoke('open_path', { path: customRoot || defaultRoot });
           } catch (e) {
             console.error('Open folder failed:', e);
           }
         });
       }
 
+      const customBackground = document.getElementById('customBackground');
+      const customBackgroundStatus = document.getElementById('customBackgroundStatus');
+      const chooseCustomBackground = document.getElementById('chooseCustomBackground');
+      const clearCustomBackground = document.getElementById('clearCustomBackground');
+      const customBackgroundInput = document.getElementById('customBackgroundInput');
+      function updateCustomBackgroundStatus(record) {
+        if (!customBackgroundStatus) return;
+        if (!record) customBackgroundStatus.textContent = t('settings.defaultBackground');
+        else customBackgroundStatus.textContent = record.type === 'video'
+          ? t('settings.customVideoBackground')
+          : t('settings.customImageBackground');
+      }
+
+      function restoreDefaultBackground({ forgetSavedBackground = false } = {}) {
+        customBackground?.replaceChildren();
+        document.body.classList.remove('has-custom-background');
+        updateCustomBackgroundStatus(null);
+        if (clearCustomBackground) clearCustomBackground.disabled = true;
+        if (forgetSavedBackground) {
+          try { localStorage.removeItem(BACKGROUND_KEY); } catch {}
+        }
+      }
+
+      async function applyCustomBackground(record) {
+        if (!customBackground) return;
+        customBackground.replaceChildren();
+        const active = record && typeof record.path === 'string' && (record.type === 'image' || record.type === 'video');
+        document.body.classList.toggle('has-custom-background', Boolean(active));
+        updateCustomBackgroundStatus(active ? record : null);
+        if (clearCustomBackground) clearCustomBackground.disabled = !active;
+        if (!active) {
+          restoreDefaultBackground();
+          return;
+        }
+        let source = record.path;
+        if (isTauri) {
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            source = await invoke('get_custom_background_media_url', { path: record.path });
+          } catch (error) {
+            console.error('Cannot create custom background media URL:', error);
+            restoreDefaultBackground({ forgetSavedBackground: true });
+            window.showToast?.(t('settings.backgroundLoadFailed'));
+            return;
+          }
+        }
+        async function traceBackground(event) {
+          if (!isTauri) return;
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('log_custom_background_event', { event });
+          } catch {}
+        }
+        const media = document.createElement(record.type === 'video' ? 'video' : 'img');
+        media.src = source;
+        if (record.type === 'video') { media.autoplay = true; media.loop = true; media.muted = true; media.playsInline = true; }
+        media.addEventListener('loadeddata', () => {
+          void traceBackground(`loaded type=${record.type} path=${record.path} source=${source}`);
+        }, { once: true });
+        media.addEventListener('error', async () => {
+          if (!customBackground.contains(media)) return;
+          const mediaError = media.error;
+          const details = `load-failed type=${record.type} code=${mediaError?.code ?? 'unknown'} network=${media.networkState} ready=${media.readyState} path=${record.path} source=${source}`;
+          console.error('Custom background failed:', details);
+          await traceBackground(details);
+          restoreDefaultBackground({ forgetSavedBackground: true });
+          window.showToast?.(t('settings.backgroundLoadFailed'));
+        }, { once: true });
+        customBackground.append(media);
+      }
+      function savedBackground() { try { return JSON.parse(localStorage.getItem(BACKGROUND_KEY) || 'null'); } catch { return null; } }
+      void applyCustomBackground(savedBackground());
+      async function saveCustomBackground(record) {
+        try { localStorage.setItem(BACKGROUND_KEY, JSON.stringify(record)); } catch {}
+        await applyCustomBackground(record);
+        window.showToast?.(record.type === 'video'
+          ? t('settings.customVideoBackground')
+          : t('settings.customImageBackground'));
+      }
+
+      async function importCustomBackground(sourcePath) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const imported = await invoke('import_custom_background', { sourcePath });
+          await saveCustomBackground({ path: imported.path, type: imported.media_type });
+        } catch (error) {
+          console.error('Import custom background failed:', error);
+          window.showToast?.(t('common.errorOccurred', { error: String(error?.message || error) }));
+        }
+      }
+
+      function setCustomBackgroundImporting(importing) {
+        if (!chooseCustomBackground) return;
+        chooseCustomBackground.disabled = importing;
+        chooseCustomBackground.textContent = importing
+          ? t('settings.preparingBackground')
+          : t('settings.uploadBackground');
+      }
+
+      async function importPickedCustomBackground(sourcePath) {
+        setCustomBackgroundImporting(true);
+        try {
+          await importCustomBackground(sourcePath);
+        } finally {
+          setCustomBackgroundImporting(false);
+        }
+      }
+
+      async function importCustomBackgroundWithDependencies(sourcePath) {
+        const extension = String(sourcePath).split('.').at(-1)?.toLowerCase();
+        const isVideo = ['mp4', 'webm', 'ogv', 'ogg', 'mov'].includes(extension);
+        if (isVideo && !await ensureFfmpegAvailable()) {
+          showDependencyGate({
+            openFn: () => importPickedCustomBackground(sourcePath),
+            needsFfmpeg: true,
+            needsModel: false
+          });
+          return;
+        }
+        await importPickedCustomBackground(sourcePath);
+      }
+
+      chooseCustomBackground?.addEventListener('click', async () => {
+        if (!isTauri) {
+          customBackgroundInput?.click();
+          return;
+        }
+        try {
+          const { open } = await import('@tauri-apps/plugin-dialog');
+          const selected = await open({
+            multiple: false,
+            title: '选择自定义背景',
+            filters: [
+              { name: '图像或视频', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'mp4', 'webm', 'ogv', 'ogg', 'mov'] }
+            ]
+          });
+          if (typeof selected === 'string') {
+            await importCustomBackgroundWithDependencies(selected);
+          }
+        } catch (error) {
+          console.error('Choose custom background failed:', error);
+          window.showToast?.(t('common.errorOccurred', { error: String(error?.message || error) }));
+          setCustomBackgroundImporting(false);
+        }
+      });
+      customBackgroundInput?.addEventListener('change', async () => {
+        const file = customBackgroundInput.files?.[0];
+        if (!file) return;
+        const isVideo = file.type.startsWith('video/');
+        const isImage = file.type.startsWith('image/');
+        if (!isVideo && !isImage) return;
+        await saveCustomBackground({ path: URL.createObjectURL(file), type: isVideo ? 'video' : 'image' });
+        customBackgroundInput.value = '';
+      });
+      clearCustomBackground?.addEventListener('click', async () => {
+        if (isTauri) {
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('clear_custom_background');
+          } catch (error) {
+            console.error('Clear custom background failed:', error);
+            return;
+          }
+        }
+        try { localStorage.removeItem(BACKGROUND_KEY); } catch {}
+        restoreDefaultBackground();
+      });
+      onLangChange(() => {
+        void refreshStoragePath();
+        updateCustomBackgroundStatus(savedBackground());
+      });
+
+      // ===== Offline model manager and local transcription =====
+      const MODEL_SOURCE_KEY = 'toolknit.transcription-model-source.v1';
+      const offlineModelSummary = document.getElementById('offlineModelSummary');
+      const manageOfflineModels = document.getElementById('manageOfflineModels');
+      const transcriptionModelOverlay = document.getElementById('transcriptionModelOverlay');
+      const transcriptionModelClose = document.getElementById('transcriptionModelClose');
+      const transcriptionModelList = document.getElementById('transcriptionModelList');
+      const transcriptionSourceOptions = document.getElementById('transcriptionSourceOptions');
+      const transcriptionOverlay = document.getElementById('transcriptionOverlay');
+      const transcriptionBack = document.getElementById('transcriptionBack');
+      const transcriptionCta = document.getElementById('transcriptionCta');
+      const transcriptionCtaText = document.getElementById('transcriptionCtaText');
+      const transcriptionInput = document.getElementById('transcriptionInput');
+      const transcriptionFiles = document.getElementById('transcriptionFiles');
+      const transcriptionSelectedFile = document.getElementById('transcriptionSelectedFile');
+      const transcriptionSelectedFileName = document.getElementById('transcriptionSelectedFileName');
+      const transcriptionProcessBtn = document.getElementById('transcriptionProcessBtn');
+      const transcriptionProcessMask = document.getElementById('transcriptionProcessMask');
+      const transcriptionProcessText = document.getElementById('transcriptionProcessText');
+      const transcriptionProcessBarFill = document.getElementById('transcriptionProcessBarFill');
+      const transcriptionLanguageOptions = document.getElementById('transcriptionLanguageOptions');
+      const transcriptionRefine = document.getElementById('transcriptionRefine');
+      const transcriptionDropZone = document.getElementById('transcriptionDropZone');
+      const dependencyGateOverlay = document.getElementById('dependencyGateOverlay');
+      const dependencyGateTitle = document.getElementById('dependencyGateTitle');
+      const dependencyGateDesc = document.getElementById('dependencyGateDesc');
+      const dependencyGateList = document.getElementById('dependencyGateList');
+      const dependencyGateProgress = document.getElementById('dependencyGateProgress');
+      const dependencyGateProgressFill = document.getElementById('dependencyGateProgressFill');
+      const dependencyGateProgressText = document.getElementById('dependencyGateProgressText');
+      const dependencyGateError = document.getElementById('dependencyGateError');
+      const dependencyGateCancel = document.getElementById('dependencyGateCancel');
+      const dependencyGateInstall = document.getElementById('dependencyGateInstall');
+      const transcriptionPlasmaBg = document.getElementById('transcriptionPlasmaBg');
+      const transcriptionSuccessOverlay = document.getElementById('transcriptionSuccessOverlay');
+      const transcriptionSuccessMeta = document.getElementById('transcriptionSuccessMeta');
+      const transcriptionSuccessCount = document.getElementById('transcriptionSuccessCount');
+      const transcriptionSuccessPath = document.getElementById('transcriptionSuccessPath');
+      const transcriptionSuccessOpenFolder = document.getElementById('transcriptionSuccessOpenFolder');
+      const transcriptionSuccessOk = document.getElementById('transcriptionSuccessOk');
+      let transcriptionModels = [];
+      let transcriptionModelProgress = new Map();
+      let transcriptionDownloadSource = localStorage.getItem(MODEL_SOURCE_KEY) || 'auto';
+      let transcriptionFile = null;
+      let transcriptionLanguage = 'auto';
+      let transcriptionProcessing = false;
+      let transcriptionPlasmaDispose = null;
+      let transcriptionOutputDir = '';
+      let dependencyGateState = null;
+
+      function formatTranscriptionBytes(bytes) {
+        if (!Number.isFinite(bytes) || bytes < 1) return '--';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+        return `${(bytes / (1024 ** index)).toFixed(index < 2 ? 0 : 1)} ${units[index]}`;
+      }
+
+      function activeTranscriptionModel() {
+        return transcriptionModels.find(model => model.current && model.installed) || null;
+      }
+
+      function updateOfflineModelSummary() {
+        if (!offlineModelSummary) return;
+        const current = activeTranscriptionModel();
+        offlineModelSummary.textContent = current
+          ? t('settings.offlineModelsCurrent', { model: current.display_name })
+          : t('settings.offlineModelsEmpty');
+      }
+
+      function setTranscriptionProgress(progress, message) {
+        if (transcriptionProcessBarFill) transcriptionProcessBarFill.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+        if (message && transcriptionProcessText) transcriptionProcessText.textContent = message;
+      }
+
+      function renderTranscriptionModels() {
+        if (!transcriptionModelList) return;
+        transcriptionModelList.replaceChildren();
+        transcriptionModels.forEach(model => {
+          const row = document.createElement('div');
+          row.className = 'transcription-model-row';
+          const info = document.createElement('div');
+          const name = document.createElement('div');
+          name.className = 'transcription-model-name';
+          name.textContent = model.display_name;
+          const meta = document.createElement('div');
+          meta.className = 'transcription-model-meta';
+          meta.textContent = `${formatTranscriptionBytes(model.bytes)} ${model.id === 'small' ? `- ${t('home.transcription.recommended')}` : ''}`;
+          info.append(name, meta);
+          const actions = document.createElement('div');
+          actions.className = 'transcription-model-actions';
+          const progress = transcriptionModelProgress.get(model.id);
+          if (progress && progress.phase !== 'complete') {
+            const status = document.createElement('span');
+            status.className = 'transcription-model-current';
+            status.textContent = progress.phase === 'verifying'
+              ? t('home.transcription.verifying')
+              : `${Math.min(100, Math.round((progress.downloaded_bytes / Math.max(1, progress.total_bytes)) * 100))}%`;
+            actions.append(status);
+          } else if (model.installed) {
+            if (model.current) {
+              const current = document.createElement('span');
+              current.className = 'transcription-model-current';
+              current.textContent = t('home.transcription.current');
+              actions.append(current);
+            } else {
+              const use = document.createElement('button');
+              use.type = 'button'; use.className = 'settings-btn'; use.textContent = t('home.transcription.useModel');
+              use.addEventListener('click', async () => {
+                const { invoke } = await import('@tauri-apps/api/core');
+                await invoke('set_current_transcription_model', { modelId: model.id });
+                await refreshTranscriptionModels();
+              });
+              actions.append(use);
+            }
+            const remove = document.createElement('button');
+            remove.type = 'button'; remove.className = 'settings-btn'; remove.textContent = t('home.transcription.deleteModel');
+            remove.addEventListener('click', async () => {
+              const { invoke } = await import('@tauri-apps/api/core');
+              await invoke('delete_transcription_model', { modelId: model.id });
+              await refreshTranscriptionModels();
+            });
+            actions.append(remove);
+          } else {
+            const install = document.createElement('button');
+            install.type = 'button'; install.className = 'settings-btn'; install.textContent = t('home.transcription.downloadModel');
+            install.addEventListener('click', async () => {
+              try {
+                transcriptionModelProgress.set(model.id, { phase: 'downloading', downloaded_bytes: 0, total_bytes: model.bytes });
+                renderTranscriptionModels();
+                const { invoke } = await import('@tauri-apps/api/core');
+                await invoke('download_transcription_model', { modelId: model.id, source: resolvedModelDownloadSource() });
+                transcriptionModelProgress.delete(model.id);
+                await refreshTranscriptionModels();
+              } catch (error) {
+                transcriptionModelProgress.delete(model.id);
+                renderTranscriptionModels();
+                window.showToast?.(String(error));
+              }
+            });
+            actions.append(install);
+          }
+          row.append(info, actions);
+          if (progress && progress.phase !== 'complete') {
+            const bar = document.createElement('div');
+            bar.className = 'transcription-model-progress';
+            const fill = document.createElement('span');
+            fill.style.width = `${Math.min(100, (progress.downloaded_bytes / Math.max(1, progress.total_bytes)) * 100)}%`;
+            bar.append(fill); row.append(bar);
+          }
+          transcriptionModelList.append(row);
+        });
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      async function refreshTranscriptionModels() {
+        if (!isTauri) return;
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          transcriptionModels = await invoke('list_transcription_models');
+          updateOfflineModelSummary();
+          renderTranscriptionModels();
+        } catch (error) {
+          console.error('Cannot read offline transcription models:', error);
+        }
+      }
+
+      function openTranscriptionModelManager() {
+        if (!transcriptionModelOverlay) return;
+        transcriptionModelOverlay.classList.add('visible');
+        transcriptionModelOverlay.setAttribute('aria-hidden', 'false');
+        void refreshTranscriptionModels();
+      }
+
+      function closeTranscriptionModelManager() {
+        transcriptionModelOverlay?.classList.remove('visible');
+        transcriptionModelOverlay?.setAttribute('aria-hidden', 'true');
+      }
+
+      manageOfflineModels?.addEventListener('click', openTranscriptionModelManager);
+      transcriptionModelClose?.addEventListener('click', closeTranscriptionModelManager);
+      transcriptionModelOverlay?.addEventListener('click', event => { if (event.target === transcriptionModelOverlay) closeTranscriptionModelManager(); });
+      transcriptionSourceOptions?.querySelectorAll('[data-source]').forEach(button => {
+        button.classList.toggle('active', button.dataset.source === transcriptionDownloadSource);
+        button.addEventListener('click', () => {
+          transcriptionDownloadSource = button.dataset.source || 'auto';
+          localStorage.setItem(MODEL_SOURCE_KEY, transcriptionDownloadSource);
+          transcriptionSourceOptions.querySelectorAll('[data-source]').forEach(item => item.classList.toggle('active', item === button));
+        });
+      });
+      if (isTauri) {
+        void refreshTranscriptionModels();
+        (async () => {
+          const { listen } = await import('@tauri-apps/api/event');
+          await listen('transcription-model-download-progress', event => {
+            const progress = event.payload;
+            if (!progress?.model_id) return;
+            transcriptionModelProgress.set(progress.model_id, progress);
+            renderTranscriptionModels();
+            updateDependencyGateProgress('model', progress);
+          });
+        })().catch(error => console.error('Cannot listen for model download progress:', error));
+      }
+
+      // FFmpeg is a separately managed runtime so the desktop installer remains compact.
+      const FFMPEG_SOURCE_KEY = 'toolknit.ffmpeg-runtime-source.v1';
+      const ffmpegRuntimeSummary = document.getElementById('ffmpegRuntimeSummary');
+      const manageFfmpegRuntime = document.getElementById('manageFfmpegRuntime');
+      const ffmpegRuntimeOverlay = document.getElementById('ffmpegRuntimeOverlay');
+      const ffmpegRuntimeClose = document.getElementById('ffmpegRuntimeClose');
+      const ffmpegRuntimeList = document.getElementById('ffmpegRuntimeList');
+      const ffmpegRuntimeSourceOptions = document.getElementById('ffmpegRuntimeSourceOptions');
+      let ffmpegRuntimeStatus = null;
+      let ffmpegRuntimeProgress = null;
+      let ffmpegRuntimeSource = localStorage.getItem(FFMPEG_SOURCE_KEY) || 'auto';
+
+      function formatRuntimeBytes(bytes) {
+        if (!Number.isFinite(bytes) || bytes < 1) return '--';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+        return `${(bytes / (1024 ** index)).toFixed(index < 2 ? 0 : 1)} ${units[index]}`;
+      }
+
+      function updateFfmpegRuntimeSummary() {
+        if (!ffmpegRuntimeSummary) return;
+        ffmpegRuntimeSummary.textContent = ffmpegRuntimeStatus?.installed
+          ? (getLang() === 'en' ? `Installed (${formatRuntimeBytes(ffmpegRuntimeStatus.bytes)})` : `已安装 (${formatRuntimeBytes(ffmpegRuntimeStatus.bytes)})`)
+          : t('settings.ffmpegRuntimeEmpty');
+      }
+
+      function renderFfmpegRuntime() {
+        if (!ffmpegRuntimeList) return;
+        ffmpegRuntimeList.replaceChildren();
+        const row = document.createElement('div'); row.className = 'transcription-model-row';
+        const info = document.createElement('div');
+        const name = document.createElement('div'); name.className = 'transcription-model-name'; name.textContent = 'FFmpeg';
+        const meta = document.createElement('div'); meta.className = 'transcription-model-meta';
+        meta.textContent = ffmpegRuntimeStatus?.installed
+          ? `${formatRuntimeBytes(ffmpegRuntimeStatus.bytes)} - ${ffmpegRuntimeStatus.path}`
+          : (getLang() === 'en' ? 'Required for audio and video tools' : '音频、视频工具所需的本地运行时');
+        info.append(name, meta);
+        const actions = document.createElement('div'); actions.className = 'transcription-model-actions';
+        if (ffmpegRuntimeProgress && ffmpegRuntimeProgress.phase !== 'complete') {
+          const progress = document.createElement('span'); progress.className = 'transcription-model-current';
+          const total = Math.max(1, ffmpegRuntimeProgress.total_bytes || 0);
+          progress.textContent = ffmpegRuntimeProgress.phase === 'installing'
+            ? (getLang() === 'en' ? 'Installing' : '正在安装')
+            : `${Math.min(100, Math.round((ffmpegRuntimeProgress.downloaded_bytes || 0) / total * 100))}%`;
+          actions.append(progress);
+        } else if (ffmpegRuntimeStatus?.installed) {
+          const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'settings-btn'; remove.textContent = getLang() === 'en' ? 'Delete' : '删除';
+          remove.addEventListener('click', async () => {
+            try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('delete_ffmpeg_runtime'); await refreshFfmpegRuntime(); }
+            catch (error) { window.showToast?.(String(error?.message || error)); }
+          });
+          actions.append(remove);
+        } else {
+          const install = document.createElement('button'); install.type = 'button'; install.className = 'settings-btn'; install.textContent = getLang() === 'en' ? 'Download' : '下载';
+          install.addEventListener('click', async () => {
+            try {
+              ffmpegRuntimeProgress = { phase: 'downloading', downloaded_bytes: 0, total_bytes: 0 }; renderFfmpegRuntime();
+              const { invoke } = await import('@tauri-apps/api/core'); await invoke('download_ffmpeg_runtime', { source: resolvedFfmpegDownloadSource() });
+              ffmpegRuntimeProgress = null; await refreshFfmpegRuntime();
+            } catch (error) { ffmpegRuntimeProgress = null; renderFfmpegRuntime(); window.showToast?.(String(error?.message || error)); }
+          });
+          actions.append(install);
+        }
+        row.append(info, actions);
+        if (ffmpegRuntimeProgress && ffmpegRuntimeProgress.phase !== 'complete') {
+          const bar = document.createElement('div'); bar.className = 'transcription-model-progress';
+          const fill = document.createElement('span'); const total = Math.max(1, ffmpegRuntimeProgress.total_bytes || 0);
+          fill.style.width = `${Math.min(100, (ffmpegRuntimeProgress.downloaded_bytes || 0) / total * 100)}%`; bar.append(fill); row.append(bar);
+        }
+        ffmpegRuntimeList.append(row);
+      }
+
+      async function refreshFfmpegRuntime() {
+        if (!isTauri) return;
+        try { const { invoke } = await import('@tauri-apps/api/core'); ffmpegRuntimeStatus = await invoke('get_ffmpeg_runtime_status'); updateFfmpegRuntimeSummary(); renderFfmpegRuntime(); }
+        catch (error) { console.error('Cannot read FFmpeg runtime:', error); }
+      }
+      function openFfmpegRuntimeManager() { if (!ffmpegRuntimeOverlay) return; ffmpegRuntimeOverlay.classList.add('visible'); ffmpegRuntimeOverlay.setAttribute('aria-hidden', 'false'); void refreshFfmpegRuntime(); }
+      function closeFfmpegRuntimeManager() { ffmpegRuntimeOverlay?.classList.remove('visible'); ffmpegRuntimeOverlay?.setAttribute('aria-hidden', 'true'); }
+      manageFfmpegRuntime?.addEventListener('click', openFfmpegRuntimeManager);
+      ffmpegRuntimeClose?.addEventListener('click', closeFfmpegRuntimeManager);
+      ffmpegRuntimeOverlay?.addEventListener('click', event => { if (event.target === ffmpegRuntimeOverlay) closeFfmpegRuntimeManager(); });
+      ffmpegRuntimeSourceOptions?.querySelectorAll('[data-source]').forEach(button => {
+        button.classList.toggle('active', button.dataset.source === ffmpegRuntimeSource);
+        button.addEventListener('click', () => { ffmpegRuntimeSource = button.dataset.source || 'auto'; localStorage.setItem(FFMPEG_SOURCE_KEY, ffmpegRuntimeSource); ffmpegRuntimeSourceOptions.querySelectorAll('[data-source]').forEach(item => item.classList.toggle('active', item === button)); });
+      });
+      if (isTauri) {
+        void refreshFfmpegRuntime();
+        (async () => { const { listen } = await import('@tauri-apps/api/event'); await listen('ffmpeg-runtime-download-progress', event => { ffmpegRuntimeProgress = event.payload; renderFfmpegRuntime(); updateDependencyGateProgress('ffmpeg', event.payload); }); })().catch(error => console.error('Cannot listen for FFmpeg runtime download:', error));
+      }
+
+      function resolvedFfmpegDownloadSource() {
+        if (ffmpegRuntimeSource !== 'auto') return ffmpegRuntimeSource;
+        return getLang() === 'en' ? 'auto-official' : 'auto-china';
+      }
+
+      function resolvedModelDownloadSource() {
+        if (transcriptionDownloadSource !== 'auto') return transcriptionDownloadSource;
+        return getLang() === 'en' ? 'official' : 'china';
+      }
+
+      function dependencyProgressPercent(progress) {
+        if (!progress) return 0;
+        if (['installing', 'verifying', 'complete'].includes(progress.phase)) return 100;
+        return Math.max(0, Math.min(100, Math.round((Number(progress.downloaded_bytes) || 0) / Math.max(1, Number(progress.total_bytes) || 0) * 100)));
+      }
+
+      function dependencyStatusText(type, progress, complete) {
+        if (complete || progress?.phase === 'complete') return t('home.dependencies.ready');
+        if (!progress) return t('home.dependencies.waiting');
+        if (progress.phase === 'installing') return t('home.dependencies.installing');
+        if (progress.phase === 'verifying') return t('home.dependencies.verifying');
+        const percent = dependencyProgressPercent(progress);
+        return `${t('home.dependencies.downloading')} ${percent}%`;
+      }
+
+      function renderDependencyGate() {
+        const state = dependencyGateState;
+        if (!state || !dependencyGateList) return;
+        const isTranscription = state.needsModel;
+        if (dependencyGateTitle) dependencyGateTitle.textContent = t(isTranscription ? 'home.dependencies.transcriptionTitle' : 'home.dependencies.title');
+        if (dependencyGateDesc) dependencyGateDesc.textContent = t(isTranscription ? 'home.dependencies.transcriptionDesc' : 'home.dependencies.desc');
+        dependencyGateList.replaceChildren();
+        const appendItem = (type, label, size, progress, complete) => {
+          const row = document.createElement('div');
+          row.className = 'audio-convert-success-row dependency-gate-row';
+          const key = document.createElement('span'); key.className = 'audio-convert-success-key'; key.textContent = `${label} · ${size}`;
+          const value = document.createElement('span'); value.className = 'audio-convert-success-value'; value.textContent = dependencyStatusText(type, progress, complete);
+          value.dataset.state = complete || progress?.phase === 'complete' ? 'ready' : (progress ? 'active' : 'waiting');
+          row.append(key, value); dependencyGateList.append(row);
+        };
+        if (state.needsFfmpeg) appendItem('ffmpeg', 'FFmpeg', '29 MB', state.ffmpegProgress, state.ffmpegComplete);
+        if (state.needsModel) appendItem('model', 'Whisper Small', '465 MB', state.modelProgress, state.modelComplete);
+
+        const types = [state.needsFfmpeg && 'ffmpeg', state.needsModel && 'model'].filter(Boolean);
+        const overall = types.length
+          ? Math.round(types.reduce((sum, type) => sum + (state[`${type}Complete`] ? 100 : dependencyProgressPercent(state[`${type}Progress`])), 0) / types.length)
+          : 100;
+        if (dependencyGateProgress) dependencyGateProgress.hidden = !state.downloading;
+        if (dependencyGateProgressFill) dependencyGateProgressFill.style.width = `${overall}%`;
+        if (dependencyGateProgressText) {
+          const currentName = state.current === 'model' ? 'Whisper Small' : 'FFmpeg';
+          dependencyGateProgressText.textContent = state.cancelling
+            ? t('home.dependencies.cancelling')
+            : `${t('home.dependencies.current')}${currentName} · ${overall}%`;
+        }
+        if (dependencyGateError) {
+          dependencyGateError.hidden = !state.error;
+          dependencyGateError.textContent = state.error || '';
+        }
+        if (dependencyGateCancel) dependencyGateCancel.textContent = state.cancelling ? t('home.dependencies.cancelling') : t('home.dependencies.cancel');
+        if (dependencyGateInstall) {
+          dependencyGateInstall.textContent = state.downloading ? t('home.dependencies.downloadingAll') : t('home.dependencies.installAll');
+          dependencyGateInstall.disabled = state.downloading;
+        }
+      }
+
+      function updateDependencyGateProgress(type, progress) {
+        const state = dependencyGateState;
+        if (!state || !state.downloading || !state[`needs${type === 'ffmpeg' ? 'Ffmpeg' : 'Model'}`]) return;
+        state[`${type}Progress`] = progress || null;
+        if (progress?.phase === 'complete') state[`${type}Complete`] = true;
+        renderDependencyGate();
+      }
+
+      function showDependencyGate({ openFn, needsFfmpeg, needsModel }) {
+        dependencyGateState = {
+          openFn,
+          needsFfmpeg: Boolean(needsFfmpeg),
+          needsModel: Boolean(needsModel),
+          ffmpegProgress: null,
+          modelProgress: null,
+          ffmpegComplete: !needsFfmpeg,
+          modelComplete: !needsModel,
+          current: needsFfmpeg ? 'ffmpeg' : 'model',
+          downloading: false,
+          cancelling: false,
+          cancelled: false,
+          error: ''
+        };
+        renderDependencyGate();
+        dependencyGateOverlay?.classList.add('visible');
+        dependencyGateOverlay?.setAttribute('aria-hidden', 'false');
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      function closeDependencyGate(force = false) {
+        if (dependencyGateState?.downloading && !force) return;
+        dependencyGateOverlay?.classList.remove('visible');
+        dependencyGateOverlay?.setAttribute('aria-hidden', 'true');
+        dependencyGateState = null;
+      }
+
+      async function installDependencyGateRequirements() {
+        const state = dependencyGateState;
+        if (!state || state.downloading || !isTauri) return;
+        state.downloading = true;
+        state.error = '';
+        renderDependencyGate();
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          if (state.needsFfmpeg) {
+            state.current = 'ffmpeg'; renderDependencyGate();
+            if (!await ensureFfmpegAvailable()) await invoke('download_ffmpeg_runtime', { source: resolvedFfmpegDownloadSource() });
+            if (state.cancelled) throw new Error('dependency-download:cancelled');
+            state.ffmpegComplete = true; state.ffmpegProgress = { phase: 'complete', downloaded_bytes: 1, total_bytes: 1 };
+            ffmpegRuntimeProgress = null;
+            await refreshFfmpegRuntime();
+          }
+          if (state.needsModel) {
+            state.current = 'model'; renderDependencyGate();
+            await refreshTranscriptionModels();
+            if (!activeTranscriptionModel()) {
+              const small = transcriptionModels.find(model => model.id === 'small');
+              state.modelProgress = { phase: 'downloading', downloaded_bytes: 0, total_bytes: small?.bytes || 487_601_967 };
+              renderDependencyGate();
+              await invoke('download_transcription_model', { modelId: 'small', source: resolvedModelDownloadSource() });
+              await invoke('set_current_transcription_model', { modelId: 'small' });
+            }
+            if (state.cancelled) throw new Error('dependency-download:cancelled');
+            state.modelComplete = true; state.modelProgress = { phase: 'complete', downloaded_bytes: 1, total_bytes: 1 };
+            transcriptionModelProgress.delete('small');
+            await refreshTranscriptionModels();
+          }
+          const openFn = state.openFn;
+          state.downloading = false;
+          renderDependencyGate();
+          closeDependencyGate(true);
+          await openFn?.();
+        } catch (error) {
+          const message = String(error?.message || error || '');
+          ffmpegRuntimeProgress = null;
+          transcriptionModelProgress.delete('small');
+          if (state.cancelled || message.includes('dependency-download:cancelled')) {
+            state.downloading = false;
+            closeDependencyGate(true);
+            return;
+          }
+          state.downloading = false;
+          state.cancelling = false;
+          state.error = `${t('home.dependencies.failed')} ${message}`.trim();
+          renderFfmpegRuntime();
+          renderTranscriptionModels();
+          renderDependencyGate();
+        }
+      }
+
+      dependencyGateInstall?.addEventListener('click', () => { void installDependencyGateRequirements(); });
+      dependencyGateCancel?.addEventListener('click', async () => {
+        const state = dependencyGateState;
+        if (!state) return;
+        if (!state.downloading) { closeDependencyGate(); return; }
+        state.cancelled = true;
+        state.cancelling = true;
+        renderDependencyGate();
+        try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('cancel_dependency_downloads'); }
+        catch (error) { console.error('Cannot cancel dependency download:', error); }
+      });
+
+      function updateTranscriptionUploadState() {
+        const hasFile = Boolean(transcriptionFile?.name);
+        const ctaLabel = hasFile ? t('home.transcription.reupload') : t('home.transcription.cta');
+        if (transcriptionCtaText) transcriptionCtaText.textContent = ctaLabel;
+        if (transcriptionCta) transcriptionCta.setAttribute('aria-label', ctaLabel);
+        if (transcriptionSelectedFile) transcriptionSelectedFile.hidden = !hasFile;
+        if (transcriptionSelectedFileName) {
+          transcriptionSelectedFileName.textContent = hasFile ? transcriptionFile.name : '';
+          transcriptionSelectedFileName.title = hasFile ? transcriptionFile.name : '';
+        }
+      }
+
+      function renderTranscriptionFile() {
+        transcriptionFiles?.replaceChildren();
+        updateTranscriptionUploadState();
+      }
+
+      function updateTranscriptionProcessButton() {
+        if (!transcriptionProcessBtn) return;
+        transcriptionProcessBtn.style.display = transcriptionFile ? '' : 'none';
+        transcriptionProcessBtn.classList.toggle('visible', Boolean(transcriptionFile));
+        transcriptionProcessBtn.disabled = transcriptionProcessing;
+      }
+
+      function addTranscriptionFile(file) {
+        if (!file || transcriptionProcessing) return;
+        transcriptionFile = file;
+        renderTranscriptionFile();
+        updateTranscriptionProcessButton();
+      }
+
+      function showTranscriptionTool() {
+        transcriptionOverlay?.classList.add('visible');
+        if (transcriptionPlasmaBg && !transcriptionPlasmaDispose) transcriptionPlasmaDispose = initPlasma(transcriptionPlasmaBg, { color: '#6366f1', speed: 0.25, scale: 1.05 });
+      }
+
+      async function openTranscriptionTool() {
+        if (!isTauri) { window.showToast?.(t('home.transcription.desktopOnly')); return; }
+        const { invoke } = await import('@tauri-apps/api/core');
+        const [engineReady, ffmpegReady] = await Promise.all([invoke('check_transcription_engine'), ensureFfmpegAvailable()]);
+        if (!engineReady) { window.showToast?.(t('home.transcription.engineUnavailable')); return; }
+        await refreshTranscriptionModels();
+        const modelReady = Boolean(activeTranscriptionModel());
+        if (!ffmpegReady || !modelReady) {
+          showDependencyGate({ openFn: showTranscriptionTool, needsFfmpeg: !ffmpegReady, needsModel: !modelReady });
+          return;
+        }
+        showTranscriptionTool();
+      }
+
+      function closeTranscriptionTool() {
+        if (transcriptionProcessing) return;
+        transcriptionOverlay?.classList.remove('visible');
+        transcriptionFile = null;
+        renderTranscriptionFile();
+        updateTranscriptionProcessButton();
+        if (transcriptionPlasmaDispose) { transcriptionPlasmaDispose(); transcriptionPlasmaDispose = null; }
+      }
+
+      transcriptionBack?.addEventListener('click', closeTranscriptionTool);
+      transcriptionCta?.addEventListener('click', async () => {
+        if (isTauri) {
+          const { open } = await import('@tauri-apps/plugin-dialog');
+          const selected = await open({ multiple: false, filters: [{ name: 'Audio and video', extensions: ['mp3', 'aac', 'm4a', 'wav', 'flac', 'alac', 'ogg', 'wma', 'mp4', 'mkv', 'avi', 'mov', 'webm', 'flv', 'wmv', 'ts'] }] });
+          if (typeof selected === 'string') addTranscriptionFile({ path: selected, name: selected.split(/[\\/]/).pop() || selected });
+        } else transcriptionInput?.click();
+      });
+      transcriptionInput?.addEventListener('change', () => { const file = transcriptionInput.files?.[0]; if (file) addTranscriptionFile(file); transcriptionInput.value = ''; });
+      transcriptionLanguageOptions?.querySelectorAll('[data-language]').forEach(button => button.addEventListener('click', () => {
+        transcriptionLanguage = button.dataset.language || 'auto';
+        transcriptionLanguageOptions.querySelectorAll('[data-language]').forEach(item => item.classList.toggle('active', item === button));
+      }));
+      updateTranscriptionUploadState();
+      document.querySelectorAll('.audio-list-item[data-tool="transcription"]').forEach(item => {
+        item.addEventListener('click', () => { void openTranscriptionTool(); });
+        item.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); void openTranscriptionTool(); } });
+      });
+
+      if (isTauri && transcriptionOverlay) {
+        (async () => {
+          const { getCurrentWebview } = await import('@tauri-apps/api/webview');
+          const webview = getCurrentWebview();
+          await webview.onDragDropEvent(event => {
+            if (!transcriptionOverlay.classList.contains('visible') || transcriptionProcessing) return;
+            const payload = event.payload;
+            if (payload.type === 'enter' || payload.type === 'over') transcriptionDropZone?.classList.add('visible');
+            else if (payload.type === 'leave') transcriptionDropZone?.classList.remove('visible');
+            else if (payload.type === 'drop') {
+              transcriptionDropZone?.classList.remove('visible');
+              const path = payload.paths?.[0];
+              if (path) addTranscriptionFile({ path, name: path.split(/[\\/]/).pop() || path });
+            }
+          });
+        })().catch(error => console.error('Cannot register transcription drag and drop:', error));
+      }
+
+      function transcriptionProgressLabel(phase) {
+        const labels = {
+          preparing: 'home.transcription.preparing',
+          transcribing: 'home.transcription.transcribing',
+          publishing: 'home.transcription.publishing',
+          refining: 'home.transcription.refining',
+          complete: 'home.transcription.complete'
+        };
+        return t(labels[phase] || 'home.transcription.preparing');
+      }
+
+      async function readTranscriptionText(path) {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const bytes = await invoke('read_file_bytes_limited', { path, maxBytes: 10 * 1024 * 1024 });
+        return new TextDecoder('utf-8').decode(Uint8Array.from(bytes));
+      }
+
+      function parseTranscriptionSrt(value) {
+        return String(value || '').replace(/^\uFEFF/, '').trim().split(/\r?\n\s*\r?\n/).map(block => {
+          const lines = block.split(/\r?\n/);
+          const id = Number(lines.shift());
+          const timing = lines.shift() || '';
+          const match = /^(\S+)\s+-->\s+(\S+)$/.exec(timing.trim());
+          if (!Number.isInteger(id) || !match || lines.length === 0) return null;
+          return { id, start: match[1], end: match[2], text: lines.join('\n').trim() };
+        }).filter(Boolean);
+      }
+
+      function parseRefinedTranscriptionResponse(value, expectedIds) {
+        const source = String(value || '').replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+        const start = source.indexOf('{');
+        const json = start >= 0 ? extractBalancedJson(source, start) : null;
+        const parsed = JSON.parse(json || source);
+        if (!Array.isArray(parsed?.segments) || parsed.segments.length !== expectedIds.length) throw new Error('Invalid refinement response');
+        const updated = new Map();
+        for (const segment of parsed.segments) {
+          const id = Number(segment?.id);
+          const text = typeof segment?.text === 'string' ? segment.text.trim() : '';
+          if (!expectedIds.has(id) || updated.has(id) || !text || text.length > 1200) throw new Error('Invalid refinement response');
+          updated.set(id, text);
+        }
+        if (updated.size !== expectedIds.size) throw new Error('Invalid refinement response');
+        return updated;
+      }
+
+      async function refineTranscriptionSegments(segments) {
+        const updated = new Map();
+        const chunkSize = 42;
+        for (let offset = 0; offset < segments.length; offset += chunkSize) {
+          const chunk = segments.slice(offset, offset + chunkSize);
+          const payload = chunk.map(({ id, text }) => ({ id, text }));
+          const response = await callDeepSeek([
+            {
+              role: 'system',
+              content: 'You proofread speech-recognition subtitles. Return JSON only: {"segments":[{"id":number,"text":string}]}. Keep exactly the supplied IDs, one item per ID, in the same order. Do not add, remove, merge, or split segments. Do not invent names, numbers, facts, or missing speech. Correct punctuation, obvious grammar, and clearly contextual recognition errors only. Preserve the language of each segment.'
+            },
+            { role: 'user', content: JSON.stringify({ segments: payload }) }
+          ], undefined, 4000);
+          const edits = parseRefinedTranscriptionResponse(response, new Set(chunk.map(segment => segment.id)));
+          edits.forEach((text, id) => updated.set(id, text));
+        }
+        return updated;
+      }
+
+      async function writeRefinedTranscription(result) {
+        const rawSrt = await readTranscriptionText(result.raw_srt_path);
+        const segments = parseTranscriptionSrt(rawSrt);
+        if (segments.length === 0) throw new Error('No subtitle segments were produced');
+        setTranscriptionProgress(97, transcriptionProgressLabel('refining'));
+        const refined = await refineTranscriptionSegments(segments);
+        const finalSegments = segments.map(segment => ({ ...segment, text: refined.get(segment.id) || segment.text }));
+        const srt = finalSegments.map((segment, index) => `${index + 1}\n${segment.start} --> ${segment.end}\n${segment.text}`).join('\n\n') + '\n';
+        const txt = finalSegments.map(segment => segment.text.replace(/\n/g, ' ')).join('\n') + '\n';
+        const outputDir = result.raw_srt_path.replace(/[/\\][^/\\]+$/, '');
+        const rawSrtName = result.raw_srt_path.split(/[\\/]/).pop() || 'transcript.srt';
+        const rawTxtName = result.raw_txt_path.split(/[\\/]/).pop() || 'transcript.txt';
+        const srtName = rawSrtName.replace(/\.srt$/i, '_refined.srt');
+        const txtName = rawTxtName.replace(/\.txt$/i, '_refined.txt');
+        const { invoke } = await import('@tauri-apps/api/core');
+        const written = await invoke('write_unique_file_pair', {
+          directory: outputDir,
+          firstFileName: srtName,
+          firstBytes: Array.from(new TextEncoder().encode(srt)),
+          secondFileName: txtName,
+          secondBytes: Array.from(new TextEncoder().encode(txt))
+        });
+        return { srtPath: written.first_path, txtPath: written.second_path };
+      }
+
+      function showTranscriptionResult(result, refined = null) {
+        if (!transcriptionFiles) return;
+        transcriptionFiles.replaceChildren();
+        const paths = [
+          [t('home.transcription.rawJson'), result.raw_json_path],
+          [t('home.transcription.rawSrt'), result.raw_srt_path],
+          [t('home.transcription.rawTxt'), result.raw_txt_path],
+          ...(refined ? [[t('home.transcription.refinedSrt'), refined.srtPath], [t('home.transcription.refinedTxt'), refined.txtPath]] : [])
+        ];
+        paths.forEach(([label, path]) => {
+          const item = document.createElement('div'); item.className = 'audio-convert-file-item';
+          const name = document.createElement('span'); name.className = 'audio-convert-file-name'; name.textContent = `${label}: ${path.split(/[\\/]/).pop()}`;
+          item.append(name); transcriptionFiles.append(item);
+        });
+      }
+
+      function showTranscriptionSuccess(result, refined = null, refineFailed = false) {
+        if (!transcriptionSuccessOverlay) return;
+        const outputDir = String(result.raw_srt_path || '').replace(/[/\\][^/\\]+$/, '');
+        transcriptionOutputDir = outputDir;
+        if (transcriptionSuccessMeta) {
+          transcriptionSuccessMeta.textContent = refineFailed
+            ? t('home.transcription.refineFailed')
+            : t('home.transcription.success');
+        }
+        if (transcriptionSuccessCount) transcriptionSuccessCount.textContent = String(refined ? 5 : 3);
+        if (transcriptionSuccessPath) transcriptionSuccessPath.textContent = outputDir;
+        transcriptionSuccessOverlay.classList.add('visible');
+      }
+
+      transcriptionSuccessOk?.addEventListener('click', () => transcriptionSuccessOverlay?.classList.remove('visible'));
+      transcriptionSuccessOpenFolder?.addEventListener('click', async () => {
+        if (!isTauri || !transcriptionOutputDir) return;
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          await invoke('open_path', { path: transcriptionOutputDir });
+        } catch (error) {
+          console.error('Cannot open transcription output folder:', error);
+        }
+      });
+
+      transcriptionProcessBtn?.addEventListener('click', async () => {
+        if (!transcriptionFile || transcriptionProcessing || !isTauri) return;
+        if (!transcriptionFile.path) { window.showToast?.(t('home.transcription.desktopOnly')); return; }
+        transcriptionProcessing = true;
+        updateTranscriptionProcessButton();
+        transcriptionProcessMask?.classList.add('visible');
+        setTranscriptionProgress(2, transcriptionProgressLabel('preparing'));
+        let unlisten = null;
+        let completion = null;
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const { listen } = await import('@tauri-apps/api/event');
+          unlisten = await listen('transcription-progress', event => {
+            const progress = event.payload;
+            if (!progress) return;
+            setTranscriptionProgress(progress.progress || 0, transcriptionProgressLabel(progress.phase));
+          });
+          const result = await invoke('transcribe_media', {
+            inputPath: transcriptionFile.path,
+            outputDir: await getOutputDir('Transcripts'),
+            language: transcriptionLanguage
+          });
+          let refined = null;
+          let refineFailed = false;
+          if (transcriptionRefine?.checked) {
+            try {
+              refined = await writeRefinedTranscription(result);
+            } catch (error) {
+              console.error('Transcription refinement failed:', error);
+              refineFailed = true;
+            }
+          }
+          showTranscriptionResult(result, refined);
+          completion = { result, refined, refineFailed };
+          setTranscriptionProgress(100, transcriptionProgressLabel('complete'));
+        } catch (error) {
+          console.error('Transcription failed:', error);
+          window.showToast?.(t('common.errorOccurred', { error: String(error?.message || error) }));
+        } finally {
+          unlisten?.();
+          transcriptionProcessing = false;
+          transcriptionProcessMask?.classList.remove('visible');
+          updateTranscriptionProcessButton();
+          setTranscriptionProgress(0, transcriptionProgressLabel('preparing'));
+          if (completion) showTranscriptionSuccess(completion.result, completion.refined, completion.refineFailed);
+        }
+      });
+
+      onLangChange(() => { updateTranscriptionUploadState(); updateOfflineModelSummary(); renderTranscriptionModels(); updateFfmpegRuntimeSummary(); renderFfmpegRuntime(); renderDependencyGate(); });
+
       const helpBtn = document.getElementById('helpBtn');
       if (settingsBtn && settingsOverlay) {
-        settingsBtn.addEventListener('click', () => settingsOverlay.classList.add('visible'));
+        settingsBtn.addEventListener('click', () => {
+          if (settingsContent) settingsContent.scrollTop = 0;
+          settingsOverlay.classList.add('visible');
+        });
       }
       if (helpBtn) {
         helpBtn.addEventListener('click', () => {
-          const overlay = document.getElementById('helpOverlay');
-          if (overlay) {
-            overlay.classList.add('visible');
-            showHelpSection('overview');
-          }
+          openHelpOverlay('overview');
         });
       }
 
@@ -395,10 +1542,10 @@
       const helpContentTitle = document.getElementById('helpContentTitle');
       const helpSearchInput = document.getElementById('helpSearchInput');
 
-      function openHelpOverlay() {
+      function openHelpOverlay(sectionId = 'overview') {
         if (!helpOverlay) return;
         helpOverlay.classList.add('visible');
-        showHelpSection('overview');
+        showHelpSection(sectionId || 'overview');
       }
 
       function closeHelpOverlay() {
@@ -453,6 +1600,27 @@
           if (!item) return;
           const section = item.dataset.helpSection;
           if (section) showHelpSection(section);
+        });
+      }
+
+      if (helpContentBody) {
+        helpContentBody.addEventListener('click', async (event) => {
+          const button = event.target.closest('.help-prompt-copy');
+          if (!button) return;
+          const prompt = button.dataset.copyPrompt || '';
+          if (!prompt) return;
+          const originalLabel = button.textContent;
+          try {
+            await navigator.clipboard.writeText(prompt);
+            button.textContent = getLang() === 'zh' ? '已复制' : 'Copied';
+            button.classList.add('is-copied');
+            setTimeout(() => {
+              button.textContent = originalLabel;
+              button.classList.remove('is-copied');
+            }, 1600);
+          } catch (error) {
+            console.error('Could not copy Agent prompt:', error);
+          }
         });
       }
 
@@ -587,8 +1755,7 @@
           plasmaInstance();
           plasmaInstance = null;
         }
-        // Reset processing state in case user closed mid-conversion
-        processingAudio = false;
+        cancelActiveAudioConversion();
         audioConvertProcessMask.classList.remove('visible');
         audioConvertProcessBarFill.style.width = '0%';
         // Clear file list for fresh start next time
@@ -625,6 +1792,8 @@
       let selectedAudioFiles = [];
       let processingAudio = false;
       let targetAudioFormat = 'MP3';
+      let audioConversionRunId = 0;
+      let audioConvertUnlisten = null;
       const audioConvertSuccessOverlay = document.getElementById('audioConvertSuccessOverlay');
       const audioConvertSuccessPath = document.getElementById('audioConvertSuccessPath');
       const audioConvertSuccessMeta = document.getElementById('audioConvertSuccessMeta');
@@ -636,14 +1805,23 @@
 
       function addAudioFiles(fileList) {
         if (!fileList || fileList.length === 0) return;
+        const nextFiles = [...selectedAudioFiles];
         for (const file of fileList) {
           // Deduplicate by path (preferred) or name+size fallback
           const dup = file.path
-            ? selectedAudioFiles.some(f => f.path === file.path)
-            : selectedAudioFiles.some(f => f.name === file.name && f.size === file.size);
+            ? nextFiles.some(f => f.path === file.path)
+            : nextFiles.some(f => f.name === file.name && f.size === file.size);
           if (dup) continue;
-          selectedAudioFiles.push(file);
+          nextFiles.push(file);
         }
+        try {
+          validateAudioBatchSelection(nextFiles);
+        } catch (error) {
+          console.error('Audio selection validation failed:', error);
+          alert(error instanceof AudioConvertError ? error.message : t('home.audioConvert.conversionError'));
+          return;
+        }
+        selectedAudioFiles = nextFiles;
         renderAudioFiles();
       }
 
@@ -676,12 +1854,13 @@
           `;
           audioConvertFiles.appendChild(item);
         });
-        document.querySelectorAll('.audio-convert-file-remove').forEach(btn => {
+        audioConvertFiles.querySelectorAll('.audio-convert-file-remove').forEach(btn => {
           btn.addEventListener('click', () => {
             const idx = parseInt(btn.dataset.index, 10);
             if (!isNaN(idx)) removeAudioFile(idx);
           });
         });
+        enableSortableFileList(audioConvertFiles, selectedAudioFiles, renderAudioFiles, () => processingAudio);
         toggleAudioProcessButton();
       }
 
@@ -730,7 +1909,7 @@
               hideAudioDropZone();
               const paths = payload.paths || [];
               if (paths.length === 0) return;
-              const audioExts = ['mp3', 'aac', 'wav', 'flac', 'alac', 'ogg', 'wma'];
+              const audioExts = ['mp3', 'aac', 'm4a', 'wav', 'flac', 'alac', 'ogg', 'wma'];
               const fileList = paths
                 .filter(p => audioExts.some(ext => p.toLowerCase().endsWith('.' + ext)))
                 .map(path => ({ name: path.split(/[\\/]/).pop() || path, path, size: 0 }));
@@ -751,7 +1930,7 @@
                 multiple: true,
                 filters: [{
                   name: 'Audio Files',
-                  extensions: ['mp3', 'aac', 'wav', 'flac', 'alac', 'ogg', 'wma']
+                  extensions: ['mp3', 'aac', 'm4a', 'wav', 'flac', 'alac', 'ogg', 'wma']
                 }]
               });
               if (selected && Array.isArray(selected)) {
@@ -816,7 +1995,6 @@
         if (audioConvertSuccessOverlay) {
           audioConvertSuccessOverlay.classList.add('visible');
         }
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       function closeSuccessDialog() {
@@ -827,55 +2005,57 @@
       }
 
       if (audioConvertCancelBtn) {
-        audioConvertCancelBtn.addEventListener('click', async () => {
-          if (isTauri) {
-            try {
-              const { invoke } = await import('@tauri-apps/api/core');
-              await invoke('cancel_convert');
-            } catch (e) {
-              console.error('Cancel failed:', e);
-            }
-          }
-          audioConvertProcessMask.classList.remove('visible');
-          audioConvertProcessBarFill.style.width = '0%';
-          processingAudio = false;
-        });
+        audioConvertCancelBtn.addEventListener('click', cancelActiveAudioConversion);
+      }
+
+      function cancelActiveAudioConversion() {
+        const wasProcessing = processingAudio;
+        audioConversionRunId += 1;
+        if (audioConvertUnlisten) {
+          audioConvertUnlisten();
+          audioConvertUnlisten = null;
+        }
+        if (audioConvertProcessMask) audioConvertProcessMask.classList.remove('visible');
+        if (audioConvertProcessBarFill) audioConvertProcessBarFill.style.width = '0%';
+        processingAudio = false;
+        if (isTauri && wasProcessing) {
+          import('@tauri-apps/api/core')
+            .then(({ invoke }) => invoke('cancel_convert'))
+            .catch((error) => console.error('Cancel failed:', error));
+        }
       }
 
       async function startAudioProcessing() {
         if (!audioConvertProcessMask || !audioConvertProcessBarFill || processingAudio) return;
         if (selectedAudioFiles.length === 0) return;
+        try {
+          validateAudioBatchSelection(selectedAudioFiles);
+          targetAudioFormat = normalizeAudioTargetFormat(targetAudioFormat);
+        } catch (error) {
+          alert(error instanceof AudioConvertError ? error.message : t('home.audioConvert.conversionError'));
+          return;
+        }
+        const runId = ++audioConversionRunId;
         processingAudio = true;
         audioConvertProcessMask.classList.add('visible');
         audioConvertProcessBarFill.style.width = '0%';
 
         if (isTauri) {
+          let unlisten = null;
           try {
             const { invoke } = await import('@tauri-apps/api/core');
             const { listen } = await import('@tauri-apps/api/event');
 
-            // Get output directory from install config
-            let finalOutputDir = '';
-            try {
-              const config = await invoke('get_install_config');
-              if (config.install_path) {
-                const sep = config.install_path.includes('\\') ? '\\' : '/';
-                finalOutputDir = config.install_path.replace(/[\/\\]+$/, '') + sep + 'Audio';
-              }
-            } catch (e) {
-              console.error('Failed to get install config:', e);
-            }
-            if (!finalOutputDir) {
-              const outputDir = await invoke('get_documents_dir').catch(() => 'C:\\Users\\Downloads');
-              finalOutputDir = outputDir + '\\ToolKnit\\Audio';
-            }
+            const finalOutputDir = await getOutputDir('Audio');
 
             // Collect file paths from selectedAudioFiles
             const inputPaths = selectedAudioFiles.map(f => f.path).filter(Boolean);
             if (inputPaths.length === 0) {
               console.error('No valid file paths found in selectedAudioFiles:', selectedAudioFiles);
-              audioConvertProcessMask.classList.remove('visible');
-              processingAudio = false;
+              if (runId === audioConversionRunId) {
+                audioConvertProcessMask.classList.remove('visible');
+                processingAudio = false;
+              }
               alert(t('common.filePathsNotAvailable'));
               return;
             }
@@ -883,17 +2063,18 @@
             let currentFile = 0;
             const totalFiles = inputPaths.length;
 
-            let unlisten = null;
-
             // Ensure ffmpeg is available (prompt user to download if missing)
             const ffmpegReady = await ensureFfmpegAvailable();
             if (!ffmpegReady) {
-              audioConvertProcessMask.classList.remove('visible');
-              processingAudio = false;
+              if (runId === audioConversionRunId) {
+                audioConvertProcessMask.classList.remove('visible');
+                processingAudio = false;
+              }
               return;
             }
 
             unlisten = await listen('convert-progress', (event) => {
+              if (runId !== audioConversionRunId) return;
               const data = event.payload;
               if (data.status === 'converting') {
                 currentFile = data.current;
@@ -905,6 +2086,11 @@
                 }
               }
             });
+            if (runId !== audioConversionRunId) {
+              unlisten();
+              return;
+            }
+            audioConvertUnlisten = unlisten;
 
             const result = await invoke('convert_audio_batch', {
               inputPaths: inputPaths,
@@ -914,9 +2100,12 @@
             });
 
             unlisten();
+            if (audioConvertUnlisten === unlisten) audioConvertUnlisten = null;
+            if (runId !== audioConversionRunId) return;
             audioConvertProcessBarFill.style.width = '100%';
 
             setTimeout(() => {
+              if (runId !== audioConversionRunId) return;
               audioConvertProcessMask.classList.remove('visible');
               audioConvertProcessBarFill.style.width = '0%';
               processingAudio = false;
@@ -925,6 +2114,8 @@
           } catch (e) {
             console.error('Conversion failed:', e);
             if (unlisten) unlisten();
+            if (audioConvertUnlisten === unlisten) audioConvertUnlisten = null;
+            if (runId !== audioConversionRunId) return;
             audioConvertProcessMask.classList.remove('visible');
             audioConvertProcessBarFill.style.width = '0%';
             processingAudio = false;
@@ -934,25 +2125,10 @@
             alert(t('common.errorOccurred', { error: e?.message || e }));
           }
         } else {
-          // Fallback: simulate for non-Tauri
-          let progress = 0;
-          const duration = 2500;
-          const interval = 60;
-          const step = 100 / (duration / interval);
-          const timer = setInterval(() => {
-            progress += step + (Math.random() * 0.8);
-            if (progress >= 100) progress = 100;
-            audioConvertProcessBarFill.style.width = `${progress}%`;
-            if (progress >= 100) {
-              clearInterval(timer);
-              setTimeout(() => {
-                audioConvertProcessMask.classList.remove('visible');
-                audioConvertProcessBarFill.style.width = '0%';
-                processingAudio = false;
-                showSuccessDialog();
-              }, 400);
-            }
-          }, interval);
+          audioConvertProcessMask.classList.remove('visible');
+          audioConvertProcessBarFill.style.width = '0%';
+          processingAudio = false;
+          alert(t('home.audioConvert.desktopOnly'));
         }
       }
 
@@ -972,9 +2148,7 @@
       if (audioConvertOpenFolder) {
         audioConvertOpenFolder.addEventListener('click', () => {
           if (isTauri && lastOutputPath) {
-            import('@tauri-apps/api/core').then(({ invoke }) => {
-              invoke('open_path', { path: lastOutputPath }).catch(e => console.error('Open folder error', e));
-            }).catch(e => console.error('Core import error', e));
+            openOutputFolder(lastOutputPath).catch(e => console.error('Open folder error', e));
           }
           closeSuccessDialog();
         });
@@ -986,7 +2160,7 @@
           if (!btn) return;
           audioConvertFormatOptions.querySelectorAll('.audio-convert-format-option').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          targetAudioFormat = btn.dataset.format;
+          targetAudioFormat = normalizeAudioTargetFormat(btn.dataset.format);
         });
       }
 
@@ -994,6 +2168,52 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+      }
+
+      function enableSortableFileList(container, files, render, isLocked = () => false) {
+        if (!container || !Array.isArray(files)) return;
+        const rows = Array.from(container.querySelectorAll(':scope > .audio-convert-file-item'));
+        let draggingIndex = -1;
+        rows.forEach((row, index) => {
+          row.dataset.sortIndex = String(index);
+          row.draggable = files.length > 1 && !isLocked();
+          row.classList.toggle('is-sortable', row.draggable);
+          row.addEventListener('dragstart', event => {
+            const targetElement = event.target instanceof Element ? event.target : null;
+            if (!row.draggable || targetElement?.closest('button, input, select, textarea, a')) {
+              event.preventDefault();
+              return;
+            }
+            draggingIndex = index;
+            row.classList.add('dragging');
+            event.dataTransfer?.setData('text/plain', String(index));
+            if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+          });
+          row.addEventListener('dragend', () => {
+            draggingIndex = -1;
+            rows.forEach(item => item.classList.remove('dragging', 'drag-target'));
+          });
+          row.addEventListener('dragover', event => {
+            if (draggingIndex < 0 || isLocked()) return;
+            event.preventDefault();
+            rows.forEach(item => item.classList.remove('drag-target'));
+            if (draggingIndex !== index) row.classList.add('drag-target');
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+          });
+          row.addEventListener('drop', event => {
+            if (draggingIndex < 0 || isLocked()) return;
+            event.preventDefault();
+            const from = draggingIndex;
+            const to = Number(row.dataset.sortIndex);
+            if (!Number.isInteger(to) || from === to || from < 0 || from >= files.length || to < 0 || to >= files.length) {
+              rows.forEach(item => item.classList.remove('dragging', 'drag-target'));
+              return;
+            }
+            const [moved] = files.splice(from, 1);
+            files.splice(to, 0, moved);
+            render();
+          });
+        });
       }
 
       // ===== Image Convert Tool =====
@@ -1016,6 +2236,7 @@
         if (!imageConvertOverlay) return;
         imageConvertOverlay.classList.remove('visible');
         if (imageConvertPlasmaInstance) { imageConvertPlasmaInstance(); imageConvertPlasmaInstance = null; }
+        cancelActiveImageConversion();
         processingImage = false;
         imageConvertProcessMask.classList.remove('visible');
         imageConvertProcessBarFill.style.width = '0%';
@@ -1042,6 +2263,8 @@
       let selectedImageFiles = [];
       let processingImage = false;
       let targetImageFormat = 'PNG';
+      let imageConversionRunId = 0;
+      let imageConvertUnlisten = null;
       const imageConvertSuccessOverlay = document.getElementById('imageConvertSuccessOverlay');
       const imageConvertSuccessPath = document.getElementById('imageConvertSuccessPath');
       const imageConvertSuccessMeta = document.getElementById('imageConvertSuccessMeta');
@@ -1054,13 +2277,22 @@
 
       function addImageFiles(fileList) {
         if (!fileList || fileList.length === 0) return;
+        const nextFiles = [...selectedImageFiles];
         for (const file of fileList) {
           const dup = file.path
-            ? selectedImageFiles.some(f => f.path === file.path)
-            : selectedImageFiles.some(f => f.name === file.name && f.size === file.size);
+            ? nextFiles.some(f => f.path === file.path)
+            : nextFiles.some(f => f.name === file.name && f.size === file.size);
           if (dup) continue;
-          selectedImageFiles.push(file);
+          nextFiles.push(file);
         }
+        try {
+          validateImageBatchSelection(nextFiles);
+        } catch (error) {
+          const message = error instanceof ImageBatchError ? error.message : t('home.imageConvert.conversionError');
+          alert(t('home.imageConvert.selectionError', { error: message }));
+          return;
+        }
+        selectedImageFiles = nextFiles;
         renderImageFiles();
       }
 
@@ -1081,6 +2313,7 @@
         imageConvertFiles.querySelectorAll('.audio-convert-file-remove').forEach(btn => {
           btn.addEventListener('click', () => { const idx = parseInt(btn.dataset.index, 10); if (!isNaN(idx)) removeImageFile(idx); });
         });
+        enableSortableFileList(imageConvertFiles, selectedImageFiles, renderImageFiles, () => processingImage);
         toggleImageProcessButton();
       }
 
@@ -1172,7 +2405,6 @@
         if (imageConvertSuccessPath) imageConvertSuccessPath.textContent = outputPath;
         lastImageOutputPath = outputPath;
         if (imageConvertSuccessOverlay) imageConvertSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       function closeImageSuccessDialog() {
@@ -1181,17 +2413,38 @@
       }
 
       if (imageConvertCancelBtn) {
-        imageConvertCancelBtn.addEventListener('click', async () => {
-          if (isTauri) { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('cancel_convert'); } catch (e) { console.error('Cancel failed:', e); } }
-          imageConvertProcessMask.classList.remove('visible');
-          imageConvertProcessBarFill.style.width = '0%';
-          processingImage = false;
-        });
+        imageConvertCancelBtn.addEventListener('click', cancelActiveImageConversion);
+      }
+
+      function cancelActiveImageConversion() {
+        const wasProcessing = processingImage;
+        imageConversionRunId += 1;
+        if (imageConvertUnlisten) {
+          imageConvertUnlisten();
+          imageConvertUnlisten = null;
+        }
+        if (imageConvertProcessMask) imageConvertProcessMask.classList.remove('visible');
+        if (imageConvertProcessBarFill) imageConvertProcessBarFill.style.width = '0%';
+        processingImage = false;
+        if (isTauri && wasProcessing) {
+          import('@tauri-apps/api/core')
+            .then(({ invoke }) => invoke('cancel_convert'))
+            .catch((error) => console.error('Cancel failed:', error));
+        }
       }
 
       async function startImageProcessing() {
         if (!imageConvertProcessMask || !imageConvertProcessBarFill || processingImage) return;
         if (selectedImageFiles.length === 0) return;
+        try {
+          validateImageBatchSelection(selectedImageFiles);
+          targetImageFormat = normalizeImageTargetFormat(targetImageFormat);
+        } catch (error) {
+          const message = error instanceof ImageBatchError ? error.message : t('home.imageConvert.conversionError');
+          alert(t('home.imageConvert.selectionError', { error: message }));
+          return;
+        }
+        const runId = ++imageConversionRunId;
         processingImage = true;
         imageConvertProcessMask.classList.add('visible');
         imageConvertProcessBarFill.style.width = '0%';
@@ -1202,26 +2455,19 @@
             const { invoke } = await import('@tauri-apps/api/core');
             const { listen } = await import('@tauri-apps/api/event');
 
-            let finalOutputDir = '';
-            try {
-              const config = await invoke('get_install_config');
-              if (config.install_path) {
-                const sep = config.install_path.includes('\\') ? '\\' : '/';
-                finalOutputDir = config.install_path.replace(/[\/\\]+$/, '') + sep + 'Images';
-              }
-            } catch (e) { console.error('Failed to get install config:', e); }
-            if (!finalOutputDir) {
-              const outputDir = await invoke('get_documents_dir').catch(() => 'C:\\Users\\Downloads');
-              finalOutputDir = outputDir + '\\ToolKnit\\Images';
-            }
+            const finalOutputDir = await getOutputDir('Images');
 
             const inputPaths = selectedImageFiles.map(f => f.path).filter(Boolean);
             if (inputPaths.length === 0) {
-              imageConvertProcessMask.classList.remove('visible'); processingImage = false;
+              if (runId === imageConversionRunId) {
+                imageConvertProcessMask.classList.remove('visible');
+                processingImage = false;
+              }
               alert(t('common.filePathsNotAvailableShort')); return;
             }
 
             unlisten = await listen('convert-progress', (event) => {
+              if (runId !== imageConversionRunId) return;
               const data = event.payload;
               if (data.status === 'converting') {
                 const fileProgress = (data.current - 1 + data.progress) / data.total;
@@ -1230,19 +2476,33 @@
                 if (imageConvertProcessText) imageConvertProcessText.textContent = `${t('home.imageConvert.processing')} (${data.current}/${data.total})`;
               }
             });
+            if (runId !== imageConversionRunId) {
+              unlisten();
+              return;
+            }
+            imageConvertUnlisten = unlisten;
 
             const result = await invoke('convert_image_batch', { inputPaths, outputDir: finalOutputDir, targetFormat: targetImageFormat });
             if (unlisten) unlisten();
+            if (imageConvertUnlisten === unlisten) imageConvertUnlisten = null;
+            if (runId !== imageConversionRunId) return;
             imageConvertProcessBarFill.style.width = '100%';
             setTimeout(() => {
+              if (runId !== imageConversionRunId) return;
               imageConvertProcessMask.classList.remove('visible');
               imageConvertProcessBarFill.style.width = '0%';
               processingImage = false;
+              if (result?.success_count === 0 && result?.fail_count > 0) {
+                alert(t('home.imageConvert.allFailed', { count: result.fail_count }));
+                return;
+              }
               showImageSuccessDialog(result);
             }, 400);
           } catch (e) {
             console.error('Image conversion failed:', e);
             if (unlisten) unlisten();
+            if (imageConvertUnlisten === unlisten) imageConvertUnlisten = null;
+            if (runId !== imageConversionRunId) return;
             imageConvertProcessMask.classList.remove('visible');
             imageConvertProcessBarFill.style.width = '0%';
             processingImage = false;
@@ -1250,22 +2510,10 @@
             alert(t('common.errorOccurred', { error: e?.message || e }));
           }
         } else {
-          let progress = 0; const duration = 2500; const interval = 60;
-          const step = 100 / (duration / interval);
-          const timer = setInterval(() => {
-            progress += step + (Math.random() * 0.8);
-            if (progress >= 100) progress = 100;
-            imageConvertProcessBarFill.style.width = `${progress}%`;
-            if (progress >= 100) {
-              clearInterval(timer);
-              setTimeout(() => {
-                imageConvertProcessMask.classList.remove('visible');
-                imageConvertProcessBarFill.style.width = '0%';
-                processingImage = false;
-                showImageSuccessDialog();
-              }, 400);
-            }
-          }, interval);
+          imageConvertProcessMask.classList.remove('visible');
+          imageConvertProcessBarFill.style.width = '0%';
+          processingImage = false;
+          alert(t('home.imageConvert.desktopOnly'));
         }
       }
 
@@ -1276,9 +2524,7 @@
       if (imageConvertOpenFolder) {
         imageConvertOpenFolder.addEventListener('click', () => {
           if (isTauri && lastImageOutputPath) {
-            import('@tauri-apps/api/core').then(({ invoke }) => {
-              invoke('open_path', { path: lastImageOutputPath }).catch(e => console.error('Open folder error', e));
-            }).catch(e => console.error('Core import error', e));
+            openOutputFolder(lastImageOutputPath).catch(e => console.error('Open folder error', e));
           }
           closeImageSuccessDialog();
         });
@@ -1290,7 +2536,7 @@
           if (!btn) return;
           imageConvertFormatOptions.querySelectorAll('.audio-convert-format-option').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          targetImageFormat = btn.dataset.format;
+          targetImageFormat = normalizeImageTargetFormat(btn.dataset.format);
         });
       }
 
@@ -1314,6 +2560,7 @@
         if (!imageCompressOverlay) return;
         imageCompressOverlay.classList.remove('visible');
         if (imageCompressPlasmaInstance) { imageCompressPlasmaInstance(); imageCompressPlasmaInstance = null; }
+        cancelActiveImageCompression();
         processingImageCompress = false;
         imageCompressProcessMask.classList.remove('visible');
         imageCompressProcessBarFill.style.width = '0%';
@@ -1340,6 +2587,8 @@
       let selectedImageCompressFiles = [];
       let processingImageCompress = false;
       let targetCompressQuality = 'medium';
+      let imageCompressionRunId = 0;
+      let imageCompressUnlisten = null;
       const imageCompressSuccessOverlay = document.getElementById('imageCompressSuccessOverlay');
       const imageCompressSuccessPath = document.getElementById('imageCompressSuccessPath');
       const imageCompressSuccessMeta = document.getElementById('imageCompressSuccessMeta');
@@ -1348,18 +2597,27 @@
       const imageCompressOpenFolder = document.getElementById('imageCompressOpenFolder');
       const imageCompressSuccessOk = document.getElementById('imageCompressSuccessOk');
       const imageCompressQualityOptions = document.getElementById('imageCompressQualityOptions');
-      const compressExts = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif'];
+      const compressExts = ['jpg', 'jpeg', 'png', 'webp'];
       const qualityLabelMap = { high: 'home.imageCompress.qualityHigh', medium: 'home.imageCompress.qualityMedium', low: 'home.imageCompress.qualityLow' };
 
       function addImageCompressFiles(fileList) {
         if (!fileList || fileList.length === 0) return;
+        const nextFiles = [...selectedImageCompressFiles];
         for (const file of fileList) {
           const dup = file.path
-            ? selectedImageCompressFiles.some(f => f.path === file.path)
-            : selectedImageCompressFiles.some(f => f.name === file.name && f.size === file.size);
+            ? nextFiles.some(f => f.path === file.path)
+            : nextFiles.some(f => f.name === file.name && f.size === file.size);
           if (dup) continue;
-          selectedImageCompressFiles.push(file);
+          nextFiles.push(file);
         }
+        try {
+          validateImageCompressionSelection(nextFiles);
+        } catch (error) {
+          const message = error instanceof ImageBatchError ? error.message : t('home.imageCompress.conversionError');
+          alert(t('home.imageCompress.selectionError', { error: message }));
+          return;
+        }
+        selectedImageCompressFiles = nextFiles;
         renderImageCompressFiles();
       }
 
@@ -1380,6 +2638,7 @@
         imageCompressFiles.querySelectorAll('.audio-convert-file-remove').forEach(btn => {
           btn.addEventListener('click', () => { const idx = parseInt(btn.dataset.index, 10); if (!isNaN(idx)) removeImageCompressFile(idx); });
         });
+        enableSortableFileList(imageCompressFiles, selectedImageCompressFiles, renderImageCompressFiles, () => processingImageCompress);
         toggleImageCompressProcessButton();
       }
 
@@ -1464,7 +2723,12 @@
         const successCount = result?.success_count ?? selectedImageCompressFiles.length;
         const failCount = result?.fail_count ?? 0;
         const firstFileName = selectedImageCompressFiles[0]?.name || '';
-        const qualityText = t(qualityLabelMap[targetCompressQuality] || 'home.imageCompress.qualityMedium');
+        const baseQualityText = t(qualityLabelMap[targetCompressQuality] || 'home.imageCompress.qualityMedium');
+        const hasWebp = selectedImageCompressFiles.some(file => /\.webp$/i.test(file.name || ''));
+        const hasNonWebp = selectedImageCompressFiles.some(file => !/\.webp$/i.test(file.name || ''));
+        const qualityText = hasWebp
+          ? (hasNonWebp ? `${baseQualityText} / ${t('home.imageCompress.webpLossless')}` : t('home.imageCompress.webpLossless'))
+          : baseQualityText;
         let summary;
         if (failCount > 0 && successCount > 0) {
           summary = t('home.imageCompress.successSummaryPartial', { success: successCount, fail: failCount, format: qualityText });
@@ -1493,7 +2757,6 @@
 
         lastImageCompressOutputPath = outputPath;
         if (imageCompressSuccessOverlay) imageCompressSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       function closeImageCompressSuccessDialog() {
@@ -1502,17 +2765,38 @@
       }
 
       if (imageCompressCancelBtn) {
-        imageCompressCancelBtn.addEventListener('click', async () => {
-          if (isTauri) { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('cancel_convert'); } catch (e) { console.error('Cancel failed:', e); } }
-          imageCompressProcessMask.classList.remove('visible');
-          imageCompressProcessBarFill.style.width = '0%';
-          processingImageCompress = false;
-        });
+        imageCompressCancelBtn.addEventListener('click', cancelActiveImageCompression);
+      }
+
+      function cancelActiveImageCompression() {
+        const wasProcessing = processingImageCompress;
+        imageCompressionRunId += 1;
+        if (imageCompressUnlisten) {
+          imageCompressUnlisten();
+          imageCompressUnlisten = null;
+        }
+        if (imageCompressProcessMask) imageCompressProcessMask.classList.remove('visible');
+        if (imageCompressProcessBarFill) imageCompressProcessBarFill.style.width = '0%';
+        processingImageCompress = false;
+        if (isTauri && wasProcessing) {
+          import('@tauri-apps/api/core')
+            .then(({ invoke }) => invoke('cancel_convert'))
+            .catch((error) => console.error('Cancel failed:', error));
+        }
       }
 
       async function startImageCompressProcessing() {
         if (!imageCompressProcessMask || !imageCompressProcessBarFill || processingImageCompress) return;
         if (selectedImageCompressFiles.length === 0) return;
+        try {
+          validateImageCompressionSelection(selectedImageCompressFiles);
+          targetCompressQuality = normalizeImageCompressionQuality(targetCompressQuality);
+        } catch (error) {
+          const message = error instanceof ImageBatchError ? error.message : t('home.imageCompress.conversionError');
+          alert(t('home.imageCompress.selectionError', { error: message }));
+          return;
+        }
+        const runId = ++imageCompressionRunId;
         processingImageCompress = true;
         imageCompressProcessMask.classList.add('visible');
         imageCompressProcessBarFill.style.width = '0%';
@@ -1523,26 +2807,19 @@
             const { invoke } = await import('@tauri-apps/api/core');
             const { listen } = await import('@tauri-apps/api/event');
 
-            let finalOutputDir = '';
-            try {
-              const config = await invoke('get_install_config');
-              if (config.install_path) {
-                const sep = config.install_path.includes('\\') ? '\\' : '/';
-                finalOutputDir = config.install_path.replace(/[\/\\]+$/, '') + sep + 'Images';
-              }
-            } catch (e) { console.error('Failed to get install config:', e); }
-            if (!finalOutputDir) {
-              const outputDir = await invoke('get_documents_dir').catch(() => 'C:\\Users\\Downloads');
-              finalOutputDir = outputDir + '\\ToolKnit\\Images';
-            }
+            const finalOutputDir = await getOutputDir('Images');
 
             const inputPaths = selectedImageCompressFiles.map(f => f.path).filter(Boolean);
             if (inputPaths.length === 0) {
-              imageCompressProcessMask.classList.remove('visible'); processingImageCompress = false;
+              if (runId === imageCompressionRunId) {
+                imageCompressProcessMask.classList.remove('visible');
+                processingImageCompress = false;
+              }
               alert(t('common.filePathsNotAvailableShort')); return;
             }
 
             unlisten = await listen('convert-progress', (event) => {
+              if (runId !== imageCompressionRunId) return;
               const data = event.payload;
               if (data.status === 'converting') {
                 const fileProgress = (data.current - 1 + data.progress) / data.total;
@@ -1551,19 +2828,38 @@
                 if (imageCompressProcessText) imageCompressProcessText.textContent = `${t('home.imageCompress.processing')} (${data.current}/${data.total})`;
               }
             });
+            if (runId !== imageCompressionRunId) {
+              unlisten();
+              return;
+            }
+            imageCompressUnlisten = unlisten;
 
             const result = await invoke('compress_image_batch', { inputPaths, outputDir: finalOutputDir, quality: targetCompressQuality });
             if (unlisten) unlisten();
+            if (imageCompressUnlisten === unlisten) imageCompressUnlisten = null;
+            if (runId !== imageCompressionRunId) return;
             imageCompressProcessBarFill.style.width = '100%';
             setTimeout(() => {
+              if (runId !== imageCompressionRunId) return;
               imageCompressProcessMask.classList.remove('visible');
               imageCompressProcessBarFill.style.width = '0%';
               processingImageCompress = false;
+              if (result?.success_count === 0 && result?.fail_count > 0) {
+                const onlyNoSmallerOutputs = Array.isArray(result.errors)
+                  && result.errors.length > 0
+                  && result.errors.every((error) => String(error).includes('no smaller output was produced'));
+                alert(onlyNoSmallerOutputs
+                  ? t('home.imageCompress.noSmallerOutput')
+                  : t('home.imageCompress.allFailed', { count: result.fail_count }));
+                return;
+              }
               showImageCompressSuccessDialog(result);
             }, 400);
           } catch (e) {
             console.error('Image compression failed:', e);
             if (unlisten) unlisten();
+            if (imageCompressUnlisten === unlisten) imageCompressUnlisten = null;
+            if (runId !== imageCompressionRunId) return;
             imageCompressProcessMask.classList.remove('visible');
             imageCompressProcessBarFill.style.width = '0%';
             processingImageCompress = false;
@@ -1571,22 +2867,10 @@
             alert(t('common.errorOccurred', { error: e?.message || e }));
           }
         } else {
-          let progress = 0; const duration = 2500; const interval = 60;
-          const step = 100 / (duration / interval);
-          const timer = setInterval(() => {
-            progress += step + (Math.random() * 0.8);
-            if (progress >= 100) progress = 100;
-            imageCompressProcessBarFill.style.width = `${progress}%`;
-            if (progress >= 100) {
-              clearInterval(timer);
-              setTimeout(() => {
-                imageCompressProcessMask.classList.remove('visible');
-                imageCompressProcessBarFill.style.width = '0%';
-                processingImageCompress = false;
-                showImageCompressSuccessDialog();
-              }, 400);
-            }
-          }, interval);
+          imageCompressProcessMask.classList.remove('visible');
+          imageCompressProcessBarFill.style.width = '0%';
+          processingImageCompress = false;
+          alert(t('home.imageCompress.desktopOnly'));
         }
       }
 
@@ -1597,9 +2881,7 @@
       if (imageCompressOpenFolder) {
         imageCompressOpenFolder.addEventListener('click', () => {
           if (isTauri && lastImageCompressOutputPath) {
-            import('@tauri-apps/api/core').then(({ invoke }) => {
-              invoke('open_path', { path: lastImageCompressOutputPath }).catch(e => console.error('Open folder error', e));
-            }).catch(e => console.error('Core import error', e));
+            openOutputFolder(lastImageCompressOutputPath).catch(e => console.error('Open folder error', e));
           }
           closeImageCompressSuccessDialog();
         });
@@ -1611,7 +2893,7 @@
           if (!btn) return;
           imageCompressQualityOptions.querySelectorAll('.audio-convert-format-option').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          targetCompressQuality = btn.dataset.quality;
+          targetCompressQuality = normalizeImageCompressionQuality(btn.dataset.quality);
         });
       }
 
@@ -1626,11 +2908,15 @@
       const iconGenProcessMask = document.getElementById('iconGenProcessMask');
       const iconGenProcessBarFill = document.getElementById('iconGenProcessBarFill');
       const iconGenProcessText = document.getElementById('iconGenProcessText');
+      const iconGenCancelBtn = document.getElementById('iconGenCancelBtn');
       let iconGenPlasmaInstance = null;
       let lastIconGenDownloadDir = '';
       let selectedIconGenFile = null;
+      let selectedIconGenImage = null;
+      let selectedIconGenFileSize = 0;
       let processingIconGen = false;
       let iconGenObjectUrl = null;
+      let iconGenRunId = 0;
 
       const ALL_SIZES = [16, 24, 32, 48, 64, 96, 128, 144, 152, 167, 180, 192, 256, 384, 512, 1024];
       const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256];
@@ -1647,7 +2933,7 @@
 
       function closeIconGenOverlay() {
         if (!iconGenOverlay) return;
-        if (processingIconGen) return;
+        cancelIconGenProcessing();
         iconGenOverlay.classList.remove('visible');
         if (iconGenPlasmaInstance) {
           iconGenPlasmaInstance();
@@ -1660,6 +2946,8 @@
           iconGenObjectUrl = null;
         }
         selectedIconGenFile = null;
+        selectedIconGenImage = null;
+        selectedIconGenFileSize = 0;
         if (iconGenFiles) {
           iconGenFiles.innerHTML = '';
           iconGenFiles.classList.remove('has-files');
@@ -1671,6 +2959,7 @@
       }
 
       if (iconGenBack) iconGenBack.addEventListener('click', closeIconGenOverlay);
+      if (iconGenCancelBtn) iconGenCancelBtn.addEventListener('click', cancelIconGenProcessing);
 
       document.querySelectorAll('.audio-list-item[data-tool="icon-gen"]').forEach(item => {
         item.addEventListener('click', () => openIconGenOverlay());
@@ -1742,7 +3031,7 @@
               if (iconGenDropZone) iconGenDropZone.classList.remove('visible');
               const paths = payload.paths || [];
               if (paths.length === 0) return;
-              const imgExts = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif'];
+              const imgExts = ['png', 'jpg', 'jpeg', 'webp'];
               const imgPath = paths.find(p => imgExts.some(ext => p.toLowerCase().endsWith('.' + ext)));
               if (imgPath) {
                 handleIconGenFileSelect({ name: imgPath.split(/[\\/]/).pop() || imgPath, path: imgPath, size: 0, type: 'image/png' });
@@ -1759,7 +3048,7 @@
               const { open } = await import('@tauri-apps/plugin-dialog');
               const selected = await open({
                 multiple: false,
-                filters: [{ name: 'Image Files', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif'] }],
+                filters: [{ name: 'Image Files', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
               });
               if (selected && typeof selected === 'string') {
                 handleIconGenFileSelect({ name: selected.split(/[\\/]/).pop() || selected, path: selected, size: 0, type: 'image/png' });
@@ -1770,7 +3059,7 @@
           } else {
             const input = document.createElement('input');
             input.type = 'file';
-            input.accept = 'image/png,image/jpeg,image/jpg';
+            input.accept = 'image/png,image/jpeg,image/webp';
             input.onchange = (e) => {
               if (e.target.files && e.target.files.length > 0) {
                 handleIconGenFileSelect(e.target.files[0]);
@@ -1782,35 +3071,44 @@
       }
 
       async function handleIconGenFileSelect(file) {
-        if (!file || !file.type.startsWith('image/')) {
-          alert(t('home.iconGen.invalidFormat'));
-          return;
-        }
         if (!iconGenFiles) return;
-        if (iconGenObjectUrl) {
-          URL.revokeObjectURL(iconGenObjectUrl);
-          iconGenObjectUrl = null;
-        }
-        selectedIconGenFile = file;
-        if (isTauri && file.path) {
-          try {
+        let candidateUrl = null;
+        try {
+          let sourceSize = Number(file?.size);
+          if (isTauri && file?.path) {
             const { invoke } = await import('@tauri-apps/api/core');
-            const rawBytes = await invoke('read_file_bytes', { path: file.path });
-            const bytes = Array.isArray(rawBytes) ? Uint8Array.from(rawBytes) : new Uint8Array(rawBytes);
-            const blob = new Blob([bytes], { type: file.type || 'image/png' });
-            iconGenObjectUrl = URL.createObjectURL(blob);
-          } catch (e) {
-            console.error('Failed to read image file for preview:', e);
-            iconGenObjectUrl = URL.createObjectURL(file);
+            sourceSize = Number(await invoke('get_file_size', { path: file.path }));
           }
-        } else {
-          iconGenObjectUrl = URL.createObjectURL(file);
+          assertIconSource(file, sourceSize);
+          const sourceBytes = await readIconGenSourceBytes(file);
+          assertIconSource(file, sourceBytes.byteLength);
+          const dimensions = readColorExtractorImageDimensions(sourceBytes);
+          if (!dimensions) {
+            throw new IconGenerationError('invalid_image_data', 'Image data is unsupported or malformed.');
+          }
+          assertIconSourceDimensions(dimensions.width, dimensions.height);
+          candidateUrl = URL.createObjectURL(new Blob([sourceBytes], { type: getIconGenMimeType(file?.name) }));
+          const candidateImage = await loadIconGenImage(candidateUrl);
+          assertIconSourceDimensions(candidateImage.naturalWidth, candidateImage.naturalHeight);
+
+          if (iconGenObjectUrl) URL.revokeObjectURL(iconGenObjectUrl);
+          iconGenObjectUrl = candidateUrl;
+          selectedIconGenFile = file;
+          selectedIconGenImage = candidateImage;
+          selectedIconGenFileSize = sourceSize;
+        } catch (error) {
+          if (candidateUrl) URL.revokeObjectURL(candidateUrl);
+          console.error('Icon source validation failed:', error);
+          const message = error instanceof IconGenerationError ? error.message : t('home.iconGen.invalidFormat');
+          alert(t('home.iconGen.inputError', { error: message }));
+          return;
         }
         iconGenFiles.innerHTML = '';
         iconGenFiles.classList.add('has-files');
         const item = document.createElement('div');
         item.className = 'audio-convert-file-item';
-        item.innerHTML = `<img class="audio-convert-file-thumb" src="${iconGenObjectUrl}" alt="preview" /><span class="audio-convert-file-name">${escapeHtml(file.name)}</span><span class="audio-convert-file-size">${(file.size / 1024).toFixed(1)} KB</span><button class="audio-convert-file-remove" aria-label="remove"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>`;
+        const displaySize = selectedIconGenFileSize;
+        item.innerHTML = `<img class="audio-convert-file-thumb" src="${iconGenObjectUrl}" alt="preview" /><span class="audio-convert-file-name">${escapeHtml(file.name)}</span><span class="audio-convert-file-size">${(displaySize / 1024).toFixed(1)} KB</span><button class="audio-convert-file-remove" aria-label="remove"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>`;
         iconGenFiles.appendChild(item);
         item.querySelector('.audio-convert-file-remove').addEventListener('click', () => {
           if (iconGenObjectUrl) {
@@ -1818,11 +3116,40 @@
             iconGenObjectUrl = null;
           }
           selectedIconGenFile = null;
+          selectedIconGenImage = null;
+          selectedIconGenFileSize = 0;
           iconGenFiles.innerHTML = '';
           iconGenFiles.classList.remove('has-files');
           hideIconGenProcessBtn();
         });
         showIconGenProcessBtn();
+      }
+
+      function getIconGenMimeType(fileName) {
+        if (/\.png$/i.test(fileName || '')) return 'image/png';
+        if (/\.webp$/i.test(fileName || '')) return 'image/webp';
+        return 'image/jpeg';
+      }
+
+      async function readIconGenSourceBytes(file) {
+        if (isTauri && file?.path) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const rawBytes = await invoke('read_file_bytes_limited', {
+            path: file.path,
+            maxBytes: ICON_GEN_LIMITS.maxInputBytes
+          });
+          return Array.isArray(rawBytes) ? Uint8Array.from(rawBytes) : new Uint8Array(rawBytes);
+        }
+        return new Uint8Array(await file.arrayBuffer());
+      }
+
+      function loadIconGenImage(objectUrl) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error('Failed to decode image'));
+          image.src = objectUrl;
+        });
       }
 
       // Crop image to square using Canvas
@@ -1903,9 +3230,25 @@
         return new Blob([buf], { type: 'image/x-icon' });
       }
 
+      function cancelIconGenProcessing() {
+        iconGenRunId += 1;
+        processingIconGen = false;
+        if (iconGenProcessMask) iconGenProcessMask.classList.remove('visible');
+        if (iconGenProcessBarFill) iconGenProcessBarFill.style.width = '0%';
+        if (iconGenProcessText) iconGenProcessText.textContent = t('home.iconGen.processing');
+        if (iconGenProcessBtn) {
+          iconGenProcessBtn.textContent = t('home.iconGen.processBtn');
+          iconGenProcessBtn.disabled = false;
+        }
+      }
+
       // Generate icons and pack as ZIP
       async function startIconGenProcessing() {
-        if (!selectedIconGenFile || processingIconGen) return;
+        if (!selectedIconGenFile || !selectedIconGenImage || processingIconGen) return;
+        const runId = ++iconGenRunId;
+        const assertCurrentRun = () => {
+          if (runId !== iconGenRunId) throw new IconGenerationError('cancelled', 'Icon generation was cancelled.');
+        };
         processingIconGen = true;
         lastIconGenDownloadDir = '';
         if (iconGenProcessBtn) {
@@ -1919,7 +3262,7 @@
         }
 
         try {
-          const img = await loadImage(selectedIconGenFile);
+          const img = selectedIconGenImage;
           const zip = new JSZip();
           const folder = zip.folder('icons');
           const totalSteps = ALL_SIZES.length + 3; // PNG sizes + ICO + SVG + favicon.ico
@@ -1931,6 +3274,7 @@
             const blob = await new Promise((resolve, reject) => {
               canvas.toBlob(b => { if (b) resolve(b); else reject(new Error('toBlob returned null')); }, 'image/png');
             });
+            assertCurrentRun();
             folder.file(`icon-${size}x${size}.png`, blob);
             step++;
             const percent = Math.round((step / totalSteps) * 80);
@@ -1940,6 +3284,7 @@
           // Generate ICO (multi-size)
           if (iconGenProcessText) iconGenProcessText.textContent = t('home.iconGen.genIco');
           const icoBlob = await generateIco(img, ICO_SIZES);
+          assertCurrentRun();
           folder.file('icon.ico', icoBlob);
           step++;
           if (iconGenProcessBarFill) iconGenProcessBarFill.style.width = `${Math.round((step / totalSteps) * 80)}%`;
@@ -1947,6 +3292,7 @@
           // Generate SVG
           if (iconGenProcessText) iconGenProcessText.textContent = t('home.iconGen.genSvg');
           const svgContent = generateSvg(img);
+          assertCurrentRun();
           folder.file('icon.svg', svgContent);
           step++;
           if (iconGenProcessBarFill) iconGenProcessBarFill.style.width = `${Math.round((step / totalSteps) * 80)}%`;
@@ -1954,39 +3300,56 @@
           // Generate favicon.ico (16x32x48 - classic favicon)
           if (iconGenProcessText) iconGenProcessText.textContent = t('home.iconGen.genFavicon');
           const faviconBlob = await generateIco(img, [16, 32, 48]);
+          assertCurrentRun();
           folder.file('favicon.ico', faviconBlob);
           step++;
           if (iconGenProcessBarFill) iconGenProcessBarFill.style.width = `${Math.round((step / totalSteps) * 80)}%`;
 
           if (iconGenProcessText) iconGenProcessText.textContent = t('home.iconGen.processing');
           if (iconGenProcessBarFill) iconGenProcessBarFill.style.width = '90%';
-          const zipBlob = await zip.generateAsync({ type: 'blob' });
+          const zipBlob = await zip.generateAsync(
+            { type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 }, streamFiles: true },
+            (metadata) => {
+              assertCurrentRun();
+              if (iconGenProcessBarFill) {
+                const percent = Math.min(99, 90 + Math.round(metadata.percent * 0.09));
+                iconGenProcessBarFill.style.width = `${percent}%`;
+              }
+            }
+          );
+          assertCurrentRun();
+          assertIconArchiveSize(zipBlob.size);
           if (iconGenProcessBarFill) iconGenProcessBarFill.style.width = '100%';
 
           let savedPath = '';
           if (isTauri) {
+            let archiveSessionId = null;
             try {
               const { invoke } = await import('@tauri-apps/api/core');
               const outputDir = await getOutputDir('Icons');
               const fileName = `icons_${Date.now()}.zip`;
-              const fullPath = outputDir + '\\' + fileName;
+              archiveSessionId = await invoke('begin_icon_archive_write', { directory: outputDir, fileName });
               const zipBytes = new Uint8Array(await zipBlob.arrayBuffer());
               const CHUNK_SIZE = 5_000_000;
-              await invoke('write_file_chunk', { path: fullPath, offset: 0, bytes: Array.from(zipBytes.subarray(0, CHUNK_SIZE)) });
-              for (let off = CHUNK_SIZE; off < zipBytes.length; off += CHUNK_SIZE) {
+              for (let off = 0; off < zipBytes.length; off += CHUNK_SIZE) {
+                assertCurrentRun();
                 const end = Math.min(off + CHUNK_SIZE, zipBytes.length);
-                await invoke('write_file_chunk', { path: fullPath, offset: off, bytes: Array.from(zipBytes.subarray(off, end)) });
+                await invoke('append_icon_archive_chunk', {
+                  sessionId: archiveSessionId,
+                  bytes: Array.from(zipBytes.subarray(off, end))
+                });
               }
-              savedPath = fullPath;
-              lastIconGenDownloadDir = fullPath;
+              assertCurrentRun();
+              savedPath = await invoke('finalize_icon_archive_write', { sessionId: archiveSessionId });
+              archiveSessionId = null;
+              lastIconGenDownloadDir = savedPath;
             } catch (e) {
-              console.error('Tauri save error, falling back to download:', e);
-              const url = URL.createObjectURL(zipBlob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `icons.zip`;
-              a.click();
-              URL.revokeObjectURL(url);
+              if (archiveSessionId !== null) {
+                const { invoke } = await import('@tauri-apps/api/core');
+                await invoke('discard_icon_archive_write', { sessionId: archiveSessionId }).catch(() => {});
+              }
+              console.error('Tauri icon archive save failed:', e);
+              throw e;
             }
           } else {
             const url = URL.createObjectURL(zipBlob);
@@ -1999,50 +3362,27 @@
 
           const totalIcons = ALL_SIZES.length + 3; // PNGs + ICO + SVG + favicon.ico
           setTimeout(() => {
+            if (runId !== iconGenRunId) return;
             if (iconGenProcessMask) iconGenProcessMask.classList.remove('visible');
             if (iconGenProcessBarFill) iconGenProcessBarFill.style.width = '0%';
             if (iconGenProcessText) iconGenProcessText.textContent = t('home.iconGen.processing');
-            showToast(t('home.iconGen.successSummary', { count: totalIcons }));
             showIconGenSuccessDialog(totalIcons);
           }, 400);
         } catch (err) {
           console.error('Icon generation error:', err);
+          if (runId !== iconGenRunId || err instanceof IconGenerationError && err.code === 'cancelled') return;
           if (iconGenProcessMask) iconGenProcessMask.classList.remove('visible');
           if (iconGenProcessBarFill) iconGenProcessBarFill.style.width = '0%';
           if (iconGenProcessText) iconGenProcessText.textContent = t('home.iconGen.processing');
           alert(t('home.iconGen.error'));
         } finally {
+          if (runId !== iconGenRunId) return;
           processingIconGen = false;
           if (iconGenProcessBtn) {
             iconGenProcessBtn.textContent = t('home.iconGen.processBtn');
             iconGenProcessBtn.disabled = false;
           }
         }
-      }
-
-      async function loadImage(file) {
-        let objUrl;
-        if (isTauri && file.path) {
-          const { invoke } = await import('@tauri-apps/api/core');
-          const rawBytes = await invoke('read_file_bytes', { path: file.path });
-          const bytes = Array.isArray(rawBytes) ? Uint8Array.from(rawBytes) : new Uint8Array(rawBytes);
-          const blob = new Blob([bytes], { type: file.type || 'image/png' });
-          objUrl = URL.createObjectURL(blob);
-        } else {
-          objUrl = URL.createObjectURL(file);
-        }
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => {
-            URL.revokeObjectURL(objUrl);
-            resolve(img);
-          };
-          img.onerror = () => {
-            URL.revokeObjectURL(objUrl);
-            reject(new Error('Failed to load image'));
-          };
-          img.src = objUrl;
-        });
       }
 
       // Success dialog
@@ -2067,7 +3407,6 @@
           iconGenOpenFolder.style.display = lastIconGenDownloadDir ? '' : 'none';
         }
         iconGenSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       function closeIconGenSuccessDialog() {
@@ -2107,11 +3446,9 @@
 
       function closeVideoConvertOverlay() {
         if (!videoConvertOverlay) return;
+        cancelActiveVideoConversion();
         videoConvertOverlay.classList.remove('visible');
         if (videoConvertPlasmaInstance) { videoConvertPlasmaInstance(); videoConvertPlasmaInstance = null; }
-        processingVideo = false;
-        videoConvertProcessMask.classList.remove('visible');
-        videoConvertProcessBarFill.style.width = '0%';
         clearVideoFiles();
       }
 
@@ -2135,6 +3472,8 @@
       let selectedVideoFiles = [];
       let processingVideo = false;
       let targetVideoFormat = 'MP4';
+      let videoConversionRunId = 0;
+      let videoConvertUnlisten = null;
       const videoConvertSuccessOverlay = document.getElementById('videoConvertSuccessOverlay');
       const videoConvertSuccessPath = document.getElementById('videoConvertSuccessPath');
       const videoConvertSuccessMeta = document.getElementById('videoConvertSuccessMeta');
@@ -2143,17 +3482,28 @@
       const videoConvertOpenFolder = document.getElementById('videoConvertOpenFolder');
       const videoConvertSuccessOk = document.getElementById('videoConvertSuccessOk');
       const videoConvertFormatOptions = document.getElementById('videoConvertFormatOptions');
-      const videoExts = ['mp4', 'avi', 'mkv', 'mov', 'webm', 'flv', 'wmv', 'ts'];
+      const videoExts = ['mp4', 'avi', 'mkv', 'mov', 'webm', 'flv', 'wmv', 'ts', 'm4v'];
 
       function addVideoFiles(fileList) {
         if (!fileList || fileList.length === 0) return;
+        const nextFiles = [...selectedVideoFiles];
         for (const file of fileList) {
           const dup = file.path
-            ? selectedVideoFiles.some(f => f.path === file.path)
-            : selectedVideoFiles.some(f => f.name === file.name && f.size === file.size);
+            ? nextFiles.some(f => f.path === file.path)
+            : nextFiles.some(f => f.name === file.name && f.size === file.size);
           if (dup) continue;
-          selectedVideoFiles.push(file);
+          nextFiles.push(file);
         }
+        try {
+          validateVideoBatchSelection(nextFiles);
+        } catch (error) {
+          console.error('Video selection validation failed:', error);
+          alert(t('home.videoConvert.selectionError', {
+            error: error instanceof VideoConvertError ? error.message : t('home.videoConvert.conversionError')
+          }));
+          return;
+        }
+        selectedVideoFiles = nextFiles;
         renderVideoFiles();
       }
 
@@ -2174,6 +3524,7 @@
         videoConvertFiles.querySelectorAll('.audio-convert-file-remove').forEach(btn => {
           btn.addEventListener('click', () => { const idx = parseInt(btn.dataset.index, 10); if (!isNaN(idx)) removeVideoFile(idx); });
         });
+        enableSortableFileList(videoConvertFiles, selectedVideoFiles, renderVideoFiles, () => processingVideo);
         toggleVideoProcessButton();
       }
 
@@ -2249,11 +3600,14 @@
         const successCount = result?.success_count ?? selectedVideoFiles.length;
         const failCount = result?.fail_count ?? 0;
         const firstFileName = selectedVideoFiles[0]?.name || '';
+        if (failCount > 0 && successCount === 0) {
+          const details = result?.errors?.length ? `\n\n${result.errors.slice(0, 3).join('\n')}` : '';
+          alert(t('home.videoConvert.allFailed', { count: failCount }) + details);
+          return;
+        }
         let summary;
-        if (failCount > 0 && successCount > 0) {
+        if (failCount > 0) {
           summary = t('home.videoConvert.successSummaryPartial', { success: successCount, fail: failCount, format: targetVideoFormat });
-        } else if (failCount > 0 && successCount === 0) {
-          summary = t('home.videoConvert.allFailed', { count: failCount });
         } else if (successCount > 1) {
           summary = t('home.videoConvert.successSummaryPlural', { count: successCount, format: targetVideoFormat });
         } else {
@@ -2265,7 +3619,6 @@
         if (videoConvertSuccessPath) videoConvertSuccessPath.textContent = outputPath;
         lastVideoOutputPath = outputPath;
         if (videoConvertSuccessOverlay) videoConvertSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       function closeVideoSuccessDialog() {
@@ -2274,91 +3627,102 @@
       }
 
       if (videoConvertCancelBtn) {
-        videoConvertCancelBtn.addEventListener('click', async () => {
-          if (isTauri) { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('cancel_convert'); } catch (e) { console.error('Cancel failed:', e); } }
-          videoConvertProcessMask.classList.remove('visible');
-          videoConvertProcessBarFill.style.width = '0%';
-          processingVideo = false;
-        });
+        videoConvertCancelBtn.addEventListener('click', cancelActiveVideoConversion);
+      }
+
+      function cancelActiveVideoConversion() {
+        const wasProcessing = processingVideo;
+        videoConversionRunId += 1;
+        if (videoConvertUnlisten) {
+          videoConvertUnlisten();
+          videoConvertUnlisten = null;
+        }
+        if (videoConvertProcessMask) videoConvertProcessMask.classList.remove('visible');
+        if (videoConvertProcessBarFill) videoConvertProcessBarFill.style.width = '0%';
+        if (videoConvertProcessText) videoConvertProcessText.textContent = t('home.videoConvert.processing');
+        processingVideo = false;
+        if (isTauri && wasProcessing) {
+          import('@tauri-apps/api/core')
+            .then(({ invoke }) => invoke('cancel_convert'))
+            .catch((error) => console.error('Video cancellation failed:', error));
+        }
       }
 
       async function startVideoProcessing() {
         if (!videoConvertProcessMask || !videoConvertProcessBarFill || processingVideo) return;
         if (selectedVideoFiles.length === 0) return;
+        try {
+          validateVideoBatchSelection(selectedVideoFiles);
+          targetVideoFormat = normalizeVideoTargetFormat(targetVideoFormat);
+        } catch (error) {
+          alert(error instanceof VideoConvertError ? error.message : t('home.videoConvert.conversionError'));
+          return;
+        }
+        if (!isTauri) {
+          alert(t('home.videoConvert.desktopOnly'));
+          return;
+        }
+        const runId = ++videoConversionRunId;
         processingVideo = true;
         videoConvertProcessMask.classList.add('visible');
         videoConvertProcessBarFill.style.width = '0%';
 
-        if (isTauri) {
-          let unlisten = null;
-          try {
-            const { invoke } = await import('@tauri-apps/api/core');
-            const { listen } = await import('@tauri-apps/api/event');
+        let unlisten = null;
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const { listen } = await import('@tauri-apps/api/event');
+          const inputPaths = selectedVideoFiles.map(file => file.path).filter(Boolean);
+          if (inputPaths.length !== selectedVideoFiles.length) {
+            throw new Error(t('common.filePathsNotAvailableShort'));
+          }
+          const finalOutputDir = await getOutputDir('Videos');
+          if (runId !== videoConversionRunId) return;
+          const ffmpegReady = await ensureFfmpegAvailable();
+          if (!ffmpegReady || runId !== videoConversionRunId) return;
 
-            let finalOutputDir = '';
-            try {
-              const config = await invoke('get_install_config');
-              if (config.install_path) {
-                const sep = config.install_path.includes('\\') ? '\\' : '/';
-                finalOutputDir = config.install_path.replace(/[\/\\]+$/, '') + sep + 'Videos';
-              }
-            } catch (e) { console.error('Failed to get install config:', e); }
-            if (!finalOutputDir) {
-              const outputDir = await invoke('get_documents_dir').catch(() => 'C:\\Users\\Downloads');
-              finalOutputDir = outputDir + '\\ToolKnit\\Videos';
-            }
-
-            const inputPaths = selectedVideoFiles.map(f => f.path).filter(Boolean);
-            if (inputPaths.length === 0) {
-              videoConvertProcessMask.classList.remove('visible'); processingVideo = false;
-              alert(t('common.filePathsNotAvailableShort')); return;
-            }
-
-            unlisten = await listen('convert-progress', (event) => {
-              const data = event.payload;
-              if (data.status === 'converting') {
-                const fileProgress = (data.current - 1 + data.progress) / data.total;
-                const percent = Math.min(99, Math.round(fileProgress * 100));
-                videoConvertProcessBarFill.style.width = `${percent}%`;
-                if (videoConvertProcessText) videoConvertProcessText.textContent = `${t('home.videoConvert.processing')} (${data.current}/${data.total})`;
-              }
-            });
-
-            const result = await invoke('convert_video_batch', { inputPaths, outputDir: finalOutputDir, targetFormat: targetVideoFormat });
-            if (unlisten) unlisten();
-            videoConvertProcessBarFill.style.width = '100%';
-            setTimeout(() => {
-              videoConvertProcessMask.classList.remove('visible');
-              videoConvertProcessBarFill.style.width = '0%';
-              processingVideo = false;
-              showVideoSuccessDialog(result);
-            }, 400);
-          } catch (e) {
-            console.error('Video conversion failed:', e);
-            if (unlisten) unlisten();
+          const progressByFile = new Map();
+          unlisten = await listen('convert-progress', (event) => {
+            if (runId !== videoConversionRunId) return;
+            const data = event.payload || {};
+            const current = Number(data.current);
+            const total = Number(data.total);
+            if (!Number.isInteger(current) || !Number.isInteger(total) || current < 1 || total < 1) return;
+            const progress = Number.isFinite(Number(data.progress)) ? Number(data.progress) : 0;
+            const existing = progressByFile.get(current) || 0;
+            const next = data.status === 'done' || data.status === 'error' ? 1 : Math.max(existing, Math.max(0, Math.min(progress, 0.99)));
+            progressByFile.set(current, next);
+            const completed = [...progressByFile.values()].reduce((sum, value) => sum + value, 0);
+            const percent = Math.min(99, Math.round((completed / total) * 100));
+            videoConvertProcessBarFill.style.width = `${percent}%`;
+            if (videoConvertProcessText) videoConvertProcessText.textContent = `${t('home.videoConvert.processing')} (${current}/${total})`;
+          });
+          if (runId !== videoConversionRunId) {
+            unlisten();
+            return;
+          }
+          videoConvertUnlisten = unlisten;
+          const result = await invoke('convert_video_batch', { inputPaths, outputDir: finalOutputDir, targetFormat: targetVideoFormat });
+          unlisten();
+          if (videoConvertUnlisten === unlisten) videoConvertUnlisten = null;
+          if (runId !== videoConversionRunId) return;
+          videoConvertProcessBarFill.style.width = '100%';
+          setTimeout(() => {
+            if (runId !== videoConversionRunId) return;
             videoConvertProcessMask.classList.remove('visible');
             videoConvertProcessBarFill.style.width = '0%';
             processingVideo = false;
-            if (videoConvertProcessText) videoConvertProcessText.textContent = t('home.videoConvert.processing');
-            alert(t('common.errorOccurred', { error: e?.message || e }));
-          }
-        } else {
-          let progress = 0; const duration = 3500; const interval = 60;
-          const step = 100 / (duration / interval);
-          const timer = setInterval(() => {
-            progress += step + (Math.random() * 0.8);
-            if (progress >= 100) progress = 100;
-            videoConvertProcessBarFill.style.width = `${progress}%`;
-            if (progress >= 100) {
-              clearInterval(timer);
-              setTimeout(() => {
-                videoConvertProcessMask.classList.remove('visible');
-                videoConvertProcessBarFill.style.width = '0%';
-                processingVideo = false;
-                showVideoSuccessDialog();
-              }, 400);
-            }
-          }, interval);
+            showVideoSuccessDialog(result);
+          }, 400);
+        } catch (e) {
+          console.error('Video conversion failed:', e);
+          if (unlisten) unlisten();
+          if (videoConvertUnlisten === unlisten) videoConvertUnlisten = null;
+          if (runId !== videoConversionRunId) return;
+          videoConvertProcessMask.classList.remove('visible');
+          videoConvertProcessBarFill.style.width = '0%';
+          processingVideo = false;
+          if (videoConvertProcessText) videoConvertProcessText.textContent = t('home.videoConvert.processing');
+          alert(t('common.errorOccurred', { error: e?.message || e }));
         }
       }
 
@@ -2369,9 +3733,7 @@
       if (videoConvertOpenFolder) {
         videoConvertOpenFolder.addEventListener('click', () => {
           if (isTauri && lastVideoOutputPath) {
-            import('@tauri-apps/api/core').then(({ invoke }) => {
-              invoke('open_path', { path: lastVideoOutputPath }).catch(e => console.error('Open folder error', e));
-            }).catch(e => console.error('Core import error', e));
+            openOutputFolder(lastVideoOutputPath).catch(e => console.error('Open folder error', e));
           }
           closeVideoSuccessDialog();
         });
@@ -2385,6 +3747,1438 @@
           btn.classList.add('active');
           targetVideoFormat = btn.dataset.format;
         });
+      }
+
+      // ===== Image Stitch Tool =====
+      const imageStitchOverlay = document.getElementById('imageStitchOverlay');
+      const imageStitchQueue = document.getElementById('imageStitchQueue');
+      const imageStitchQueueEmpty = document.getElementById('imageStitchQueueEmpty');
+      const imageStitchPreview = document.getElementById('imageStitchPreview');
+      const imageStitchPreviewEmpty = document.getElementById('imageStitchPreviewEmpty');
+      const imageStitchCount = document.getElementById('imageStitchCount');
+      const imageStitchEstimate = document.getElementById('imageStitchEstimate');
+      const imageStitchExport = document.getElementById('imageStitchExport');
+      const imageStitchClear = document.getElementById('imageStitchClear');
+      const imageStitchPdfPick = document.getElementById('imageStitchPdfPick');
+      const imageStitchProcessing = document.getElementById('imageStitchProcessing');
+      const imageStitchProgressFill = document.getElementById('imageStitchProgressFill');
+      const imageStitchProgressValue = document.getElementById('imageStitchProgressValue');
+      const imageStitchProgressText = document.getElementById('imageStitchProgressText');
+      const imageStitchQualityWrap = document.getElementById('imageStitchQualityWrap');
+      const imageStitchDropZone = document.getElementById('imageStitchDropZone');
+      let imageStitchFiles = [];
+      let imageStitchMode = 'vertical';
+      let imageStitchReference = 'first';
+      let imageStitchFormat = 'png';
+      let imageStitchBusy = false;
+      let imageStitchDragIndex = -1;
+      let imageStitchJobId = '';
+      let imageStitchProgressUnlisten = null;
+      let lastImageStitchOutputPath = '';
+      let imageStitchPdfSessions = [];
+      let imageStitchImportingPdf = false;
+      let imageStitchPdfImportCancelled = false;
+      let imageStitchPdfLoadingTask = null;
+      let imageStitchCancelRequested = false;
+
+      function imageStitchBackgroundRgba() {
+        const color = document.getElementById('imageStitchBackground')?.value || '#ffffff';
+        const alpha = Math.round(Number(document.getElementById('imageStitchBackgroundAlpha')?.value || 100) * 255 / 100);
+        return `${color}${alpha.toString(16).padStart(2, '0')}`.toUpperCase();
+      }
+
+      function imageStitchSettings() {
+        return normalizeImageStitchRequest({
+          mode: imageStitchMode,
+          reference: imageStitchReference,
+          spacing_px: Number(document.getElementById('imageStitchSpacing')?.value),
+          scale_percent: Number(document.getElementById('imageStitchScale')?.value),
+          format: imageStitchFormat,
+          jpeg_quality: Number(document.getElementById('imageStitchQuality')?.value || 92),
+          background_rgba: imageStitchBackgroundRgba()
+        });
+      }
+
+      function imageStitchOutputName() {
+        const value = document.getElementById('imageStitchOutputName')?.value.trim() || '';
+        if (!value) return null;
+        const reserved = value.split('.')[0].trimEnd().toUpperCase();
+        const isReserved = ['CON', 'PRN', 'AUX', 'NUL'].includes(reserved)
+          || /^(?:COM|LPT)[1-9]$/.test(reserved);
+        if (value.length > 96 || value === '.' || value === '..'
+          || /[\\/:*?"<>|\u0000-\u001f]/.test(value) || /[ .]$/.test(value) || isReserved) {
+          throw new Error('image-stitch:invalid-output-name');
+        }
+        return value;
+      }
+
+      function imageStitchErrorMessage(error) {
+        const message = String(error?.message || error || '');
+        if (message.includes('animated')) return t('home.imageStitch.animatedError');
+        if (message.includes('Duplicate')) return t('home.imageStitch.duplicateError');
+        if (message.includes('output-too-large-for-memory')) return t('home.imageStitch.memoryError');
+        if (message.includes('output-too-large')) return t('home.imageStitch.sizeError');
+        if (message.includes('invalid-settings') || message.includes('Invalid stitch settings')) return t('home.imageStitch.settingsError');
+        if (message.includes('invalid-output-name')) return t('home.imageStitch.outputNameError');
+        if (message.includes('pdf-') || message.includes('InvalidPDF')) return t('home.imageStitch.pdfError');
+        if (message.includes('invalid-input') || message.includes('Cannot read')) return t('home.imageStitch.inputError');
+        return message || t('home.imageStitch.error');
+      }
+
+      function currentImageStitchLayout() {
+        if (imageStitchFiles.length < 2) return null;
+        try {
+          return calculateImageStitchLayout(imageStitchFiles, imageStitchSettings());
+        } catch (error) {
+          imageStitchEstimate.textContent = imageStitchErrorMessage(error);
+          return null;
+        }
+      }
+
+      function fitImageStitchScaleToSafeLayout(notify = false) {
+        if (imageStitchFiles.length < 2) return true;
+        const scaleInput = document.getElementById('imageStitchScale');
+        const startingScale = Math.min(100, Math.max(10, Number(scaleInput?.value) || 100));
+        for (let scale = startingScale; scale >= 10; scale -= 1) {
+          try {
+            calculateImageStitchLayout(imageStitchFiles, { ...imageStitchSettings(), scale_percent: scale });
+            if (scale !== startingScale && scaleInput) {
+              scaleInput.value = String(scale);
+              if (notify) window.showToast?.(t('home.imageStitch.autoScaled').replace('{scale}', scale));
+            }
+            return true;
+          } catch (error) {
+            if (!String(error?.code || error).includes('output_too_large')) return false;
+          }
+        }
+        return false;
+      }
+
+      async function discardImageStitchPdfSession(sessionId) {
+        imageStitchPdfSessions = imageStitchPdfSessions.filter(session => session.id !== sessionId);
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          await invoke('discard_image_stitch_pdf_session', { sessionId });
+        } catch (error) {
+          console.warn('Cannot clean image stitch PDF session:', error);
+        }
+      }
+
+      async function releaseUnusedImageStitchPdfSessions() {
+        const active = new Set(imageStitchFiles.map(file => file.path.toLowerCase()));
+        const unused = imageStitchPdfSessions.filter(session => !session.paths.some(path => active.has(path.toLowerCase())));
+        await Promise.all(unused.map(session => discardImageStitchPdfSession(session.id)));
+      }
+
+      async function cleanupAllImageStitchPdfSessions(removeQueuedPages = false) {
+        const sessions = [...imageStitchPdfSessions];
+        imageStitchPdfSessions = [];
+        if (removeQueuedPages && sessions.length) {
+          const temporaryPaths = new Set(sessions.flatMap(session => session.paths.map(path => path.toLowerCase())));
+          imageStitchFiles = imageStitchFiles.filter(file => !temporaryPaths.has(file.path.toLowerCase()));
+        }
+        await Promise.all(sessions.map(async (session) => {
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('discard_image_stitch_pdf_session', { sessionId: session.id });
+          } catch (error) {
+            console.warn('Cannot clean image stitch PDF session:', error);
+          }
+        }));
+        if (removeQueuedPages) renderImageStitchQueue();
+      }
+
+      function renderImageStitchPreview() {
+        if (!imageStitchPreview || !imageStitchPreviewEmpty) return;
+        const layout = currentImageStitchLayout();
+        imageStitchPreview.hidden = !layout;
+        imageStitchPreviewEmpty.hidden = Boolean(layout);
+        if (!layout) {
+          imageStitchPreview.innerHTML = '';
+          if (imageStitchFiles.length < 2) imageStitchEstimate.textContent = '-- × --';
+          return;
+        }
+        imageStitchEstimate.textContent = `${layout.width.toLocaleString()} × ${layout.height.toLocaleString()} px`;
+        imageStitchPreview.className = `image-stitch-preview-composition ${layout.mode}`;
+        imageStitchPreview.style.background = layout.background_rgba;
+        const previewAxis = layout.mode === 'vertical' ? 440 : 320;
+        const fixedAxis = layout.mode === 'vertical' ? layout.width : layout.height;
+        imageStitchPreview.style.gap = `${Math.max(0, layout.spacing_px * previewAxis / fixedAxis)}px`;
+        imageStitchPreview.innerHTML = layout.items.map((item, index) => {
+          const ratio = `${item.target_width} / ${item.target_height}`;
+          return `<div class="image-stitch-preview-item" style="aspect-ratio:${ratio}" title="${escapeHtml(item.name)}"><img src="${item.thumbnail_data_url}" alt=""></div>`;
+        }).join('');
+      }
+
+      function moveImageStitchFile(from, to) {
+        if (imageStitchBusy || from === to || from < 0 || to < 0 || from >= imageStitchFiles.length || to >= imageStitchFiles.length) return;
+        const [file] = imageStitchFiles.splice(from, 1);
+        imageStitchFiles.splice(to, 0, file);
+        renderImageStitchQueue();
+      }
+
+      function renderImageStitchQueue() {
+        if (!imageStitchQueue) return;
+        imageStitchCount.textContent = `${imageStitchFiles.length} / 100`;
+        imageStitchQueueEmpty.hidden = imageStitchFiles.length > 0;
+        imageStitchQueue.hidden = imageStitchFiles.length === 0;
+        imageStitchClear.disabled = imageStitchBusy || imageStitchFiles.length === 0;
+        imageStitchExport.disabled = imageStitchBusy || imageStitchFiles.length < 2 || !currentImageStitchLayout();
+        imageStitchQueue.innerHTML = imageStitchFiles.map((file, index) => `
+          <div class="image-stitch-row" draggable="${!imageStitchBusy}" data-index="${index}">
+            <span class="image-stitch-row-index">${String(index + 1).padStart(2, '0')}</span>
+            <span class="image-stitch-row-thumb"><img src="${file.thumbnail_data_url}" alt=""></span>
+            <span class="image-stitch-row-info"><strong title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</strong><span>${file.width} × ${file.height}</span></span>
+            <span class="image-stitch-row-actions">
+              <button type="button" data-action="up" title="${t('home.imageStitch.moveUp')}" ${index === 0 || imageStitchBusy ? 'disabled' : ''}><i data-lucide="chevron-up"></i></button>
+              <button type="button" data-action="down" title="${t('home.imageStitch.moveDown')}" ${index === imageStitchFiles.length - 1 || imageStitchBusy ? 'disabled' : ''}><i data-lucide="chevron-down"></i></button>
+              <button type="button" data-action="remove" title="${t('home.imageStitch.remove')}" ${imageStitchBusy ? 'disabled' : ''}><i data-lucide="x"></i></button>
+            </span>
+          </div>`).join('');
+        imageStitchQueue.querySelectorAll('.image-stitch-row').forEach((row) => {
+          const index = Number(row.dataset.index);
+          row.querySelector('[data-action="up"]')?.addEventListener('click', () => moveImageStitchFile(index, index - 1));
+          row.querySelector('[data-action="down"]')?.addEventListener('click', () => moveImageStitchFile(index, index + 1));
+          row.querySelector('[data-action="remove"]')?.addEventListener('click', () => {
+            imageStitchFiles.splice(index, 1);
+            renderImageStitchQueue();
+            void releaseUnusedImageStitchPdfSessions();
+          });
+          row.addEventListener('dragstart', (event) => {
+            imageStitchDragIndex = index;
+            row.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+          });
+          row.addEventListener('dragend', () => {
+            imageStitchDragIndex = -1;
+            imageStitchQueue.querySelectorAll('.image-stitch-row').forEach(item => item.classList.remove('dragging', 'drag-target'));
+          });
+          row.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            imageStitchQueue.querySelectorAll('.image-stitch-row').forEach(item => item.classList.remove('drag-target'));
+            if (imageStitchDragIndex !== index) row.classList.add('drag-target');
+          });
+          row.addEventListener('drop', (event) => {
+            event.preventDefault();
+            moveImageStitchFile(imageStitchDragIndex, index);
+          });
+        });
+        renderImageStitchPreview();
+        if (typeof createIcons === 'function') createIcons({ icons });
+      }
+
+      async function addImageStitchPaths(rawPaths) {
+        const paths = (Array.isArray(rawPaths) ? rawPaths : [rawPaths])
+          .filter(path => typeof path === 'string' && /\.(?:jpe?g|png|webp|bmp|gif)$/i.test(path))
+          .filter(path => !imageStitchFiles.some(file => file.path.toLowerCase() === path.toLowerCase()));
+        if (!paths.length) return false;
+        if (imageStitchFiles.length + paths.length > 100) {
+          window.showToast?.(t('home.imageStitch.limitError'));
+          return false;
+        }
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const inspected = await invoke('inspect_image_stitch_inputs', { inputPaths: paths });
+          imageStitchFiles.push(...inspected.map(item => ({
+            path: item.path,
+            name: item.name,
+            width: item.width,
+            height: item.height,
+            thumbnail_data_url: item.thumbnail_data_url || item.thumbnailDataUrl
+          })));
+          if (!fitImageStitchScaleToSafeLayout(true)) {
+            imageStitchFiles.splice(imageStitchFiles.length - inspected.length, inspected.length);
+            window.showToast?.(t('home.imageStitch.sizeError'));
+            renderImageStitchQueue();
+            return false;
+          }
+          renderImageStitchQueue();
+          return true;
+        } catch (error) {
+          window.showToast?.(imageStitchErrorMessage(error));
+          return false;
+        }
+      }
+
+      async function openImageStitcher({ source = 'images', paths = [], sessionId = null } = {}) {
+        imageStitchOverlay?.classList.add('visible');
+        const added = await addImageStitchPaths(paths);
+        if (added && sessionId && !imageStitchPdfSessions.some(session => session.id === sessionId)) {
+          imageStitchPdfSessions.push({ id: sessionId, source, paths: [...paths] });
+        }
+        renderImageStitchQueue();
+        return added;
+      }
+      window.openImageStitcher = openImageStitcher;
+
+      async function renderPdfPageForImageStitch(pdfPage) {
+        const baseViewport = pdfPage.getViewport({ scale: 1 });
+        const maxPixels = 40_000_000;
+        let scale = Math.min(2, Math.sqrt(maxPixels / Math.max(1, baseViewport.width * baseViewport.height)));
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          if (imageStitchPdfImportCancelled) throw new Error('image-stitch:pdf-import-cancelled');
+          const viewport = pdfPage.getViewport({ scale });
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(viewport.width));
+          canvas.height = Math.max(1, Math.round(viewport.height));
+          const context = canvas.getContext('2d', { alpha: false });
+          context.fillStyle = '#ffffff';
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          await pdfPage.render({ canvasContext: context, viewport, background: '#ffffff' }).promise;
+          const blob = await new Promise((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('image-stitch:pdf-page-encode-failed')), 'image/png'));
+          if (blob.size <= 19 * 1024 * 1024) return new Uint8Array(await blob.arrayBuffer());
+          scale *= Math.max(0.55, Math.sqrt((18 * 1024 * 1024) / blob.size) * 0.95);
+        }
+        throw new Error('image-stitch:invalid-pdf-page');
+      }
+
+      async function importPdfToImageStitcher(inputPath) {
+        if (imageStitchBusy || !isTauri || typeof inputPath !== 'string' || !inputPath) return false;
+        let session = null;
+        let keepSession = false;
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          imageStitchImportingPdf = true;
+          imageStitchPdfImportCancelled = false;
+          imageStitchProgressFill.style.width = '2%';
+          imageStitchProgressValue.textContent = '2%';
+          imageStitchProgressText.textContent = t('home.imageStitch.pdfReading');
+          setImageStitchBusy(true);
+          session = await invoke('create_image_stitch_pdf_session');
+          const rawBytes = await invoke('read_file_bytes_limited', { path: inputPath, maxBytes: 250 * 1024 * 1024 });
+          if (imageStitchPdfImportCancelled) throw new Error('image-stitch:pdf-import-cancelled');
+          const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
+          pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+          const wasmUrl = new URL('assets/', document.baseURI).href;
+          const bytes = Array.isArray(rawBytes) ? Uint8Array.from(rawBytes) : new Uint8Array(rawBytes);
+          imageStitchPdfLoadingTask = pdfjsLib.getDocument({ data: bytes, wasmUrl, useWasm: true });
+          const documentProxy = await imageStitchPdfLoadingTask.promise;
+          if (documentProxy.numPages < 1 || imageStitchFiles.length + documentProxy.numPages > 100) {
+            throw new Error('image-stitch:pdf-too-many');
+          }
+          const pagePaths = [];
+          for (let pageNumber = 1; pageNumber <= documentProxy.numPages; pageNumber += 1) {
+            if (imageStitchPdfImportCancelled) throw new Error('image-stitch:pdf-import-cancelled');
+            const page = await documentProxy.getPage(pageNumber);
+            try {
+              const pageBytes = await renderPdfPageForImageStitch(page);
+              const pagePath = await invoke('write_image_stitch_pdf_page', {
+                sessionId: session.session_id || session.sessionId,
+                pageNumber,
+                bytes: Array.from(pageBytes)
+              });
+              pagePaths.push(pagePath);
+            } finally {
+              try { page.cleanup(); } catch {}
+            }
+            const percent = Math.round(5 + pageNumber / documentProxy.numPages * 90);
+            imageStitchProgressFill.style.width = `${percent}%`;
+            imageStitchProgressValue.textContent = `${percent}%`;
+            imageStitchProgressText.textContent = t('home.imageStitch.pdfRendering')
+              .replace('{current}', pageNumber).replace('{total}', documentProxy.numPages);
+          }
+          const sessionId = session.session_id || session.sessionId;
+          keepSession = await openImageStitcher({ source: 'pdf-to-image', paths: pagePaths, sessionId });
+          if (!keepSession) throw new Error('image-stitch:pdf-import-failed');
+          window.showToast?.(t('home.imageStitch.pdfImported').replace('{count}', pagePaths.length));
+          return true;
+        } catch (error) {
+          const message = String(error?.message || error || '');
+          if (!message.includes('cancelled')) {
+            window.showToast?.(message.includes('pdf-too-many') ? t('home.imageStitch.pdfTooMany') : imageStitchErrorMessage(error));
+          }
+          return false;
+        } finally {
+          if (imageStitchPdfLoadingTask) {
+            try { await imageStitchPdfLoadingTask.destroy(); } catch {}
+          }
+          imageStitchPdfLoadingTask = null;
+          if (session && !keepSession) {
+            await discardImageStitchPdfSession(session.session_id || session.sessionId);
+          }
+          imageStitchImportingPdf = false;
+          imageStitchPdfImportCancelled = false;
+          setImageStitchBusy(false);
+        }
+      }
+      window.importPdfToImageStitcher = importPdfToImageStitcher;
+
+      imageStitchPdfPick?.addEventListener('click', async () => {
+        if (imageStitchBusy || !isTauri) return;
+        try {
+          const { open } = await import('@tauri-apps/plugin-dialog');
+          const inputPath = await open({ multiple: false, filters: [{ name: 'PDF', extensions: ['pdf'] }] });
+          if (typeof inputPath === 'string') await importPdfToImageStitcher(inputPath);
+        } catch (error) {
+          window.showToast?.(imageStitchErrorMessage(error));
+        }
+      });
+
+      document.getElementById('imageStitchPick')?.addEventListener('click', async () => {
+        if (imageStitchBusy) return;
+        try {
+          const { open } = await import('@tauri-apps/plugin-dialog');
+          const paths = await open({ multiple: true, filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif'] }] });
+          if (paths) await addImageStitchPaths(paths);
+        } catch (error) {
+          window.showToast?.(imageStitchErrorMessage(error));
+        }
+      });
+      document.getElementById('imageStitchHelp')?.addEventListener('click', () => openHelpOverlay('image-stitch'));
+      imageStitchClear?.addEventListener('click', () => {
+        if (imageStitchBusy) return;
+        imageStitchFiles = [];
+        renderImageStitchQueue();
+        void cleanupAllImageStitchPdfSessions();
+      });
+      document.getElementById('imageStitchMode')?.addEventListener('click', event => {
+        const button = event.target.closest('[data-mode]');
+        if (!button || imageStitchBusy) return;
+        imageStitchMode = button.dataset.mode;
+        document.querySelectorAll('#imageStitchMode [data-mode]').forEach(item => item.classList.toggle('active', item === button));
+        fitImageStitchScaleToSafeLayout(true);
+        renderImageStitchQueue();
+      });
+      document.getElementById('imageStitchReference')?.addEventListener('click', event => {
+        const button = event.target.closest('[data-reference]');
+        if (!button || imageStitchBusy) return;
+        imageStitchReference = button.dataset.reference;
+        document.querySelectorAll('#imageStitchReference [data-reference]').forEach(item => item.classList.toggle('active', item === button));
+        fitImageStitchScaleToSafeLayout(true);
+        renderImageStitchQueue();
+      });
+      document.getElementById('imageStitchFormat')?.addEventListener('click', event => {
+        const button = event.target.closest('[data-format]');
+        if (!button || imageStitchBusy) return;
+        imageStitchFormat = button.dataset.format;
+        document.querySelectorAll('#imageStitchFormat [data-format]').forEach(item => item.classList.toggle('active', item === button));
+        imageStitchQualityWrap.hidden = imageStitchFormat !== 'jpg';
+        renderImageStitchQueue();
+      });
+      ['imageStitchSpacing', 'imageStitchScale', 'imageStitchBackground', 'imageStitchBackgroundAlpha', 'imageStitchQuality', 'imageStitchOutputName'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('input', () => {
+          if (id === 'imageStitchBackgroundAlpha') document.getElementById('imageStitchBackgroundAlphaValue').textContent = `${document.getElementById(id).value}%`;
+          renderImageStitchQueue();
+        });
+        document.getElementById(id)?.addEventListener('change', (event) => {
+          const input = event.currentTarget;
+          if (input.type === 'number') input.value = String(Math.min(Number(input.max), Math.max(Number(input.min), Number(input.value))));
+          if (id === 'imageStitchSpacing') fitImageStitchScaleToSafeLayout(true);
+          renderImageStitchQueue();
+        });
+      });
+
+      async function ensureImageStitchProgressListener() {
+        if (imageStitchProgressUnlisten) return;
+        const { listen } = await import('@tauri-apps/api/event');
+        imageStitchProgressUnlisten = await listen('image-stitch-progress', (event) => {
+          const payload = event.payload || {};
+          if (payload.jobId && imageStitchJobId && payload.jobId !== imageStitchJobId) return;
+          const percent = Math.max(0, Math.min(100, Number(payload.percent) || 0));
+          imageStitchProgressFill.style.width = `${percent}%`;
+          imageStitchProgressValue.textContent = `${Math.round(percent)}%`;
+          const labels = {
+            prepare: 'home.imageStitch.preparing', inspect: 'home.imageStitch.inspecting',
+            compose: 'home.imageStitch.composing', encode: 'home.imageStitch.encoding', complete: 'home.imageStitch.completing'
+          };
+          imageStitchProgressText.textContent = t(labels[payload.phase] || 'home.imageStitch.preparing')
+            .replace('{current}', payload.current ?? 0).replace('{total}', payload.total ?? imageStitchFiles.length);
+        });
+      }
+
+      function setImageStitchBusy(busy) {
+        imageStitchBusy = busy;
+        imageStitchProcessing.classList.toggle('visible', busy);
+        imageStitchOverlay.querySelectorAll('button, input').forEach(control => { control.disabled = busy; });
+        document.getElementById('imageStitchCancel').disabled = !busy;
+        if (!busy) renderImageStitchQueue();
+      }
+
+      imageStitchExport?.addEventListener('click', async () => {
+        const layout = currentImageStitchLayout();
+        if (!layout || imageStitchBusy) return window.showToast?.(t('home.imageStitch.minimumError'));
+        let outputName;
+        try { outputName = imageStitchOutputName(); } catch (error) { return window.showToast?.(imageStitchErrorMessage(error)); }
+        imageStitchJobId = globalThis.crypto?.randomUUID?.() || `stitch-${Date.now()}`;
+        imageStitchCancelRequested = false;
+        imageStitchProgressFill.style.width = '0%';
+        imageStitchProgressValue.textContent = '0%';
+        imageStitchProgressText.textContent = t('home.imageStitch.preparing');
+        setImageStitchBusy(true);
+        try {
+          await ensureImageStitchProgressListener();
+          const { invoke } = await import('@tauri-apps/api/core');
+          const settings = imageStitchSettings();
+          const result = await invoke('stitch_images', {
+            inputPaths: imageStitchFiles.map(file => file.path),
+            outputDir: await getOutputDir('Images/Image Stitch'),
+            outputName,
+            mode: settings.mode,
+            reference: settings.reference,
+            spacingPx: settings.spacing_px,
+            scalePercent: settings.scale_percent,
+            format: settings.format,
+            jpegQuality: settings.jpeg_quality,
+            backgroundRgba: settings.background_rgba,
+            jobId: imageStitchJobId
+          });
+          await cleanupAllImageStitchPdfSessions(true);
+          lastImageStitchOutputPath = result.output_path || result.outputPath || '';
+          document.getElementById('imageStitchSuccessMeta').textContent = t('home.imageStitch.successMeta').replace('{count}', result.count).replace('{format}', result.format);
+          document.getElementById('imageStitchSuccessSize').textContent = `${result.width} × ${result.height} px`;
+          document.getElementById('imageStitchSuccessPath').textContent = lastImageStitchOutputPath;
+          document.getElementById('imageStitchSuccessOverlay').classList.add('visible');
+        } catch (error) {
+          if (!String(error).includes('cancelled')) window.showToast?.(imageStitchErrorMessage(error));
+        } finally {
+          if (imageStitchCancelRequested) await cleanupAllImageStitchPdfSessions(true);
+          setImageStitchBusy(false);
+        }
+      });
+      document.getElementById('imageStitchCancel')?.addEventListener('click', () => {
+        imageStitchProgressText.textContent = t('home.imageStitch.cancelling');
+        if (imageStitchImportingPdf) {
+          imageStitchPdfImportCancelled = true;
+          imageStitchPdfLoadingTask?.destroy?.().catch(() => {});
+          return;
+        }
+        imageStitchCancelRequested = true;
+        import('@tauri-apps/api/core').then(({ invoke }) => invoke('cancel_convert')).catch(() => {});
+      });
+      document.getElementById('imageStitchSuccessOk')?.addEventListener('click', () => document.getElementById('imageStitchSuccessOverlay')?.classList.remove('visible'));
+      document.getElementById('imageStitchOpenFolder')?.addEventListener('click', () => { if (lastImageStitchOutputPath) openOutputFolder(lastImageStitchOutputPath).catch(() => {}); document.getElementById('imageStitchSuccessOverlay')?.classList.remove('visible'); });
+      document.getElementById('imageStitchBack')?.addEventListener('click', () => { if (!imageStitchBusy) imageStitchOverlay?.classList.remove('visible'); });
+      document.querySelectorAll('.audio-list-item[data-tool="image-stitch"]').forEach(item => item.addEventListener('click', () => {
+        imageStitchOverlay?.classList.add('visible');
+        renderImageStitchQueue();
+        if (typeof createIcons === 'function') createIcons({ icons });
+      }));
+      imageStitchOverlay?.addEventListener('dragover', event => { event.preventDefault(); if (!imageStitchBusy) imageStitchDropZone?.classList.add('visible'); });
+      imageStitchOverlay?.addEventListener('dragleave', event => { if (!imageStitchOverlay.contains(event.relatedTarget)) imageStitchDropZone?.classList.remove('visible'); });
+      imageStitchOverlay?.addEventListener('drop', event => { event.preventDefault(); imageStitchDropZone?.classList.remove('visible'); });
+      if (imageStitchOverlay && isTauri) {
+        (async () => {
+          const { getCurrentWebview } = await import('@tauri-apps/api/webview');
+          await getCurrentWebview().onDragDropEvent(async (event) => {
+            if (!imageStitchOverlay.classList.contains('visible') || imageStitchBusy) return;
+            const payload = event.payload;
+            if (payload.type === 'over') imageStitchDropZone?.classList.add('visible');
+            else if (payload.type === 'leave') imageStitchDropZone?.classList.remove('visible');
+            else if (payload.type === 'drop') {
+              imageStitchDropZone?.classList.remove('visible');
+              await addImageStitchPaths(payload.paths || []);
+            }
+          });
+        })().catch(error => console.error('Cannot register image stitch drag and drop:', error));
+      }
+      renderImageStitchQueue();
+
+      // ===== Video Frame Capture Tool =====
+      const videoFrameOverlay = document.getElementById('videoFrameOverlay');
+      const videoFrameBack = document.getElementById('videoFrameBack');
+      const videoFramePick = document.getElementById('videoFramePick');
+      const videoFrameChange = document.getElementById('videoFrameChange');
+      const videoFrameDropZone = document.getElementById('videoFrameDropZone');
+      const videoFrameEmpty = document.getElementById('videoFrameEmpty');
+      const videoFrameEditor = document.getElementById('videoFrameEditor');
+      const videoFramePreviewVideo = document.getElementById('videoFramePreviewVideo');
+      const videoFramePreviewImage = document.getElementById('videoFramePreviewImage');
+      const videoFramePreviewToggle = document.getElementById('videoFramePreviewToggle');
+      const videoFramePreviewPlayIcon = videoFramePreviewToggle?.querySelector('.video-gif-preview-play-icon');
+      const videoFramePreviewPauseIcon = videoFramePreviewToggle?.querySelector('.video-gif-preview-pause-icon');
+      const videoFrameTimeline = document.getElementById('videoFrameTimeline');
+      const videoFrameTimestamp = document.getElementById('videoFrameTimestamp');
+      const videoFrameTime = document.getElementById('videoFrameTime');
+      const videoFrameName = document.getElementById('videoFrameName');
+      const videoFramePrev = document.getElementById('videoFramePrev');
+      const videoFrameNext = document.getElementById('videoFrameNext');
+      const videoFrameFormat = document.getElementById('videoFrameFormat');
+      const videoFrameExport = document.getElementById('videoFrameExport');
+      const videoFrameProcessMask = document.getElementById('videoFrameProcessMask');
+      const videoFrameProcessBarFill = document.getElementById('videoFrameProcessBarFill');
+      const videoFrameProcessText = document.getElementById('videoFrameProcessText');
+      const videoFrameCancelBtn = document.getElementById('videoFrameCancelBtn');
+      const videoFrameSuccessOverlay = document.getElementById('videoFrameSuccessOverlay');
+      const videoFrameSuccessMeta = document.getElementById('videoFrameSuccessMeta');
+      const videoFrameSuccessFormat = document.getElementById('videoFrameSuccessFormat');
+      const videoFrameSuccessTime = document.getElementById('videoFrameSuccessTime');
+      const videoFrameSuccessPath = document.getElementById('videoFrameSuccessPath');
+      const videoFrameOpenFolder = document.getElementById('videoFrameOpenFolder');
+      const videoFrameSuccessOk = document.getElementById('videoFrameSuccessOk');
+      const videoFramePlasmaBg = document.getElementById('videoFramePlasmaBg');
+      let videoFrameFile = null;
+      let videoFrameDuration = 0;
+      let videoFrameStepMs = 33;
+      let videoFrameOutputFormat = 'png';
+      let videoFramePlasmaDispose = null;
+      let videoFrameProcessing = false;
+      let videoFrameProgressUnlisten = null;
+      let lastVideoFrameOutputPath = '';
+      let videoFrameTimestampMs = 0;
+      let videoFrameUseNativePreview = false;
+      let videoFrameSeekRaf = 0;
+      let videoFramePendingSeekMs = 0;
+      let videoFramePreviewClipRange = null;
+      let videoFramePreviewClipToken = 0;
+      let videoFramePreviewClipLoading = false;
+      const videoFramePreviewState = { token: 0, timer: null, pending: null, inFlight: false, errorShown: false };
+      const VIDEO_FRAME_PREVIEW_WINDOW_MS = 30_000;
+
+      function isSupportedVideoPath(filePath) {
+        const lower = String(filePath || '').toLowerCase();
+        return videoExts.some(ext => lower.endsWith(`.${ext}`));
+      }
+
+      function localVideoFile(filePath, size = 0) {
+        return {
+          name: String(filePath || '').split(/[\\/]/).pop() || String(filePath || ''),
+          path: String(filePath || ''),
+          size: Number(size) || 0
+        };
+      }
+
+      function firstSupportedVideoPath(paths) {
+        return (Array.isArray(paths) ? paths : []).find(isSupportedVideoPath) || '';
+      }
+
+      function clearQueuedVideoPreview(state, image) {
+        state.token += 1;
+        if (state.timer) clearTimeout(state.timer);
+        state.timer = null;
+        state.pending = null;
+        state.errorShown = false;
+        image?.removeAttribute('src');
+        image?.classList.remove('is-loading', 'is-ready');
+      }
+
+      function runQueuedVideoPreview(state) {
+        if (state.inFlight || !state.pending) return;
+        const request = state.pending;
+        state.pending = null;
+        state.inFlight = true;
+        request.image?.classList.add('is-loading');
+        (async () => {
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            const result = await invoke('render_video_preview_frame', {
+              inputPath: request.inputPath,
+              timestampMs: request.timestampMs
+            });
+            const dataUrl = result?.image_data_url || result?.imageDataUrl;
+            if (!dataUrl) throw new Error('video-preview:empty-result');
+            if (request.token !== state.token) return;
+            request.image.src = dataUrl;
+            request.image.classList.add('is-ready');
+            state.errorShown = false;
+          } catch (error) {
+            if (request.token === state.token && !state.errorShown) {
+              state.errorShown = true;
+              window.showToast?.('无法生成视频预览帧，仍可继续导出。');
+              console.warn('Video preview frame failed:', error);
+            }
+          } finally {
+            state.inFlight = false;
+            if (request.token === state.token) request.image?.classList.remove('is-loading');
+            if (state.pending) runQueuedVideoPreview(state);
+          }
+        })();
+      }
+
+      function scheduleVideoPreview(state, image, inputPath, timestampMs, immediate = false) {
+        if (!image || !inputPath) return;
+        const token = state.token + 1;
+        state.token = token;
+        state.pending = { token, image, inputPath, timestampMs };
+        if (state.timer) clearTimeout(state.timer);
+        const start = () => {
+          state.timer = null;
+          runQueuedVideoPreview(state);
+        };
+        if (immediate) start();
+        else state.timer = setTimeout(start, 100);
+      }
+
+      function updateVideoFramePreviewToggle() {
+        const isPlaying = Boolean(videoFramePreviewVideo && !videoFramePreviewVideo.paused && !videoFramePreviewVideo.ended);
+        const enabled = Boolean(videoFrameFile?.path && videoFrameDuration > 0 && !videoFramePreviewClipLoading);
+        if (videoFramePreviewToggle) {
+          videoFramePreviewToggle.disabled = !enabled;
+          videoFramePreviewToggle.classList.toggle('is-loading', videoFramePreviewClipLoading);
+          videoFramePreviewToggle.classList.toggle('is-playing', isPlaying);
+          videoFramePreviewToggle.setAttribute('aria-pressed', String(isPlaying));
+          const label = videoFramePreviewClipLoading ? '正在准备视频预览' : (isPlaying ? '暂停视频' : '播放视频');
+          videoFramePreviewToggle.setAttribute('aria-label', label);
+          videoFramePreviewToggle.title = label;
+        }
+        if (videoFramePreviewPlayIcon) videoFramePreviewPlayIcon.hidden = isPlaying;
+        if (videoFramePreviewPauseIcon) videoFramePreviewPauseIcon.hidden = !isPlaying;
+      }
+
+      function showVideoFrameFallbackPreview(inputPath, timestampMs, immediate = false) {
+        if (videoFramePreviewVideo && videoFramePreviewVideo.paused) videoFramePreviewVideo.hidden = true;
+        if (videoFramePreviewImage) videoFramePreviewImage.hidden = false;
+        scheduleVideoPreview(videoFramePreviewState, videoFramePreviewImage, inputPath, timestampMs, immediate);
+      }
+
+      function updateVideoFrameTimestampUi(milliseconds) {
+        const value = Math.max(0, Math.min(Math.round(videoFrameDuration * 1000), Math.round(milliseconds)));
+        videoFrameTimestampMs = value;
+        if (videoFrameTimeline) videoFrameTimeline.value = String(value);
+        if (videoFrameTimestamp) videoFrameTimestamp.value = String(value);
+        if (videoFrameTime) videoFrameTime.textContent = frameTimeLabel(value);
+        return value;
+      }
+
+      function videoFrameMaxMs() {
+        return Math.max(0, Math.round((Number(videoFrameDuration) || 0) * 1000));
+      }
+
+      function videoFrameClipWindowFor(milliseconds) {
+        const maxMs = videoFrameMaxMs();
+        if (maxMs <= 0) return null;
+        const duration = Math.min(VIDEO_FRAME_PREVIEW_WINDOW_MS, maxMs);
+        let startMs = 0;
+        if (maxMs > duration) {
+          startMs = Math.floor(Math.max(0, Math.min(maxMs, milliseconds)) / duration) * duration;
+          startMs = Math.min(startMs, maxMs - duration);
+        }
+        let endMs = Math.min(maxMs, startMs + duration);
+        if (endMs <= startMs) endMs = Math.min(maxMs, startMs + 1);
+        if (endMs <= startMs) return null;
+        return { startMs, endMs };
+      }
+
+      function videoFrameClipContains(milliseconds) {
+        return Boolean(
+          videoFramePreviewClipRange
+          && milliseconds >= videoFramePreviewClipRange.startMs
+          && milliseconds <= videoFramePreviewClipRange.endMs
+        );
+      }
+
+      function seekVideoFramePreviewClip(milliseconds, immediate = false) {
+        if (!videoFramePreviewVideo || !videoFrameClipContains(milliseconds)) return false;
+        const applySeek = () => {
+          if (!videoFramePreviewVideo || !videoFrameClipContains(videoFramePendingSeekMs)) return;
+          const offsetSeconds = Math.max(0, Math.min(
+            (videoFramePreviewClipRange.endMs - videoFramePreviewClipRange.startMs) / 1000,
+            (videoFramePendingSeekMs - videoFramePreviewClipRange.startMs) / 1000
+          ));
+          try {
+            videoFramePreviewVideo.currentTime = offsetSeconds;
+            videoFramePreviewVideo.hidden = false;
+            if (videoFramePreviewImage) videoFramePreviewImage.hidden = true;
+          } catch (error) {
+            if (videoFrameFile?.path) showVideoFrameFallbackPreview(videoFrameFile.path, videoFramePendingSeekMs, true);
+          }
+        };
+        videoFramePendingSeekMs = Math.max(0, Math.round(milliseconds));
+        if (immediate) {
+          if (videoFrameSeekRaf) cancelAnimationFrame(videoFrameSeekRaf);
+          videoFrameSeekRaf = 0;
+          applySeek();
+          return true;
+        }
+        if (!videoFrameSeekRaf) {
+          videoFrameSeekRaf = requestAnimationFrame(() => {
+            videoFrameSeekRaf = 0;
+            applySeek();
+          });
+        }
+        return true;
+      }
+
+      function resetVideoFramePreviewClip({ restoreStill = true } = {}) {
+        videoFramePreviewClipToken += 1;
+        videoFramePreviewClipLoading = false;
+        videoFramePreviewClipRange = null;
+        videoFrameUseNativePreview = false;
+        if (videoFrameSeekRaf) cancelAnimationFrame(videoFrameSeekRaf);
+        videoFrameSeekRaf = 0;
+        if (videoFramePreviewVideo) {
+          videoFramePreviewVideo.pause();
+          videoFramePreviewVideo.removeAttribute('src');
+          videoFramePreviewVideo.load();
+          videoFramePreviewVideo.hidden = true;
+        }
+        if (restoreStill && videoFramePreviewImage) videoFramePreviewImage.hidden = false;
+        updateVideoFramePreviewToggle();
+      }
+
+      async function loadVideoFramePreviewClip(milliseconds, { autoplay = false, showError = false } = {}) {
+        if (!videoFramePreviewVideo || !videoFrameFile?.path || !isTauri) return false;
+        const range = videoFrameClipWindowFor(milliseconds);
+        if (!range) return false;
+        const token = ++videoFramePreviewClipToken;
+        videoFramePreviewClipLoading = true;
+        updateVideoFramePreviewToggle();
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const result = await invoke('render_video_preview_clip', {
+            inputPath: videoFrameFile.path,
+            startMs: range.startMs,
+            endMs: range.endMs
+          });
+          const source = result?.media_data_url || result?.mediaDataUrl;
+          if (!source) throw new Error('视频预览准备失败。');
+          if (token !== videoFramePreviewClipToken) return false;
+          await new Promise((resolve, reject) => {
+            const ready = () => { cleanup(); resolve(); };
+            const failed = () => { cleanup(); reject(new Error('无法播放视频预览。')); };
+            const cleanup = () => {
+              videoFramePreviewVideo.removeEventListener('canplay', ready);
+              videoFramePreviewVideo.removeEventListener('error', failed);
+            };
+            videoFramePreviewVideo.addEventListener('canplay', ready, { once: true });
+            videoFramePreviewVideo.addEventListener('error', failed, { once: true });
+            videoFramePreviewVideo.pause();
+            videoFramePreviewVideo.src = source;
+            videoFramePreviewVideo.hidden = false;
+            if (videoFramePreviewImage) videoFramePreviewImage.hidden = true;
+            videoFramePreviewVideo.load();
+          });
+          if (token !== videoFramePreviewClipToken) return false;
+          videoFramePreviewClipRange = range;
+          videoFrameUseNativePreview = true;
+          seekVideoFramePreviewClip(Math.max(range.startMs, Math.min(range.endMs, milliseconds)), true);
+          if (autoplay) {
+            await videoFramePreviewVideo.play();
+          }
+          return true;
+        } catch (error) {
+          if (token === videoFramePreviewClipToken) {
+            videoFramePreviewClipRange = null;
+            videoFrameUseNativePreview = false;
+            if (showError) window.showToast?.(error?.message || '无法播放视频。');
+            if (videoFrameFile?.path) showVideoFrameFallbackPreview(videoFrameFile.path, milliseconds, true);
+          }
+          return false;
+        } finally {
+          if (token === videoFramePreviewClipToken) {
+            videoFramePreviewClipLoading = false;
+            updateVideoFramePreviewToggle();
+          }
+        }
+      }
+
+      function seekVideoFramePreview(milliseconds, immediate = false) {
+        if (seekVideoFramePreviewClip(milliseconds)) return true;
+        if (videoFramePreviewVideo && !videoFramePreviewVideo.paused) videoFramePreviewVideo.pause();
+        if (videoFrameFile?.path) showVideoFrameFallbackPreview(videoFrameFile.path, milliseconds, immediate);
+        if (!videoFramePreviewClipLoading && (immediate || videoFrameMaxMs() <= VIDEO_FRAME_PREVIEW_WINDOW_MS)) {
+          void loadVideoFramePreviewClip(milliseconds);
+        }
+        return true;
+      }
+
+      async function playVideoFramePreview() {
+        if (!videoFramePreviewVideo || !videoFrameFile?.path || videoFramePreviewClipLoading) return;
+        let targetMs = videoFrameTimestampMs;
+        const maxMs = videoFrameMaxMs();
+        if (maxMs > 0 && targetMs >= maxMs - 50) {
+          targetMs = 0;
+          updateVideoFrameTimestampUi(0);
+        }
+        try {
+          if (!videoFrameClipContains(targetMs)) {
+            await loadVideoFramePreviewClip(targetMs, { autoplay: true, showError: true });
+            return;
+          }
+          seekVideoFramePreviewClip(targetMs, true);
+          videoFramePreviewVideo.hidden = false;
+          if (videoFramePreviewImage) videoFramePreviewImage.hidden = true;
+          await videoFramePreviewVideo.play();
+        } catch (error) {
+          window.showToast?.(error?.message || '无法播放视频。');
+          updateVideoFramePreviewToggle();
+        }
+      }
+
+      function pauseVideoFramePreview() {
+        videoFramePreviewVideo?.pause();
+        updateVideoFramePreviewToggle();
+      }
+
+      function syncVideoFrameTimestamp(milliseconds, renderPreview = true, immediate = false) {
+        const value = updateVideoFrameTimestampUi(milliseconds);
+        if (renderPreview && videoFrameFile?.path) {
+          seekVideoFramePreview(value, immediate);
+        }
+      }
+      function clearVideoFrame() {
+        videoFrameFile = null; videoFrameDuration = 0; videoFrameStepMs = 33; videoFrameTimestampMs = 0; videoFrameUseNativePreview = false; videoFramePendingSeekMs = 0; videoFramePreviewClipRange = null; videoFramePreviewClipLoading = false; videoFramePreviewClipToken += 1;
+        if (videoFrameSeekRaf) cancelAnimationFrame(videoFrameSeekRaf);
+        videoFrameSeekRaf = 0;
+        clearQueuedVideoPreview(videoFramePreviewState, videoFramePreviewImage);
+        if (videoFramePreviewVideo) {
+          videoFramePreviewVideo.pause();
+          videoFramePreviewVideo.removeAttribute('src');
+          videoFramePreviewVideo.load();
+          videoFramePreviewVideo.hidden = true;
+        }
+        if (videoFramePreviewImage) videoFramePreviewImage.hidden = true;
+        updateVideoFramePreviewToggle();
+        videoFrameOverlay?.classList.remove('is-editing');
+        if (videoFrameEditor) videoFrameEditor.hidden = true;
+        if (videoFrameEmpty) videoFrameEmpty.hidden = false;
+      }
+      function openVideoFrameOverlay() { videoFrameOverlay?.classList.add('visible'); if (videoFramePlasmaBg && !videoFramePlasmaDispose) videoFramePlasmaDispose = initPlasma(videoFramePlasmaBg, { color: '#6B6B6B', speed: 0.45, scale: 1, opacity: 1, mouseInteractive: false }); }
+      function closeVideoFrameOverlay() { videoFrameOverlay?.classList.remove('visible'); clearVideoFrame(); if (videoFramePlasmaDispose) { videoFramePlasmaDispose(); videoFramePlasmaDispose = null; } }
+      async function loadVideoFrameFile(selected) {
+        if (!isTauri) { window.showToast?.('视频单帧导出仅可在桌面端使用。'); return; }
+        if (typeof selected !== 'string' || !selected) return;
+        try {
+          const file = { name: selected.split(/[\\/]/).pop() || selected, path: selected, size: 0 };
+          validateVideoFrameInput(file);
+          const { invoke } = await import('@tauri-apps/api/core');
+          const probe = await invoke('probe_video', { inputPath: selected });
+          const duration = Number(probe?.duration);
+          if (!Number.isFinite(duration) || duration <= 0) throw new Error('无法读取视频时长。');
+          clearQueuedVideoPreview(videoFramePreviewState, videoFramePreviewImage);
+          videoFrameFile = file;
+          videoFrameDuration = duration;
+          videoFrameStepMs = 33;
+          videoFrameFile.size = Number(probe?.file_size ?? probe?.fileSize) || 0;
+          videoFrameName.textContent = file.name;
+          videoFrameTimeline.max = String(Math.floor(duration * 1000));
+          if (Number.isFinite(probe?.frame_rate) && probe.frame_rate > 0 && probe.frame_rate <= 240) videoFrameStepMs = 1000 / probe.frame_rate;
+          videoFrameEmpty.hidden = true;
+          videoFrameEditor.hidden = false;
+          videoFrameOverlay?.classList.add('is-editing');
+          updateVideoFrameTimestampUi(0);
+          await loadVideoFramePreviewClip(0);
+          syncVideoFrameTimestamp(0, true, true);
+        } catch (error) { window.showToast?.(error?.message || '无法读取视频文件。'); }
+      }
+      async function chooseVideoFrameFile() {
+        if (!isTauri) { window.showToast?.('视频单帧导出仅可在桌面端使用。'); return; }
+        try {
+          const { open } = await import('@tauri-apps/plugin-dialog');
+          const selected = await open({ multiple: false, filters: [{ name: 'Video', extensions: videoExts }] });
+          if (typeof selected !== 'string') return;
+          await loadVideoFrameFile(selected);
+        } catch (error) { window.showToast?.(error?.message || '无法读取视频文件。'); }
+      }
+      videoFrameTimeline?.addEventListener('input', () => syncVideoFrameTimestamp(Number(videoFrameTimeline.value)));
+      videoFrameTimestamp?.addEventListener('change', () => { try { syncVideoFrameTimestamp(normalizeVideoFrameTimestamp(Number(videoFrameTimestamp.value), videoFrameDuration), true, true); } catch (error) { syncVideoFrameTimestamp(videoFrameTimestampMs, false); } });
+      videoFramePrev?.addEventListener('click', () => syncVideoFrameTimestamp(Math.round(videoFrameTimestampMs - videoFrameStepMs), true, true));
+      videoFrameNext?.addEventListener('click', () => syncVideoFrameTimestamp(Math.round(videoFrameTimestampMs + videoFrameStepMs), true, true));
+      videoFramePick?.addEventListener('click', chooseVideoFrameFile); videoFrameChange?.addEventListener('click', chooseVideoFrameFile); videoFrameBack?.addEventListener('click', closeVideoFrameOverlay);
+      videoFrameFormat?.addEventListener('click', event => { const button = event.target.closest('[data-format]'); if (!button) return; videoFrameOutputFormat = button.dataset.format; videoFrameFormat.querySelectorAll('[data-format]').forEach(item => item.classList.toggle('active', item === button)); });
+      videoFramePreviewToggle?.addEventListener('click', () => {
+        if (!videoFrameFile?.path || !videoFramePreviewVideo || videoFramePreviewClipLoading) return;
+        if (videoFramePreviewVideo.paused || videoFramePreviewVideo.ended) playVideoFramePreview();
+        else pauseVideoFramePreview();
+      });
+      videoFramePreviewVideo?.addEventListener('play', updateVideoFramePreviewToggle);
+      videoFramePreviewVideo?.addEventListener('pause', updateVideoFramePreviewToggle);
+      videoFramePreviewVideo?.addEventListener('ended', updateVideoFramePreviewToggle);
+      videoFramePreviewVideo?.addEventListener('loadedmetadata', () => {
+        if (!videoFrameUseNativePreview) return;
+        seekVideoFramePreviewClip(videoFrameTimestampMs, true);
+        updateVideoFramePreviewToggle();
+      });
+      videoFramePreviewVideo?.addEventListener('timeupdate', () => {
+        if (!videoFrameUseNativePreview || !videoFramePreviewVideo || videoFramePreviewVideo.seeking) return;
+        const baseMs = videoFramePreviewClipRange?.startMs || 0;
+        updateVideoFrameTimestampUi(baseMs + Math.round(videoFramePreviewVideo.currentTime * 1000));
+      });
+      videoFramePreviewVideo?.addEventListener('seeked', () => {
+        if (!videoFrameUseNativePreview || !videoFramePreviewVideo) return;
+        const baseMs = videoFramePreviewClipRange?.startMs || 0;
+        updateVideoFrameTimestampUi(baseMs + Math.round(videoFramePreviewVideo.currentTime * 1000));
+      });
+      videoFramePreviewVideo?.addEventListener('error', () => {
+        if (!videoFrameUseNativePreview) return;
+        videoFrameUseNativePreview = false;
+        videoFramePreviewClipRange = null;
+        updateVideoFramePreviewToggle();
+        if (videoFrameFile?.path) showVideoFrameFallbackPreview(videoFrameFile.path, videoFrameTimestampMs, true);
+      });
+      function closeVideoFrameSuccess() { videoFrameSuccessOverlay?.classList.remove('visible'); }
+      function showVideoFrameSuccess(result) {
+        lastVideoFrameOutputPath = result.output_path || result.outputPath || '';
+        if (videoFrameSuccessMeta) videoFrameSuccessMeta.textContent = videoFrameFile?.name || '';
+        if (videoFrameSuccessFormat) videoFrameSuccessFormat.textContent = String(result.format || videoFrameOutputFormat).toUpperCase();
+        if (videoFrameSuccessTime) videoFrameSuccessTime.textContent = frameTimeLabel(result.timestamp_ms ?? videoFrameTimestampMs);
+        if (videoFrameSuccessPath) videoFrameSuccessPath.textContent = lastVideoFrameOutputPath;
+        videoFrameSuccessOverlay?.classList.add('visible');
+      }
+      videoFrameCancelBtn?.addEventListener('click', () => import('@tauri-apps/api/core').then(({ invoke }) => invoke('cancel_convert')).catch(() => {}));
+      videoFrameSuccessOk?.addEventListener('click', closeVideoFrameSuccess);
+      videoFrameOpenFolder?.addEventListener('click', () => { if (lastVideoFrameOutputPath) openOutputFolder(lastVideoFrameOutputPath).catch(() => {}); closeVideoFrameSuccess(); });
+      videoFrameExport?.addEventListener('click', async () => {
+        if (!videoFrameFile?.path || !isTauri || videoFrameProcessing) return;
+        videoFrameProcessing = true;
+        if (videoFrameProcessBarFill) videoFrameProcessBarFill.style.width = '8%';
+        if (videoFrameProcessText) videoFrameProcessText.textContent = '正在导出单帧图...';
+        videoFrameProcessMask?.classList.add('visible');
+        let unlisten;
+        try {
+          const [{ invoke }, { listen }] = await Promise.all([import('@tauri-apps/api/core'), import('@tauri-apps/api/event')]);
+          unlisten = await listen('video-frame-progress', event => {
+            const progress = Math.max(0, Math.min(1, Number(event.payload?.progress) || 0));
+            if (videoFrameProcessBarFill) videoFrameProcessBarFill.style.width = `${Math.max(8, progress * 100)}%`;
+            if (videoFrameProcessText) videoFrameProcessText.textContent = event.payload?.phase === 'publish' ? '正在发布图片...' : '正在定位并导出帧...';
+          });
+          const result = await invoke('extract_video_frame', { inputPath: videoFrameFile.path, outputDir: await getOutputDir('Videos'), timestampMs: videoFrameTimestampMs, format: normalizeVideoFrameFormat(videoFrameOutputFormat) });
+          if (videoFrameProcessBarFill) videoFrameProcessBarFill.style.width = '100%';
+          setTimeout(() => { videoFrameProcessMask?.classList.remove('visible'); if (videoFrameProcessBarFill) videoFrameProcessBarFill.style.width = '0%'; showVideoFrameSuccess(result); }, 240);
+        } catch (error) {
+          videoFrameProcessMask?.classList.remove('visible');
+          if (videoFrameProcessBarFill) videoFrameProcessBarFill.style.width = '0%';
+          window.showToast?.(error?.message || '导出失败。');
+        } finally {
+          if (unlisten) unlisten();
+          videoFrameProcessing = false;
+        }
+      });
+      document.querySelectorAll('.audio-list-item[data-tool="video-frame"]').forEach(item => {
+        item.addEventListener('click', () => openToolWithFfmpegCheck(openVideoFrameOverlay));
+        item.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openToolWithFfmpegCheck(openVideoFrameOverlay);
+          }
+        });
+      });
+      function showVideoFrameDropZone() {
+        videoFrameDropZone?.classList.add('visible');
+        videoFrameOverlay?.classList.add('drag-over');
+      }
+      function hideVideoFrameDropZone() {
+        videoFrameDropZone?.classList.remove('visible');
+        videoFrameOverlay?.classList.remove('drag-over');
+      }
+      if (videoFrameOverlay && isTauri) {
+        (async () => {
+          const { getCurrentWebview } = await import('@tauri-apps/api/webview');
+          await getCurrentWebview().onDragDropEvent(async event => {
+            if (!videoFrameOverlay.classList.contains('visible') || videoFrameProcessing) return;
+            const payload = event.payload;
+            if (payload.type === 'enter' || payload.type === 'over') showVideoFrameDropZone();
+            else if (payload.type === 'leave') hideVideoFrameDropZone();
+            else if (payload.type === 'drop') {
+              hideVideoFrameDropZone();
+              const selected = firstSupportedVideoPath(payload.paths || []);
+              if (selected) await loadVideoFrameFile(selected);
+              else window.showToast?.('请拖入支持的视频文件。');
+            }
+          });
+        })().catch(error => console.error('Cannot register video frame drag and drop:', error));
+      }
+
+      // ===== Video GIF Tool =====
+      const videoGifOverlay = document.getElementById('videoGifOverlay');
+      const videoGifBack = document.getElementById('videoGifBack');
+      const videoGifPick = document.getElementById('videoGifPick');
+      const videoGifChange = document.getElementById('videoGifChange');
+      const videoGifDropZone = document.getElementById('videoGifDropZone');
+      const videoGifEmpty = document.getElementById('videoGifEmpty');
+      const videoGifEditor = document.getElementById('videoGifEditor');
+      const videoGifPreviewImage = document.getElementById('videoGifPreviewImage');
+      const videoGifRangePreview = document.getElementById('videoGifRangePreview');
+      const videoGifPreviewToggle = document.getElementById('videoGifPreviewToggle');
+      const videoGifPreviewPlayIcon = videoGifPreviewToggle?.querySelector('.video-gif-preview-play-icon');
+      const videoGifPreviewPauseIcon = videoGifPreviewToggle?.querySelector('.video-gif-preview-pause-icon');
+      const videoGifTimelineWrap = document.getElementById('videoGifTimelineWrap');
+      const videoGifTimeline = document.getElementById('videoGifTimeline');
+      const videoGifName = document.getElementById('videoGifName');
+      const videoGifPreviewTime = document.getElementById('videoGifPreviewTime');
+      const videoGifSelectStart = document.getElementById('videoGifSelectStart');
+      const videoGifSelectEnd = document.getElementById('videoGifSelectEnd');
+      const videoGifStartLabel = document.getElementById('videoGifStartLabel');
+      const videoGifEndLabel = document.getElementById('videoGifEndLabel');
+      const videoGifDurationLabel = document.getElementById('videoGifDurationLabel');
+      const videoGifAdjustHint = document.getElementById('videoGifAdjustHint');
+      const videoGifPrev = document.getElementById('videoGifPrev');
+      const videoGifNext = document.getElementById('videoGifNext');
+      const videoGifFrameRateOptions = document.getElementById('videoGifFrameRate');
+      const videoGifResolutionOptions = document.getElementById('videoGifResolution');
+      const videoGifQualityOptions = document.getElementById('videoGifQuality');
+      const videoGifEstimate = document.getElementById('videoGifEstimate');
+      const videoGifExport = document.getElementById('videoGifExport');
+      const videoGifProcessMask = document.getElementById('videoGifProcessMask');
+      const videoGifProcessBarFill = document.getElementById('videoGifProcessBarFill');
+      const videoGifProcessText = document.getElementById('videoGifProcessText');
+      const videoGifCancelBtn = document.getElementById('videoGifCancelBtn');
+      const videoGifSuccessOverlay = document.getElementById('videoGifSuccessOverlay');
+      const videoGifSuccessMeta = document.getElementById('videoGifSuccessMeta');
+      const videoGifSuccessDuration = document.getElementById('videoGifSuccessDuration');
+      const videoGifSuccessSpec = document.getElementById('videoGifSuccessSpec');
+      const videoGifSuccessSize = document.getElementById('videoGifSuccessSize');
+      const videoGifSuccessPath = document.getElementById('videoGifSuccessPath');
+      const videoGifOpenFolder = document.getElementById('videoGifOpenFolder');
+      const videoGifSuccessOk = document.getElementById('videoGifSuccessOk');
+      const videoGifPlasmaBg = document.getElementById('videoGifPlasmaBg');
+      let videoGifFile = null;
+      let videoGifDuration = 0;
+      let videoGifStepMs = 33;
+      let videoGifStartMs = 0;
+      let videoGifEndMs = 30_000;
+      let videoGifActivePoint = 'start';
+      let videoGifFrameRate = 12;
+      let videoGifWidth = 640;
+      let videoGifQuality = 'balanced';
+      let videoGifSourceWidth = 0;
+      let videoGifSourceHeight = 0;
+      let videoGifSourceSize = 0;
+      let videoGifProcessing = false;
+      let videoGifPlasmaDispose = null;
+      let lastVideoGifOutputPath = '';
+      let videoGifPreviewTimestampMs = 0;
+      const videoGifPreviewState = { token: 0, timer: null, pending: null, inFlight: false, errorShown: false };
+      let videoGifPreviewPlaybackToken = 0;
+      let videoGifPreviewPlaybackLoading = false;
+      let videoGifPreviewPlaybackRange = null;
+      const videoGifQualityLabels = { high: '清晰', balanced: '均衡', small: '小体积', tiny: '极小' };
+      const videoGifEstimateFactors = { high: 0.21, balanced: 0.14, small: 0.095, tiny: 0.068 };
+
+      function videoGifSelectionIsPlayable() {
+        return Boolean(videoGifFile?.path)
+          && Number.isFinite(videoGifStartMs)
+          && Number.isFinite(videoGifEndMs)
+          && videoGifEndMs > videoGifStartMs;
+      }
+
+      function videoGifSelectionKey() {
+        return videoGifSelectionIsPlayable()
+          ? `${videoGifFile.path}\u0000${videoGifStartMs}\u0000${videoGifEndMs}`
+          : null;
+      }
+
+      function updateVideoGifPreviewToggle() {
+        const isPlaying = Boolean(videoGifRangePreview && !videoGifRangePreview.paused && !videoGifRangePreview.ended);
+        const enabled = videoGifSelectionIsPlayable() && !videoGifPreviewPlaybackLoading;
+        if (videoGifPreviewToggle) {
+          videoGifPreviewToggle.disabled = !enabled;
+          videoGifPreviewToggle.classList.toggle('is-loading', videoGifPreviewPlaybackLoading);
+          videoGifPreviewToggle.classList.toggle('is-playing', isPlaying);
+          videoGifPreviewToggle.setAttribute('aria-pressed', String(isPlaying));
+          const label = videoGifPreviewPlaybackLoading
+            ? '正在准备所选片段预览'
+            : isPlaying
+              ? '暂停所选片段'
+              : videoGifPreviewPlaybackRange
+                ? '继续播放所选片段'
+                : '播放所选片段';
+          videoGifPreviewToggle.setAttribute('aria-label', label);
+          videoGifPreviewToggle.title = label;
+        }
+        if (videoGifPreviewPlayIcon) videoGifPreviewPlayIcon.hidden = isPlaying;
+        if (videoGifPreviewPauseIcon) videoGifPreviewPauseIcon.hidden = !isPlaying;
+      }
+
+      function videoGifPercent(milliseconds) {
+        const max = Math.max(1, Math.round(videoGifDuration * 1000));
+        return `${Math.max(0, Math.min(100, (Number(milliseconds) || 0) / max * 100)).toFixed(3)}%`;
+      }
+
+      function updateVideoGifTimelineVisual() {
+        if (!videoGifTimelineWrap) return;
+        videoGifTimelineWrap.style.setProperty('--gif-start', videoGifPercent(videoGifStartMs));
+        videoGifTimelineWrap.style.setProperty('--gif-end', videoGifPercent(videoGifEndMs));
+        videoGifTimelineWrap.style.setProperty('--gif-cursor', videoGifPercent(videoGifPreviewTimestampMs));
+      }
+
+      function estimateVideoGifBytes() {
+        if (!videoGifSelectionIsPlayable()) return null;
+        const durationSeconds = Math.max(0.001, (videoGifEndMs - videoGifStartMs) / 1000);
+        const frames = Math.max(1, Math.round(durationSeconds * Math.max(1, videoGifFrameRate)));
+        const sourceWidth = videoGifSourceWidth > 0 ? videoGifSourceWidth : videoGifWidth;
+        const sourceHeight = videoGifSourceHeight > 0 ? videoGifSourceHeight : Math.round(sourceWidth * 9 / 16);
+        const outputWidth = Math.max(160, Math.min(videoGifWidth, sourceWidth));
+        const outputHeight = Math.max(2, Math.round(outputWidth * sourceHeight / Math.max(1, sourceWidth) / 2) * 2);
+        const factor = videoGifEstimateFactors[videoGifQuality] || videoGifEstimateFactors.balanced;
+        const rawEstimate = frames * outputWidth * outputHeight * factor;
+        const sourceBound = videoGifSourceSize > 0 ? videoGifSourceSize * (durationSeconds / Math.max(durationSeconds, videoGifDuration || durationSeconds)) * 2.2 : 0;
+        const center = Math.max(rawEstimate, sourceBound);
+        return {
+          low: Math.max(1, Math.round(center * 0.72)),
+          high: Math.max(1, Math.round(center * 1.38)),
+          frames,
+          width: outputWidth,
+          height: outputHeight
+        };
+      }
+
+      function updateVideoGifEstimate() {
+        if (!videoGifEstimate) return;
+        const estimate = estimateVideoGifBytes();
+        if (!estimate) {
+          videoGifEstimate.textContent = '预计体积：选择视频后自动估算';
+          return;
+        }
+        videoGifEstimate.textContent = `预计体积：${formatFileSize(estimate.low)} - ${formatFileSize(estimate.high)} · ${estimate.frames} 帧 · ${estimate.width}×${estimate.height} · ${videoGifQualityLabels[videoGifQuality] || '均衡'}`;
+      }
+
+      function resetVideoGifSelectionPlayback({ restoreStill = true } = {}) {
+        videoGifPreviewPlaybackToken += 1;
+        videoGifPreviewPlaybackLoading = false;
+        videoGifPreviewPlaybackRange = null;
+        if (videoGifRangePreview) {
+          videoGifRangePreview.pause();
+          videoGifRangePreview.removeAttribute('src');
+          videoGifRangePreview.load();
+          videoGifRangePreview.hidden = true;
+        }
+        if (restoreStill && videoGifPreviewImage) videoGifPreviewImage.hidden = false;
+        updateVideoGifPreviewToggle();
+      }
+
+      function pauseVideoGifSelectionPlayback() {
+        videoGifRangePreview?.pause();
+        updateVideoGifPreviewToggle();
+      }
+
+      async function playVideoGifSelectionPlayback() {
+        if (!videoGifSelectionIsPlayable() || !videoGifRangePreview) return;
+        const selectionKey = videoGifSelectionKey();
+        if (videoGifPreviewPlaybackRange === selectionKey && videoGifRangePreview.getAttribute('src')) {
+          try {
+            await videoGifRangePreview.play();
+          } catch (error) {
+            window.showToast?.(error?.message || '无法播放所选片段。');
+          }
+          updateVideoGifPreviewToggle();
+          return;
+        }
+
+        const token = ++videoGifPreviewPlaybackToken;
+        videoGifPreviewPlaybackLoading = true;
+        updateVideoGifPreviewToggle();
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const result = await invoke('render_video_preview_clip', {
+            inputPath: videoGifFile.path,
+            startMs: videoGifStartMs,
+            endMs: videoGifEndMs
+          });
+          const source = result?.media_data_url || result?.mediaDataUrl;
+          if (!source) throw new Error('视频预览准备失败。');
+          if (token !== videoGifPreviewPlaybackToken || selectionKey !== videoGifSelectionKey()) return;
+
+          await new Promise((resolve, reject) => {
+            const ready = () => { cleanup(); resolve(); };
+            const failed = () => { cleanup(); reject(new Error('无法播放所选片段。')); };
+            const cleanup = () => {
+              videoGifRangePreview.removeEventListener('canplay', ready);
+              videoGifRangePreview.removeEventListener('error', failed);
+            };
+            videoGifRangePreview.addEventListener('canplay', ready, { once: true });
+            videoGifRangePreview.addEventListener('error', failed, { once: true });
+            videoGifRangePreview.src = source;
+            videoGifRangePreview.hidden = false;
+            if (videoGifPreviewImage) videoGifPreviewImage.hidden = true;
+            videoGifRangePreview.load();
+          });
+          if (token !== videoGifPreviewPlaybackToken || selectionKey !== videoGifSelectionKey()) return;
+          videoGifPreviewPlaybackRange = selectionKey;
+          videoGifRangePreview.currentTime = 0;
+          videoGifPreviewTimestampMs = videoGifStartMs;
+          if (videoGifTimeline) videoGifTimeline.value = String(videoGifStartMs);
+          if (videoGifPreviewTime) videoGifPreviewTime.textContent = videoGifTimeLabel(videoGifStartMs);
+          updateVideoGifTimelineVisual();
+          await videoGifRangePreview.play();
+        } catch (error) {
+          if (token === videoGifPreviewPlaybackToken) {
+            resetVideoGifSelectionPlayback();
+            window.showToast?.(error?.message || '无法播放所选片段。');
+          }
+        } finally {
+          if (token === videoGifPreviewPlaybackToken) {
+            videoGifPreviewPlaybackLoading = false;
+            updateVideoGifPreviewToggle();
+          }
+        }
+      }
+
+      function updateVideoGifSelection() {
+        if (videoGifStartLabel) videoGifStartLabel.textContent = videoGifTimeLabel(videoGifStartMs);
+        if (videoGifEndLabel) videoGifEndLabel.textContent = videoGifTimeLabel(videoGifEndMs);
+        if (videoGifDurationLabel) videoGifDurationLabel.textContent = `${((videoGifEndMs - videoGifStartMs) / 1000).toFixed(3)} 秒 / 最多 30 秒`;
+        videoGifSelectStart?.classList.toggle('active', videoGifActivePoint === 'start');
+        videoGifSelectEnd?.classList.toggle('active', videoGifActivePoint === 'end');
+        if (videoGifAdjustHint) videoGifAdjustHint.textContent = videoGifActivePoint === 'start' ? '正在调整起始帧' : '正在调整结束帧';
+        updateVideoGifTimelineVisual();
+        updateVideoGifEstimate();
+        updateVideoGifPreviewToggle();
+      }
+      function seekVideoGif(milliseconds, immediate = false) {
+        const value = Math.max(0, Math.min(Math.round(videoGifDuration * 1000), Math.round(milliseconds)));
+        videoGifPreviewTimestampMs = value;
+        if (videoGifTimeline) videoGifTimeline.value = String(value);
+        if (videoGifPreviewTime) videoGifPreviewTime.textContent = videoGifTimeLabel(value);
+        updateVideoGifTimelineVisual();
+        if (videoGifFile?.path) {
+          scheduleVideoPreview(videoGifPreviewState, videoGifPreviewImage, videoGifFile.path, value, immediate);
+        }
+      }
+      function setVideoGifPoint(point, milliseconds, previewImmediately = false) {
+        resetVideoGifSelectionPlayback();
+        const max = Math.round(videoGifDuration * 1000);
+        let value = Math.max(0, Math.min(max, Math.round(milliseconds)));
+        if (point === 'start') {
+          value = Math.min(value, videoGifEndMs - 1);
+          value = Math.max(0, videoGifEndMs - 30_000, value);
+          videoGifStartMs = value;
+        } else {
+          value = Math.max(value, videoGifStartMs + 1);
+          value = Math.min(max, videoGifStartMs + 30_000, value);
+          videoGifEndMs = value;
+        }
+        updateVideoGifSelection();
+        seekVideoGif(value, previewImmediately);
+      }
+      function clearVideoGif() {
+        resetVideoGifSelectionPlayback();
+        videoGifFile = null; videoGifDuration = 0; videoGifStartMs = 0; videoGifEndMs = 30_000; videoGifStepMs = 33; videoGifPreviewTimestampMs = 0; videoGifSourceWidth = 0; videoGifSourceHeight = 0; videoGifSourceSize = 0;
+        clearQueuedVideoPreview(videoGifPreviewState, videoGifPreviewImage);
+        videoGifOverlay?.classList.remove('is-editing');
+        if (videoGifEditor) videoGifEditor.hidden = true;
+        if (videoGifEmpty) videoGifEmpty.hidden = false;
+        updateVideoGifSelection();
+      }
+      function openVideoGifOverlay() { videoGifOverlay?.classList.add('visible'); if (videoGifPlasmaBg && !videoGifPlasmaDispose) videoGifPlasmaDispose = initPlasma(videoGifPlasmaBg, { color: '#6B6B6B', speed: 0.45, scale: 1, opacity: 1, mouseInteractive: false }); }
+      function closeVideoGifOverlay() { videoGifOverlay?.classList.remove('visible'); clearVideoGif(); if (videoGifPlasmaDispose) { videoGifPlasmaDispose(); videoGifPlasmaDispose = null; } }
+      async function loadVideoGifFile(selected) {
+        if (!isTauri) { window.showToast?.('视频 GIF 导出仅可在桌面端使用。'); return; }
+        if (typeof selected !== 'string' || !selected) return;
+        try {
+          const file = localVideoFile(selected);
+          validateVideoGifInput(file);
+          const { invoke } = await import('@tauri-apps/api/core');
+          const probe = await invoke('probe_video', { inputPath: selected });
+          const duration = Number(probe?.duration);
+          if (!Number.isFinite(duration) || duration <= 0) throw new Error('无法读取视频时长。');
+          resetVideoGifSelectionPlayback();
+          clearQueuedVideoPreview(videoGifPreviewState, videoGifPreviewImage);
+          videoGifStepMs = 33;
+          if (Number.isFinite(probe?.frame_rate) && probe.frame_rate > 0 && probe.frame_rate <= 240) videoGifStepMs = 1000 / probe.frame_rate;
+          videoGifFile = file;
+          videoGifDuration = duration;
+          videoGifSourceWidth = Number(probe?.width) || 0;
+          videoGifSourceHeight = Number(probe?.height) || 0;
+          videoGifSourceSize = Number(probe?.file_size ?? probe?.fileSize ?? file.size) || 0;
+          const defaultSelection = createDefaultVideoGifSelection(duration);
+          videoGifStartMs = defaultSelection.start_ms;
+          videoGifEndMs = defaultSelection.end_ms;
+          if (videoGifEndMs <= videoGifStartMs) throw new Error('视频时长不足以生成 GIF。');
+          videoGifName.textContent = file.name;
+          videoGifTimeline.max = String(Math.floor(duration * 1000));
+          videoGifActivePoint = 'start';
+          updateVideoGifSelection();
+          videoGifEmpty.hidden = true;
+          videoGifEditor.hidden = false;
+          videoGifOverlay?.classList.add('is-editing');
+          seekVideoGif(0, true);
+        } catch (error) { window.showToast?.(error?.message || '无法读取视频文件。'); }
+      }
+      async function chooseVideoGifFile() {
+        if (!isTauri) { window.showToast?.('视频 GIF 导出仅可在桌面端使用。'); return; }
+        try {
+          const { open } = await import('@tauri-apps/plugin-dialog');
+          const selected = await open({ multiple: false, filters: [{ name: 'Video', extensions: videoExts }] });
+          if (typeof selected !== 'string') return;
+          await loadVideoGifFile(selected);
+        } catch (error) { window.showToast?.(error?.message || '无法读取视频文件。'); }
+      }
+      videoGifTimeline?.addEventListener('input', () => setVideoGifPoint(videoGifActivePoint, Number(videoGifTimeline.value)));
+      videoGifSelectStart?.addEventListener('click', () => { resetVideoGifSelectionPlayback(); videoGifActivePoint = 'start'; updateVideoGifSelection(); seekVideoGif(videoGifStartMs, true); });
+      videoGifSelectEnd?.addEventListener('click', () => { resetVideoGifSelectionPlayback(); videoGifActivePoint = 'end'; updateVideoGifSelection(); seekVideoGif(videoGifEndMs, true); });
+      videoGifPrev?.addEventListener('click', () => setVideoGifPoint(videoGifActivePoint, (videoGifActivePoint === 'start' ? videoGifStartMs : videoGifEndMs) - videoGifStepMs, true));
+      videoGifNext?.addEventListener('click', () => setVideoGifPoint(videoGifActivePoint, (videoGifActivePoint === 'start' ? videoGifStartMs : videoGifEndMs) + videoGifStepMs, true));
+      videoGifPick?.addEventListener('click', chooseVideoGifFile); videoGifChange?.addEventListener('click', chooseVideoGifFile); videoGifBack?.addEventListener('click', closeVideoGifOverlay);
+      videoGifPreviewToggle?.addEventListener('click', () => {
+        if (videoGifPreviewPlaybackLoading) return;
+        if (videoGifRangePreview && !videoGifRangePreview.paused && !videoGifRangePreview.ended) pauseVideoGifSelectionPlayback();
+        else void playVideoGifSelectionPlayback();
+      });
+      videoGifRangePreview?.addEventListener('play', updateVideoGifPreviewToggle);
+      videoGifRangePreview?.addEventListener('pause', updateVideoGifPreviewToggle);
+      videoGifRangePreview?.addEventListener('timeupdate', () => {
+        if (!videoGifPreviewPlaybackRange) return;
+        const timestamp = Math.min(videoGifEndMs, videoGifStartMs + Math.round(videoGifRangePreview.currentTime * 1000));
+        videoGifPreviewTimestampMs = timestamp;
+        if (videoGifTimeline) videoGifTimeline.value = String(timestamp);
+        if (videoGifPreviewTime) videoGifPreviewTime.textContent = videoGifTimeLabel(timestamp);
+        updateVideoGifTimelineVisual();
+      });
+      videoGifRangePreview?.addEventListener('ended', () => {
+        if (!videoGifPreviewPlaybackRange || videoGifPreviewPlaybackRange !== videoGifSelectionKey()) {
+          updateVideoGifPreviewToggle();
+          return;
+        }
+        videoGifRangePreview.currentTime = 0;
+        videoGifPreviewTimestampMs = videoGifStartMs;
+        if (videoGifTimeline) videoGifTimeline.value = String(videoGifStartMs);
+        if (videoGifPreviewTime) videoGifPreviewTime.textContent = videoGifTimeLabel(videoGifStartMs);
+        updateVideoGifTimelineVisual();
+        videoGifRangePreview.play().catch(() => updateVideoGifPreviewToggle());
+      });
+      videoGifFrameRateOptions?.addEventListener('click', event => { const button = event.target.closest('[data-fps]'); if (!button) return; videoGifFrameRate = Number(button.dataset.fps); videoGifFrameRateOptions.querySelectorAll('[data-fps]').forEach(item => item.classList.toggle('active', item === button)); updateVideoGifEstimate(); });
+      videoGifResolutionOptions?.addEventListener('click', event => { const button = event.target.closest('[data-width]'); if (!button) return; videoGifWidth = Number(button.dataset.width); videoGifResolutionOptions.querySelectorAll('[data-width]').forEach(item => item.classList.toggle('active', item === button)); updateVideoGifEstimate(); });
+      videoGifQualityOptions?.addEventListener('click', event => { const button = event.target.closest('[data-quality]'); if (!button) return; videoGifQuality = String(button.dataset.quality || 'balanced'); videoGifQualityOptions.querySelectorAll('[data-quality]').forEach(item => item.classList.toggle('active', item === button)); updateVideoGifEstimate(); });
+      function closeVideoGifSuccess() { videoGifSuccessOverlay?.classList.remove('visible'); }
+      videoGifSuccessOk?.addEventListener('click', closeVideoGifSuccess);
+      videoGifOpenFolder?.addEventListener('click', () => { if (lastVideoGifOutputPath) openOutputFolder(lastVideoGifOutputPath).catch(() => {}); closeVideoGifSuccess(); });
+      videoGifCancelBtn?.addEventListener('click', () => import('@tauri-apps/api/core').then(({ invoke }) => invoke('cancel_convert')).catch(() => {}));
+      videoGifExport?.addEventListener('click', async () => {
+        if (!videoGifFile?.path || !isTauri || videoGifProcessing) return;
+        let settings;
+        try { settings = normalizeVideoGifRequest({ start_ms: videoGifStartMs, end_ms: videoGifEndMs, frame_rate: videoGifFrameRate, width: videoGifWidth, quality: videoGifQuality }, videoGifDuration); }
+        catch (error) { window.showToast?.(error?.message || 'GIF 选区无效。'); return; }
+        videoGifProcessing = true; videoGifProcessMask?.classList.add('visible');
+        if (videoGifProcessBarFill) videoGifProcessBarFill.style.width = '8%';
+        let unlisten;
+        try {
+          const [{ invoke }, { listen }] = await Promise.all([import('@tauri-apps/api/core'), import('@tauri-apps/api/event')]);
+          unlisten = await listen('video-gif-progress', event => { const progress = Math.max(0, Math.min(1, Number(event.payload?.progress) || 0)); if (videoGifProcessBarFill) videoGifProcessBarFill.style.width = `${Math.max(8, progress * 100)}%`; if (videoGifProcessText) videoGifProcessText.textContent = event.payload?.phase === 'publish' ? '正在发布 GIF...' : '正在生成调色板与 GIF...'; });
+          const result = await invoke('extract_video_gif', { inputPath: videoGifFile.path, outputDir: await getOutputDir('Videos'), startMs: settings.start_ms, endMs: settings.end_ms, frameRate: settings.frame_rate, width: settings.width, quality: settings.quality });
+          lastVideoGifOutputPath = result.output_path || result.outputPath || '';
+          if (videoGifSuccessMeta) videoGifSuccessMeta.textContent = videoGifFile.name;
+          if (videoGifSuccessDuration) videoGifSuccessDuration.textContent = `${(settings.duration_ms / 1000).toFixed(3)} 秒`;
+          if (videoGifSuccessSpec) videoGifSuccessSpec.textContent = `${settings.width}px / ${settings.frame_rate} FPS / ${videoGifQualityLabels[settings.quality] || '均衡'}`;
+          if (videoGifSuccessSize) videoGifSuccessSize.textContent = formatFileSize(Number(result.output_size ?? result.outputSize ?? 0));
+          if (videoGifSuccessPath) videoGifSuccessPath.textContent = lastVideoGifOutputPath;
+          if (videoGifProcessBarFill) videoGifProcessBarFill.style.width = '100%';
+          setTimeout(() => { videoGifProcessMask?.classList.remove('visible'); if (videoGifProcessBarFill) videoGifProcessBarFill.style.width = '0%'; videoGifSuccessOverlay?.classList.add('visible'); }, 240);
+        } catch (error) { videoGifProcessMask?.classList.remove('visible'); if (videoGifProcessBarFill) videoGifProcessBarFill.style.width = '0%'; window.showToast?.(error?.message || 'GIF 导出失败。'); }
+        finally { if (unlisten) unlisten(); videoGifProcessing = false; }
+      });
+      document.querySelectorAll('.audio-list-item[data-tool="video-gif"]').forEach(item => {
+        item.addEventListener('click', () => openToolWithFfmpegCheck(openVideoGifOverlay));
+        item.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openToolWithFfmpegCheck(openVideoGifOverlay);
+          }
+        });
+      });
+      function showVideoGifDropZone() {
+        videoGifDropZone?.classList.add('visible');
+        videoGifOverlay?.classList.add('drag-over');
+      }
+      function hideVideoGifDropZone() {
+        videoGifDropZone?.classList.remove('visible');
+        videoGifOverlay?.classList.remove('drag-over');
+      }
+      if (videoGifOverlay && isTauri) {
+        (async () => {
+          const { getCurrentWebview } = await import('@tauri-apps/api/webview');
+          await getCurrentWebview().onDragDropEvent(async event => {
+            if (!videoGifOverlay.classList.contains('visible') || videoGifProcessing) return;
+            const payload = event.payload;
+            if (payload.type === 'enter' || payload.type === 'over') showVideoGifDropZone();
+            else if (payload.type === 'leave') hideVideoGifDropZone();
+            else if (payload.type === 'drop') {
+              hideVideoGifDropZone();
+              const selected = firstSupportedVideoPath(payload.paths || []);
+              if (selected) await loadVideoGifFile(selected);
+              else window.showToast?.('请拖入支持的视频文件。');
+            }
+          });
+        })().catch(error => console.error('Cannot register video GIF drag and drop:', error));
       }
 
       // ===== BPM Detect Tool =====
@@ -2403,8 +5197,75 @@
       const bpmDropZone = document.getElementById('bpmDropZone');
       const bpmPlasmaBg = document.getElementById('bpmPlasmaBg');
       let bpmPlasmaInstance = null;
+      let bpmAudioContext = null;
+      let bpmAnalyzing = false;
+      let bpmAnalysisRunId = 0;
+      let bpmProgressInterval = null;
+      let bpmResultTimer = null;
+      let bpmReanalyzeTimer = null;
+      let lastAnalyzedAudioBuffer = null;
+
+      function clearBpmProgress() {
+        if (bpmProgressInterval) {
+          clearInterval(bpmProgressInterval);
+          bpmProgressInterval = null;
+        }
+      }
+
+      function isCurrentBpmRun(runId) {
+        return runId === bpmAnalysisRunId && bpmDetectOverlay.classList.contains('visible');
+      }
+
+      function finishBpmRun(runId) {
+        if (runId === bpmAnalysisRunId) bpmAnalyzing = false;
+      }
+
+      function invalidateBpmRun() {
+        bpmAnalysisRunId += 1;
+        bpmAnalyzing = false;
+        clearBpmProgress();
+        if (bpmResultTimer) {
+          clearTimeout(bpmResultTimer);
+          bpmResultTimer = null;
+        }
+        if (bpmReanalyzeTimer) {
+          clearTimeout(bpmReanalyzeTimer);
+          bpmReanalyzeTimer = null;
+        }
+      }
+
+      function startBpmRun() {
+        if (bpmAnalyzing) return null;
+        bpmAnalyzing = true;
+        lastAnalyzedAudioBuffer = null;
+        return ++bpmAnalysisRunId;
+      }
+
+      function getBpmErrorMessage(error) {
+        if (!(error instanceof BpmDetectError)) {
+          return t('home.bpmDetect.analyzeError') + ': ' + (error?.message || error);
+        }
+        const messageKey = {
+          invalid_input: 'invalidInput',
+          input_too_large: 'inputTooLarge',
+          invalid_audio: 'invalidAudio',
+          audio_too_long: 'audioTooLong',
+          unsupported_channels: 'unsupportedChannels',
+          decoded_audio_too_large: 'decodedAudioTooLarge',
+          audio_context_unavailable: 'audioContextUnavailable'
+        }[error.code];
+        return messageKey ? t(`home.bpmDetect.${messageKey}`) : error.message;
+      }
+
+      function showBpmError(error, runId = null) {
+        if (runId !== null && !isCurrentBpmRun(runId)) return;
+        console.error('BPM analysis error:', error);
+        alert(getBpmErrorMessage(error));
+        resetBpmResult();
+      }
 
       function openBpmDetectOverlay() {
+        if (bpmDetectOverlay.classList.contains('visible')) return;
         bpmDetectOverlay.classList.add('visible');
         // Reset to initial state
         bpmDetectHeroTop.style.display = '';
@@ -2421,6 +5282,7 @@
       }
 
       function closeBpmDetectOverlay() {
+        invalidateBpmRun();
         bpmDetectOverlay.classList.remove('visible');
         bpmResult.classList.remove('visible');
         // Stop BPM demo if playing
@@ -2430,10 +5292,14 @@
           bpmPlasmaInstance();
           bpmPlasmaInstance = null;
         }
-        // Reset analyzing state in case user closed mid-analysis
-        bpmAnalyzing = false;
         bpmProcessMask.classList.remove('visible');
         bpmProcessBarFill.style.width = '0%';
+        lastAnalyzedAudioBuffer = null;
+        if (bpmAudioContext) {
+          const context = bpmAudioContext;
+          bpmAudioContext = null;
+          context.close().catch(() => {});
+        }
         // Reset hero display
         bpmDetectHeroTop.style.display = '';
       }
@@ -2455,24 +5321,51 @@
         });
       });
 
-      // Real BPM analysis using realtime-bpm-analyzer
-      let bpmAudioContext = null;
-      let bpmAnalyzing = false;
-      let lastAnalyzedAudioBuffer = null;
+      // Runs entirely in the renderer. A run ID prevents stale decode/analyzer work from changing a later UI state.
+      function getBpmAudioContext() {
+        if (bpmAudioContext) return bpmAudioContext;
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) {
+          throw new BpmDetectError('audio_context_unavailable', 'This browser does not support local audio analysis.');
+        }
+        bpmAudioContext = new AudioContextClass();
+        return bpmAudioContext;
+      }
 
-      // Unified BPM analysis function — accepts an ArrayBuffer, handles progress/UI/cleanup
-      async function analyzeBpmAudioBuffer(arrayBuffer) {
-        if (bpmAnalyzing) return;
-        bpmAnalyzing = true;
+      // The upstream analyzer makes an additional OfflineAudioContext copy. Keep that copy bounded and mono.
+      function createBpmAnalysisBuffer(audioBuffer) {
+        const { sampleRate, frameCount } = getBpmAnalysisSpec(audioBuffer);
+        const analysisBuffer = getBpmAudioContext().createBuffer(1, frameCount, sampleRate);
+        const output = analysisBuffer.getChannelData(0);
+        const sourceChannels = Array.from(
+          { length: audioBuffer.numberOfChannels },
+          (_, index) => audioBuffer.getChannelData(index)
+        );
+        const sourceStep = audioBuffer.sampleRate / sampleRate;
+        for (let frame = 0; frame < frameCount; frame++) {
+          const sourceFrame = Math.min(Math.floor(frame * sourceStep), audioBuffer.length - 1);
+          let sample = 0;
+          for (const channel of sourceChannels) sample += channel[sourceFrame];
+          output[frame] = sample / sourceChannels.length;
+        }
+        return analysisBuffer;
+      }
 
-        // Hide hero top, show process mask
+      async function analyzeBpmAudioBuffer(arrayBuffer, runId) {
+        if (!isCurrentBpmRun(runId)) return;
+        let resultDeliveryScheduled = false;
+
         bpmDetectHeroTop.style.display = 'none';
         bpmProcessMask.classList.add('visible');
         bpmProcessBarFill.style.width = '0%';
 
-        // Fake progress while decoding/analyzing
         let progress = 0;
-        const progressInterval = setInterval(() => {
+        clearBpmProgress();
+        bpmProgressInterval = setInterval(() => {
+          if (!isCurrentBpmRun(runId)) {
+            clearBpmProgress();
+            return;
+          }
           if (progress < 90) {
             progress += Math.random() * 8 + 2;
             bpmProcessBarFill.style.width = Math.min(progress, 90) + '%';
@@ -2480,57 +5373,93 @@
         }, 200);
 
         try {
-          // Decode audio data
-          if (!bpmAudioContext) {
-            bpmAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-          }
-          const audioBuffer = await bpmAudioContext.decodeAudioData(arrayBuffer);
+          assertBpmInputSize(arrayBuffer?.byteLength);
+          const audioContext = getBpmAudioContext();
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+          if (!isCurrentBpmRun(runId)) return;
+          assertBpmAudioBuffer(audioBuffer);
 
-          // Analyze BPM
           const { analyzeFullBuffer } = await import('realtime-bpm-analyzer');
-          const tempos = await analyzeFullBuffer(audioBuffer);
+          const analysisBuffer = createBpmAnalysisBuffer(audioBuffer);
+          const tempos = await analyzeFullBuffer(analysisBuffer);
+          if (!isCurrentBpmRun(runId)) return;
 
-          clearInterval(progressInterval);
+          clearBpmProgress();
           bpmProcessBarFill.style.width = '100%';
-
-          setTimeout(() => {
-            bpmProcessMask.classList.remove('visible');
-            if (tempos && tempos.length > 0) {
-              showBpmResult(tempos, audioBuffer);
-            } else {
-              showBpmResult(null, audioBuffer);
+          resultDeliveryScheduled = true;
+          bpmResultTimer = setTimeout(() => {
+            bpmResultTimer = null;
+            if (!isCurrentBpmRun(runId)) return;
+            try {
+              bpmProcessMask.classList.remove('visible');
+              showBpmResult(tempos?.length ? tempos : null, audioBuffer);
+            } catch (error) {
+              showBpmError(error, runId);
+            } finally {
+              finishBpmRun(runId);
             }
-          }, 400);
+          }, 300);
         } catch (err) {
-          clearInterval(progressInterval);
+          clearBpmProgress();
+          if (!isCurrentBpmRun(runId)) return;
           bpmProcessMask.classList.remove('visible');
-          console.error('BPM analysis error:', err);
-          alert(t('home.bpmDetect.analyzeError') + ': ' + (err.message || err));
-          resetBpmResult();
+          showBpmError(err, runId);
         } finally {
-          bpmAnalyzing = false;
+          if (!resultDeliveryScheduled) finishBpmRun(runId);
         }
       }
 
-      // Tauri path: read file bytes from disk, then analyze
       async function analyzeBpmFromFile(filePath) {
-        if (bpmAnalyzing) return;
+        const runId = startBpmRun();
+        if (!runId) return;
+        let analysisStarted = false;
         try {
           const { invoke } = await import('@tauri-apps/api/core');
-          const bytes = await invoke('read_file_bytes', { path: filePath });
+          const byteLength = Number(await invoke('get_file_size', { path: filePath }));
+          assertBpmInputSize(byteLength);
+          if (!isCurrentBpmRun(runId)) return;
+          const bytes = await invoke('read_file_bytes_limited', {
+            path: filePath,
+            maxBytes: 50 * 1024 * 1024
+          });
+          if (!isCurrentBpmRun(runId)) return;
           const arrayBuffer = new Uint8Array(bytes).buffer;
-          await analyzeBpmAudioBuffer(arrayBuffer);
+          analysisStarted = true;
+          await analyzeBpmAudioBuffer(arrayBuffer, runId);
         } catch (err) {
-          console.error('BPM file read error:', err);
-          alert(t('home.bpmDetect.analyzeError') + ': ' + (err.message || err));
-          resetBpmResult();
+          showBpmError(err, runId);
+        } finally {
+          if (!analysisStarted) finishBpmRun(runId);
+        }
+      }
+
+      async function analyzeBpmBrowserFile(file) {
+        try {
+          assertBpmInputSize(file?.size);
+        } catch (error) {
+          showBpmError(error);
+          return;
+        }
+
+        const runId = startBpmRun();
+        if (!runId) return;
+        let analysisStarted = false;
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          if (!isCurrentBpmRun(runId)) return;
+          analysisStarted = true;
+          await analyzeBpmAudioBuffer(arrayBuffer, runId);
+        } catch (error) {
+          showBpmError(error, runId);
+        } finally {
+          if (!analysisStarted) finishBpmRun(runId);
         }
       }
 
       function showBpmResult(tempos, audioBuffer) {
         lastAnalyzedAudioBuffer = audioBuffer;
-        if (window.incrementToolUsage) window.incrementToolUsage();
-        if (!tempos || tempos.length === 0) {
+        const candidates = normalizeBpmCandidates(tempos);
+        if (candidates.length === 0) {
           bpmResult.classList.add('visible');
           bpmResultNumber.textContent = '?';
           bpmTimelineTrack.innerHTML = '';
@@ -2539,7 +5468,7 @@
           return;
         }
 
-        const topTempo = tempos[0];
+        const topTempo = candidates[0];
         const bpm = Math.round(topTempo.tempo);
 
         // Show result card
@@ -2551,14 +5480,15 @@
         const barCount = 64;
         const channelData = audioBuffer.getChannelData(0);
         const samplesPerBar = Math.floor(channelData.length / barCount);
-        const beatIntervalSamples = Math.floor(audioBuffer.sampleRate * 60 / bpm);
-        const samplesPerBeatBar = Math.floor(samplesPerBar / beatIntervalSamples) || 1;
+        const expectedBeatCount = Math.max(1, Math.round(audioBuffer.duration * bpm / 60));
+        const barsPerBeat = Math.max(1, Math.round(barCount / expectedBeatCount));
 
         for (let i = 0; i < barCount; i++) {
           const start = i * samplesPerBar;
           const end = Math.min(start + samplesPerBar, channelData.length);
           let peak = 0;
-          for (let j = start; j < end; j++) {
+          const sampleStep = Math.max(1, Math.ceil((end - start) / 2048));
+          for (let j = start; j < end; j += sampleStep) {
             const abs = Math.abs(channelData[j]);
             if (abs > peak) peak = abs;
           }
@@ -2566,9 +5496,7 @@
           bar.className = 'bpm-timeline-bar';
           const height = Math.max(3, peak * 24);
           bar.style.height = height + 'px';
-          // Mark beats at regular intervals
-          const beatPosition = Math.round(i / (barCount / (audioBuffer.duration * bpm / 60)));
-          if (beatPosition % 1 === 0 && i % Math.max(1, Math.round(barCount / (audioBuffer.duration * bpm / 60))) === 0) {
+          if (i % barsPerBeat === 0) {
             bar.classList.add('beat');
           }
           bpmTimelineTrack.appendChild(bar);
@@ -2605,8 +5533,7 @@
               }]
             });
             if (selected && typeof selected === 'string') {
-              const fileName = selected.split(/[\\/]/).pop() || selected;
-              analyzeBpmFromFile(selected, fileName);
+              analyzeBpmFromFile(selected);
             }
           } catch (e) {
             console.error('BPM file selection error', e);
@@ -2618,12 +5545,8 @@
           input.addEventListener('change', async () => {
             const file = input.files[0];
             if (!file) return;
-            if (isTauri && file.path) {
-              await analyzeBpmFromFile(file.path, file.name);
-            } else {
-              const arrayBuffer = await file.arrayBuffer();
-              await analyzeBpmAudioBuffer(arrayBuffer);
-            }
+            if (isTauri && file.path) await analyzeBpmFromFile(file.path);
+            else await analyzeBpmBrowserFile(file);
           });
           input.click();
         }
@@ -2637,9 +5560,11 @@
 
       if (bpmReanalyzeBtn) {
         bpmReanalyzeBtn.addEventListener('click', () => {
+          if (bpmAnalyzing) return;
           resetBpmResult();
-          setTimeout(() => {
-            selectBpmAudioFile();
+          bpmReanalyzeTimer = setTimeout(() => {
+            bpmReanalyzeTimer = null;
+            if (bpmDetectOverlay.classList.contains('visible')) selectBpmAudioFile();
           }, 300);
         });
       }
@@ -2663,11 +5588,9 @@
               bpmDropZone.classList.remove('visible');
               const paths = payload.paths || [];
               if (paths.length === 0) return;
-              const audioExts = ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a'];
-              const audioPath = paths.find(p => audioExts.some(ext => p.toLowerCase().endsWith('.' + ext)));
+              const audioPath = paths.find(isBpmSupportedAudioName);
               if (audioPath) {
-                const fileName = audioPath.split(/[\\/]/).pop() || audioPath;
-                analyzeBpmFromFile(audioPath, fileName);
+                analyzeBpmFromFile(audioPath);
               }
             }
           });
@@ -2691,14 +5614,10 @@
           bpmDetectOverlay.classList.remove('drag-over');
           bpmDropZone.classList.remove('visible');
           const file = e.dataTransfer.files[0];
-          if (file && file.type.startsWith('audio/')) {
+          if (file && (file.type.startsWith('audio/') || isBpmSupportedAudioName(file.name))) {
             (async () => {
-              if (isTauri && file.path) {
-                await analyzeBpmFromFile(file.path, file.name);
-              } else {
-                const arrayBuffer = await file.arrayBuffer();
-                await analyzeBpmAudioBuffer(arrayBuffer);
-              }
+              if (isTauri && file.path) await analyzeBpmFromFile(file.path);
+              else await analyzeBpmBrowserFile(file);
             })();
           }
         });
@@ -2913,6 +5832,8 @@
       const audioClipProcessBarFill = document.getElementById('audioClipProcessBarFill');
       const audioClipProcessText = document.getElementById('audioClipProcessText');
       let audioClipPlasmaInstance = null;
+      let clipLoadId = 0;
+      let clipExportRunId = 0;
 
       let clipState = {
         audioBuffer: null,
@@ -2928,8 +5849,53 @@
         hasSelection: false,
         rafId: null,
         isLoading: false,
+        isExporting: false,
+        outputPath: '',
         activeHandle: null,
       };
+
+      function isCurrentClipLoad(loadId) {
+        return loadId === clipLoadId && audioClipOverlay.classList.contains('visible');
+      }
+
+      function isCurrentClipExport(runId) {
+        return runId === clipExportRunId && audioClipOverlay.classList.contains('visible');
+      }
+
+      function getAudioClipErrorMessage(error) {
+        if (error instanceof AudioClipError) {
+          const key = {
+            invalid_input: 'invalidInput',
+            input_too_large: 'inputTooLarge',
+            invalid_audio: 'decodeError',
+            audio_too_long: 'audioTooLong',
+            unsupported_channels: 'unsupportedChannels',
+            decoded_audio_too_large: 'decodedAudioTooLarge',
+            invalid_selection: 'invalidSelection'
+          }[error.code];
+          if (key) return t(`home.audioClip.${key}`);
+        }
+        const code = typeof error === 'string' ? error : error?.message || '';
+        if (code.includes('cancelled')) return t('home.audioClip.cancelled');
+        return t('home.audioClip.exportError');
+      }
+
+      function invalidateClipExport() {
+        const wasExporting = clipState.isExporting;
+        clipExportRunId += 1;
+        clipState.isExporting = false;
+        if (audioClipExportBtn) {
+          audioClipExportBtn.disabled = false;
+          audioClipExportBtn.style.opacity = '';
+        }
+        if (audioClipProcessMask) audioClipProcessMask.classList.remove('visible');
+        if (audioClipProcessBarFill) audioClipProcessBarFill.style.width = '0%';
+        if (wasExporting && isTauri) {
+          import('@tauri-apps/api/core')
+            .then(({ invoke }) => invoke('cancel_convert'))
+            .catch(() => {});
+        }
+      }
 
       function formatTime(sec) {
         if (!sec || isNaN(sec)) return '0:00';
@@ -2954,6 +5920,11 @@
         audioClipOverlay.classList.remove('visible');
         stopClipPlayback();
         resetClipState();
+        if (clipState.audioContext) {
+          const context = clipState.audioContext;
+          clipState.audioContext = null;
+          context.close().catch(() => {});
+        }
         // Destroy plasma instance to free GPU/CPU
         if (audioClipPlasmaInstance) {
           audioClipPlasmaInstance();
@@ -2962,12 +5933,16 @@
       }
 
       function resetClipState() {
+        clipLoadId += 1;
+        invalidateClipExport();
+        clipState.isLoading = false;
         stopClipPlayback();
         clipState.audioBuffer = null;
         clipState.currentTime = 0;
         clipState.duration = 0;
         clipState.filePath = null;
         clipState.fileName = '';
+        clipState.outputPath = '';
         clipState.selStart = 0;
         clipState.selEnd = 0;
         clipState.hasSelection = false;
@@ -3038,7 +6013,8 @@
       }
 
       async function loadClipAudioFile(filePathOrFile) {
-        if (clipState.isLoading) return;
+        if (clipState.isLoading || clipState.isExporting) return;
+        const loadId = ++clipLoadId;
         clipState.isLoading = true;
         stopClipPlayback();
 
@@ -3046,61 +6022,47 @@
         audioClipProcessBarFill.style.width = '30%';
         audioClipProcessText.textContent = t('home.audioClip.loading');
         audioClipProcessMask.classList.add('visible');
-        const loadStartTime = Date.now();
-
         let arrayBuffer;
         let fileName;
+        let sourcePath = null;
 
-        if (typeof filePathOrFile === 'string') {
-          clipState.filePath = filePathOrFile;
-          fileName = filePathOrFile.split(/[/\\]/).pop();
-          audioClipProcessBarFill.style.width = '50%';
-          if (isTauri) {
-            try {
-              const { invoke } = await import('@tauri-apps/api/core');
-              const bytes = await invoke('read_file_bytes', { path: filePathOrFile });
-              arrayBuffer = new Uint8Array(bytes).buffer;
-            } catch (e) {
-              console.error('Read file error:', e);
-              clipState.isLoading = false;
-              audioClipProcessMask.classList.remove('visible');
-              return;
-            }
+        try {
+          if (typeof filePathOrFile === 'string') {
+            sourcePath = filePathOrFile;
+            fileName = filePathOrFile.split(/[/\\]/).pop() || filePathOrFile;
+            audioClipProcessBarFill.style.width = '50%';
+            if (!isTauri) throw new AudioClipError('invalid_input', 'Desktop file paths are unavailable in a browser.');
+            const { invoke } = await import('@tauri-apps/api/core');
+            const size = Number(await invoke('get_file_size', { path: filePathOrFile }));
+            assertAudioClipInput({ name: fileName, size });
+            if (!isCurrentClipLoad(loadId)) return;
+            const bytes = await invoke('read_file_bytes_limited', {
+              path: filePathOrFile,
+              maxBytes: 100 * 1024 * 1024
+            });
+            if (!isCurrentClipLoad(loadId)) return;
+            arrayBuffer = new Uint8Array(bytes).buffer;
           } else {
-            try {
-              const res = await fetch(filePathOrFile);
-              arrayBuffer = await res.arrayBuffer();
-            } catch (e) {
-              console.error('Fetch file error:', e);
-              clipState.isLoading = false;
-              audioClipProcessMask.classList.remove('visible');
-              return;
-            }
-          }
-        } else {
-          fileName = filePathOrFile.name;
-          try {
+            fileName = filePathOrFile?.name || '';
+            assertAudioClipInput(filePathOrFile);
             if (isTauri && filePathOrFile.path) {
               const { invoke } = await import('@tauri-apps/api/core');
-              const bytes = await invoke('read_file_bytes', { path: filePathOrFile.path });
+              sourcePath = filePathOrFile.path;
+              const size = Number(await invoke('get_file_size', { path: sourcePath }));
+              assertAudioClipInput({ name: fileName, size });
+              if (!isCurrentClipLoad(loadId)) return;
+              const bytes = await invoke('read_file_bytes_limited', {
+                path: sourcePath,
+                maxBytes: 100 * 1024 * 1024
+              });
+              if (!isCurrentClipLoad(loadId)) return;
               arrayBuffer = new Uint8Array(bytes).buffer;
             } else {
               arrayBuffer = await filePathOrFile.arrayBuffer();
             }
-          } catch (e) {
-            console.error('Read file error:', e);
-            clipState.isLoading = false;
-            audioClipProcessMask.classList.remove('visible');
-            return;
           }
-          clipState.filePath = null;
-        }
-
-        audioClipProcessBarFill.style.width = '70%';
-        clipState.fileName = fileName;
-        audioClipFileName.textContent = fileName;
-
-        try {
+          if (!isCurrentClipLoad(loadId)) return;
+          audioClipProcessBarFill.style.width = '70%';
           if (!clipState.audioContext) {
             clipState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
           }
@@ -3108,15 +6070,13 @@
             clipState.audioContext.resume();
           }
           const audioBuffer = await clipState.audioContext.decodeAudioData(arrayBuffer);
+          if (!isCurrentClipLoad(loadId)) return;
+          assertAudioClipBuffer(audioBuffer);
           audioClipProcessBarFill.style.width = '90%';
-          let duration = audioBuffer.duration;
-          if (!isFinite(duration) || duration <= 0) {
-            duration = audioBuffer.length / audioBuffer.sampleRate;
-          }
-          if (!isFinite(duration) || duration <= 0) {
-            throw new Error('Invalid audio duration');
-          }
+          const duration = audioBuffer.duration;
           clipState.audioBuffer = audioBuffer;
+          clipState.filePath = sourcePath;
+          clipState.fileName = fileName;
           clipState.duration = duration;
           clipState.currentTime = 0;
           clipState.selStart = 0;
@@ -3151,17 +6111,15 @@
           });
 
           if (window.lucide) window.lucide.createIcons();
-        } catch (e) {
-          console.error('Audio decode error:', e);
-          alert(t('home.audioClip.decodeError'));
+        } catch (error) {
+          console.error('Audio clip load error:', error);
+          if (isCurrentClipLoad(loadId)) alert(getAudioClipErrorMessage(error));
         } finally {
-          // Ensure mask shows for at least 1.5s
-          const elapsed = Date.now() - loadStartTime;
-          const remaining = Math.max(0, 1500 - elapsed);
-          setTimeout(() => {
+          if (isCurrentClipLoad(loadId)) {
             audioClipProcessMask.classList.remove('visible');
-          }, remaining);
-          clipState.isLoading = false;
+            audioClipProcessBarFill.style.width = '0%';
+            clipState.isLoading = false;
+          }
         }
       }
 
@@ -3194,7 +6152,8 @@
           let max = -1.0;
           const start = x * samplesPerPixel;
           const end = Math.min(start + samplesPerPixel, channelData.length);
-          for (let i = start; i < end; i++) {
+          const sampleStep = Math.max(1, Math.ceil((end - start) / 2048));
+          for (let i = start; i < end; i += sampleStep) {
             const v = channelData[i];
             if (v < min) min = v;
             if (v > max) max = v;
@@ -3210,13 +6169,15 @@
       function timeToX(time) {
         if (!clipState.duration) return CLIP_PAD;
         const rect = audioClipCanvas.getBoundingClientRect();
-        return CLIP_PAD + (time / clipState.duration) * rect.width;
+        const trackWidth = Math.max(1, rect.width - CLIP_PAD * 2);
+        return CLIP_PAD + (time / clipState.duration) * trackWidth;
       }
 
       function xToTime(x) {
         const rect = audioClipCanvas.getBoundingClientRect();
+        const trackWidth = Math.max(1, rect.width - CLIP_PAD * 2);
         const adjustedX = x - CLIP_PAD;
-        const ratio = Math.max(0, Math.min(1, adjustedX / rect.width));
+        const ratio = Math.max(0, Math.min(1, adjustedX / trackWidth));
         return ratio * clipState.duration;
       }
 
@@ -3473,101 +6434,83 @@
       // Export clip
       if (audioClipExportBtn) {
         audioClipExportBtn.addEventListener('click', async () => {
+          if (clipState.isExporting) return;
+          if (!isTauri) {
+            alert(t('home.audioClip.desktopOnly'));
+            return;
+          }
           if (!clipState.filePath) {
             alert(t('home.audioClip.noFile'));
             return;
           }
-          const startTime = clipState.hasSelection ? clipState.selStart : 0;
-          const endTime = clipState.hasSelection ? clipState.selEnd : clipState.duration;
-
-          if (endTime - startTime < 0.1) {
-            alert(t('home.audioClip.invalidSelection'));
+          let selection;
+          try {
+            selection = assertAudioClipSelection(
+              clipState.hasSelection ? clipState.selStart : 0,
+              clipState.hasSelection ? clipState.selEnd : clipState.duration,
+              clipState.duration
+            );
+          } catch (error) {
+            alert(getAudioClipErrorMessage(error));
             return;
           }
+          const request = {
+            inputPath: clipState.filePath,
+            fileName: clipState.fileName,
+            startTime: selection.start,
+            endTime: selection.end,
+            duration: selection.end - selection.start
+          };
+          const runId = ++clipExportRunId;
+          clipState.isExporting = true;
+          audioClipExportBtn.disabled = true;
+          audioClipExportBtn.style.opacity = '0.6';
+          audioClipProcessBarFill.style.width = '15%';
+          audioClipProcessText.textContent = t('home.audioClip.exporting');
+          audioClipProcessMask.classList.add('visible');
 
-          if (isTauri) {
-            // Show loading mask for export
-            audioClipProcessBarFill.style.width = '30%';
-            audioClipProcessText.textContent = t('home.audioClip.exporting');
-            audioClipProcessMask.classList.add('visible');
-            const exportStartTime = Date.now();
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            const outputDir = await getOutputDir('Audio');
+            if (!isCurrentClipExport(runId)) return;
 
-            try {
-              const { invoke } = await import('@tauri-apps/api/core');
-              const config = await invoke('get_install_config');
-              const outputDir = config.install_path
-                ? config.install_path.replace(/[/\\]?$/, '') + '/Audio'
-                : '';
+            const ffmpegReady = await ensureFfmpegAvailable();
+            if (!isCurrentClipExport(runId)) return;
+            if (!ffmpegReady) throw new Error('Audio trim runtime unavailable');
 
-              if (!outputDir) {
-                alert(t('home.audioClip.exportError'));
-                audioClipProcessMask.classList.remove('visible');
-                audioClipProcessBarFill.style.width = '0%';
-                audioClipProcessText.textContent = t('home.audioClip.loading');
-                return;
-              }
+            audioClipProcessBarFill.style.width = '70%';
+            const result = await invoke('trim_audio', {
+              inputPath: request.inputPath,
+              outputDir,
+              startTime: request.startTime,
+              endTime: request.endTime,
+            });
+            if (!isCurrentClipExport(runId)) return;
+            if (!result?.success || !result.output_path) throw new Error(result?.error || 'Audio trim failed');
 
-              audioClipExportBtn.disabled = true;
-              audioClipExportBtn.style.opacity = '0.6';
-
-              // Ensure ffmpeg is available (prompt user to download if missing)
-              const ffmpegReady = await ensureFfmpegAvailable();
-              if (!ffmpegReady) {
-                audioClipExportBtn.disabled = false;
-                audioClipExportBtn.style.opacity = '1';
-                return;
-              }
-              audioClipProcessBarFill.style.width = '80%';
-
-              const result = await invoke('trim_audio', {
-                inputPath: clipState.filePath,
-                outputDir: outputDir,
-                startTime: startTime,
-                endTime: endTime,
-              });
-
-              audioClipProcessBarFill.style.width = '100%';
-
-              audioClipExportBtn.disabled = false;
-              audioClipExportBtn.style.opacity = '';
-
-              if (result.success) {
-                const clipDur = clipState.selEnd - clipState.selStart;
-                const clipMin = Math.floor(clipDur / 60);
-                const clipSec = Math.floor(clipDur % 60);
-                const durStr = `${clipMin}:${clipSec.toString().padStart(2, '0')}`;
-                if (audioClipSuccessMeta) {
-                  audioClipSuccessMeta.textContent = t('home.audioClip.successSummary', { name: clipState.fileName, duration: durStr });
-                }
-                if (audioClipSuccessFile) {
-                  audioClipSuccessFile.textContent = clipState.fileName;
-                }
-                if (audioClipSuccessDuration) {
-                  audioClipSuccessDuration.textContent = durStr;
-                }
-                audioClipSuccessPath.textContent = result.output_path.replace(/\//g, '\\');
-                audioClipSuccessOverlay.classList.add('visible');
-                if (window.incrementToolUsage) window.incrementToolUsage();
-              } else {
-                alert(t('home.audioClip.exportError') + ': ' + (result.error || 'Unknown'));
-              }
-            } catch (e) {
-              audioClipExportBtn.disabled = false;
-              audioClipExportBtn.style.opacity = '';
-              console.error('Export error:', e);
-              alert(t('home.audioClip.exportError') + ': ' + e);
-            } finally {
-              // Ensure mask shows for at least 1.5s
-              const elapsed = Date.now() - exportStartTime;
-              const remaining = Math.max(0, 1500 - elapsed);
-              setTimeout(() => {
-                audioClipProcessMask.classList.remove('visible');
-                audioClipProcessBarFill.style.width = '0%';
-                audioClipProcessText.textContent = t('home.audioClip.loading');
-              }, remaining);
+            audioClipProcessBarFill.style.width = '100%';
+            clipState.outputPath = result.output_path;
+            const durStr = formatTime(request.duration);
+            if (audioClipSuccessMeta) {
+              audioClipSuccessMeta.textContent = t('home.audioClip.successSummary', { name: request.fileName, duration: durStr });
             }
-          } else {
-            alert(t('home.audioClip.exportError'));
+            if (audioClipSuccessFile) audioClipSuccessFile.textContent = request.fileName;
+            if (audioClipSuccessDuration) audioClipSuccessDuration.textContent = durStr;
+            if (audioClipSuccessPath) audioClipSuccessPath.textContent = result.output_path;
+            audioClipSuccessOverlay.classList.add('visible');
+          } catch (error) {
+            if (isCurrentClipExport(runId)) {
+              console.error('Audio clip export error:', error);
+              alert(getAudioClipErrorMessage(error));
+            }
+          } finally {
+            if (!isCurrentClipExport(runId)) return;
+            audioClipProcessMask.classList.remove('visible');
+            audioClipProcessBarFill.style.width = '0%';
+            audioClipProcessText.textContent = t('home.audioClip.loading');
+            clipState.isExporting = false;
+            audioClipExportBtn.disabled = false;
+            audioClipExportBtn.style.opacity = '';
           }
         });
       }
@@ -3580,13 +6523,10 @@
       }
       if (audioClipSuccessOpenFolder) {
         audioClipSuccessOpenFolder.addEventListener('click', async () => {
-          if (isTauri && audioClipSuccessPath.textContent) {
+          if (isTauri && clipState.outputPath) {
             try {
               const { invoke } = await import('@tauri-apps/api/core');
-              // Normalize path separators to backslashes for Windows and extract directory
-              const folder = audioClipSuccessPath.textContent
-                .replace(/[/\\][^/\\]+$/, '')
-                .replace(/\//g, '\\');
+              const folder = clipState.outputPath.replace(/[/\\][^/\\]+$/, '');
               await invoke('open_path', { path: folder });
             } catch (e) {
               console.error('Open folder error:', e);
@@ -3601,7 +6541,7 @@
           const { getCurrentWebview } = await import('@tauri-apps/api/webview');
           const webview = getCurrentWebview();
           await webview.onDragDropEvent((event) => {
-            if (!audioClipOverlay.classList.contains('visible')) return;
+            if (!audioClipOverlay.classList.contains('visible') || clipState.isLoading || clipState.isExporting) return;
             const payload = event.payload;
             if (payload.type === 'enter' || payload.type === 'over') {
               audioClipOverlay.classList.add('drag-over');
@@ -3623,6 +6563,7 @@
       // HTML5 drag-drop fallback (non-Tauri)
       if (audioClipOverlay && !isTauri) {
         audioClipOverlay.addEventListener('dragover', (e) => {
+          if (clipState.isLoading || clipState.isExporting) return;
           e.preventDefault();
           audioClipOverlay.classList.add('drag-over');
           audioClipDropZone.classList.add('visible');
@@ -3633,11 +6574,12 @@
           audioClipDropZone.classList.remove('visible');
         });
         audioClipOverlay.addEventListener('drop', (e) => {
+          if (clipState.isLoading || clipState.isExporting) return;
           e.preventDefault();
           audioClipOverlay.classList.remove('drag-over');
           audioClipDropZone.classList.remove('visible');
           const file = e.dataTransfer.files[0];
-          if (file && file.type.startsWith('audio/')) {
+          if (file && (file.type.startsWith('audio/') || isAudioClipSupportedName(file.name))) {
             loadClipAudioFile(file);
           }
         });
@@ -3662,6 +6604,7 @@
       const audioExtractBody = document.getElementById('audioExtractBody');
       const audioExtractHeroTop = document.getElementById('audioExtractHeroTop');
       const audioExtractCta = document.getElementById('audioExtractCta');
+      const audioExtractStart = document.getElementById('audioExtractStart');
       const audioExtractInfo = document.getElementById('audioExtractInfo');
       const audioExtractFileName = document.getElementById('audioExtractFileName');
       const audioExtractFileMeta = document.getElementById('audioExtractFileMeta');
@@ -3680,13 +6623,73 @@
       const audioExtractSuccessOpenFolder = document.getElementById('audioExtractSuccessOpenFolder');
       const audioExtractSuccessOk = document.getElementById('audioExtractSuccessOk');
       let audioExtractPlasmaInstance = null;
+      let audioExtractRunId = 0;
+      let audioExtractUnlisten = null;
       let extractState = {
         filePath: null,
         fileName: '',
+        fileSize: 0,
+        outputPath: '',
         targetFormat: 'MP3',
         trackIndex: null,
         isProcessing: false,
+        isReady: false,
       };
+
+      function setAudioExtractStartEnabled(enabled) {
+        if (audioExtractStart) audioExtractStart.disabled = !enabled;
+      }
+
+      function isCurrentAudioExtractRun(runId) {
+        return runId === audioExtractRunId && audioExtractOverlay?.classList.contains('visible');
+      }
+
+      function invalidateAudioExtractRun() {
+        const wasProcessing = extractState.isProcessing;
+        audioExtractRunId += 1;
+        extractState.isProcessing = false;
+        if (audioExtractUnlisten) {
+          audioExtractUnlisten();
+          audioExtractUnlisten = null;
+        }
+        if (audioExtractProcessMask) audioExtractProcessMask.classList.remove('visible');
+        if (audioExtractProcessBarFill) audioExtractProcessBarFill.style.width = '0%';
+        if (wasProcessing && isTauri) {
+          import('@tauri-apps/api/core')
+            .then(({ invoke }) => invoke('cancel_convert'))
+            .catch(() => {});
+        }
+      }
+
+      function finishAudioExtractRun(runId) {
+        if (runId === audioExtractRunId) extractState.isProcessing = false;
+      }
+
+      function getAudioExtractErrorMessage(error) {
+        if (error instanceof AudioExtractError) {
+          const key = {
+            invalid_input: 'invalidInput',
+            input_too_large: 'inputTooLarge',
+            invalid_target_format: 'invalidFormat',
+            invalid_track: 'invalidTrack'
+          }[error.code];
+          if (key) return t(`home.audioExtract.${key}`);
+        }
+        const code = typeof error === 'string' ? error : error?.message || '';
+        const key = {
+          'audio-extract:cancelled': 'cancelled',
+          'audio-extract:invalid-input': 'invalidInput',
+          'audio-extract:input-too-large': 'inputTooLarge',
+          'audio-extract:invalid-target-format': 'invalidFormat',
+          'audio-extract:invalid-track': 'invalidTrack',
+          'audio-extract:no-audio-track': 'noAudioTrack',
+          'audio-extract:output-path': 'outputError',
+          'audio-extract:desktop-only': 'desktopOnly',
+          'audio-extract:runtime-unavailable': 'runtimeUnavailable',
+          'audio-extract:failed': 'failed'
+        }[code];
+        return key ? t(`home.audioExtract.${key}`) : t('home.audioExtract.failed');
+      }
 
       function openAudioExtractOverlay() {
         if (!audioExtractOverlay) return;
@@ -3711,16 +6714,22 @@
       }
 
       function resetExtractState() {
+        invalidateAudioExtractRun();
         extractState = {
           filePath: null,
           fileName: '',
+          fileSize: 0,
+          outputPath: '',
           targetFormat: 'MP3',
           trackIndex: null,
           isProcessing: false,
+          isReady: false,
         };
         if (audioExtractHeroTop) audioExtractHeroTop.style.display = '';
         if (audioExtractInfo) audioExtractInfo.style.display = 'none';
         if (audioExtractTrackSelector) audioExtractTrackSelector.style.display = 'none';
+        if (audioExtractTrackSelect) audioExtractTrackSelect.replaceChildren();
+        setAudioExtractStartEnabled(false);
         // Reset format to MP3
         if (audioExtractFormatOptions) {
           audioExtractFormatOptions.querySelectorAll('.audio-convert-format-option').forEach(btn => {
@@ -3747,144 +6756,173 @@
         return `${bytes} B`;
       }
 
-      async function loadVideoFile(filePath) {
-        if (!filePath) return;
-        const fileName = filePath.split(/[\\/]/).pop() || filePath;
-        extractState.filePath = filePath;
-        extractState.fileName = fileName;
+      function renderAudioExtractTracks(audioTracks) {
+        if (!audioExtractTrackSelector || !audioExtractTrackSelect) return;
+        audioExtractTrackSelect.replaceChildren();
+        const tracks = Array.isArray(audioTracks) ? audioTracks : [];
+        if (tracks.length === 0) {
+          extractState.trackIndex = null;
+          audioExtractTrackSelector.style.display = 'none';
+          return;
+        }
 
-        // Show file info
-        if (audioExtractHeroTop) audioExtractHeroTop.style.display = 'none';
-        if (audioExtractInfo) audioExtractInfo.style.display = '';
-        if (audioExtractFileName) audioExtractFileName.textContent = fileName;
-        if (audioExtractFileMeta) audioExtractFileMeta.textContent = '...';
+        tracks.forEach((track, position) => {
+          const option = document.createElement('option');
+          const index = normalizeAudioTrackIndex(track?.index ?? position);
+          option.value = String(index);
+          option.textContent = `${t('home.audioExtract.trackLabel', { index: position + 1 })} · ${track?.codec || 'Unknown'} · ${track?.language || 'default'} · ${track?.channels || 'unknown'}`;
+          audioExtractTrackSelect.appendChild(option);
+        });
+        extractState.trackIndex = normalizeAudioTrackIndex(audioExtractTrackSelect.value);
+        audioExtractTrackSelector.style.display = tracks.length > 1 ? '' : 'none';
+      }
 
-        // Probe video info then auto-start extraction
-        if (isTauri) {
-          try {
-            const { invoke } = await import('@tauri-apps/api/core');
-            const probe = await invoke('probe_video', { inputPath: filePath });
-            const metaParts = [formatDuration(probe.duration), formatFileSize(probe.file_size)];
-            if (audioExtractFileMeta) audioExtractFileMeta.textContent = metaParts.join(' · ');
+      async function loadVideoFile(filePath, suppliedSize = null) {
+        if (!filePath || extractState.isProcessing) return;
+        const fileName = String(filePath).split(/[\\/]/).pop() || String(filePath);
+        invalidateAudioExtractRun();
+        const loadId = ++audioExtractRunId;
+        setAudioExtractStartEnabled(false);
 
-            // Set track index if multiple tracks
-            if (probe.audio_tracks.length > 1) {
-              extractState.trackIndex = 0;
-            } else {
-              extractState.trackIndex = null;
-            }
-
-            // Auto-start extraction after probe
-            startExtraction();
-          } catch (e) {
-            console.error('Probe failed:', e);
-            if (audioExtractFileMeta) audioExtractFileMeta.textContent = 'probe error';
-            // Still try to extract without track info
-            startExtraction();
+        try {
+          let fileSize = suppliedSize;
+          let invoke = null;
+          if (isTauri) {
+            ({ invoke } = await import('@tauri-apps/api/core'));
+            fileSize = Number(await invoke('get_file_size', { path: filePath }));
           }
+          assertAudioExtractInput({ name: fileName, size: fileSize });
+          if (!isCurrentAudioExtractRun(loadId)) return;
+
+          extractState = {
+            filePath: String(filePath),
+            fileName,
+            fileSize,
+            outputPath: '',
+            targetFormat: extractState.targetFormat,
+            trackIndex: null,
+            isProcessing: false,
+            isReady: false,
+          };
+          if (audioExtractHeroTop) audioExtractHeroTop.style.display = 'none';
+          if (audioExtractInfo) audioExtractInfo.style.display = '';
+          if (audioExtractFileName) audioExtractFileName.textContent = fileName;
+          if (audioExtractFileMeta) audioExtractFileMeta.textContent = t('home.audioExtract.probing');
+
+          if (!isTauri) {
+            if (audioExtractFileMeta) audioExtractFileMeta.textContent = formatFileSize(fileSize);
+            extractState.isReady = true;
+            setAudioExtractStartEnabled(true);
+            return;
+          }
+
+          const probe = await invoke('probe_video', { inputPath: filePath });
+          if (!isCurrentAudioExtractRun(loadId)) return;
+          const tracks = Array.isArray(probe.audio_tracks) ? probe.audio_tracks : [];
+          const metaParts = [formatDuration(probe.duration), formatFileSize(probe.file_size)];
+          if (tracks.length === 0) {
+            if (audioExtractFileMeta) audioExtractFileMeta.textContent = t('home.audioExtract.noAudioTrack');
+            renderAudioExtractTracks([]);
+            return;
+          }
+
+          if (audioExtractFileMeta) audioExtractFileMeta.textContent = metaParts.join(' · ');
+          renderAudioExtractTracks(tracks);
+          extractState.isReady = true;
+          setAudioExtractStartEnabled(true);
+        } catch (error) {
+          if (!isCurrentAudioExtractRun(loadId)) return;
+          console.error('Audio extraction probe failed:', error);
+          if (audioExtractFileMeta) audioExtractFileMeta.textContent = getAudioExtractErrorMessage(error);
+          renderAudioExtractTracks([]);
         }
       }
 
       async function startExtraction() {
-        if (!extractState.filePath || extractState.isProcessing) return;
-        extractState.isProcessing = true;
+        if (!extractState.filePath || !extractState.isReady || extractState.isProcessing) return;
+        let request;
+        try {
+          request = {
+            inputPath: extractState.filePath,
+            fileName: extractState.fileName,
+            targetFormat: normalizeAudioExtractFormat(extractState.targetFormat),
+            trackIndex: normalizeAudioTrackIndex(extractState.trackIndex)
+          };
+        } catch (error) {
+          alert(getAudioExtractErrorMessage(error));
+          return;
+        }
 
-        // Show process mask
+        const runId = ++audioExtractRunId;
+        extractState.isProcessing = true;
+        setAudioExtractStartEnabled(false);
         if (audioExtractProcessMask) audioExtractProcessMask.classList.add('visible');
-        if (audioExtractProcessBarFill) audioExtractProcessBarFill.style.width = '10%';
+        if (audioExtractProcessBarFill) audioExtractProcessBarFill.style.width = '4%';
         if (audioExtractProcessText) audioExtractProcessText.textContent = t('home.audioExtract.extracting');
 
-        const startTime = Date.now();
+        let unlisten = null;
+        try {
+          if (!isTauri) throw new Error('audio-extract:desktop-only');
+          const { invoke } = await import('@tauri-apps/api/core');
+          const { listen } = await import('@tauri-apps/api/event');
+          const finalOutputDir = await getOutputDir('Audio');
+          if (!isCurrentAudioExtractRun(runId)) return;
 
-        if (isTauri) {
-          try {
-            const { invoke } = await import('@tauri-apps/api/core');
+          const ffmpegReady = await ensureFfmpegAvailable();
+          if (!isCurrentAudioExtractRun(runId)) return;
+          if (!ffmpegReady) throw new Error('audio-extract:runtime-unavailable');
 
-            // Get output directory
-            let finalOutputDir = '';
-            try {
-              const config = await invoke('get_install_config');
-              if (config.install_path) {
-                const sep = config.install_path.includes('\\') ? '\\' : '/';
-                finalOutputDir = config.install_path.replace(/[\/\\]+$/, '') + sep + 'Audio';
-              }
-            } catch (e) {
-              console.error('Failed to get install config:', e);
+          unlisten = await listen('audio-extract-progress', (event) => {
+            if (!isCurrentAudioExtractRun(runId)) return;
+            const data = event.payload || {};
+            const progress = Number(data.progress);
+            if (Number.isFinite(progress) && audioExtractProcessBarFill) {
+              audioExtractProcessBarFill.style.width = `${Math.min(98, Math.max(4, Math.round(progress * 100)))}%`;
             }
-            if (!finalOutputDir) {
-              const outputDir = await invoke('get_documents_dir').catch(() => 'C:\\Users\\Downloads');
-              finalOutputDir = outputDir + '\\ToolKnit\\Audio';
-            }
+            if (!audioExtractProcessText) return;
+            const statusKey = {
+              probe: 'probing',
+              prepare: 'preparing',
+              extract: 'extracting',
+              publish: 'preparing',
+              cancelled: 'cancelled',
+              failed: 'failed'
+            }[data.status] || 'extracting';
+            audioExtractProcessText.textContent = t(`home.audioExtract.${statusKey}`);
+          });
+          audioExtractUnlisten = unlisten;
+          if (!isCurrentAudioExtractRun(runId)) return;
+          const result = await invoke('extract_audio', {
+            inputPath: request.inputPath,
+            outputDir: finalOutputDir,
+            targetFormat: request.targetFormat,
+            trackIndex: request.trackIndex,
+          });
+          if (!isCurrentAudioExtractRun(runId)) return;
+          if (!result?.success || !result.output_path) throw new Error(result?.error || 'audio-extract:failed');
 
-            // Ensure ffmpeg is available (prompt user to download if missing)
-            const ffmpegReady = await ensureFfmpegAvailable();
-            if (!ffmpegReady) {
-              if (audioExtractProcessMask) audioExtractProcessMask.classList.remove('visible');
-              if (audioExtractProcessBarFill) audioExtractProcessBarFill.style.width = '0%';
-              return;
-            }
-
-            // Extract
-            if (audioExtractProcessText) audioExtractProcessText.textContent = t('home.audioExtract.extracting');
-            if (audioExtractProcessBarFill) audioExtractProcessBarFill.style.width = '50%';
-
-            const result = await invoke('extract_audio', {
-              inputPath: extractState.filePath,
-              outputDir: finalOutputDir,
-              targetFormat: extractState.targetFormat,
-              trackIndex: extractState.trackIndex,
-            });
-
-            if (audioExtractProcessBarFill) audioExtractProcessBarFill.style.width = '100%';
-
-            const elapsed = Date.now() - startTime;
-            const remaining = Math.max(0, 1500 - elapsed);
-            setTimeout(() => {
-              if (audioExtractProcessMask) audioExtractProcessMask.classList.remove('visible');
-              if (audioExtractProcessBarFill) audioExtractProcessBarFill.style.width = '0%';
-              extractState.isProcessing = false;
-
-              if (result.success) {
-                if (audioExtractSuccessMeta) {
-                  audioExtractSuccessMeta.textContent = t('home.audioExtract.successSummary', { name: extractState.fileName, format: extractState.targetFormat });
-                }
-                if (audioExtractSuccessFile) {
-                  audioExtractSuccessFile.textContent = extractState.fileName;
-                }
-                if (audioExtractSuccessFormat) {
-                  audioExtractSuccessFormat.textContent = extractState.targetFormat;
-                }
-                if (audioExtractSuccessPath) {
-                  audioExtractSuccessPath.textContent = result.output_path.replace(/\//g, '\\');
-                }
-                if (audioExtractSuccessOverlay) {
-                  audioExtractSuccessOverlay.classList.add('visible');
-                }
-                if (window.incrementToolUsage) window.incrementToolUsage();
-              } else {
-                alert(result.error || t('common.extractionFailed'));
-              }
-            }, remaining);
-          } catch (e) {
-            console.error('Extract error:', e);
-            const elapsed = Date.now() - startTime;
-            const remaining = Math.max(0, 1500 - elapsed);
-            setTimeout(() => {
-              if (audioExtractProcessMask) audioExtractProcessMask.classList.remove('visible');
-              if (audioExtractProcessBarFill) audioExtractProcessBarFill.style.width = '0%';
-              extractState.isProcessing = false;
-              alert(t('common.errorOccurred', { error: String(e) }));
-            }, remaining);
+          if (audioExtractProcessBarFill) audioExtractProcessBarFill.style.width = '100%';
+          extractState.outputPath = result.output_path;
+          if (audioExtractSuccessMeta) {
+            audioExtractSuccessMeta.textContent = t('home.audioExtract.successSummary', { name: request.fileName, format: request.targetFormat });
           }
-        } else {
-          // Non-Tauri simulation
-          setTimeout(() => {
-            if (audioExtractProcessMask) audioExtractProcessMask.classList.remove('visible');
-            if (audioExtractProcessBarFill) audioExtractProcessBarFill.style.width = '0%';
-            extractState.isProcessing = false;
-            if (audioExtractSuccessPath) audioExtractSuccessPath.textContent = '~/Downloads/toolknit-extracted/';
-            if (audioExtractSuccessOverlay) audioExtractSuccessOverlay.classList.add('visible');
-          }, 1500);
+          if (audioExtractSuccessFile) audioExtractSuccessFile.textContent = request.fileName;
+          if (audioExtractSuccessFormat) audioExtractSuccessFormat.textContent = request.targetFormat;
+          if (audioExtractSuccessPath) audioExtractSuccessPath.textContent = result.output_path;
+          if (audioExtractSuccessOverlay) audioExtractSuccessOverlay.classList.add('visible');
+        } catch (error) {
+          if (isCurrentAudioExtractRun(runId)) {
+            console.error('Audio extraction failed:', error);
+            alert(getAudioExtractErrorMessage(error));
+          }
+        } finally {
+          if (unlisten) unlisten();
+          if (audioExtractUnlisten === unlisten) audioExtractUnlisten = null;
+          if (!isCurrentAudioExtractRun(runId)) return;
+          if (audioExtractProcessMask) audioExtractProcessMask.classList.remove('visible');
+          if (audioExtractProcessBarFill) audioExtractProcessBarFill.style.width = '0%';
+          finishAudioExtractRun(runId);
+          setAudioExtractStartEnabled(extractState.isReady);
         }
       }
 
@@ -3909,7 +6947,7 @@
           input.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
-              loadVideoFile(file.name);
+              loadVideoFile(file.name, file.size);
             }
           };
           input.click();
@@ -3920,9 +6958,14 @@
       if (audioExtractFormatOptions) {
         audioExtractFormatOptions.querySelectorAll('.audio-convert-format-option').forEach(btn => {
           btn.addEventListener('click', () => {
+            if (extractState.isProcessing) return;
             audioExtractFormatOptions.querySelectorAll('.audio-convert-format-option').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            extractState.targetFormat = btn.dataset.format;
+            try {
+              extractState.targetFormat = normalizeAudioExtractFormat(btn.dataset.format);
+            } catch (error) {
+              alert(getAudioExtractErrorMessage(error));
+            }
           });
         });
       }
@@ -3930,13 +6973,20 @@
       // Track selection
       if (audioExtractTrackSelect) {
         audioExtractTrackSelect.addEventListener('change', () => {
-          extractState.trackIndex = parseInt(audioExtractTrackSelect.value, 10);
+          try {
+            extractState.trackIndex = normalizeAudioTrackIndex(audioExtractTrackSelect.value);
+          } catch (error) {
+            alert(getAudioExtractErrorMessage(error));
+          }
         });
       }
 
       // CTA button
       if (audioExtractCta) {
         audioExtractCta.addEventListener('click', selectVideoFile);
+      }
+      if (audioExtractStart) {
+        audioExtractStart.addEventListener('click', startExtraction);
       }
 
       // File remove
@@ -3971,12 +7021,10 @@
       }
       if (audioExtractSuccessOpenFolder) {
         audioExtractSuccessOpenFolder.addEventListener('click', async () => {
-          if (isTauri && audioExtractSuccessPath.textContent) {
+          if (isTauri && extractState.outputPath) {
             try {
               const { invoke } = await import('@tauri-apps/api/core');
-              const folder = audioExtractSuccessPath.textContent
-                .replace(/[/\\][^/\\]+$/, '')
-                .replace(/\//g, '\\');
+              const folder = extractState.outputPath.replace(/[/\\][^/\\]+$/, '');
               await invoke('open_path', { path: folder });
             } catch (e) {
               console.error('Open folder error:', e);
@@ -4032,7 +7080,7 @@
           if (audioExtractDropZone) audioExtractDropZone.classList.remove('visible');
           const file = e.dataTransfer.files[0];
           if (file && file.type.startsWith('video/')) {
-            loadVideoFile(file.name);
+            loadVideoFile(file.name, file.size);
           }
         });
       }
@@ -4064,7 +7112,7 @@
 
       if (feedbackCta) {
         feedbackCta.addEventListener('click', () => {
-          openFeedbackDrawer();
+          void openExternalUrl('https://github.com/ZihangDong/toolknit-desktop');
         });
       }
 
@@ -4235,386 +7283,8 @@
         }
       });
 
-      // ===== Auth Overlay =====
-      const authOverlay = document.getElementById('authOverlay');
-      const authCircle = document.getElementById('authCircle');
-      const authClose = document.getElementById('authClose');
-      const loginForm = document.getElementById('loginForm');
-      const registerForm = document.getElementById('registerForm');
-      const switchToRegister = document.getElementById('switchToRegister');
-      const switchToLogin = document.getElementById('switchToLogin');
-      const authHeroTitle = document.getElementById('authHeroTitle');
-      const authHeroSubtitle = document.getElementById('authHeroSubtitle');
-      const loginError = document.getElementById('loginError');
-      const registerError = document.getElementById('registerError');
-      const loginSubmit = document.getElementById('loginSubmit');
-      const registerSubmit = document.getElementById('registerSubmit');
-      const registerNext = document.getElementById('registerNext');
-      const registerBack = document.getElementById('registerBack');
-      const registerStep1 = document.getElementById('registerStep1');
-      const registerStep2 = document.getElementById('registerStep2');
-      const registerAvatarZone = document.getElementById('registerAvatarZone');
-      const registerAvatarFile = document.getElementById('registerAvatarFile');
-      const registerAvatarPreview = document.getElementById('registerAvatarPreview');
-      const registerError2 = document.getElementById('registerError2');
-      const registerSpider2 = document.getElementById('registerSpider2');
-      let registerAvatarData = null;
-
-      const authLoadingOverlay = document.getElementById('authLoadingOverlay');
-      const authLoadingCircle = document.getElementById('authLoadingCircle');
-
-      function showAuthLoading(originX, originY) {
-        const dx = Math.max(originX, window.innerWidth - originX);
-        const dy = Math.max(originY, window.innerHeight - originY);
-        const radius = Math.sqrt(dx * dx + dy * dy);
-        const diameter = radius * 2;
-        authLoadingCircle.style.width = diameter + 'px';
-        authLoadingCircle.style.height = diameter + 'px';
-        authLoadingCircle.style.left = (originX - radius) + 'px';
-        authLoadingCircle.style.top = (originY - radius) + 'px';
-        authLoadingOverlay.classList.remove('closing');
-        authLoadingOverlay.classList.remove('active');
-        // Force reflow with inline scale(0), then clear it so CSS class can take over
-        authLoadingCircle.style.transform = 'scale(0)';
-        void authLoadingCircle.offsetWidth;
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            authLoadingCircle.style.transform = '';
-            authLoadingOverlay.classList.add('active');
-          });
-        });
-      }
-
-      function hideAuthLoading() {
-        authLoadingOverlay.classList.remove('active');
-        authLoadingOverlay.classList.add('closing');
-        setTimeout(() => {
-          authLoadingOverlay.classList.remove('closing');
-        }, 600);
-      }
-
-      const SERVER_ERROR_MAP = {
-        'Email already registered': 'auth.errEmailExists',
-        'Invalid email or password': 'auth.errInvalidCredentials',
-        'Account banned': 'auth.errAccountBanned',
-        'Server error': 'auth.errServer',
-        'Not found': 'auth.errNotFound',
-        'Daily usage limit reached': 'auth.errDailyLimit',
-        'Invalid email format': 'auth.errInvalidEmail',
-        'Password must be 6-64 characters': 'auth.errPasswordMax',
-        'Username must be 1-64 characters': 'auth.errUsernameRequired',
-        'No fields to update': 'auth.errUnknown',
-        'Old password incorrect': 'auth.errInvalidCredentials',
-        'Password changed successfully': null,
-      };
-
-      function translateServerError(msg) {
-        if (!msg) return t('auth.errUnknown');
-        const key = SERVER_ERROR_MAP[msg];
-        if (key === null) return msg;
-        if (key) return t(key);
-        return msg;
-      }
-
-      function authHeaders(extra = {}) {
-        const token = localStorage.getItem('toolknit_token');
-        const headers = { 'Content-Type': 'application/json', ...extra };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        return headers;
-      }
-
-      function updatePersonalPanel(user) {
-        if (!user) return;
-        const panel = document.getElementById('personalPanel');
-        if (!panel) return;
-        panel.classList.add('logged-in');
-        const nameEl = panel.querySelector('.logged-in-view .info-name');
-        const metaEls = panel.querySelectorAll('.logged-in-view .info-meta');
-        const avatarImg = panel.querySelector('.logged-in-view .avatar img');
-        if (nameEl) nameEl.textContent = user.username || user.email || 'User';
-        if (metaEls[0]) metaEls[0].textContent = user.email || '';
-        if (metaEls[1]) metaEls[1].textContent = `ID: ${user.id || ''}`;
-        if (avatarImg) {
-          const avatarParent = avatarImg.parentElement;
-          if (user.avatar) {
-            avatarImg.onerror = function() {
-              this.style.display = 'none';
-              if (avatarParent) avatarParent.classList.add('avatar-fallback');
-            };
-            avatarImg.onload = function() {
-              this.style.display = '';
-              if (avatarParent) avatarParent.classList.remove('avatar-fallback');
-            };
-            avatarImg.src = user.avatar;
-          } else {
-            avatarImg.style.display = 'none';
-            if (avatarParent) avatarParent.classList.add('avatar-fallback');
-          }
-        }
-      }
-
-      function hideAutoLoginMask() {
-        const mask = document.getElementById('autoLoginMask');
-        if (!mask) return;
-        mask.classList.remove('active');
-        mask.classList.add('fade-out');
-        setTimeout(() => {
-          mask.classList.remove('fade-out');
-        }, 400);
-      }
-
-      async function restoreSession() {
-        const token = localStorage.getItem('toolknit_token');
-        if (!token) return;
-
-        const mask = document.getElementById('autoLoginMask');
-        if (mask) mask.classList.add('active');
-
-        let maskHidden = false;
-        function hideMaskOnce() {
-          if (maskHidden) return;
-          maskHidden = true;
-          hideAutoLoginMask();
-        }
-
-        const timeoutId = setTimeout(hideMaskOnce, 8000);
-
-        // Open-source version: silent disable, no session restore (no backend)
-        clearTimeout(timeoutId);
-        hideMaskOnce();
-      }
-
-      function logout() {
-        localStorage.removeItem('toolknit_token');
-        localStorage.removeItem('toolknit_user');
-        const panel = document.getElementById('personalPanel');
-        if (panel) panel.classList.remove('logged-in');
-        if (typeof renderFavorites === 'function') renderFavorites();
-      }
-
-      function openAuthOverlay(originX, originY) {
-        // Calculate max radius to cover the entire screen from the click point
-        const dx = Math.max(originX, window.innerWidth - originX);
-        const dy = Math.max(originY, window.innerHeight - originY);
-        const radius = Math.sqrt(dx * dx + dy * dy);
-
-        // Set circle size and position (but NOT transform — that's controlled by CSS class)
-        const diameter = radius * 2;
-        authCircle.style.width = diameter + 'px';
-        authCircle.style.height = diameter + 'px';
-        authCircle.style.left = (originX - radius) + 'px';
-        authCircle.style.top = (originY - radius) + 'px';
-
-        // Remove inline transform so CSS class can take over
-        authCircle.style.transform = '';
-        authOverlay.classList.remove('closing');
-        authOverlay.classList.remove('active');
-        authOverlay.classList.add('initial-open');
-
-        // Force reflow then add active to trigger transition
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            authOverlay.classList.add('active');
-          });
-        });
-
-        // Remove initial-open after animations complete
-        setTimeout(() => {
-          authOverlay.classList.remove('initial-open');
-        }, 2500);
-
-        // Show spider on login button after form elements finish entering
-        showSpiderAfterDelay(loginSpider, 1500);
-      }
-
-      function closeAuthOverlay() {
-        authOverlay.classList.remove('active');
-        // Hide spiders
-        hideSpider(loginSpider);
-        hideSpider(registerSpider);
-        authOverlay.classList.add('closing');
-        setTimeout(() => {
-          authOverlay.classList.remove('closing');
-          // Reset forms
-          // Reset to login form without animation
-          registerForm.classList.remove('visible', 'exiting');
-          loginForm.classList.remove('exiting');
-          loginForm.classList.add('visible');
-          loginSpider.classList.remove('show', 'exit');
-          registerSpider.classList.remove('show', 'exit');
-          if (registerSpider2) registerSpider2.classList.remove('show', 'exit');
-          const heroEl = document.querySelector('.auth-hero');
-          heroEl.classList.remove('hero-exit', 'hero-enter');
-          loginError.classList.remove('show');
-          registerError.classList.remove('show');
-          if (registerError2) registerError2.classList.remove('show');
-          loginError.textContent = '';
-          registerError.textContent = '';
-          if (registerError2) registerError2.textContent = '';
-          authHeroTitle.textContent = t('auth.loginTitle');
-          authHeroSubtitle.textContent = t('auth.loginSubtitle');
-          // Reset register steps
-          if (registerStep1) registerStep1.style.display = '';
-          if (registerStep2) registerStep2.style.display = 'none';
-          registerAvatarData = null;
-          if (registerAvatarPreview) registerAvatarPreview.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;color:#bbb;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
-          if (registerAvatarFile) registerAvatarFile.value = '';
-        }, 800);
-      }
-
-      // Spider show/hide on submit buttons
-      const loginSpider = document.getElementById('loginSpider');
-      const registerSpider = document.getElementById('registerSpider');
-
-      function showSpider(spiderEl) {
-        spiderEl.classList.remove('exit');
-        spiderEl.classList.add('show');
-      }
-
-      function hideSpider(spiderEl) {
-        spiderEl.classList.remove('show');
-        spiderEl.classList.add('exit');
-      }
-
-      // Show spider after form elements finish animating in
-      // Initial open: after ~2.5s (hero 0.8s + form 1.5s + buffer)
-      // Form switch: after ~1.2s (exit 0.7s + enter 0.55s + buffer)
-      function showSpiderAfterDelay(spiderEl, delay) {
-        setTimeout(() => {
-          showSpider(spiderEl);
-        }, delay);
-      }
-
-      let isAuthSwitching = false;
-
-      function switchForm(fromEl, toEl, titleText, subtitleText, fromSpider, toSpider) {
-        if (isAuthSwitching) return;
-        isAuthSwitching = true;
-
-        // Step 1: spider runs out (1.2s) + hero exits + form elements stagger out — all simultaneously
-        hideSpider(fromSpider);
-
-        const heroEl = document.querySelector('.auth-hero');
-        heroEl.classList.add('hero-exit');
-
-        fromEl.classList.remove('visible');
-        fromEl.classList.add('exiting');
-
-        // Step 2: after spider finishes running out (1.2s), swap to new form
-        setTimeout(() => {
-          fromEl.classList.remove('exiting');
-          fromSpider.classList.remove('exit');
-
-          // Update hero text
-          authHeroTitle.textContent = titleText;
-          authHeroSubtitle.textContent = subtitleText;
-
-          // Hero enters from below
-          heroEl.classList.remove('hero-exit');
-          heroEl.classList.add('hero-enter');
-
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              heroEl.classList.remove('hero-enter');
-            });
-          });
-
-          // New form elements stagger in
-          toEl.classList.add('visible');
-
-          // Show spider on new button after elements finish entering (~1.1s)
-          showSpiderAfterDelay(toSpider, 1100);
-
-          // Unlock after spider finishes running in (1.1s delay + 1.2s run = 2.3s)
-          setTimeout(() => {
-            isAuthSwitching = false;
-          }, 2300);
-        }, 1200);
-      }
-
-      function showLoginForm() {
-        switchForm(
-          registerForm,
-          loginForm,
-          t('auth.loginTitle'),
-          t('auth.loginSubtitle'),
-          registerSpider,
-          loginSpider
-        );
-        loginError.classList.remove('show');
-      }
-
-      function showRegisterForm() {
-        switchForm(
-          loginForm,
-          registerForm,
-          t('auth.registerTitle'),
-          t('auth.registerSubtitle'),
-          loginSpider,
-          registerSpider
-        );
-        registerError.classList.remove('show');
-        if (registerError2) registerError2.classList.remove('show');
-        // Reset to step 1
-        if (registerStep1) registerStep1.style.display = '';
-        if (registerStep2) registerStep2.style.display = 'none';
-        registerAvatarData = null;
-        if (registerSubmit) registerSubmit.classList.add('disabled-avatar');
-        if (registerAvatarPreview) registerAvatarPreview.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;color:#bbb;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
-      }
-
-      function showAuthError(el, msg) {
-        el.textContent = msg;
-        el.classList.add('show');
-      }
-
-      // Login button in personal panel → disabled in open-source version
-      const personalPanel = document.getElementById('personalPanel');
-      const loginBtn = personalPanel ? personalPanel.querySelector('.login-btn') : null;
-      if (loginBtn) {
-        loginBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const msg = getLang() === 'zh' ? '登录功能在开源版中已移除' : 'Login has been removed in the open-source version.';
-          showToast(msg);
-        });
-      }
-      // Logout button → show confirm dialog
-      const btnLogout = document.getElementById('btnLogout');
-      const logoutConfirmOverlay = document.getElementById('logoutConfirmOverlay');
-      const logoutCancelBtn = document.getElementById('logoutCancelBtn');
-      const logoutConfirmBtn = document.getElementById('logoutConfirmBtn');
-
-      function showLogoutConfirm() {
-        if (logoutConfirmOverlay) logoutConfirmOverlay.classList.add('visible');
-      }
-      function hideLogoutConfirm() {
-        if (logoutConfirmOverlay) logoutConfirmOverlay.classList.remove('visible');
-      }
-
-      if (btnLogout) {
-        btnLogout.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const msg = getLang() === 'zh' ? '登录功能在开源版中已移除' : 'Login has been removed in the open-source version.';
-          showToast(msg);
-        });
-      }
-      if (logoutCancelBtn) {
-        logoutCancelBtn.addEventListener('click', () => hideLogoutConfirm());
-      }
-      if (logoutConfirmBtn) {
-        logoutConfirmBtn.addEventListener('click', () => {
-          hideLogoutConfirm();
-          logout();
-        });
-      }
-      if (logoutConfirmOverlay) {
-        logoutConfirmOverlay.addEventListener('click', (e) => {
-          if (e.target === logoutConfirmOverlay) hideLogoutConfirm();
-        });
-      }
-
-      // API Key button
-      const btnApiKey = document.getElementById('btnApiKey');
+      // API key configuration lives in Settings in the open-source desktop app.
+      const btnApiKey = document.getElementById('settingsApiKey');
       const apiKeyOverlay = document.getElementById('apiKeyOverlay');
       const apiKeyBack = document.getElementById('apiKeyBack');
       const apiKeyInput = document.getElementById('apiKeyInput');
@@ -4724,16 +7394,29 @@
             return;
           }
           const platform = apiKeyPlatformValue;
-          localStorage.setItem('ai_platform', platform);
-          localStorage.setItem('ai_api_key', key);
+          let customUrl = '';
+          let customModel = '';
           if (platform === 'custom') {
-            const customUrl = apiKeyCustomUrl ? apiKeyCustomUrl.value.trim() : '';
-            const customModel = apiKeyCustomModel ? apiKeyCustomModel.value.trim() : '';
+            customUrl = apiKeyCustomUrl ? apiKeyCustomUrl.value.trim() : '';
+            customModel = apiKeyCustomModel ? apiKeyCustomModel.value.trim() : '';
             if (!customUrl || !customModel) {
               apiKeyStatus.textContent = t('apiKey.errCustom');
               apiKeyStatus.className = 'api-key-status show error';
               return;
             }
+            try {
+              const normalizedConfig = normalizeAiProviderConfig({ url: customUrl, model: customModel });
+              customUrl = normalizedConfig.url;
+              customModel = normalizedConfig.model;
+            } catch {
+              apiKeyStatus.textContent = t('apiKey.errCustom');
+              apiKeyStatus.className = 'api-key-status show error';
+              return;
+            }
+          }
+          localStorage.setItem('ai_platform', platform);
+          localStorage.setItem('ai_api_key', key);
+          if (platform === 'custom') {
             localStorage.setItem('ai_custom_url', customUrl);
             localStorage.setItem('ai_custom_model', customModel);
           }
@@ -4757,23 +7440,20 @@
         });
       }
 
-      // AI Login Required Overlay
-      const aiLoginOverlay = document.getElementById('aiLoginOverlay');
-      const aiLoginCancel = document.getElementById('aiLoginCancel');
-      const aiLoginGoSettings = document.getElementById('aiLoginGoSettings');
+      // AI key required overlay
+      const aiKeyRequiredOverlay = document.getElementById('aiKeyRequiredOverlay');
+      const aiKeyRequiredCancel = document.getElementById('aiKeyRequiredCancel');
+      const aiKeyRequiredGoSettings = document.getElementById('aiKeyRequiredGoSettings');
 
-      function showAiLoginOverlay() {
-        if (aiLoginOverlay) aiLoginOverlay.classList.add('visible');
+      function hideAiKeyRequiredOverlay() {
+        if (aiKeyRequiredOverlay) aiKeyRequiredOverlay.classList.remove('visible');
       }
-      function hideAiLoginOverlay() {
-        if (aiLoginOverlay) aiLoginOverlay.classList.remove('visible');
+      if (aiKeyRequiredCancel) {
+        aiKeyRequiredCancel.addEventListener('click', hideAiKeyRequiredOverlay);
       }
-      if (aiLoginCancel) {
-        aiLoginCancel.addEventListener('click', hideAiLoginOverlay);
-      }
-      if (aiLoginGoSettings) {
-        aiLoginGoSettings.addEventListener('click', () => {
-          hideAiLoginOverlay();
+      if (aiKeyRequiredGoSettings) {
+        aiKeyRequiredGoSettings.addEventListener('click', () => {
+          hideAiKeyRequiredOverlay();
           if (btnApiKey) btnApiKey.click();
         });
       }
@@ -4781,335 +7461,30 @@
       // Check AI API key before opening AI tool overlay
       function openToolWithAiCheck(openFn) {
         if (!hasAiApiKey()) {
-          if (aiLoginOverlay) aiLoginOverlay.classList.add('visible');
+          if (aiKeyRequiredOverlay) aiKeyRequiredOverlay.classList.add('visible');
           return;
         }
         openFn();
       }
 
-      // Restore session on startup
-      restoreSession();
+      window.showToast = function(message, duration = 2000) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
 
-      // Close button
-      authClose.addEventListener('click', closeAuthOverlay);
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        container.appendChild(toast);
 
-      // Switch between login and register
-      switchToRegister.addEventListener('click', (e) => {
-        e.preventDefault();
-        showRegisterForm();
-      });
-      switchToLogin.addEventListener('click', (e) => {
-        e.preventDefault();
-        showLoginForm();
-      });
+        setTimeout(() => {
+          toast.classList.add('hiding');
+          toast.addEventListener('animationend', () => toast.remove(), { once: true });
+        }, duration);
+      };
 
-      // Enter key to submit
-      document.getElementById('loginPassword').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') loginSubmit.click();
-      });
-      document.getElementById('registerPassword').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') registerNext.click();
-      });
-
-      // Login submit
-      loginSubmit.addEventListener('click', async () => {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        if (!email || !password) {
-          showAuthError(loginError, t('auth.errFillEmailPassword'));
-          return;
-        }
-        loginSubmit.disabled = true;
-        const btnRect = loginSubmit.getBoundingClientRect();
-        showAuthLoading(btnRect.left + btnRect.width / 2, btnRect.top + btnRect.height / 2);
-        try {
-          const msg = getLang() === 'zh' ? '此功能在开源版中已移除' : 'This feature has been removed in the open-source version.';
-          showAuthError(loginError, msg);
-        } finally {
-          hideAuthLoading();
-          loginSubmit.disabled = false;
-          loginSubmit.textContent = t('auth.loginBtn');
-        }
-      });
-
-      // Register step 1: Next button
-      registerNext.addEventListener('click', () => {
-        const username = document.getElementById('registerUsername').value.trim();
-        const email = document.getElementById('registerEmail').value.trim();
-        const password = document.getElementById('registerPassword').value;
-        if (!username || !email || !password) {
-          showAuthError(registerError, t('auth.errFillAll'));
-          return;
-        }
-        if (password.length < 6) {
-          showAuthError(registerError, t('auth.errPasswordShort'));
-          return;
-        }
-        registerError.classList.remove('show');
-        registerStep1.style.display = 'none';
-        registerStep2.style.display = '';
-        registerSubmit.classList.add('disabled-avatar');
-      });
-
-      // Register back to step 1
-      if (registerBack) {
-        registerBack.addEventListener('click', (e) => {
-          e.preventDefault();
-          registerStep2.style.display = 'none';
-          registerStep1.style.display = '';
-          if (registerError2) registerError2.classList.remove('show');
-        });
-      }
-
-      // Avatar file selection
-      if (registerAvatarZone) {
-        registerAvatarZone.addEventListener('click', () => {
-          registerAvatarFile.click();
-        });
-      }
-      if (registerAvatarFile) {
-        registerAvatarFile.addEventListener('change', (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          if (file.size > 2 * 1024 * 1024) {
-            showAuthError(registerError2, t('auth.errAvatarTooLarge'));
-            registerAvatarFile.value = '';
-            return;
-          }
-          registerAvatarData = file;
-          registerSubmit.classList.remove('disabled-avatar');
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            registerAvatarPreview.innerHTML = `<img src="${ev.target.result}" alt="avatar-preview">`;
-          };
-          reader.readAsDataURL(file);
-          if (registerError2) registerError2.classList.remove('show');
-        });
-      }
-
-      // Register step 2: Submit
-      registerSubmit.addEventListener('click', async () => {
-        if (!registerAvatarData) {
-          window.showToast(t('auth.errAvatarRequired'));
-          return;
-        }
-        const username = document.getElementById('registerUsername').value.trim();
-        const email = document.getElementById('registerEmail').value.trim();
-        const password = document.getElementById('registerPassword').value;
-        if (!username || !email || !password) {
-          if (registerError2) showAuthError(registerError2, t('auth.errFillAll'));
-          return;
-        }
-        if (password.length < 6) {
-          if (registerError2) showAuthError(registerError2, t('auth.errPasswordShort'));
-          return;
-        }
-        registerSubmit.disabled = true;
-        const btnRect = registerSubmit.getBoundingClientRect();
-        showAuthLoading(btnRect.left + btnRect.width / 2, btnRect.top + btnRect.height / 2);
-        try {
-          const msg = getLang() === 'zh' ? '此功能在开源版中已移除' : 'This feature has been removed in the open-source version.';
-          showAuthError(registerError2, msg);
-        } finally {
-          hideAuthLoading();
-          registerSubmit.disabled = false;
-          registerSubmit.textContent = t('auth.registerBtn');
-        }
-      });
-
-      // Changelog: render current version and timeline
-      function renderChangelog() {
-        const lang = getLang();
-        const data = changelog[lang] || changelog.zh;
-        const versions = data.versions;
-
-        const sidebarVersion = document.getElementById('sidebarVersion');
-        if (sidebarVersion) sidebarVersion.textContent = data.currentVersion;
-
-        const currentVersion = document.getElementById('currentVersion');
-        const currentDate = document.getElementById('currentDate');
-        const currentTitle = document.getElementById('currentTitle');
-        const currentList = document.getElementById('currentList');
-        const timeline = document.getElementById('changelogTimeline');
-        if (!currentVersion || !currentDate || !currentTitle || !currentList || !timeline) return;
-
-        const selectedIndex = timeline.dataset.selectedIndex ? parseInt(timeline.dataset.selectedIndex) : 0;
-        const selected = versions[selectedIndex] || versions[0];
-
-        currentVersion.textContent = selected.version;
-        currentDate.textContent = selected.date;
-        currentTitle.textContent = selected.title;
-        currentList.innerHTML = selected.content.map(item => `<li>${escapeHtml(item)}</li>`).join('');
-
-        timeline.innerHTML = versions.map((v, index) => `
-          <div class="timeline-item ${index === selectedIndex ? 'active' : ''}" data-index="${index}">
-            <div class="timeline-dot"></div>
-            <div class="timeline-info">
-              <div class="timeline-version">${escapeHtml(v.version)}</div>
-              <div class="timeline-date">${escapeHtml(v.date)}</div>
-            </div>
-          </div>
-        `).join('');
-
-        timeline.querySelectorAll('.timeline-item').forEach(item => {
-          item.addEventListener('click', () => {
-            const idx = parseInt(item.dataset.index);
-            if (idx === selectedIndex) return;
-            timeline.dataset.selectedIndex = idx;
-
-            const currentPanel = document.querySelector('.changelog-current');
-            if (currentPanel) {
-              currentPanel.classList.add('refreshing');
-              setTimeout(() => {
-                renderChangelog();
-                setTimeout(() => {
-                  currentPanel.classList.remove('refreshing');
-                }, 50);
-              }, 200);
-            } else {
-              renderChangelog();
-            }
-          });
-        });
-      }
-
-      onLangChange(renderChangelog);
-
-      // Statistics tracking
-      (function initStats() {
-        const totalKey = 'toolknit_total_usage';
-        const myKey = 'toolknit_my_usage';
-
-        function getStoredInt(key, fallback = 0) {
-          try {
-            const val = localStorage.getItem(key);
-            const parsed = parseInt(val || String(fallback), 10);
-            return isNaN(parsed) ? fallback : parsed;
-          } catch (e) {
-            return fallback;
-          }
-        }
-
-        function setStoredInt(key, value) {
-          try {
-            localStorage.setItem(key, String(value));
-          } catch (e) {
-            console.warn('Failed to persist stats:', e);
-          }
-        }
-
-        let exeTotalUsage = getStoredInt(totalKey);
-        let exeMyUsage = getStoredInt(myKey);
-        let webTotalUsage = 0;
-        let exeApiTotalUsage = 0;
-
-        const barTotalEl = document.getElementById('barTotalUsage');
-        const barMyEl = document.getElementById('barMyUsage');
-        const barTotalFill = document.getElementById('barTotal');
-        const barMineFill = document.getElementById('barMine');
-
-        function animateValue(el, start, end, duration) {
-          const startTime = performance.now();
-          function update(now) {
-            const t = Math.min((now - startTime) / duration, 1);
-            const ease = 1 - Math.pow(1 - t, 3);
-            el.textContent = Math.round(start + (end - start) * ease).toLocaleString();
-            if (t < 1) requestAnimationFrame(update);
-          }
-          requestAnimationFrame(update);
-        }
-
-        function getTotalUsage() {
-          return webTotalUsage + exeApiTotalUsage + exeTotalUsage;
-        }
-
-        function renderStats() {
-          const total = getTotalUsage();
-          if (barTotalEl) animateValue(barTotalEl, 0, total, 800);
-          if (barMyEl) animateValue(barMyEl, 0, exeMyUsage, 800);
-
-          const max = Math.max(total, 1);
-          const totalWidth = 100;
-          const mineWidth = (exeMyUsage / max) * 100;
-
-          if (barTotalFill) barTotalFill.style.width = `${totalWidth}%`;
-          requestAnimationFrame(() => {
-            if (barMineFill) barMineFill.style.width = `${mineWidth}%`;
-          });
-        }
-
-        function updateBars() {
-          const total = getTotalUsage();
-          const max = Math.max(total, 1);
-          const mineWidth = (exeMyUsage / max) * 100;
-          if (barMineFill) barMineFill.style.width = `${mineWidth}%`;
-        }
-
-        function refreshTotalDisplay() {
-          const total = getTotalUsage();
-          if (barTotalEl) animateValue(barTotalEl, parseInt(barTotalEl.textContent.replace(/,/g, '') || '0', 10), total, 500);
-          updateBars();
-        }
-
-        function refreshMyUsageDisplay() {
-          if (barMyEl) animateValue(barMyEl, parseInt(barMyEl.textContent.replace(/,/g, '') || '0', 10), exeMyUsage, 500);
-          updateBars();
-        }
-
-        // Fetch web-side total usage from PHP API
-        async function fetchWebTotalUsage() {
-          // Open-source version: silent disable, no remote usage fetch
-        }
-
-        // Fetch exe-side global total from API
-        async function fetchExeApiTotalUsage() {
-          // Open-source version: silent disable, no remote usage fetch
-        }
-
-        // Report tool usage: local +1 + public API increment
-        window.incrementToolUsage = async function() {
-          exeTotalUsage += 1;
-          setStoredInt(totalKey, exeTotalUsage);
-          exeMyUsage += 1;
-          setStoredInt(myKey, exeMyUsage);
-
-          // Open-source version: silent disable, no remote usage increment
-
-          refreshTotalDisplay();
-          refreshMyUsageDisplay();
-        };
-
-        // Toast notification function
-        window.showToast = function(message, duration = 2000) {
-          const container = document.getElementById('toastContainer');
-          if (!container) return;
-
-          const toast = document.createElement('div');
-          toast.className = 'toast';
-          toast.textContent = message;
-          container.appendChild(toast);
-
-          setTimeout(() => {
-            toast.classList.add('hiding');
-            toast.addEventListener('animationend', () => {
-              if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-              }
-            });
-          }, duration);
-        };
-
-        // Initial render with local data, then fetch remote
-        renderStats();
-        fetchWebTotalUsage();
-        fetchExeApiTotalUsage();
-      })();
-
-      // About-us links
-      const ABOUT_LINKS = {
-        donate: 'https://toolknit.com/donate.html',
-        github: 'https://github.com/2645149786-dotcom',
-        website: 'https://toolknit.com'
+      const HOME_LINKS = {
+        website: 'https://toolknit.com',
+        github: 'https://github.com/ZihangDong/toolknit-desktop'
       };
 
       async function openExternalUrl(url) {
@@ -5130,57 +7505,170 @@
         }
       }
 
-      document.querySelectorAll('.about-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          const url = ABOUT_LINKS[link.dataset.link];
+      document.querySelectorAll('[data-home-link]').forEach(link => {
+        link.addEventListener('click', () => {
+          const url = HOME_LINKS[link.dataset.homeLink];
           if (url) openExternalUrl(url);
         });
       });
 
-      // Donate tooltip hover
-      const donateLink = document.querySelector('.about-link.donate-link');
-      const donateTooltip = document.getElementById('donateTooltip');
-      if (donateLink && donateTooltip) {
-        function positionTooltip() {
-          const rect = donateLink.getBoundingClientRect();
-          const tooltipWidth = donateTooltip.offsetWidth;
-          const tooltipHeight = donateTooltip.offsetHeight;
-          let left = rect.left + rect.width / 2 - tooltipWidth / 2;
-          let top = rect.top - tooltipHeight - 12;
+      const homeSupportAuthor = document.getElementById('homeSupportAuthor');
+      const donationOverlay = document.getElementById('donationOverlay');
 
-          // Keep within viewport horizontally
-          const padding = 12;
-          if (left < padding) left = padding;
-          if (left + tooltipWidth > window.innerWidth - padding) {
-            left = window.innerWidth - tooltipWidth - padding;
-          }
-
-          // Keep within viewport vertically
-          const flipped = top < padding;
-          if (flipped) {
-            top = rect.bottom + 12;
-          }
-          donateTooltip.classList.toggle('flipped', flipped);
-
-          donateTooltip.style.left = `${left}px`;
-          donateTooltip.style.top = `${top}px`;
-        }
-
-        donateLink.addEventListener('mouseenter', () => {
-          positionTooltip();
-          donateTooltip.classList.add('visible');
-        });
-        donateLink.addEventListener('mouseleave', () => {
-          donateTooltip.classList.remove('visible');
-        });
-
-        window.addEventListener('resize', () => {
-          if (donateTooltip.classList.contains('visible')) {
-            positionTooltip();
-          }
-        });
+      function openDonationOverlay() {
+        if (!donationOverlay) return;
+        donationOverlay.classList.add('visible');
+        donationOverlay.setAttribute('aria-hidden', 'false');
       }
+
+      function closeDonationOverlay() {
+        if (!donationOverlay) return;
+        donationOverlay.classList.remove('visible');
+        donationOverlay.setAttribute('aria-hidden', 'true');
+      }
+
+      homeSupportAuthor?.addEventListener('click', openDonationOverlay);
+      donationOverlay?.querySelectorAll('[data-donation-close]').forEach(button => {
+        button.addEventListener('click', closeDonationOverlay);
+      });
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && donationOverlay?.classList.contains('visible')) {
+          closeDonationOverlay();
+        }
+      });
+
+      const GITHUB_REPOSITORY = 'ZihangDong/toolknit-desktop';
+      const GITHUB_STATS_CACHE_KEY = 'toolknit_github_home_stats';
+      const GITHUB_CONTRIBUTORS_URL = `https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/public/contributors.json`;
+      const GITHUB_LOCAL_CONTRIBUTORS_URL = new URL('contributors.json', document.baseURI).href;
+      const GITHUB_FIXED_ACTIVITY_POINTS = '0,62 248,62 280,8';
+      // A shipped snapshot prevents a blank metric on first launch without a network connection.
+      const DEFAULT_GITHUB_STAR_COUNT = 216;
+      const DEFAULT_DONATION_TOTAL = 23.88;
+      const GITHUB_REQUEST_TIMEOUT_MS = 8_000;
+
+      async function fetchGithubJson(url, options = {}) {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), GITHUB_REQUEST_TIMEOUT_MS);
+        try {
+          const response = await fetch(url, { ...options, signal: controller.signal });
+          if (!response.ok) throw new Error(`GitHub request failed: ${response.status}`);
+          return response.json();
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
+      }
+
+      function normalizeGithubStarCount(value) {
+        const count = Number(value);
+        return Number.isFinite(count) && count >= 0 ? Math.floor(count) : null;
+      }
+
+      function normalizeDonationTotal(data) {
+        const contributors = Array.isArray(data?.contributors) ? data.contributors : [];
+        const total = contributors.reduce((sum, contributor) => {
+          const amount = Number(contributor?.amount_cny);
+          return Number.isFinite(amount) && amount >= 0 && amount <= 100_000_000 ? sum + amount : sum;
+        }, 0);
+        return Math.round(total * 100) / 100;
+      }
+
+      function formatDonationTotal(value) {
+        const total = Number.isFinite(value) && value >= 0 ? value : DEFAULT_DONATION_TOTAL;
+        return total.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      function getCachedGithubStats() {
+        try {
+          const cached = JSON.parse(localStorage.getItem(GITHUB_STATS_CACHE_KEY) || 'null');
+          if (!cached || typeof cached !== 'object' || !cached.data) return null;
+          return {
+            stars: normalizeGithubStarCount(cached.data.stars) ?? DEFAULT_GITHUB_STAR_COUNT,
+            donationTotal: Number.isFinite(Number(cached.data.donationTotal))
+              ? Math.max(0, Number(cached.data.donationTotal))
+              : DEFAULT_DONATION_TOTAL
+          };
+        } catch {
+          return null;
+        }
+      }
+
+      function saveGithubStats(data) {
+        try {
+          localStorage.setItem(GITHUB_STATS_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
+        } catch {
+          // Homepage metrics remain functional when browser storage is unavailable.
+        }
+      }
+
+      function renderGithubActivity(data, { repoSynced = false, donationsSynced = false } = {}) {
+        const status = document.getElementById('githubActivityStatus');
+        const starCount = document.getElementById('githubStarCount');
+        const donationTotal = document.getElementById('githubDonationTotal');
+        const chartLine = document.getElementById('githubActivityLine');
+        if (!status || !starCount || !donationTotal || !chartLine) return;
+
+        starCount.textContent = data?.stars === null || data?.stars === undefined ? '--' : String(data.stars);
+        donationTotal.textContent = formatDonationTotal(Number(data?.donationTotal));
+        chartLine.setAttribute('points', GITHUB_FIXED_ACTIVITY_POINTS);
+        status.textContent = repoSynced && donationsSynced
+          ? 'Star 与贡献名单已同步'
+          : repoSynced
+            ? 'Star 已同步，贡献名单使用本地数据'
+            : '离线显示最近可用数据';
+      }
+
+      async function loadDonationTotal() {
+        const sources = [
+          { url: GITHUB_CONTRIBUTORS_URL, isLive: true },
+          { url: GITHUB_LOCAL_CONTRIBUTORS_URL, isLive: false }
+        ];
+        let lastError = null;
+        for (const source of sources) {
+          try {
+            const data = await fetchGithubJson(source.url, {
+              cache: 'no-store',
+              headers: { Accept: 'application/json' }
+            });
+            const total = normalizeDonationTotal(data);
+            return { total, isLive: source.isLive };
+          } catch (error) {
+            lastError = error;
+          }
+        }
+        throw lastError || new Error('Contributor list request failed');
+      }
+
+      async function loadGithubActivity() {
+        const cached = getCachedGithubStats();
+        renderGithubActivity(cached || {
+          stars: DEFAULT_GITHUB_STAR_COUNT,
+          donationTotal: DEFAULT_DONATION_TOTAL
+        });
+
+        const headers = { Accept: 'application/vnd.github+json' };
+        const [repoResult, donationResult] = await Promise.allSettled([
+          fetchGithubJson(`https://api.github.com/repos/${GITHUB_REPOSITORY}`, { headers }),
+          loadDonationTotal()
+        ]);
+        const repoSynced = repoResult.status === 'fulfilled';
+        const donationsAvailable = donationResult.status === 'fulfilled';
+        const donationsSynced = donationsAvailable && donationResult.value.isLive;
+        const data = {
+          stars: repoSynced
+            ? normalizeGithubStarCount(repoResult.value?.stargazers_count)
+            : cached?.stars ?? DEFAULT_GITHUB_STAR_COUNT,
+          donationTotal: donationsAvailable
+            ? donationResult.value.total
+            : cached?.donationTotal ?? DEFAULT_DONATION_TOTAL
+        };
+        if (!repoSynced) console.warn('Unable to load GitHub stars:', repoResult.reason);
+        if (!donationsAvailable) console.warn('Unable to load contributor donations:', donationResult.reason);
+        saveGithubStats(data);
+        renderGithubActivity(data, { repoSynced, donationsSynced });
+      }
+
+      loadGithubActivity();
 
       // ===== PDF Merger =====
       const pdfMergeOverlay = document.getElementById('pdfMergeOverlay');
@@ -5220,13 +7708,31 @@
           pdfMergeFerrofluidInstance = null;
         }
         pdfMergeProcessing = false;
+        pdfMergeCommitting = false;
+        resetPdfMergeSelectionFlow();
+        releasePdfMergePreviewResources();
         if (pdfMergeProcessMask) pdfMergeProcessMask.classList.remove('visible');
         if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '0%';
         clearPdfMergeFiles();
       }
 
+      function returnToPdfMergeEditor() {
+        if (pdfMergeCommitting) return;
+        resetPdfMergeSelectionFlow();
+        releasePdfMergePreviewResources();
+        pdfMergeProcessing = false;
+        if (pdfMergeProcessMask) pdfMergeProcessMask.classList.remove('visible');
+        if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '0%';
+      }
+
       if (pdfMergeBack) {
-        pdfMergeBack.addEventListener('click', closePdfMergeOverlay);
+        pdfMergeBack.addEventListener('click', () => {
+          if (pdfMergeSelection?.classList.contains('visible')) {
+            returnToPdfMergeEditor();
+            return;
+          }
+          closePdfMergeOverlay();
+        });
       }
 
       document.querySelectorAll('.audio-list-item[data-tool="pdf-merge"]').forEach(item => {
@@ -5299,15 +7805,22 @@
       const pdfSplitSuccessCount = document.getElementById('pdfSplitSuccessCount');
       const pdfSplitSuccessOpenFolder = document.getElementById('pdfSplitSuccessOpenFolder');
       const pdfSplitSuccessOk = document.getElementById('pdfSplitSuccessOk');
-      const pdfSplitDrawer = document.getElementById('pdfSplitDrawer');
-      const pdfSplitDrawerBackdrop = document.getElementById('pdfSplitDrawerBackdrop');
-      const pdfSplitDrawerClose = document.getElementById('pdfSplitDrawerClose');
-      const pdfSplitDrawerBody = document.getElementById('pdfSplitDrawerBody');
+      const pdfSplitWorkspace = document.getElementById('pdfSplitWorkspace');
+      const pdfSplitWorkspaceClose = document.getElementById('pdfSplitWorkspaceClose');
+      const pdfSplitWorkspaceStatus = document.getElementById('pdfSplitWorkspaceStatus');
+      const pdfSplitWorkspaceHint = document.getElementById('pdfSplitWorkspaceHint');
+      const pdfSplitPageStrip = document.getElementById('pdfSplitPageStrip');
+      const pdfSplitSelectedCount = document.getElementById('pdfSplitSelectedCount');
       const pdfSplitDownloadAllBtn = document.getElementById('pdfSplitDownloadAllBtn');
+      const pdfSplitSelectionMeta = document.getElementById('pdfSplitSelectionMeta');
+      const pdfSplitSelectAllBtn = document.getElementById('pdfSplitSelectAllBtn');
 
       let selectedPdfSplitFiles = [];
       let pdfSplitProcessing = false;
-      let lastPdfSplitSavedPath = '';
+      let pdfSplitSaving = false;
+      let pdfSplitRunId = 0;
+      let pdfSplitActiveRunId = 0;
+      let lastPdfSplitSavedFolder = '';
 
       function addPdfSplitFiles(fileList) {
         if (!fileList || fileList.length === 0) return;
@@ -5359,6 +7872,7 @@
             if (!isNaN(idx)) removePdfSplitFile(idx);
           });
         });
+        enableSortableFileList(pdfSplitFiles, selectedPdfSplitFiles, renderPdfSplitFiles, () => pdfSplitProcessing || pdfSplitSaving);
         togglePdfSplitProcessButton();
       }
 
@@ -5447,371 +7961,406 @@
         });
       }
 
-      // ===== PDF Split: Real Implementation =====
+      // ===== PDF Split: Preview, Selection, and Export =====
       let pdfSplitLoadedDocs = []; // [{ doc, fileData, fileName }]
-      let pdfSplitPagesData = []; // [{ fileIndex, pageIndex, canvas, fileName }]
+      let pdfSplitPagesData = []; // [{ fileIndex, pageIndex, canvas, selected }]
+      let pdfSplitLoadingTasks = new Set();
 
-      // Process button — real split
+      function releasePdfSplitPreviewResources() {
+        pdfSplitLoadingTasks.forEach(task => { try { task.destroy(); } catch (_) {} });
+        pdfSplitLoadingTasks.clear();
+        pdfSplitLoadedDocs.forEach(({ doc }) => { try { doc.destroy(); } catch (_) {} });
+        pdfSplitLoadedDocs = [];
+        pdfSplitPagesData.forEach(({ canvas }) => {
+          if (canvas) {
+            canvas.width = 0;
+            canvas.height = 0;
+          }
+        });
+        pdfSplitPagesData = [];
+        if (pdfSplitPageStrip) pdfSplitPageStrip.replaceChildren();
+      }
+
+      function setPdfSplitProgress(percent, message) {
+        if (pdfSplitProcessBarFill) pdfSplitProcessBarFill.style.width = `${percent}%`;
+        if (message && pdfSplitProcessText) pdfSplitProcessText.textContent = message;
+      }
+
+      function assertPdfSplitRun(runId) {
+        if (runId !== pdfSplitRunId) throw new Error('PDF split operation cancelled');
+      }
+
+      function isPdfPasswordError(error) {
+        return error?.name === 'PasswordException' || /password|encrypted/i.test(String(error?.message || error));
+      }
+
+      async function preflightPdfSplitFiles() {
+        const { PDF_SPLIT_LIMITS, assertPdfSplitSelection } = await import('./pdf-split-core.js');
+        let totalBytes = 0;
+        if (isTauri) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          for (const file of selectedPdfSplitFiles) {
+            if (!file.path) throw new Error(`Missing path for ${file.name}`);
+            totalBytes += Number(await invoke('get_file_size', { path: file.path }));
+          }
+        } else {
+          totalBytes = selectedPdfSplitFiles.reduce((sum, file) => sum + Number(file.size || 0), 0);
+        }
+        assertPdfSplitSelection(selectedPdfSplitFiles, totalBytes, PDF_SPLIT_LIMITS);
+        return PDF_SPLIT_LIMITS;
+      }
+
+      async function readPdfSplitFileData(file) {
+        if (isTauri && file.path) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const bytes = await invoke('read_file_bytes', { path: file.path });
+          if (Array.isArray(bytes)) return Uint8Array.from(bytes);
+          if (bytes instanceof ArrayBuffer) return new Uint8Array(bytes);
+          if (bytes instanceof Uint8Array) return bytes;
+          if (bytes && typeof bytes.length === 'number') return Uint8Array.from(bytes);
+          throw new Error(`Invalid file data for ${file.name}`);
+        }
+        return new Uint8Array(await file.arrayBuffer());
+      }
+
+      async function getPdfSplitOutputDir() {
+        return getOutputDir('PDF_Split');
+      }
+
       if (pdfSplitProcessBtn) {
         pdfSplitProcessBtn.addEventListener('click', async () => {
-          if (selectedPdfSplitFiles.length < 1 || pdfSplitProcessing) return;
+          if (selectedPdfSplitFiles.length < 1 || pdfSplitProcessing || pdfSplitSaving) return;
+          const runId = ++pdfSplitRunId;
+          pdfSplitActiveRunId = runId;
           pdfSplitProcessing = true;
           if (pdfSplitProcessMask) pdfSplitProcessMask.classList.add('visible');
-          if (pdfSplitProcessBarFill) pdfSplitProcessBarFill.style.width = '10%';
-          if (pdfSplitProcessText) pdfSplitProcessText.textContent = t('home.pdfSplit.processing');
+          setPdfSplitProgress(5, t('home.pdfSplit.processing'));
 
           try {
-            // Clear previous state (destroy old pdfjs docs if any)
-            pdfSplitLoadedDocs.forEach(d => { try { d.doc.destroy(); } catch (_) {} });
-            pdfSplitLoadedDocs = [];
-            pdfSplitPagesData.forEach(p => { if (p.canvas) { p.canvas.width = 0; p.canvas.height = 0; } });
-            pdfSplitPagesData = [];
-
-            // Configure pdf.js worker
+            releasePdfSplitPreviewResources();
+            const limits = await preflightPdfSplitFiles();
+            assertPdfSplitRun(runId);
             const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
-            pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-              'pdfjs-dist/build/pdf.worker.mjs',
-              import.meta.url
-            ).toString();
+            pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
-            const totalFiles = selectedPdfSplitFiles.length;
-            const MAX_TOTAL_PAGES = 2000;
-            let totalPagesSoFar = 0;
+            let totalPages = 0;
+            for (let fileIndex = 0; fileIndex < selectedPdfSplitFiles.length; fileIndex++) {
+              assertPdfSplitRun(runId);
+              const file = selectedPdfSplitFiles[fileIndex];
+              setPdfSplitProgress(
+                Math.round(((fileIndex + 0.2) / selectedPdfSplitFiles.length) * 100),
+                `${t('home.pdfSplit.processing')} (${fileIndex + 1}/${selectedPdfSplitFiles.length})`
+              );
+              const fileData = await readPdfSplitFileData(file);
+              if (!fileData.length) throw new Error(`File ${file.name} is empty`);
+              assertPdfSplitRun(runId);
 
-            for (let fi = 0; fi < totalFiles; fi++) {
-              const file = selectedPdfSplitFiles[fi];
-              const progress = Math.round(((fi + 0.3) / totalFiles) * 100);
-              if (pdfSplitProcessBarFill) pdfSplitProcessBarFill.style.width = progress + '%';
-              if (pdfSplitProcessText) pdfSplitProcessText.textContent = `${t('home.pdfSplit.processing')} (${fi + 1}/${totalFiles})`;
-
-              // Read file bytes
-              let fileData;
-              if (isTauri && file.path) {
-                const { invoke } = await import('@tauri-apps/api/core');
-                const rawBytes = await invoke('read_file_bytes', { path: file.path });
-                if (Array.isArray(rawBytes)) {
-                  fileData = Uint8Array.from(rawBytes);
-                } else if (rawBytes instanceof ArrayBuffer) {
-                  fileData = new Uint8Array(rawBytes);
-                } else if (rawBytes instanceof Uint8Array) {
-                  fileData = rawBytes;
-                } else if (rawBytes && typeof rawBytes.length === 'number') {
-                  fileData = Uint8Array.from(rawBytes);
-                } else {
-                  throw new Error(`Invalid file data for ${file.name}: ${typeof rawBytes}`);
-                }
-                if (fileData.length === 0) throw new Error(`File ${file.name} is empty`);
-              } else {
-                fileData = new Uint8Array(await file.arrayBuffer());
+              const wasmUrl = new URL('assets/', document.baseURI).href;
+              const loadingTask = pdfjsLib.getDocument({ data: fileData.slice(), wasmUrl, useWasm: true });
+              pdfSplitLoadingTasks.add(loadingTask);
+              let pdfDoc;
+              try {
+                pdfDoc = await loadingTask.promise;
+              } finally {
+                pdfSplitLoadingTasks.delete(loadingTask);
               }
-
-              // Load with pdfjs for preview
-              const _wasmUrl = new URL('assets/', document.baseURI).href;
-              const loadingTask = pdfjsLib.getDocument({ data: fileData.slice(), wasmUrl: _wasmUrl, useWasm: true });
-              const pdfDoc = await loadingTask.promise;
-
-              // Check total page limit
-              totalPagesSoFar += pdfDoc.numPages;
-              if (totalPagesSoFar > MAX_TOTAL_PAGES) {
-                try { pdfDoc.destroy(); } catch (_) {}
-                throw new Error(`${t('home.pdfSplit.tooManyPages')}`);
+              assertPdfSplitRun(runId);
+              totalPages += pdfDoc.numPages;
+              if (totalPages > limits.maxPreviewPages) {
+                try { await pdfDoc.destroy(); } catch (_) {}
+                throw new Error(t('home.pdfSplit.tooManyPages'));
               }
-
               pdfSplitLoadedDocs.push({ doc: pdfDoc, fileData, fileName: file.name });
 
-              // Render each page to canvas
-              for (let pi = 1; pi <= pdfDoc.numPages; pi++) {
-                try {
-                  const page = await pdfDoc.getPage(pi);
-                  const viewport = page.getViewport({ scale: 1 });
-                  const targetWidth = 376;
-                  const scale = targetWidth / viewport.width;
-                  const scaledViewport = page.getViewport({ scale });
-
-                  const canvas = document.createElement('canvas');
-                  const ctx = canvas.getContext('2d');
-                  canvas.width = scaledViewport.width;
-                  canvas.height = scaledViewport.height;
-                  await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
-
-                  pdfSplitPagesData.push({
-                    fileIndex: fi,
-                    pageIndex: pi,
-                    fileName: file.name,
-                    canvas
-                  });
-                } catch (renderErr) {
-                  console.warn(`[PDF Split] Failed to render page ${pi} of ${file.name}:`, renderErr);
-                  // Create a placeholder canvas for failed pages
-                  const canvas = document.createElement('canvas');
-                  canvas.width = 376;
-                  canvas.height = 500;
-                  const ctx = canvas.getContext('2d');
-                  ctx.fillStyle = '#f0f0f0';
-                  ctx.fillRect(0, 0, canvas.width, canvas.height);
-                  ctx.fillStyle = '#999';
-                  ctx.font = '14px sans-serif';
-                  ctx.textAlign = 'center';
-                  ctx.fillText('Render failed', canvas.width / 2, canvas.height / 2);
-                  pdfSplitPagesData.push({
-                    fileIndex: fi,
-                    pageIndex: pi,
-                    fileName: file.name,
-                    canvas
-                  });
-                }
+              for (let pageIndex = 1; pageIndex <= pdfDoc.numPages; pageIndex++) {
+                assertPdfSplitRun(runId);
+                const page = await pdfDoc.getPage(pageIndex);
+                const viewport = page.getViewport({ scale: 1 });
+                const scale = 240 / viewport.width;
+                const scaledViewport = page.getViewport({ scale });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                if (!context) throw new Error(`Cannot create a preview for ${file.name}`);
+                canvas.width = scaledViewport.width;
+                canvas.height = scaledViewport.height;
+                await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+                assertPdfSplitRun(runId);
+                pdfSplitPagesData.push({ fileIndex, pageIndex, canvas, selected: true });
               }
             }
 
-            if (pdfSplitProcessBarFill) pdfSplitProcessBarFill.style.width = '100%';
-            await new Promise(r => setTimeout(r, 300));
-            if (pdfSplitProcessMask) pdfSplitProcessMask.classList.remove('visible');
-            if (pdfSplitProcessBarFill) pdfSplitProcessBarFill.style.width = '0%';
-            pdfSplitProcessing = false;
-
+            assertPdfSplitRun(runId);
+            setPdfSplitProgress(100, t('home.pdfSplit.processing'));
             renderSplitPreviewPages();
-            if (pdfSplitDrawer) pdfSplitDrawer.classList.add('visible');
-          } catch (e) {
-            console.error('PDF split error:', e);
-            // Clean up partially loaded pdfjs docs
-            pdfSplitLoadedDocs.forEach(d => { try { d.doc.destroy(); } catch (_) {} });
-            pdfSplitLoadedDocs = [];
-            pdfSplitPagesData.forEach(p => { if (p.canvas) { p.canvas.width = 0; p.canvas.height = 0; } });
-            pdfSplitPagesData = [];
-            if (pdfSplitProcessMask) pdfSplitProcessMask.classList.remove('visible');
-            if (pdfSplitProcessBarFill) pdfSplitProcessBarFill.style.width = '0%';
-            pdfSplitProcessing = false;
-            alert(t('common.errorOccurred', { error: String(e) }));
+            openPdfSplitWorkspace();
+          } catch (error) {
+            const cancelled = runId !== pdfSplitRunId;
+            if (!cancelled) {
+              console.error('PDF split preview error:', error);
+              releasePdfSplitPreviewResources();
+              const message = isPdfPasswordError(error)
+                ? t('home.pdfSplit.passwordProtected')
+                : String(error?.message || error) === t('home.pdfSplit.tooManyPages')
+                  ? t('home.pdfSplit.tooManyPages')
+                  : t('common.errorOccurred', { error: String(error) });
+              alert(message);
+            }
+          } finally {
+            if (pdfSplitActiveRunId === runId) {
+              pdfSplitActiveRunId = 0;
+              pdfSplitProcessing = false;
+            }
+            if (runId === pdfSplitRunId) {
+              if (pdfSplitProcessMask) pdfSplitProcessMask.classList.remove('visible');
+              setPdfSplitProgress(0);
+            }
           }
         });
+      }
+
+      function updatePdfSplitSelectionControls() {
+        const selectedCount = pdfSplitPagesData.filter(page => page.selected).length;
+        const allSelected = selectedCount > 0 && selectedCount === pdfSplitPagesData.length;
+        if (pdfSplitWorkspaceStatus) {
+          pdfSplitWorkspaceStatus.textContent = t('home.pdfSplit.inputStatus', {
+            count: selectedPdfSplitFiles.length
+          });
+        }
+        if (pdfSplitWorkspaceHint) {
+          pdfSplitWorkspaceHint.textContent = t('home.pdfSplit.drawerHint');
+        }
+        if (pdfSplitSelectedCount) {
+          pdfSplitSelectedCount.textContent = t('home.pdfSplit.selectedCount', { count: selectedCount });
+        }
+        if (pdfSplitSelectionMeta) {
+          pdfSplitSelectionMeta.textContent = t('home.pdfSplit.selectionStatus', {
+            selected: selectedCount,
+            total: pdfSplitPagesData.length
+          });
+        }
+        if (pdfSplitSelectAllBtn) {
+          pdfSplitSelectAllBtn.textContent = t(allSelected ? 'home.pdfSplit.clearSelection' : 'home.pdfSplit.selectAll');
+          pdfSplitSelectAllBtn.disabled = pdfSplitSaving || pdfSplitPagesData.length === 0;
+        }
+        if (pdfSplitDownloadAllBtn) {
+          pdfSplitDownloadAllBtn.textContent = t('home.pdfSplit.downloadSelected');
+          pdfSplitDownloadAllBtn.disabled = pdfSplitSaving || selectedCount === 0;
+        }
       }
 
       function renderSplitPreviewPages() {
-        if (!pdfSplitDrawerBody) return;
-        pdfSplitDrawerBody.innerHTML = '';
+        if (!pdfSplitPageStrip) return;
+        const pageFragment = document.createDocumentFragment();
 
-        pdfSplitPagesData.forEach((pageData, idx) => {
-          const pageEl = document.createElement('div');
-          pageEl.className = 'pdf-preview-page';
-          pageEl.dataset.index = idx;
+        pdfSplitPagesData.forEach((pageData, index) => {
+          const pageEl = document.createElement('article');
+          pageEl.className = 'pdf-page-workspace-tile pdf-split-workspace-tile';
+          pageEl.dataset.index = String(index);
+
+          const selectBtn = document.createElement('button');
+          selectBtn.type = 'button';
+          selectBtn.className = 'pdf-page-workspace-page-select';
+          selectBtn.setAttribute('aria-label', `${t('home.pdfSplit.pageLabel')} ${index + 1}`);
+
+          const setSelected = (selected) => {
+            pageData.selected = selected;
+            pageEl.classList.toggle('is-selected', selected);
+            selectBtn.setAttribute('aria-pressed', String(selected));
+            updatePdfSplitSelectionControls();
+          };
+          setSelected(pageData.selected);
+          selectBtn.addEventListener('click', () => setSelected(!pageData.selected));
 
           const canvas = pageData.canvas;
-          canvas.style.maxWidth = '100%';
-          canvas.style.height = 'auto';
-          canvas.style.borderRadius = '4px';
-          pageEl.appendChild(canvas);
+          const previewFrame = document.createElement('span');
+          previewFrame.className = 'pdf-page-workspace-frame';
+          previewFrame.appendChild(canvas);
 
           const indexLabel = document.createElement('span');
-          indexLabel.className = 'pdf-preview-page-index';
-          indexLabel.textContent = `${idx + 1}`;
-          pageEl.appendChild(indexLabel);
+          indexLabel.className = 'pdf-page-workspace-index';
+          indexLabel.textContent = `${index + 1}`;
+          previewFrame.appendChild(indexLabel);
 
+          const check = document.createElement('span');
+          check.className = 'pdf-page-workspace-check';
+          check.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4.2 4.2L19 6.8"></path></svg>';
+          selectBtn.append(previewFrame, check);
+
+          const actionGroup = document.createElement('div');
+          actionGroup.className = 'pdf-page-workspace-tile-actions';
           const downloadBtn = document.createElement('button');
-          downloadBtn.className = 'pdf-preview-page-rotate-btn';
+          downloadBtn.className = 'pdf-page-workspace-icon-button';
+          downloadBtn.type = 'button';
+          downloadBtn.title = t('home.pdfSplit.downloadPage');
+          downloadBtn.setAttribute('aria-label', t('home.pdfSplit.downloadPage'));
           downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-          downloadBtn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await downloadSingleSplitPage(idx);
+          downloadBtn.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            await downloadSingleSplitPage(index);
           });
-          pageEl.appendChild(downloadBtn);
-
-          pdfSplitDrawerBody.appendChild(pageEl);
+          actionGroup.appendChild(downloadBtn);
+          pageEl.append(selectBtn, actionGroup);
+          pageFragment.appendChild(pageEl);
         });
-
-        if (pdfSplitDownloadAllBtn) {
-          pdfSplitDownloadAllBtn.textContent = t('home.pdfSplit.downloadAll');
-        }
+        pdfSplitPageStrip.replaceChildren(pageFragment);
+        updatePdfSplitSelectionControls();
       }
 
-      async function downloadSingleSplitPage(pageIdx) {
-        if (pageIdx < 0 || pageIdx >= pdfSplitPagesData.length) return;
-        const pageData = pdfSplitPagesData[pageIdx];
-        const docInfo = pdfSplitLoadedDocs[pageData.fileIndex];
-        if (!docInfo || !docInfo.fileData) {
-          console.error(`[PDF Split] Missing file data for file index ${pageData.fileIndex}`);
-          alert(t('common.fileDataMissing'));
-          return;
-        }
+      async function savePdfSplitPages(pages) {
+        const { splitPdfPages } = await import('./pdf-split-core.js');
+        const savedPaths = [];
+        const failures = [];
+        const outputDir = isTauri ? await getPdfSplitOutputDir() : '~/Downloads';
+        let invoke = null;
+        if (isTauri) ({ invoke } = await import('@tauri-apps/api/core'));
 
-        try {
-          const { PDFDocument } = await import('pdf-lib');
-          const srcPdf = await PDFDocument.load(docInfo.fileData.slice(), { ignoreEncryption: true });
-          const newPdf = await PDFDocument.create();
-          const [copiedPage] = await newPdf.copyPages(srcPdf, [pageData.pageIndex - 1]);
-          newPdf.addPage(copiedPage);
-          const singlePageBytes = await newPdf.save();
-
-          if (isTauri) {
-            const { invoke } = await import('@tauri-apps/api/core');
-            const outputDir = await getOutputDir('Split');
-            const baseName = pageData.fileName.replace(/\.pdf$/i, '');
-            let fileName = `${baseName}_page_${pageData.pageIndex}.pdf`;
-            let fullPath = outputDir + '\\' + fileName;
-            let counter = 1;
-            while (await invoke('exists_path', { path: fullPath }).catch(() => false)) {
-              fileName = `${baseName}_page_${pageData.pageIndex}_${counter}.pdf`;
-              fullPath = outputDir + '\\' + fileName;
-              counter++;
+        await splitPdfPages({
+          documents: pdfSplitLoadedDocs,
+          pages,
+          onProgress: async ({ completed, total, output }) => {
+            setPdfSplitProgress(Math.round((completed / total) * 100), t('home.pdfSplit.saving'));
+            try {
+              if (isTauri) {
+                const outputPath = await invoke('write_unique_file_bytes', {
+                  directory: outputDir,
+                  fileName: output.fileName,
+                  bytes: Array.from(output.bytes)
+                });
+                savedPaths.push(outputPath);
+              } else {
+                const blob = new Blob([output.bytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const anchor = document.createElement('a');
+                anchor.href = url;
+                anchor.download = output.fileName;
+                anchor.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                savedPaths.push(`${outputDir}/${output.fileName}`);
+              }
+            } catch (error) {
+              console.error('[PDF Split] Output write error:', error);
+              failures.push(error);
             }
-            await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(singlePageBytes) });
-            showPdfSplitSuccess(fullPath, 'single', 1);
-          } else {
-            const blob = new Blob([singlePageBytes], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${pageData.fileName.replace(/\.pdf$/i, '')}_page_${pageData.pageIndex}.pdf`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showPdfSplitSuccess(`~/Downloads/${pageData.fileName.replace(/\.pdf$/i, '')}_page_${pageData.pageIndex}.pdf`, 'single', 1);
           }
-        } catch (e) {
-          console.error('[PDF Split] Single page save error:', e);
-          alert(t('common.errorOccurred', { error: String(e) }));
+        });
+        return { outputDir, savedPaths, failures };
+      }
+
+      async function downloadSingleSplitPage(pageIndex) {
+        if (pdfSplitSaving || pageIndex < 0 || pageIndex >= pdfSplitPagesData.length) return;
+        pdfSplitSaving = true;
+        updatePdfSplitSelectionControls();
+        if (pdfSplitProcessMask) pdfSplitProcessMask.classList.add('visible');
+        setPdfSplitProgress(10, t('home.pdfSplit.saving'));
+        try {
+          const result = await savePdfSplitPages([pdfSplitPagesData[pageIndex]]);
+          if (result.savedPaths.length === 1) showPdfSplitSuccess(result.outputDir, 'single', 1);
+          else throw result.failures[0] || new Error('No PDF page was saved');
+        } catch (error) {
+          console.error('[PDF Split] Single page save error:', error);
+          alert(t('common.errorOccurred', { error: String(error) }));
+        } finally {
+          pdfSplitSaving = false;
+          if (pdfSplitProcessMask) pdfSplitProcessMask.classList.remove('visible');
+          setPdfSplitProgress(0);
+          updatePdfSplitSelectionControls();
         }
       }
 
-      // Download all
       if (pdfSplitDownloadAllBtn) {
         pdfSplitDownloadAllBtn.addEventListener('click', async () => {
-          if (pdfSplitPagesData.length === 0) return;
+          const pages = pdfSplitPagesData.filter(page => page.selected);
+          if (pdfSplitSaving || pages.length === 0) return;
+          pdfSplitSaving = true;
+          updatePdfSplitSelectionControls();
           if (pdfSplitProcessMask) pdfSplitProcessMask.classList.add('visible');
-          if (pdfSplitProcessBarFill) pdfSplitProcessBarFill.style.width = '30%';
-          if (pdfSplitProcessText) pdfSplitProcessText.textContent = t('home.pdfSplit.saving');
-
+          setPdfSplitProgress(0, t('home.pdfSplit.saving'));
           try {
-            const { PDFDocument } = await import('pdf-lib');
-            let lastSavedDir = '';
-            let savedCount = 0;
-            const total = pdfSplitPagesData.length;
-
-            // Cache loaded PDFDocument per file index to avoid repeated parsing
-            const srcPdfCache = new Map();
-            let cachedDocsDir = '';
-            let invoke = null;
-            if (isTauri) {
-              const { invoke: inv } = await import('@tauri-apps/api/core');
-              invoke = inv;
-              cachedDocsDir = await getOutputDir('Split');
-            }
-
-            for (let i = 0; i < total; i++) {
-              const pageData = pdfSplitPagesData[i];
-              const docInfo = pdfSplitLoadedDocs[pageData.fileIndex];
-              if (!docInfo || !docInfo.fileData) continue;
-
-              const progress = Math.round(((i + 1) / total) * 100);
-              if (pdfSplitProcessBarFill) pdfSplitProcessBarFill.style.width = progress + '%';
-
-              // Reuse cached srcPdf for the same source file
-              let srcPdf = srcPdfCache.get(pageData.fileIndex);
-              if (!srcPdf) {
-                srcPdf = await PDFDocument.load(docInfo.fileData.slice(), { ignoreEncryption: true });
-                srcPdfCache.set(pageData.fileIndex, srcPdf);
-              }
-              const newPdf = await PDFDocument.create();
-              const [copiedPage] = await newPdf.copyPages(srcPdf, [pageData.pageIndex - 1]);
-              newPdf.addPage(copiedPage);
-              const singlePageBytes = await newPdf.save();
-
-              if (isTauri) {
-                const outputDir = cachedDocsDir;
-                const baseName = pageData.fileName.replace(/\.pdf$/i, '');
-                let fileName = `${baseName}_page_${pageData.pageIndex}.pdf`;
-                let fullPath = outputDir + '\\' + fileName;
-                let counter = 1;
-                while (await invoke('exists_path', { path: fullPath }).catch(() => false)) {
-                  fileName = `${baseName}_page_${pageData.pageIndex}_${counter}.pdf`;
-                  fullPath = outputDir + '\\' + fileName;
-                  counter++;
-                }
-                await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(singlePageBytes) });
-                lastSavedDir = fullPath;
-                savedCount++;
-              } else {
-                const blob = new Blob([singlePageBytes], { type: 'application/pdf' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${pageData.fileName.replace(/\.pdf$/i, '')}_page_${pageData.pageIndex}.pdf`;
-                a.click();
-                URL.revokeObjectURL(url);
-                savedCount++;
-              }
-            }
-
+            const result = await savePdfSplitPages(pages);
+            if (result.savedPaths.length === 0) throw result.failures[0] || new Error('No PDF pages were saved');
+            closePdfSplitWorkspace(true);
+            showPdfSplitSuccess(result.outputDir, 'all', result.savedPaths.length, result.failures.length);
+          } catch (error) {
+            console.error('[PDF Split] Batch save error:', error);
+            alert(t('common.errorOccurred', { error: String(error) }));
+          } finally {
+            pdfSplitSaving = false;
             if (pdfSplitProcessMask) pdfSplitProcessMask.classList.remove('visible');
-            if (pdfSplitProcessBarFill) pdfSplitProcessBarFill.style.width = '0%';
-
-            if (savedCount > 0) {
-              showPdfSplitSuccess(lastSavedDir || 'Downloads', 'all', savedCount);
-            }
-          } catch (e) {
-            console.error('[PDF Split] Download all error:', e);
-            if (pdfSplitProcessMask) pdfSplitProcessMask.classList.remove('visible');
-            if (pdfSplitProcessBarFill) pdfSplitProcessBarFill.style.width = '0%';
-            alert(t('common.errorOccurred', { error: String(e) }));
+            setPdfSplitProgress(0);
+            updatePdfSplitSelectionControls();
           }
         });
       }
 
-      // Drawer close
-      if (pdfSplitDrawerClose) {
-        pdfSplitDrawerClose.addEventListener('click', () => {
-          if (pdfSplitDrawer) pdfSplitDrawer.classList.remove('visible');
-        });
-      }
-      if (pdfSplitDrawerBackdrop) {
-        pdfSplitDrawerBackdrop.addEventListener('click', () => {
-          if (pdfSplitDrawer) pdfSplitDrawer.classList.remove('visible');
+      if (pdfSplitSelectAllBtn) {
+        pdfSplitSelectAllBtn.addEventListener('click', () => {
+          if (pdfSplitSaving || pdfSplitPagesData.length === 0) return;
+          const shouldSelect = pdfSplitPagesData.some(page => !page.selected);
+          pdfSplitPagesData.forEach(page => { page.selected = shouldSelect; });
+          renderSplitPreviewPages();
         });
       }
 
-      function showPdfSplitSuccess(savePath, type, count) {
-        lastPdfSplitSavedPath = savePath;
+      function openPdfSplitWorkspace() {
+        if (!pdfSplitWorkspace) return;
+        pdfSplitWorkspace.classList.add('visible');
+        pdfSplitWorkspace.setAttribute('aria-hidden', 'false');
+      }
+
+      function closePdfSplitWorkspace(force = false) {
+        if (pdfSplitSaving && !force) return;
+        if (pdfSplitWorkspace) {
+          pdfSplitWorkspace.classList.remove('visible');
+          pdfSplitWorkspace.setAttribute('aria-hidden', 'true');
+        }
+        releasePdfSplitPreviewResources();
+      }
+
+      if (pdfSplitWorkspaceClose) pdfSplitWorkspaceClose.addEventListener('click', () => closePdfSplitWorkspace());
+
+      function showPdfSplitSuccess(saveFolder, type, count, failedCount = 0) {
+        lastPdfSplitSavedFolder = saveFolder;
         if (pdfSplitSuccessCount) pdfSplitSuccessCount.textContent = String(count);
-        if (pdfSplitSuccessPath) pdfSplitSuccessPath.textContent = savePath.replace(/\//g, '\\');
-        if (type === 'all') {
-          if (pdfSplitSuccessMeta) pdfSplitSuccessMeta.textContent = t('home.pdfSplit.successAllMeta', { count });
-        } else {
-          if (pdfSplitSuccessMeta) pdfSplitSuccessMeta.textContent = t('home.pdfSplit.successSingleMeta');
+        if (pdfSplitSuccessPath) pdfSplitSuccessPath.textContent = saveFolder.replace(/\//g, '\\');
+        if (pdfSplitSuccessMeta) {
+          pdfSplitSuccessMeta.textContent = failedCount > 0
+            ? t('home.pdfSplit.partialSave', { saved: count, failed: failedCount })
+            : t(type === 'all' ? 'home.pdfSplit.successAllMeta' : 'home.pdfSplit.successSingleMeta', { count });
         }
         if (pdfSplitSuccessOverlay) pdfSplitSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       if (pdfSplitSuccessOk) {
         pdfSplitSuccessOk.addEventListener('click', () => {
           if (pdfSplitSuccessOverlay) pdfSplitSuccessOverlay.classList.remove('visible');
+          closePdfSplitWorkspace(true);
+          clearPdfSplitFiles();
         });
       }
       if (pdfSplitSuccessOpenFolder) {
         pdfSplitSuccessOpenFolder.addEventListener('click', async () => {
-          if (isTauri && lastPdfSplitSavedPath) {
+          if (isTauri && lastPdfSplitSavedFolder) {
             try {
               const { invoke } = await import('@tauri-apps/api/core');
-              const folder = lastPdfSplitSavedPath.replace(/[/\\][^/\\]+$/, '').replace(/\//g, '\\');
-              await invoke('open_path', { path: folder });
-            } catch (e) {
-              console.error('[PDF Split] Open folder error:', e);
+              await invoke('open_path', { path: lastPdfSplitSavedFolder });
+            } catch (error) {
+              console.error('[PDF Split] Open folder error:', error);
             }
           }
         });
       }
 
-      // Override close to also clean up split state
-      // Replace closePdfSplitOverlay with enhanced version that also cleans up split state
       function closePdfSplitOverlayFull() {
+        if (pdfSplitSaving) {
+          window.showToast(t('home.pdfSplit.saving'));
+          return;
+        }
+        pdfSplitRunId++;
         closePdfSplitOverlay();
-        pdfSplitProcessing = false;
         if (pdfSplitProcessMask) pdfSplitProcessMask.classList.remove('visible');
-        if (pdfSplitProcessBarFill) pdfSplitProcessBarFill.style.width = '0%';
+        setPdfSplitProgress(0);
         clearPdfSplitFiles();
-        if (pdfSplitDrawer) pdfSplitDrawer.classList.remove('visible');
-        pdfSplitLoadedDocs.forEach(d => { try { d.doc.destroy(); } catch (_) {} });
-        pdfSplitLoadedDocs = [];
-        pdfSplitPagesData.forEach(p => { if (p.canvas) { p.canvas.width = 0; p.canvas.height = 0; } });
-        pdfSplitPagesData = [];
+        closePdfSplitWorkspace(true);
       }
       if (pdfSplitBack) {
         pdfSplitBack.removeEventListener('click', closePdfSplitOverlay);
@@ -5866,6 +8415,7 @@
       const pdfRotateDropZone = document.getElementById('pdfRotateDropZone');
       const pdfRotateFiles = document.getElementById('pdfRotateFiles');
       const pdfRotateCta = document.getElementById('pdfRotateCta');
+      const pdfRotateInput = document.getElementById('pdfRotateInput');
       const pdfRotateProcessBtn = document.getElementById('pdfRotateProcessBtn');
       const pdfRotateProcessMask = document.getElementById('pdfRotateProcessMask');
       const pdfRotateProcessBarFill = document.getElementById('pdfRotateProcessBarFill');
@@ -5876,23 +8426,97 @@
       const pdfRotateSuccessCount = document.getElementById('pdfRotateSuccessCount');
       const pdfRotateSuccessOpenFolder = document.getElementById('pdfRotateSuccessOpenFolder');
       const pdfRotateSuccessOk = document.getElementById('pdfRotateSuccessOk');
-      const pdfRotateDrawer = document.getElementById('pdfRotateDrawer');
-      const pdfRotateDrawerBackdrop = document.getElementById('pdfRotateDrawerBackdrop');
-      const pdfRotateDrawerClose = document.getElementById('pdfRotateDrawerClose');
-      const pdfRotateDrawerBody = document.getElementById('pdfRotateDrawerBody');
+      const pdfRotateWorkspace = document.getElementById('pdfRotateWorkspace');
+      const pdfRotateWorkspaceClose = document.getElementById('pdfRotateWorkspaceClose');
+      const pdfRotateWorkspaceStatus = document.getElementById('pdfRotateWorkspaceStatus');
+      const pdfRotateWorkspaceFileName = document.getElementById('pdfRotateWorkspaceFileName');
+      const pdfRotatePageCount = document.getElementById('pdfRotatePageCount');
+      const pdfRotatePageStrip = document.getElementById('pdfRotatePageStrip');
+      const pdfRotateWorkspaceFooterStatus = document.getElementById('pdfRotateWorkspaceFooterStatus');
       const pdfRotateDownloadAllBtn = document.getElementById('pdfRotateDownloadAllBtn');
       const pdfRotateRotateAllBtn = document.getElementById('pdfRotateRotateAllBtn');
 
       let selectedPdfRotateFiles = [];
       let pdfRotateProcessing = false;
+      let pdfRotateSaving = false;
+      let pdfRotateRunId = 0;
+      let pdfRotateActiveRunId = 0;
+      let pdfRotateLoadingTask = null;
       let lastPdfRotateSavedPath = '';
       let pdfRotateLoadedDoc = null;  // { doc, fileData, fileName }
       let pdfRotatePagesData = [];    // [{ pageIndex, canvas, rotation, fileName }]
-      let pdfRotateSrcPdfCache = null; // cached pdf-lib PDFDocument for single page downloads
-      let pdfRotateSingleDownloading = false; // guard for single page download
+
+      function releasePdfRotatePreviewResources() {
+        if (pdfRotateLoadingTask) {
+          try { pdfRotateLoadingTask.destroy(); } catch (_) {}
+          pdfRotateLoadingTask = null;
+        }
+        if (pdfRotateLoadedDoc) {
+          try { pdfRotateLoadedDoc.doc.destroy(); } catch (_) {}
+          pdfRotateLoadedDoc = null;
+        }
+        pdfRotatePagesData.forEach(({ canvas }) => {
+          if (canvas) {
+            canvas.width = 0;
+            canvas.height = 0;
+          }
+        });
+        pdfRotatePagesData = [];
+        if (pdfRotatePageStrip) pdfRotatePageStrip.replaceChildren();
+      }
+
+      function setPdfRotateProgress(percent, message) {
+        if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = `${percent}%`;
+        if (message && pdfRotateProcessText) pdfRotateProcessText.textContent = message;
+      }
+
+      function assertPdfRotateRun(runId) {
+        if (runId !== pdfRotateRunId) throw new Error('PDF rotate operation cancelled');
+      }
+
+      function isPdfRotatePasswordError(error) {
+        return error?.name === 'PasswordException' || /password|encrypted/i.test(String(error?.message || error));
+      }
+
+      function formatPdfRotateError(error) {
+        if (isPdfRotatePasswordError(error)) return t('home.pdfRotate.passwordProtected');
+        const message = String(error?.message || error);
+        if (/rotation limit/.test(message) && /MB/.test(message)) return t('home.pdfRotate.fileTooLarge');
+        if (/rotation limit/.test(message) && /page/.test(message)) return t('home.pdfRotate.tooManyPages');
+        return message;
+      }
+
+      async function preflightPdfRotateFile() {
+        const { PDF_ROTATE_LIMITS, assertPdfRotateSelection } = await import('./pdf-rotate-core.js');
+        const file = selectedPdfRotateFiles[0];
+        if (!file) throw new Error('No PDF file is selected');
+        const totalBytes = isTauri && file.path
+          ? Number(await (await import('@tauri-apps/api/core')).invoke('get_file_size', { path: file.path }))
+          : Number(file.size || 0);
+        assertPdfRotateSelection(selectedPdfRotateFiles, totalBytes, PDF_ROTATE_LIMITS);
+        return PDF_ROTATE_LIMITS;
+      }
+
+      async function readPdfRotateFileData(file) {
+        if (isTauri && file.path) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const bytes = await invoke('read_file_bytes', { path: file.path });
+          if (Array.isArray(bytes)) return Uint8Array.from(bytes);
+          if (bytes instanceof ArrayBuffer) return new Uint8Array(bytes);
+          if (bytes instanceof Uint8Array) return bytes;
+          if (bytes && typeof bytes.length === 'number') return Uint8Array.from(bytes);
+          throw new Error(`Invalid file data for ${file.name}`);
+        }
+        return new Uint8Array(await file.arrayBuffer());
+      }
+
+      async function getPdfRotateOutputDir() {
+        return getOutputDir('PDF_Rotate');
+      }
 
       function addPdfRotateFiles(fileList) {
         if (!fileList || fileList.length === 0) return;
+        if (pdfRotateProcessing || pdfRotateSaving) return;
         // Single file only — replace if exists
         if (fileList.length > 1) {
           alert(t('home.pdfRotate.singleFileOnly'));
@@ -5971,7 +8595,7 @@
           const { getCurrentWebview } = await import('@tauri-apps/api/webview');
           const webview = getCurrentWebview();
           await webview.onDragDropEvent((event) => {
-            if (!pdfRotateOverlay.classList.contains('visible') || pdfRotateProcessing) return;
+            if (!pdfRotateOverlay.classList.contains('visible') || pdfRotateProcessing || pdfRotateSaving) return;
             const payload = event.payload;
             if (payload.type === 'enter' || payload.type === 'over') {
               showPdfRotateDropZone();
@@ -5995,6 +8619,7 @@
       // CTA button — open file dialog
       if (pdfRotateCta) {
         pdfRotateCta.addEventListener('click', async () => {
+          if (pdfRotateProcessing || pdfRotateSaving) return;
           if (isTauri) {
             try {
               const { open } = await import('@tauri-apps/plugin-dialog');
@@ -6009,15 +8634,14 @@
               console.error('PDF rotate file selection error', e);
             }
           } else {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.pdf,application/pdf';
-            input.addEventListener('change', () => {
-              addPdfRotateFiles(input.files);
-              input.value = '';
-            });
-            input.click();
+            pdfRotateInput?.click();
           }
+        });
+      }
+      if (pdfRotateInput) {
+        pdfRotateInput.addEventListener('change', () => {
+          addPdfRotateFiles(pdfRotateInput.files);
+          pdfRotateInput.value = '';
         });
       }
 
@@ -6025,84 +8649,73 @@
       // Process button — load PDF and render previews
       if (pdfRotateProcessBtn) {
         pdfRotateProcessBtn.addEventListener('click', async () => {
-          if (selectedPdfRotateFiles.length < 1 || pdfRotateProcessing) return;
+          if (selectedPdfRotateFiles.length < 1 || pdfRotateProcessing || pdfRotateSaving) return;
+          const runId = ++pdfRotateRunId;
+          pdfRotateActiveRunId = runId;
           pdfRotateProcessing = true;
           if (pdfRotateProcessMask) pdfRotateProcessMask.classList.add('visible');
-          if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = '10%';
-          if (pdfRotateProcessText) pdfRotateProcessText.textContent = t('home.pdfRotate.processing');
+          setPdfRotateProgress(5, t('home.pdfRotate.processing'));
 
           try {
-            // Clear previous state
-            if (pdfRotateLoadedDoc) {
-              try { pdfRotateLoadedDoc.doc.destroy(); } catch (_) {}
-              pdfRotateLoadedDoc = null;
-            }
-            pdfRotateSrcPdfCache = null;
-            pdfRotatePagesData.forEach(p => { if (p.canvas) { p.canvas.width = 0; p.canvas.height = 0; } });
-            pdfRotatePagesData = [];
+            releasePdfRotatePreviewResources();
+            const limits = await preflightPdfRotateFile();
+            assertPdfRotateRun(runId);
 
             // Configure pdf.js worker
             const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
-            pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-              'pdfjs-dist/build/pdf.worker.mjs',
-              import.meta.url
-            ).toString();
+            pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
             const file = selectedPdfRotateFiles[0];
 
-            // Read file bytes
-            let fileData;
-            if (isTauri && file.path) {
-              const { invoke } = await import('@tauri-apps/api/core');
-              const rawBytes = await invoke('read_file_bytes', { path: file.path });
-              if (Array.isArray(rawBytes)) {
-                fileData = Uint8Array.from(rawBytes);
-              } else if (rawBytes instanceof ArrayBuffer) {
-                fileData = new Uint8Array(rawBytes);
-              } else if (rawBytes instanceof Uint8Array) {
-                fileData = rawBytes;
-              } else if (rawBytes && typeof rawBytes.length === 'number') {
-                fileData = Uint8Array.from(rawBytes);
-              } else {
-                throw new Error(`Invalid file data for ${file.name}: ${typeof rawBytes}`);
-              }
-              if (fileData.length === 0) throw new Error(`File ${file.name} is empty`);
-            } else {
-              fileData = new Uint8Array(await file.arrayBuffer());
-            }
+            const fileData = await readPdfRotateFileData(file);
+            if (!fileData.length) throw new Error(`File ${file.name} is empty`);
+            assertPdfRotateRun(runId);
 
             // Load with pdfjs for preview
             const _wasmUrl = new URL('assets/', document.baseURI).href;
             const loadingTask = pdfjsLib.getDocument({ data: fileData.slice(), wasmUrl: _wasmUrl, useWasm: true });
-            const pdfDoc = await loadingTask.promise;
+            pdfRotateLoadingTask = loadingTask;
+            let pdfDoc;
+            try {
+              pdfDoc = await loadingTask.promise;
+            } finally {
+              if (pdfRotateLoadingTask === loadingTask) pdfRotateLoadingTask = null;
+            }
+            assertPdfRotateRun(runId);
 
             // Check page limit
-            const MAX_TOTAL_PAGES = 2000;
-            if (pdfDoc.numPages > MAX_TOTAL_PAGES) {
+            const { assertPdfRotatePageCount } = await import('./pdf-rotate-core.js');
+            try {
+              assertPdfRotatePageCount(pdfDoc.numPages, limits);
+            } catch (limitError) {
               try { pdfDoc.destroy(); } catch (_) {}
-              throw new Error(t('home.pdfRotate.tooManyPages'));
+              throw limitError;
             }
 
             pdfRotateLoadedDoc = { doc: pdfDoc, fileData, fileName: file.name };
 
-            if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = '50%';
+            setPdfRotateProgress(10, t('home.pdfRotate.processing'));
 
             // Render each page to canvas
             for (let pi = 1; pi <= pdfDoc.numPages; pi++) {
-              const renderProgress = 50 + Math.round((pi / pdfDoc.numPages) * 50);
-              if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = renderProgress + '%';
+              assertPdfRotateRun(runId);
+              const renderProgress = 10 + Math.round((pi / pdfDoc.numPages) * 90);
+              setPdfRotateProgress(renderProgress, t('home.pdfRotate.processing'));
               try {
                 const page = await pdfDoc.getPage(pi);
                 const viewport = page.getViewport({ scale: 1 });
-                const targetWidth = 376;
+                const targetWidth = 240;
                 const scale = targetWidth / viewport.width;
                 const scaledViewport = page.getViewport({ scale });
 
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
+                if (!ctx) throw new Error(`Cannot create a preview for ${file.name}`);
                 canvas.width = scaledViewport.width;
                 canvas.height = scaledViewport.height;
                 await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+                page.cleanup();
+                assertPdfRotateRun(runId);
 
                 pdfRotatePagesData.push({
                   pageIndex: pi,
@@ -6111,101 +8724,91 @@
                   rotation: 0
                 });
               } catch (renderErr) {
-                console.warn(`[PDF Rotate] Failed to render page ${pi}:`, renderErr);
-                const canvas = document.createElement('canvas');
-                canvas.width = 376;
-                canvas.height = 500;
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#f0f0f0';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#999';
-                ctx.font = '14px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('Render failed', canvas.width / 2, canvas.height / 2);
-                pdfRotatePagesData.push({
-                  pageIndex: pi,
-                  fileName: file.name,
-                  canvas,
-                  rotation: 0
-                });
+                throw new Error(`Failed to render page ${pi}: ${renderErr?.message || renderErr}`);
               }
             }
 
-            if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = '100%';
+            assertPdfRotateRun(runId);
+            setPdfRotateProgress(100, t('home.pdfRotate.processing'));
             await new Promise(r => setTimeout(r, 300));
-            if (pdfRotateProcessMask) pdfRotateProcessMask.classList.remove('visible');
-            if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = '0%';
-            pdfRotateProcessing = false;
+            assertPdfRotateRun(runId);
 
             renderRotatePreviewPages();
-            if (pdfRotateDrawer) pdfRotateDrawer.classList.add('visible');
+            openPdfRotateWorkspace();
           } catch (e) {
             console.error('PDF rotate error:', e);
-            if (pdfRotateLoadedDoc) {
-              try { pdfRotateLoadedDoc.doc.destroy(); } catch (_) {}
-              pdfRotateLoadedDoc = null;
+            if (runId === pdfRotateRunId) {
+              releasePdfRotatePreviewResources();
+              if (!/cancelled/i.test(String(e?.message || e))) {
+                alert(t('common.errorOccurred', { error: formatPdfRotateError(e) }));
+              }
             }
-            pdfRotateSrcPdfCache = null;
-            pdfRotatePagesData.forEach(p => { if (p.canvas) { p.canvas.width = 0; p.canvas.height = 0; } });
-            pdfRotatePagesData = [];
-            if (pdfRotateProcessMask) pdfRotateProcessMask.classList.remove('visible');
-            if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = '0%';
-            pdfRotateProcessing = false;
-            alert(t('common.errorOccurred', { error: String(e) }));
+          } finally {
+            if (pdfRotateActiveRunId === runId) {
+              pdfRotateProcessing = false;
+              if (pdfRotateProcessMask) pdfRotateProcessMask.classList.remove('visible');
+              setPdfRotateProgress(0);
+            }
           }
         });
       }
 
       function renderRotatePreviewPages() {
-        if (!pdfRotateDrawerBody) return;
-        pdfRotateDrawerBody.innerHTML = '';
+        if (!pdfRotatePageStrip) return;
+        const pageFragment = document.createDocumentFragment();
 
         pdfRotatePagesData.forEach((pageData, idx) => {
-          const pageEl = document.createElement('div');
-          pageEl.className = 'pdf-preview-page';
+          const pageEl = document.createElement('article');
+          pageEl.className = 'pdf-page-workspace-tile pdf-rotate-workspace-tile';
           pageEl.dataset.index = idx;
 
           const canvas = pageData.canvas;
-          canvas.style.maxWidth = '100%';
-          canvas.style.height = 'auto';
-          canvas.style.borderRadius = '4px';
-          canvas.style.transform = `rotate(${pageData.rotation}deg)`;
+          const previewFrame = document.createElement('div');
+          previewFrame.className = 'pdf-page-workspace-frame';
+          const previewStage = document.createElement('div');
+          previewStage.className = 'pdf-page-workspace-rotate-stage';
+          pageData.previewStage = previewStage;
           canvas.style.transition = 'transform 0.2s ease';
-          pageEl.appendChild(canvas);
+          previewStage.appendChild(canvas);
+          previewFrame.appendChild(previewStage);
+          updatePdfRotatePreviewRotation(pageData);
 
           const indexLabel = document.createElement('span');
-          indexLabel.className = 'pdf-preview-page-index';
+          indexLabel.className = 'pdf-page-workspace-index';
           indexLabel.textContent = `${idx + 1}`;
-          pageEl.appendChild(indexLabel);
+          previewFrame.appendChild(indexLabel);
 
-          // Button container for rotate + download
           const btnContainer = document.createElement('div');
-          btnContainer.style.cssText = 'display:flex;gap:6px;position:absolute;bottom:8px;right:8px;';
+          btnContainer.className = 'pdf-page-workspace-tile-actions';
 
-          // Rotate button
           const rotateBtn = document.createElement('button');
-          rotateBtn.className = 'pdf-preview-page-rotate-btn';
+          rotateBtn.className = 'pdf-page-workspace-icon-button';
+          rotateBtn.type = 'button';
+          rotateBtn.title = t('home.pdfRotate.rotatePage');
+          rotateBtn.setAttribute('aria-label', t('home.pdfRotate.rotatePage'));
           rotateBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
-          rotateBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
+          rotateBtn.addEventListener('click', () => {
             pageData.rotation = (pageData.rotation + 90) % 360;
-            canvas.style.transform = `rotate(${pageData.rotation}deg)`;
+            updatePdfRotatePreviewRotation(pageData);
           });
           btnContainer.appendChild(rotateBtn);
 
-          // Download button
           const downloadBtn = document.createElement('button');
-          downloadBtn.className = 'pdf-preview-page-rotate-btn';
+          downloadBtn.className = 'pdf-page-workspace-icon-button';
+          downloadBtn.type = 'button';
+          downloadBtn.title = t('home.pdfRotate.downloadPage');
+          downloadBtn.setAttribute('aria-label', t('home.pdfRotate.downloadPage'));
           downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-          downloadBtn.addEventListener('click', async (e) => {
-            e.stopPropagation();
+          downloadBtn.addEventListener('click', async () => {
             await downloadSingleRotatePage(idx);
           });
           btnContainer.appendChild(downloadBtn);
 
-          pageEl.appendChild(btnContainer);
-          pdfRotateDrawerBody.appendChild(pageEl);
+          pageEl.append(previewFrame, btnContainer);
+          pageFragment.appendChild(pageEl);
         });
+        pdfRotatePageStrip.replaceChildren(pageFragment);
+        updatePdfRotateWorkspaceControls();
 
         if (pdfRotateDownloadAllBtn) {
           pdfRotateDownloadAllBtn.textContent = t('home.pdfRotate.downloadAll');
@@ -6215,70 +8818,112 @@
         }
       }
 
+      function updatePdfRotateWorkspaceControls() {
+        const pageCount = pdfRotatePagesData.length;
+        if (pdfRotateWorkspaceStatus) {
+          pdfRotateWorkspaceStatus.textContent = t('home.pdfRotate.pageCount', { count: pageCount });
+        }
+        if (pdfRotateWorkspaceFileName) {
+          pdfRotateWorkspaceFileName.textContent = pdfRotateLoadedDoc?.fileName || '';
+        }
+        if (pdfRotatePageCount) {
+          pdfRotatePageCount.textContent = t('home.pdfRotate.pageCount', { count: pageCount });
+        }
+        if (pdfRotateWorkspaceFooterStatus) {
+          pdfRotateWorkspaceFooterStatus.textContent = t('home.pdfRotate.workspaceHint');
+        }
+      }
+
+      function updatePdfRotatePreviewRotation(pageData) {
+        const { canvas, previewStage, rotation } = pageData;
+        if (!canvas || !previewStage || !canvas.width || !canvas.height) return;
+        const isQuarterTurn = rotation % 180 !== 0;
+        previewStage.style.aspectRatio = isQuarterTurn
+          ? `${canvas.height} / ${canvas.width}`
+          : `${canvas.width} / ${canvas.height}`;
+        canvas.style.setProperty(
+          'width',
+          isQuarterTurn ? `${(canvas.width / canvas.height) * 100}%` : '100%',
+          'important'
+        );
+        canvas.style.setProperty('max-width', 'none', 'important');
+        canvas.style.transform = `rotate(${rotation}deg)`;
+      }
+
       // Rotate all pages 90°
       if (pdfRotateRotateAllBtn) {
         pdfRotateRotateAllBtn.addEventListener('click', () => {
+          if (pdfRotateSaving) return;
           pdfRotatePagesData.forEach(pageData => {
             pageData.rotation = (pageData.rotation + 90) % 360;
-            pageData.canvas.style.transform = `rotate(${pageData.rotation}deg)`;
+            updatePdfRotatePreviewRotation(pageData);
           });
         });
       }
 
+      function setPdfRotateSaving(saving) {
+        pdfRotateSaving = saving;
+        [pdfRotateDownloadAllBtn, pdfRotateRotateAllBtn].forEach(button => {
+          if (button) button.disabled = saving;
+        });
+        if (pdfRotateWorkspaceClose) pdfRotateWorkspaceClose.disabled = saving;
+        pdfRotatePageStrip?.querySelectorAll('.pdf-page-workspace-icon-button').forEach(button => {
+          button.disabled = saving;
+        });
+      }
+
+      async function savePdfRotateBytes(bytes, fileName) {
+        if (isTauri) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          return invoke('write_unique_file_bytes', {
+            directory: await getPdfRotateOutputDir(),
+            fileName,
+            bytes: Array.from(bytes)
+          });
+        }
+
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = fileName;
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        return `~/Downloads/${fileName}`;
+      }
+
       async function downloadSingleRotatePage(pageIdx) {
         if (pageIdx < 0 || pageIdx >= pdfRotatePagesData.length) return;
-        if (!pdfRotateLoadedDoc || !pdfRotateLoadedDoc.fileData) {
+        if (!pdfRotateLoadedDoc?.fileData) {
           alert(t('common.fileDataMissing'));
           return;
         }
-        if (pdfRotateSingleDownloading) return; // prevent concurrent downloads
-        pdfRotateSingleDownloading = true;
+        if (pdfRotateProcessing || pdfRotateSaving) return;
 
         const pageData = pdfRotatePagesData[pageIdx];
+        setPdfRotateSaving(true);
+        if (pdfRotateProcessMask) pdfRotateProcessMask.classList.add('visible');
+        setPdfRotateProgress(15, t('home.pdfRotate.saving'));
         try {
-          const { PDFDocument, degrees } = await import('pdf-lib');
-          // Reuse cached srcPdf to avoid repeated parsing
-          if (!pdfRotateSrcPdfCache) {
-            pdfRotateSrcPdfCache = await PDFDocument.load(pdfRotateLoadedDoc.fileData.slice(), { ignoreEncryption: true });
-          }
-          const newPdf = await PDFDocument.create();
-          const [copiedPage] = await newPdf.copyPages(pdfRotateSrcPdfCache, [pageData.pageIndex - 1]);
-          newPdf.addPage(copiedPage);
-          // Apply rotation (add to existing rotation)
-          const pages = newPdf.getPages();
-          const existingRotation = pages[0].getRotation().angle;
-          pages[0].setRotation(degrees((existingRotation + pageData.rotation) % 360));
-          const singlePageBytes = await newPdf.save();
-
-          if (isTauri) {
-            const { invoke } = await import('@tauri-apps/api/core');
-            const outputDir = await getOutputDir('Rotate');
-            const baseName = pageData.fileName.replace(/\.pdf$/i, '');
-            let fileName = `${baseName}_page_${pageData.pageIndex}_rotated.pdf`;
-            let fullPath = outputDir + '\\' + fileName;
-            let counter = 1;
-            while (await invoke('exists_path', { path: fullPath }).catch(() => false)) {
-              fileName = `${baseName}_page_${pageData.pageIndex}_rotated_${counter}.pdf`;
-              fullPath = outputDir + '\\' + fileName;
-              counter++;
-            }
-            await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(singlePageBytes) });
-            showPdfRotateSuccess(fullPath, 'single', 1);
-          } else {
-            const blob = new Blob([singlePageBytes], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${pageData.fileName.replace(/\.pdf$/i, '')}_page_${pageData.pageIndex}_rotated.pdf`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showPdfRotateSuccess(`~/Downloads/${pageData.fileName.replace(/\.pdf$/i, '')}_page_${pageData.pageIndex}_rotated.pdf`, 'single', 1);
-          }
+          const { createPdfRotateFileName, rotatePdfPages } = await import('./pdf-rotate-core.js');
+          const singlePageBytes = await rotatePdfPages({
+            fileData: pdfRotateLoadedDoc.fileData,
+            pages: [{ pageIndex: pageData.pageIndex, rotation: pageData.rotation }],
+            onProgress: () => setPdfRotateProgress(85, t('home.pdfRotate.saving'))
+          });
+          const fileName = createPdfRotateFileName(pageData.fileName, pageData.pageIndex);
+          const savedPath = await savePdfRotateBytes(singlePageBytes, fileName);
+          showPdfRotateSuccess(savedPath, 'single', 1);
         } catch (e) {
           console.error('[PDF Rotate] Single page save error:', e);
-          alert(t('common.errorOccurred', { error: String(e) }));
+          alert(t('common.errorOccurred', { error: formatPdfRotateError(e) }));
         } finally {
-          pdfRotateSingleDownloading = false;
+          if (pdfRotateProcessMask) pdfRotateProcessMask.classList.remove('visible');
+          setPdfRotateProgress(0);
+          setPdfRotateSaving(false);
         }
       }
 
@@ -6286,87 +8931,54 @@
       if (pdfRotateDownloadAllBtn) {
         pdfRotateDownloadAllBtn.addEventListener('click', async () => {
           if (pdfRotatePagesData.length === 0) return;
-          if (!pdfRotateLoadedDoc || !pdfRotateLoadedDoc.fileData) return;
-          if (pdfRotateProcessing) return; // prevent concurrent export
-          pdfRotateProcessing = true;
+          if (!pdfRotateLoadedDoc?.fileData) return;
+          if (pdfRotateProcessing || pdfRotateSaving) return;
+          setPdfRotateSaving(true);
           if (pdfRotateProcessMask) pdfRotateProcessMask.classList.add('visible');
-          if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = '30%';
-          if (pdfRotateProcessText) pdfRotateProcessText.textContent = t('home.pdfRotate.saving');
+          setPdfRotateProgress(5, t('home.pdfRotate.saving'));
 
           try {
-            const { PDFDocument, degrees } = await import('pdf-lib');
-            const srcPdf = await PDFDocument.load(pdfRotateLoadedDoc.fileData.slice(), { ignoreEncryption: true });
-            const newPdf = await PDFDocument.create();
+            const { createPdfRotateFileName, rotatePdfPages } = await import('./pdf-rotate-core.js');
             const totalPages = pdfRotatePagesData.length;
-
-            for (let i = 0; i < totalPages; i++) {
-              const pageData = pdfRotatePagesData[i];
-              const progress = Math.round(((i + 1) / totalPages) * 100);
-              if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = progress + '%';
-
-              const [copiedPage] = await newPdf.copyPages(srcPdf, [pageData.pageIndex - 1]);
-              newPdf.addPage(copiedPage);
-              // Apply rotation (add to existing rotation)
-              const pages = newPdf.getPages();
-              const lastPage = pages[pages.length - 1];
-              const existingRotation = lastPage.getRotation().angle;
-              lastPage.setRotation(degrees((existingRotation + pageData.rotation) % 360));
-            }
-
-            const mergedBytes = await newPdf.save();
-
-            if (isTauri) {
-              let invoke = null;
-              const { invoke: inv } = await import('@tauri-apps/api/core');
-              invoke = inv;
-              const outputDir = await getOutputDir('Rotate');
-              const baseName = pdfRotateLoadedDoc.fileName.replace(/\.pdf$/i, '');
-              let fileName = `${baseName}_rotated.pdf`;
-              let fullPath = outputDir + '\\' + fileName;
-              let counter = 1;
-              while (await invoke('exists_path', { path: fullPath }).catch(() => false)) {
-                fileName = `${baseName}_rotated_${counter}.pdf`;
-                fullPath = outputDir + '\\' + fileName;
-                counter++;
-              }
-              await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(mergedBytes) });
-              if (pdfRotateProcessMask) pdfRotateProcessMask.classList.remove('visible');
-              if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = '0%';
-              showPdfRotateSuccess(fullPath, 'all', totalPages);
-              pdfRotateProcessing = false;
-            } else {
-              const blob = new Blob([mergedBytes], { type: 'application/pdf' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `${pdfRotateLoadedDoc.fileName.replace(/\.pdf$/i, '')}_rotated.pdf`;
-              a.click();
-              URL.revokeObjectURL(url);
-              if (pdfRotateProcessMask) pdfRotateProcessMask.classList.remove('visible');
-              if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = '0%';
-              showPdfRotateSuccess(`~/Downloads/${pdfRotateLoadedDoc.fileName.replace(/\.pdf$/i, '')}_rotated.pdf`, 'all', totalPages);
-              pdfRotateProcessing = false;
-            }
+            const outputBytes = await rotatePdfPages({
+              fileData: pdfRotateLoadedDoc.fileData,
+              pages: pdfRotatePagesData.map(({ pageIndex, rotation }) => ({ pageIndex, rotation })),
+              onProgress: ({ completed, total }) => setPdfRotateProgress(
+                10 + Math.round((completed / total) * 80),
+                t('home.pdfRotate.saving')
+              )
+            });
+            const fileName = createPdfRotateFileName(pdfRotateLoadedDoc.fileName);
+            const savedPath = await savePdfRotateBytes(outputBytes, fileName);
+            showPdfRotateSuccess(savedPath, 'all', totalPages);
           } catch (e) {
             console.error('[PDF Rotate] Export all error:', e);
+            alert(t('common.errorOccurred', { error: formatPdfRotateError(e) }));
+          } finally {
             if (pdfRotateProcessMask) pdfRotateProcessMask.classList.remove('visible');
-            if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = '0%';
-            pdfRotateProcessing = false;
-            alert(t('common.errorOccurred', { error: String(e) }));
+            setPdfRotateProgress(0);
+            setPdfRotateSaving(false);
           }
         });
       }
 
-      // Drawer close
-      if (pdfRotateDrawerClose) {
-        pdfRotateDrawerClose.addEventListener('click', () => {
-          if (pdfRotateDrawer) pdfRotateDrawer.classList.remove('visible');
-        });
+      function openPdfRotateWorkspace() {
+        if (!pdfRotateWorkspace) return;
+        pdfRotateWorkspace.classList.add('visible');
+        pdfRotateWorkspace.setAttribute('aria-hidden', 'false');
       }
-      if (pdfRotateDrawerBackdrop) {
-        pdfRotateDrawerBackdrop.addEventListener('click', () => {
-          if (pdfRotateDrawer) pdfRotateDrawer.classList.remove('visible');
-        });
+
+      function closePdfRotateWorkspace(force = false) {
+        if (pdfRotateSaving && !force) return;
+        if (pdfRotateWorkspace) {
+          pdfRotateWorkspace.classList.remove('visible');
+          pdfRotateWorkspace.setAttribute('aria-hidden', 'true');
+        }
+        releasePdfRotatePreviewResources();
+      }
+
+      if (pdfRotateWorkspaceClose) {
+        pdfRotateWorkspaceClose.addEventListener('click', () => closePdfRotateWorkspace());
       }
 
       function showPdfRotateSuccess(savePath, type, count) {
@@ -6379,7 +8991,6 @@
           if (pdfRotateSuccessMeta) pdfRotateSuccessMeta.textContent = t('home.pdfRotate.successSingleMeta');
         }
         if (pdfRotateSuccessOverlay) pdfRotateSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       if (pdfRotateSuccessOk) {
@@ -6403,25 +9014,32 @@
 
       // Close cleanup
       function closePdfRotateOverlayFull() {
+        if (pdfRotateSaving) {
+          window.showToast(t('home.pdfRotate.saving'));
+          return;
+        }
+        pdfRotateRunId++;
+        pdfRotateActiveRunId = 0;
         closePdfRotateOverlay();
         pdfRotateProcessing = false;
-        pdfRotateSingleDownloading = false;
         if (pdfRotateProcessMask) pdfRotateProcessMask.classList.remove('visible');
-        if (pdfRotateProcessBarFill) pdfRotateProcessBarFill.style.width = '0%';
+        setPdfRotateProgress(0);
         clearPdfRotateFiles();
-        if (pdfRotateDrawer) pdfRotateDrawer.classList.remove('visible');
-        if (pdfRotateLoadedDoc) {
-          try { pdfRotateLoadedDoc.doc.destroy(); } catch (_) {}
-          pdfRotateLoadedDoc = null;
-        }
-        pdfRotateSrcPdfCache = null;
-        pdfRotatePagesData.forEach(p => { if (p.canvas) { p.canvas.width = 0; p.canvas.height = 0; } });
-        pdfRotatePagesData = [];
+        closePdfRotateWorkspace(true);
       }
       if (pdfRotateBack) {
         pdfRotateBack.removeEventListener('click', closePdfRotateOverlay);
         pdfRotateBack.addEventListener('click', closePdfRotateOverlayFull);
       }
+
+      onLangChange(() => {
+        if (pdfSplitWorkspace?.classList.contains('visible')) {
+          renderSplitPreviewPages();
+        }
+        if (pdfRotateWorkspace?.classList.contains('visible')) {
+          renderRotatePreviewPages();
+        }
+      });
 
       // ===== PDF Encrypt Overlay Open/Close =====
       const pdfEncryptOverlay = document.getElementById('pdfEncryptOverlay');
@@ -6471,6 +9089,7 @@
       const pdfEncryptDropZone = document.getElementById('pdfEncryptDropZone');
       const pdfEncryptFiles = document.getElementById('pdfEncryptFiles');
       const pdfEncryptCta = document.getElementById('pdfEncryptCta');
+      const pdfEncryptInput = document.getElementById('pdfEncryptInput');
       const pdfEncryptProcessBtn = document.getElementById('pdfEncryptProcessBtn');
       const pdfEncryptProcessMask = document.getElementById('pdfEncryptProcessMask');
       const pdfEncryptProcessBarFill = document.getElementById('pdfEncryptProcessBarFill');
@@ -6499,8 +9118,85 @@
       let pdfEncryptProcessing = false;
       let lastPdfEncryptSavedPath = '';
 
+      function setPdfEncryptProgress(percent, message) {
+        if (pdfEncryptProcessBarFill) pdfEncryptProcessBarFill.style.width = `${percent}%`;
+        if (message && pdfEncryptProcessText) pdfEncryptProcessText.textContent = message;
+      }
+
+      function clearPdfEncryptPasswordInputs() {
+        if (pdfEncryptPasswordInput) {
+          pdfEncryptPasswordInput.value = '';
+          pdfEncryptPasswordInput.type = 'password';
+        }
+        if (pdfEncryptConfirmInput) {
+          pdfEncryptConfirmInput.value = '';
+          pdfEncryptConfirmInput.type = 'password';
+        }
+        document.querySelectorAll('.pdf-encrypt-eye-btn').forEach(button => button.classList.remove('show'));
+      }
+
+      function formatPdfEncryptError(error) {
+        const message = String(error?.message || error);
+        if (/at least 8 characters/.test(message)) return t('home.pdfEncrypt.passwordTooShort');
+        if (/encrypted/i.test(message)) return t('home.pdfEncrypt.passwordProtected');
+        if (/encryption limit/.test(message) && /MB/.test(message)) return t('home.pdfEncrypt.fileTooLarge');
+        if (/encryption limit/.test(message) && /page/.test(message)) return t('home.pdfEncrypt.tooManyPages');
+        return message;
+      }
+
+      async function preflightPdfEncryptFile() {
+        const { PDF_ENCRYPT_LIMITS, assertPdfEncryptSelection } = await import('./pdf-encrypt-core.js');
+        const file = selectedPdfEncryptFiles[0];
+        if (!file) throw new Error('No PDF file is selected');
+        const totalBytes = isTauri && file.path
+          ? Number(await (await import('@tauri-apps/api/core')).invoke('get_file_size', { path: file.path }))
+          : Number(file.size || 0);
+        assertPdfEncryptSelection(selectedPdfEncryptFiles, totalBytes, PDF_ENCRYPT_LIMITS);
+      }
+
+      async function readPdfEncryptFileData(file) {
+        if (isTauri && file.path) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const bytes = await invoke('read_file_bytes', { path: file.path });
+          if (Array.isArray(bytes)) return Uint8Array.from(bytes);
+          if (bytes instanceof ArrayBuffer) return new Uint8Array(bytes);
+          if (bytes instanceof Uint8Array) return bytes;
+          if (bytes && typeof bytes.length === 'number') return Uint8Array.from(bytes);
+          throw new Error(`Invalid file data for ${file.name}`);
+        }
+        return new Uint8Array(await file.arrayBuffer());
+      }
+
+      async function getPdfEncryptOutputDir() {
+        return getOutputDir('PDF_Encrypt');
+      }
+
+      async function savePdfEncryptBytes(bytes, fileName) {
+        if (isTauri) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          return invoke('write_unique_file_bytes', {
+            directory: await getPdfEncryptOutputDir(),
+            fileName,
+            bytes: Array.from(bytes)
+          });
+        }
+
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = fileName;
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        return `~/Downloads/${fileName}`;
+      }
+
       function addPdfEncryptFiles(fileList) {
         if (!fileList || fileList.length === 0) return;
+        if (pdfEncryptProcessing || pdfEncryptPasswordDialog?.classList.contains('visible')) return;
         if (fileList.length > 1) {
           alert(t('home.pdfEncrypt.singleFileOnly'));
           return;
@@ -6578,7 +9274,7 @@
           const { getCurrentWebview } = await import('@tauri-apps/api/webview');
           const webview = getCurrentWebview();
           await webview.onDragDropEvent((event) => {
-            if (!pdfEncryptOverlay.classList.contains('visible') || pdfEncryptProcessing) return;
+            if (!pdfEncryptOverlay.classList.contains('visible') || pdfEncryptProcessing || pdfEncryptPasswordDialog?.classList.contains('visible')) return;
             const payload = event.payload;
             if (payload.type === 'enter' || payload.type === 'over') {
               showPdfEncryptDropZone();
@@ -6602,6 +9298,7 @@
       // CTA button — open file dialog
       if (pdfEncryptCta) {
         pdfEncryptCta.addEventListener('click', async () => {
+          if (pdfEncryptProcessing || pdfEncryptPasswordDialog?.classList.contains('visible')) return;
           if (isTauri) {
             try {
               const { open } = await import('@tauri-apps/plugin-dialog');
@@ -6616,15 +9313,14 @@
               console.error('PDF encrypt file selection error', e);
             }
           } else {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.pdf,application/pdf';
-            input.addEventListener('change', () => {
-              addPdfEncryptFiles(input.files);
-              input.value = '';
-            });
-            input.click();
+            pdfEncryptInput?.click();
           }
+        });
+      }
+      if (pdfEncryptInput) {
+        pdfEncryptInput.addEventListener('change', () => {
+          addPdfEncryptFiles(pdfEncryptInput.files);
+          pdfEncryptInput.value = '';
         });
       }
 
@@ -6632,11 +9328,7 @@
       if (pdfEncryptProcessBtn) {
         pdfEncryptProcessBtn.addEventListener('click', () => {
           if (selectedPdfEncryptFiles.length < 1 || pdfEncryptProcessing) return;
-          // Reset password fields
-          if (pdfEncryptPasswordInput) { pdfEncryptPasswordInput.value = ''; pdfEncryptPasswordInput.type = 'password'; }
-          if (pdfEncryptConfirmInput) { pdfEncryptConfirmInput.value = ''; pdfEncryptConfirmInput.type = 'password'; }
-          // Reset eye buttons
-          document.querySelectorAll('.pdf-encrypt-eye-btn').forEach(btn => btn.classList.remove('show'));
+          clearPdfEncryptPasswordInputs();
           // Reset permissions to default (all checked)
           [pdfEncryptPermPrinting, pdfEncryptPermCopying, pdfEncryptPermModifying, pdfEncryptPermAnnotating,
            pdfEncryptPermFilling, pdfEncryptPermAccessibility, pdfEncryptPermAssembly, pdfEncryptPermHighQualityPrint
@@ -6650,6 +9342,7 @@
       if (pdfEncryptPasswordCancel) {
         pdfEncryptPasswordCancel.addEventListener('click', () => {
           if (pdfEncryptPasswordDialog) pdfEncryptPasswordDialog.classList.remove('visible');
+          clearPdfEncryptPasswordInputs();
         });
       }
 
@@ -6683,49 +9376,27 @@
           return;
         }
 
-        // Close password dialog
-        if (pdfEncryptPasswordDialog) pdfEncryptPasswordDialog.classList.remove('visible');
+        try {
+          const { assertPdfEncryptPassword } = await import('./pdf-encrypt-core.js');
+          assertPdfEncryptPassword(password);
+        } catch (error) {
+          alert(formatPdfEncryptError(error));
+          return;
+        }
 
-        // Start encryption
+        if (pdfEncryptPasswordDialog) pdfEncryptPasswordDialog.classList.remove('visible');
+        clearPdfEncryptPasswordInputs();
+
         pdfEncryptProcessing = true;
         if (pdfEncryptProcessMask) pdfEncryptProcessMask.classList.add('visible');
-        if (pdfEncryptProcessBarFill) pdfEncryptProcessBarFill.style.width = '10%';
-        if (pdfEncryptProcessText) pdfEncryptProcessText.textContent = t('home.pdfEncrypt.encrypting');
+        setPdfEncryptProgress(10, t('home.pdfEncrypt.encrypting'));
 
         try {
-          const { PDFDocument } = await import('pdf-lib-plus-encrypt');
-
+          await preflightPdfEncryptFile();
           const file = selectedPdfEncryptFiles[0];
+          const fileData = await readPdfEncryptFileData(file);
+          if (!fileData.length) throw new Error(`File ${file.name} is empty`);
 
-          // Read file bytes
-          let fileData;
-          if (isTauri && file.path) {
-            const { invoke } = await import('@tauri-apps/api/core');
-            const rawBytes = await invoke('read_file_bytes', { path: file.path });
-            if (Array.isArray(rawBytes)) {
-              fileData = Uint8Array.from(rawBytes);
-            } else if (rawBytes instanceof ArrayBuffer) {
-              fileData = new Uint8Array(rawBytes);
-            } else if (rawBytes instanceof Uint8Array) {
-              fileData = rawBytes;
-            } else if (rawBytes && typeof rawBytes.length === 'number') {
-              fileData = Uint8Array.from(rawBytes);
-            } else {
-              throw new Error(`Invalid file data for ${file.name}: ${typeof rawBytes}`);
-            }
-            if (fileData.length === 0) throw new Error(`File ${file.name} is empty`);
-          } else {
-            fileData = new Uint8Array(await file.arrayBuffer());
-          }
-
-          if (pdfEncryptProcessBarFill) pdfEncryptProcessBarFill.style.width = '40%';
-
-          // Load PDF
-          const pdfDoc = await PDFDocument.load(fileData.slice(), { ignoreEncryption: true });
-
-          if (pdfEncryptProcessBarFill) pdfEncryptProcessBarFill.style.width = '70%';
-
-          // Build permissions object (boolean/string values for pdf-lib-plus-encrypt)
           const permPrinting = pdfEncryptPermPrinting && pdfEncryptPermPrinting.checked;
           const permHighQuality = pdfEncryptPermHighQualityPrint && pdfEncryptPermHighQualityPrint.checked;
           const permissions = {
@@ -6737,56 +9408,26 @@
             contentAccessibility: !!(pdfEncryptPermAccessibility && pdfEncryptPermAccessibility.checked),
             documentAssembly: !!(pdfEncryptPermAssembly && pdfEncryptPermAssembly.checked),
           };
-
-          // Encrypt the document
-          pdfDoc.encrypt({
-            userPassword: password,
-            ownerPassword: password,
+          const { createPdfEncryptFileName, encryptPdf } = await import('./pdf-encrypt-core.js');
+          const encryptedBytes = await encryptPdf({
+            fileData,
+            password,
             permissions,
+            onProgress: ({ percent }) => setPdfEncryptProgress(percent, t('home.pdfEncrypt.encrypting'))
           });
-
-          // Save (useObjectStreams: false required for encrypted PDFs)
-          const encryptedBytes = await pdfDoc.save({ useObjectStreams: false });
-
-          if (pdfEncryptProcessBarFill) pdfEncryptProcessBarFill.style.width = '100%';
-
-          // Write file
-          if (isTauri) {
-            const { invoke } = await import('@tauri-apps/api/core');
-            const outputDir = await getOutputDir('Encrypt');
-            const baseName = file.name.replace(/\.pdf$/i, '');
-            let fileName = `${baseName}_encrypted.pdf`;
-            let fullPath = outputDir + '\\' + fileName;
-            let counter = 1;
-            while (await invoke('exists_path', { path: fullPath }).catch(() => false)) {
-              fileName = `${baseName}_encrypted_${counter}.pdf`;
-              fullPath = outputDir + '\\' + fileName;
-              counter++;
-            }
-            await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(encryptedBytes) });
-            if (pdfEncryptProcessMask) pdfEncryptProcessMask.classList.remove('visible');
-            if (pdfEncryptProcessBarFill) pdfEncryptProcessBarFill.style.width = '0%';
-            pdfEncryptProcessing = false;
-            showPdfEncryptSuccess(fullPath, 1);
-          } else {
-            const blob = new Blob([encryptedBytes], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${file.name.replace(/\.pdf$/i, '')}_encrypted.pdf`;
-            a.click();
-            URL.revokeObjectURL(url);
-            if (pdfEncryptProcessMask) pdfEncryptProcessMask.classList.remove('visible');
-            if (pdfEncryptProcessBarFill) pdfEncryptProcessBarFill.style.width = '0%';
-            pdfEncryptProcessing = false;
-            showPdfEncryptSuccess(`~/Downloads/${file.name.replace(/\.pdf$/i, '')}_encrypted.pdf`, 1);
-          }
+          setPdfEncryptProgress(95, t('home.pdfEncrypt.encrypting'));
+          const savedPath = await savePdfEncryptBytes(
+            encryptedBytes,
+            createPdfEncryptFileName(file.name)
+          );
+          showPdfEncryptSuccess(savedPath, 1);
         } catch (e) {
           console.error('[PDF Encrypt] Error:', e);
+          alert(t('common.errorOccurred', { error: formatPdfEncryptError(e) }));
+        } finally {
           if (pdfEncryptProcessMask) pdfEncryptProcessMask.classList.remove('visible');
-          if (pdfEncryptProcessBarFill) pdfEncryptProcessBarFill.style.width = '0%';
+          setPdfEncryptProgress(0);
           pdfEncryptProcessing = false;
-          alert(t('common.errorOccurred', { error: String(e) }));
         }
       }
 
@@ -6816,7 +9457,6 @@
         if (pdfEncryptSuccessPath) pdfEncryptSuccessPath.textContent = savePath.replace(/\//g, '\\');
         if (pdfEncryptSuccessMeta) pdfEncryptSuccessMeta.textContent = t('home.pdfEncrypt.successMeta');
         if (pdfEncryptSuccessOverlay) pdfEncryptSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       if (pdfEncryptSuccessOk) {
@@ -6841,12 +9481,16 @@
 
       // Close cleanup
       function closePdfEncryptOverlayFull() {
+        if (pdfEncryptProcessing) {
+          window.showToast(t('home.pdfEncrypt.encrypting'));
+          return;
+        }
         closePdfEncryptOverlay();
-        pdfEncryptProcessing = false;
         if (pdfEncryptProcessMask) pdfEncryptProcessMask.classList.remove('visible');
-        if (pdfEncryptProcessBarFill) pdfEncryptProcessBarFill.style.width = '0%';
+        setPdfEncryptProgress(0);
         if (pdfEncryptPasswordDialog) pdfEncryptPasswordDialog.classList.remove('visible');
         if (pdfEncryptSuccessOverlay) pdfEncryptSuccessOverlay.classList.remove('visible');
+        clearPdfEncryptPasswordInputs();
         clearPdfEncryptFiles();
       }
 
@@ -6898,6 +9542,7 @@
       const pdfDecryptDropZone = document.getElementById('pdfDecryptDropZone');
       const pdfDecryptFiles = document.getElementById('pdfDecryptFiles');
       const pdfDecryptCta = document.getElementById('pdfDecryptCta');
+      const pdfDecryptInput = document.getElementById('pdfDecryptInput');
       const pdfDecryptProcessBtn = document.getElementById('pdfDecryptProcessBtn');
       const pdfDecryptProcessMask = document.getElementById('pdfDecryptProcessMask');
       const pdfDecryptProcessBarFill = document.getElementById('pdfDecryptProcessBarFill');
@@ -6917,8 +9562,47 @@
       let pdfDecryptProcessing = false;
       let lastPdfDecryptSavedPath = '';
 
+      function setPdfDecryptProgress(percent, message) {
+        if (pdfDecryptProcessBarFill) pdfDecryptProcessBarFill.style.width = `${percent}%`;
+        if (message && pdfDecryptProcessText) pdfDecryptProcessText.textContent = message;
+      }
+
+      function clearPdfDecryptPasswordInput() {
+        if (pdfDecryptPasswordInput) {
+          pdfDecryptPasswordInput.value = '';
+          pdfDecryptPasswordInput.type = 'password';
+        }
+        pdfDecryptEyeBtn?.classList.remove('show');
+      }
+
+      async function getPdfDecryptErrorInfo(error) {
+        const { getPdfDecryptErrorCode } = await import('./pdf-decrypt-core.js');
+        const code = getPdfDecryptErrorCode(error);
+        const messages = {
+          'invalid-password': 'home.pdfDecrypt.wrongPassword',
+          'input-too-large': 'home.pdfDecrypt.fileTooLarge',
+          'too-many-pages': 'home.pdfDecrypt.tooManyPages',
+          'invalid-pdf': 'home.pdfDecrypt.invalidPdf',
+          'desktop-only': 'home.pdfDecrypt.desktopOnly',
+          'qpdf-unavailable': 'home.pdfDecrypt.decryptFailed',
+          'decryption-failed': 'home.pdfDecrypt.decryptFailed'
+        };
+        return { code, message: t(messages[code] || 'home.pdfDecrypt.decryptFailed') };
+      }
+
+      async function preflightPdfDecryptFile() {
+        const { PDF_DECRYPT_LIMITS, assertPdfDecryptSelection } = await import('./pdf-decrypt-core.js');
+        const file = selectedPdfDecryptFiles[0];
+        if (!file) throw new Error('No PDF file is selected');
+        const totalBytes = isTauri && file.path
+          ? Number(await (await import('@tauri-apps/api/core')).invoke('get_file_size', { path: file.path }))
+          : Number(file.size || 0);
+        assertPdfDecryptSelection(selectedPdfDecryptFiles, totalBytes, PDF_DECRYPT_LIMITS);
+      }
+
       function addPdfDecryptFiles(fileList) {
         if (!fileList || fileList.length === 0) return;
+        if (pdfDecryptProcessing || pdfDecryptPasswordDialog?.classList.contains('visible')) return;
         if (fileList.length > 1) {
           alert(t('home.pdfDecrypt.singleFileOnly'));
           return;
@@ -6993,6 +9677,7 @@
       // CTA button — open file dialog
       if (pdfDecryptCta) {
         pdfDecryptCta.addEventListener('click', async () => {
+          if (pdfDecryptProcessing || pdfDecryptPasswordDialog?.classList.contains('visible')) return;
           if (isTauri) {
             try {
               const { open } = await import('@tauri-apps/plugin-dialog');
@@ -7007,15 +9692,14 @@
               console.error('PDF decrypt file selection error', e);
             }
           } else {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.pdf,application/pdf';
-            input.addEventListener('change', () => {
-              addPdfDecryptFiles(input.files);
-              input.value = '';
-            });
-            input.click();
+            pdfDecryptInput?.click();
           }
+        });
+      }
+      if (pdfDecryptInput) {
+        pdfDecryptInput.addEventListener('change', () => {
+          addPdfDecryptFiles(pdfDecryptInput.files);
+          pdfDecryptInput.value = '';
         });
       }
 
@@ -7025,7 +9709,7 @@
           const { getCurrentWebview } = await import('@tauri-apps/api/webview');
           const webview = getCurrentWebview();
           await webview.onDragDropEvent((event) => {
-            if (!pdfDecryptOverlay.classList.contains('visible') || pdfDecryptProcessing) return;
+            if (!pdfDecryptOverlay.classList.contains('visible') || pdfDecryptProcessing || pdfDecryptPasswordDialog?.classList.contains('visible')) return;
             const payload = event.payload;
             if (payload.type === 'enter' || payload.type === 'over') {
               showPdfDecryptDropZone();
@@ -7070,9 +9754,7 @@
       if (pdfDecryptProcessBtn) {
         pdfDecryptProcessBtn.addEventListener('click', () => {
           if (selectedPdfDecryptFiles.length < 1 || pdfDecryptProcessing) return;
-          if (pdfDecryptPasswordInput) { pdfDecryptPasswordInput.value = ''; pdfDecryptPasswordInput.type = 'password'; }
-          const eyeBtn = document.getElementById('pdfDecryptEyeBtn');
-          if (eyeBtn) eyeBtn.classList.remove('show');
+          clearPdfDecryptPasswordInput();
           if (pdfDecryptPasswordDialog) pdfDecryptPasswordDialog.classList.add('visible');
           if (pdfDecryptPasswordInput) pdfDecryptPasswordInput.focus();
         });
@@ -7082,6 +9764,7 @@
       if (pdfDecryptPasswordCancel) {
         pdfDecryptPasswordCancel.addEventListener('click', () => {
           if (pdfDecryptPasswordDialog) pdfDecryptPasswordDialog.classList.remove('visible');
+          clearPdfDecryptPasswordInput();
         });
       }
 
@@ -7100,129 +9783,45 @@
       // Password dialog confirm — start decryption
       async function handleDecryptConfirm() {
         if (pdfDecryptProcessing) return;
-        const password = pdfDecryptPasswordInput ? pdfDecryptPasswordInput.value : '';
-
-        if (!password) {
-          alert(t('home.pdfDecrypt.passwordEmpty'));
+        let password = pdfDecryptPasswordInput ? pdfDecryptPasswordInput.value : '';
+        try {
+          const { assertPdfDecryptPassword } = await import('./pdf-decrypt-core.js');
+          assertPdfDecryptPassword(password);
+        } catch (error) {
+          alert(t('home.pdfDecrypt.passwordUnsupported'));
           return;
         }
 
-        // Close password dialog
         if (pdfDecryptPasswordDialog) pdfDecryptPasswordDialog.classList.remove('visible');
-
-        // Start decryption
+        clearPdfDecryptPasswordInput();
         pdfDecryptProcessing = true;
         if (pdfDecryptProcessMask) pdfDecryptProcessMask.classList.add('visible');
-        if (pdfDecryptProcessBarFill) pdfDecryptProcessBarFill.style.width = '10%';
-        if (pdfDecryptProcessText) pdfDecryptProcessText.textContent = t('home.pdfDecrypt.decrypting');
+        setPdfDecryptProgress(10, t('home.pdfDecrypt.decrypting'));
 
         try {
-          const { PDFDocument } = await import('pdf-lib-plus-encrypt');
-
-          if (selectedPdfDecryptFiles.length < 1) {
-            pdfDecryptProcessing = false;
-            if (pdfDecryptProcessMask) pdfDecryptProcessMask.classList.remove('visible');
-            if (pdfDecryptProcessBarFill) pdfDecryptProcessBarFill.style.width = '0%';
-            return;
-          }
+          await preflightPdfDecryptFile();
+          if (!isTauri) throw new Error('pdf-decrypt:desktop-only');
           const file = selectedPdfDecryptFiles[0];
-
-          // Read file bytes
-          let fileData;
-          if (isTauri && file.path) {
-            const { invoke } = await import('@tauri-apps/api/core');
-            const rawBytes = await invoke('read_file_bytes', { path: file.path });
-            if (Array.isArray(rawBytes)) {
-              fileData = Uint8Array.from(rawBytes);
-            } else if (rawBytes instanceof ArrayBuffer) {
-              fileData = new Uint8Array(rawBytes);
-            } else if (rawBytes instanceof Uint8Array) {
-              fileData = rawBytes;
-            } else if (rawBytes && typeof rawBytes.length === 'number') {
-              fileData = Uint8Array.from(rawBytes);
-            } else {
-              throw new Error(`Invalid file data for ${file.name}: ${typeof rawBytes}`);
-            }
-            if (fileData.length === 0) throw new Error(`File ${file.name} is empty`);
-          } else {
-            fileData = new Uint8Array(await file.arrayBuffer());
-          }
-
-          if (pdfDecryptProcessBarFill) pdfDecryptProcessBarFill.style.width = '40%';
-
-          // Verify password with pdfjs-dist, then decrypt with pdf-lib-plus-encrypt
-          // pdf-lib-plus-encrypt's load() does not support a password parameter,
-          // so we use pdfjs to verify the password first, then reload with
-          // ignoreEncryption: true and save without encryption.
-          let pdfDoc;
-          try {
-            // Step 1: Verify password with pdfjs-dist
-            const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
-            pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-              'pdfjs-dist/build/pdf.worker.mjs',
-              import.meta.url
-            ).toString();
-            const wasmUrl = new URL('assets/', document.baseURI).href;
-            const loadingTask = pdfjsLib.getDocument({ data: fileData.slice(), password, wasmUrl, useWasm: true });
-            await loadingTask.promise;
-
-            // Step 2: Load with pdf-lib-plus-encrypt ignoring encryption, then save without it
-            pdfDoc = await PDFDocument.load(fileData.slice(), { ignoreEncryption: true });
-          } catch (loadErr) {
-            // Password wrong or load failed — reopen dialog, alert user
-            if (pdfDecryptProcessMask) pdfDecryptProcessMask.classList.remove('visible');
-            if (pdfDecryptProcessBarFill) pdfDecryptProcessBarFill.style.width = '0%';
-            pdfDecryptProcessing = false;
-            if (pdfDecryptPasswordDialog) pdfDecryptPasswordDialog.classList.add('visible');
-            if (pdfDecryptPasswordInput) { pdfDecryptPasswordInput.value = ''; pdfDecryptPasswordInput.focus(); }
-            alert(t('home.pdfDecrypt.wrongPassword'));
-            return;
-          }
-
-          if (pdfDecryptProcessBarFill) pdfDecryptProcessBarFill.style.width = '70%';
-
-          // Save without encryption (plain PDF)
-          const decryptedBytes = await pdfDoc.save({ useObjectStreams: false });
-
-          if (pdfDecryptProcessBarFill) pdfDecryptProcessBarFill.style.width = '100%';
-
-          // Write file
-          if (isTauri) {
-            const { invoke } = await import('@tauri-apps/api/core');
-            const outputDir = await getOutputDir('Decrypt');
-            const baseName = file.name.replace(/\.pdf$/i, '');
-            let fileName = `${baseName}_decrypted.pdf`;
-            let fullPath = outputDir + '\\' + fileName;
-            let counter = 1;
-            while (await invoke('exists_path', { path: fullPath }).catch(() => false)) {
-              fileName = `${baseName}_decrypted_${counter}.pdf`;
-              fullPath = outputDir + '\\' + fileName;
-              counter++;
-            }
-            await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(decryptedBytes) });
-            if (pdfDecryptProcessMask) pdfDecryptProcessMask.classList.remove('visible');
-            if (pdfDecryptProcessBarFill) pdfDecryptProcessBarFill.style.width = '0%';
-            pdfDecryptProcessing = false;
-            showPdfDecryptSuccess(fullPath, 1);
-          } else {
-            const blob = new Blob([decryptedBytes], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${file.name.replace(/\.pdf$/i, '')}_decrypted.pdf`;
-            a.click();
-            URL.revokeObjectURL(url);
-            if (pdfDecryptProcessMask) pdfDecryptProcessMask.classList.remove('visible');
-            if (pdfDecryptProcessBarFill) pdfDecryptProcessBarFill.style.width = '0%';
-            pdfDecryptProcessing = false;
-            showPdfDecryptSuccess(`~/Downloads/${file.name.replace(/\.pdf$/i, '')}_decrypted.pdf`, 1);
-          }
+          setPdfDecryptProgress(40, t('home.pdfDecrypt.decrypting'));
+          const { invoke } = await import('@tauri-apps/api/core');
+          const savedPath = await invoke('decrypt_pdf', { inputPath: file.path, password, outputDir: await getOutputDir('PDF_Decrypt') });
+          setPdfDecryptProgress(100, t('home.pdfDecrypt.decrypting'));
+          showPdfDecryptSuccess(savedPath, 1);
         } catch (e) {
           console.error('[PDF Decrypt] Error:', e);
+          const errorInfo = await getPdfDecryptErrorInfo(e);
+          if (errorInfo.code === 'invalid-password') {
+            clearPdfDecryptPasswordInput();
+            if (pdfDecryptPasswordDialog) pdfDecryptPasswordDialog.classList.add('visible');
+            pdfDecryptPasswordInput?.focus();
+          }
+          alert(t('common.errorOccurred', { error: errorInfo.message }));
+        } finally {
+          password = '\0'.repeat(password.length);
+          password = '';
           if (pdfDecryptProcessMask) pdfDecryptProcessMask.classList.remove('visible');
-          if (pdfDecryptProcessBarFill) pdfDecryptProcessBarFill.style.width = '0%';
+          setPdfDecryptProgress(0);
           pdfDecryptProcessing = false;
-          alert(t('common.errorOccurred', { error: String(e) }));
         }
       }
 
@@ -7244,7 +9843,6 @@
         if (pdfDecryptSuccessPath) pdfDecryptSuccessPath.textContent = savePath.replace(/\//g, '\\');
         if (pdfDecryptSuccessMeta) pdfDecryptSuccessMeta.textContent = t('home.pdfDecrypt.successMeta');
         if (pdfDecryptSuccessOverlay) pdfDecryptSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       if (pdfDecryptSuccessOk) {
@@ -7269,11 +9867,15 @@
 
       // Close cleanup
       function closePdfDecryptOverlayFull() {
+        if (pdfDecryptProcessing) {
+          window.showToast(t('home.pdfDecrypt.decrypting'));
+          return;
+        }
         closePdfDecryptOverlay();
-        pdfDecryptProcessing = false;
         if (pdfDecryptProcessMask) pdfDecryptProcessMask.classList.remove('visible');
-        if (pdfDecryptProcessBarFill) pdfDecryptProcessBarFill.style.width = '0%';
+        setPdfDecryptProgress(0);
         if (pdfDecryptPasswordDialog) pdfDecryptPasswordDialog.classList.remove('visible');
+        clearPdfDecryptPasswordInput();
         if (pdfDecryptSuccessOverlay) pdfDecryptSuccessOverlay.classList.remove('visible');
         clearPdfDecryptFiles();
       }
@@ -7346,6 +9948,7 @@
       // Strength selector
       document.querySelectorAll('#pdfEnhanceStrengthOptions .audio-convert-format-option').forEach(btn => {
         btn.addEventListener('click', () => {
+          if (pdfEnhanceProcessing) return;
           document.querySelectorAll('#pdfEnhanceStrengthOptions .audio-convert-format-option').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           pdfEnhanceStrength = btn.dataset.strength;
@@ -7358,6 +9961,7 @@
 
       function addPdfEnhanceFiles(fileList) {
         if (!fileList || fileList.length === 0) return;
+        if (pdfEnhanceProcessing) return;
         if (fileList.length > 1) {
           alert(t('home.pdfEnhance.singleFileOnly'));
           return;
@@ -7427,6 +10031,24 @@
         }
       }
 
+      async function getPdfEnhanceErrorMessage(error) {
+        const { getPdfEnhanceErrorCode } = await import('./pdf-enhance-core.js');
+        const code = getPdfEnhanceErrorCode(error);
+        const messageKey = {
+          'single-file-required': 'errorSingleFile',
+          'input-too-large': 'errorTooLarge',
+          'too-many-pages': 'errorTooManyPages',
+          'page-too-large': 'errorPageTooLarge',
+          'document-too-large': 'errorDocumentTooLarge',
+          'output-too-large': 'errorOutputTooLarge',
+          'invalid-strength': 'errorInvalidStrength',
+          'invalid-pdf': 'errorInvalidPdf',
+          'password-protected': 'errorPasswordProtected',
+          'enhancement-failed': 'errorFailed'
+        }[code] || 'errorFailed';
+        return t(`home.pdfEnhance.${messageKey}`);
+      }
+
       function showPdfEnhanceDropZone() {
         if (pdfEnhanceDropZone) pdfEnhanceDropZone.classList.add('visible');
         if (pdfEnhanceOverlay) pdfEnhanceOverlay.classList.add('drag-over');
@@ -7467,6 +10089,7 @@
       // CTA button — open file dialog
       if (pdfEnhanceCta) {
         pdfEnhanceCta.addEventListener('click', async () => {
+          if (pdfEnhanceProcessing) return;
           if (isTauri) {
             try {
               const { open } = await import('@tauri-apps/plugin-dialog');
@@ -7521,10 +10144,11 @@
             for (let i = 0; i < 256; i++) {
               if (hist[i] > clipLimit) { excess += hist[i] - clipLimit; hist[i] = clipLimit; }
             }
-            // Redistribute excess evenly
-            const add = excess / 256;
-            for (let i = 0; i < 256; i++) hist[i] += add;
-            // Build CDF → LUT (total = count after redistribution)
+            // Keep the histogram total exact. Int32Array silently truncates fractional additions.
+            const add = Math.floor(excess / 256);
+            const remainder = excess % 256;
+            for (let i = 0; i < 256; i++) hist[i] += add + (i < remainder ? 1 : 0);
+            // Build CDF to LUT (total = count after redistribution)
             let cdf = 0;
             const lutIdx = (ty * tilesX + tx) * 256;
             for (let i = 0; i < 256; i++) {
@@ -7641,6 +10265,7 @@
 
       function enhanceImageCanvas(canvas, strength) {
         const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('pdf-enhance:enhancement-failed');
         const w = canvas.width;
         const h = canvas.height;
         const imageData = ctx.getImageData(0, 0, w, h);
@@ -7683,10 +10308,18 @@
           if (pdfEnhanceProcessBarFill) pdfEnhanceProcessBarFill.style.width = '5%';
           if (pdfEnhanceProcessText) pdfEnhanceProcessText.textContent = t('home.pdfEnhance.loading');
 
+          let pdfDoc = null;
           try {
-            const file = selectedPdfEnhanceFiles[0];
+            const enhanceCore = await import('./pdf-enhance-core.js');
+            let file = selectedPdfEnhanceFiles[0];
+            if (isTauri && file.path) {
+              const { invoke } = await import('@tauri-apps/api/core');
+              file = { ...file, size: await invoke('get_file_size', { path: file.path }) };
+              selectedPdfEnhanceFiles = [file];
+            }
+            enhanceCore.assertPdfEnhanceSelection([file]);
+            enhanceCore.assertPdfEnhanceStrength(pdfEnhanceStrength);
 
-            // Read file bytes
             let fileData;
             if (isTauri && file.path) {
               const { invoke } = await import('@tauri-apps/api/core');
@@ -7700,88 +10333,78 @@
               } else if (rawBytes && typeof rawBytes.length === 'number') {
                 fileData = Uint8Array.from(rawBytes);
               } else {
-                throw new Error(`Invalid file data for ${file.name}: ${typeof rawBytes}`);
+                throw new Error('pdf-enhance:invalid-pdf');
               }
-              if (fileData.length === 0) throw new Error(`File ${file.name} is empty`);
             } else {
               fileData = new Uint8Array(await file.arrayBuffer());
             }
+            if (fileData.length === 0) throw new Error('pdf-enhance:invalid-pdf');
 
-            // Load with pdf.js
             const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
-            pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-              'pdfjs-dist/build/pdf.worker.mjs',
-              import.meta.url
-            ).toString();
-
+            pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
             const wasmUrl = new URL('assets/', document.baseURI).href;
-            const loadingTask = pdfjsLib.getDocument({ data: fileData.slice(), wasmUrl, useWasm: true });
-            const pdfDoc = await loadingTask.promise;
+            const loadingTask = pdfjsLib.getDocument({ data: fileData, wasmUrl, useWasm: true });
+            pdfDoc = await loadingTask.promise;
             const totalPages = pdfDoc.numPages;
 
-            // Page limit check
-            const MAX_PAGES = 2000;
-            if (totalPages > MAX_PAGES) {
-              try { pdfDoc.destroy(); } catch (_) {}
-              throw new Error(t('home.pdfEnhance.tooManyPages', { pages: totalPages }));
+            const RENDER_SCALE = 2.5;
+            const pagePlan = [];
+            for (let pi = 1; pi <= totalPages; pi++) {
+              const page = await pdfDoc.getPage(pi);
+              const outputViewport = page.getViewport({ scale: 1 });
+              const renderViewport = page.getViewport({ scale: RENDER_SCALE });
+              pagePlan.push({
+                outputWidth: outputViewport.width,
+                outputHeight: outputViewport.height,
+                renderWidth: renderViewport.width,
+                renderHeight: renderViewport.height
+              });
+              try { page.cleanup(); } catch (_) {}
             }
+            enhanceCore.assertPdfEnhancePagePlan(pagePlan);
 
             if (pdfEnhanceProcessText) pdfEnhanceProcessText.textContent = `${t('home.pdfEnhance.processing')} (0/${totalPages})`;
-
-            // Create new PDF document upfront — stream pages one by one
             const { PDFDocument } = await import('pdf-lib');
             const newPdf = await PDFDocument.create();
 
-            const RENDER_SCALE = 2.5; // ~300 DPI for 72dpi base
-
             for (let pi = 1; pi <= totalPages; pi++) {
               const page = await pdfDoc.getPage(pi);
-              const viewport = page.getViewport({ scale: RENDER_SCALE });
-
+              const plan = pagePlan[pi - 1];
+              const renderViewport = page.getViewport({ scale: RENDER_SCALE });
               const canvas = document.createElement('canvas');
               const ctx = canvas.getContext('2d', { willReadFrequently: true });
-              canvas.width = viewport.width;
-              canvas.height = viewport.height;
-              await page.render({ canvasContext: ctx, viewport }).promise;
+              if (!ctx) throw new Error('pdf-enhance:enhancement-failed');
+              canvas.width = Math.ceil(plan.renderWidth);
+              canvas.height = Math.ceil(plan.renderHeight);
+              await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
 
-              // Enhance the image
               enhanceImageCanvas(canvas, pdfEnhanceStrength);
-
-              // Convert to JPEG blob and embed into PDF immediately
               const jpegBlob = await new Promise((resolve, reject) => {
-                canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', 0.85);
+                canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('pdf-enhance:enhancement-failed')), 'image/jpeg', 0.85);
               });
               const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer());
-              const img = await newPdf.embedJpg(jpegBytes);
-              const pdfPage = newPdf.addPage([canvas.width, canvas.height]);
-              pdfPage.drawImage(img, { x: 0, y: 0, width: canvas.width, height: canvas.height });
+              const image = await newPdf.embedJpg(jpegBytes);
+              const outputPage = newPdf.addPage([plan.outputWidth, plan.outputHeight]);
+              outputPage.drawImage(image, { x: 0, y: 0, width: plan.outputWidth, height: plan.outputHeight });
 
-              // Free memory immediately
               canvas.width = 0;
               canvas.height = 0;
-
-              // Cleanup pdf.js page
               try { page.cleanup(); } catch (_) {}
 
               const progress = Math.round((pi / totalPages) * 85) + 5;
               if (pdfEnhanceProcessBarFill) pdfEnhanceProcessBarFill.style.width = progress + '%';
               if (pdfEnhanceProcessText) pdfEnhanceProcessText.textContent = `${t('home.pdfEnhance.processing')} (${pi}/${totalPages})`;
-
-              // Yield to UI
-              await new Promise(r => setTimeout(r, 0));
+              await new Promise(resolve => setTimeout(resolve, 0));
             }
 
-            // Destroy pdf.js doc
-            try { pdfDoc.destroy(); } catch (_) {}
-
-            // Save PDF
             if (pdfEnhanceProcessText) pdfEnhanceProcessText.textContent = t('home.pdfEnhance.generating');
             if (pdfEnhanceProcessBarFill) pdfEnhanceProcessBarFill.style.width = '95%';
-
             const enhancedBytes = await newPdf.save();
+            if (enhancedBytes.length > enhanceCore.PDF_ENHANCE_LIMITS.maxOutputBytes) {
+              throw new Error('pdf-enhance:output-too-large');
+            }
             if (pdfEnhanceProcessBarFill) pdfEnhanceProcessBarFill.style.width = '100%';
 
-            // Write file
             if (isTauri) {
               const { invoke } = await import('@tauri-apps/api/core');
               const outputDir = await getOutputDir('Enhance');
@@ -7795,9 +10418,9 @@
                 counter++;
               }
               await invoke('write_file_chunk', { path: fullPath, offset: 0, bytes: Array.from(enhancedBytes.subarray(0, 5_000_000)) });
-              for (let off = 5_000_000; off < enhancedBytes.length; off += 5_000_000) {
-                const end = Math.min(off + 5_000_000, enhancedBytes.length);
-                await invoke('write_file_chunk', { path: fullPath, offset: off, bytes: Array.from(enhancedBytes.subarray(off, end)) });
+              for (let offset = 5_000_000; offset < enhancedBytes.length; offset += 5_000_000) {
+                const end = Math.min(offset + 5_000_000, enhancedBytes.length);
+                await invoke('write_file_chunk', { path: fullPath, offset, bytes: Array.from(enhancedBytes.subarray(offset, end)) });
               }
               if (pdfEnhanceProcessMask) pdfEnhanceProcessMask.classList.remove('visible');
               if (pdfEnhanceProcessBarFill) pdfEnhanceProcessBarFill.style.width = '0%';
@@ -7806,11 +10429,11 @@
             } else {
               const blob = new Blob([enhancedBytes], { type: 'application/pdf' });
               const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `${file.name.replace(/\.pdf$/i, '')}_enhanced.pdf`;
-              a.click();
-              URL.revokeObjectURL(url);
+              const anchor = document.createElement('a');
+              anchor.href = url;
+              anchor.download = `${file.name.replace(/\.pdf$/i, '')}_enhanced.pdf`;
+              anchor.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1_000);
               if (pdfEnhanceProcessMask) pdfEnhanceProcessMask.classList.remove('visible');
               if (pdfEnhanceProcessBarFill) pdfEnhanceProcessBarFill.style.width = '0%';
               pdfEnhanceProcessing = false;
@@ -7821,7 +10444,11 @@
             if (pdfEnhanceProcessMask) pdfEnhanceProcessMask.classList.remove('visible');
             if (pdfEnhanceProcessBarFill) pdfEnhanceProcessBarFill.style.width = '0%';
             pdfEnhanceProcessing = false;
-            alert(t('common.errorOccurred', { error: String(e) }));
+            alert(t('common.errorOccurred', { error: await getPdfEnhanceErrorMessage(e) }));
+          } finally {
+            if (pdfDoc) {
+              try { await pdfDoc.destroy(); } catch (_) {}
+            }
           }
         });
       }
@@ -7832,7 +10459,6 @@
         if (pdfEnhanceSuccessPath) pdfEnhanceSuccessPath.textContent = savePath.replace(/\//g, '\\');
         if (pdfEnhanceSuccessMeta) pdfEnhanceSuccessMeta.textContent = t('home.pdfEnhance.successMeta');
         if (pdfEnhanceSuccessOverlay) pdfEnhanceSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       if (pdfEnhanceSuccessOk) {
@@ -7856,8 +10482,11 @@
       }
 
       function closePdfEnhanceOverlayFull() {
+        if (pdfEnhanceProcessing) {
+          window.showToast(t('home.pdfEnhance.processing'));
+          return;
+        }
         closePdfEnhanceOverlay();
-        pdfEnhanceProcessing = false;
         if (pdfEnhanceProcessMask) pdfEnhanceProcessMask.classList.remove('visible');
         if (pdfEnhanceProcessBarFill) pdfEnhanceProcessBarFill.style.width = '0%';
         if (pdfEnhanceSuccessOverlay) pdfEnhanceSuccessOverlay.classList.remove('visible');
@@ -7883,6 +10512,33 @@
       let aiPolishResultMode = false; // true when result is shown, button acts as "clear"
       let aiPolishOriginalContent = '';
       let aiPolishDitherInstance = null;
+      let aiPolishRequestController = null;
+      let aiPolishRequestTimeoutId = null;
+      let aiPolishRequestId = 0;
+
+      const AI_POLISH_REQUEST_TIMEOUT_MS = 90_000;
+
+      function cancelAiPolishRequest() {
+        aiPolishRequestId += 1;
+        if (aiPolishRequestTimeoutId !== null) {
+          clearTimeout(aiPolishRequestTimeoutId);
+          aiPolishRequestTimeoutId = null;
+        }
+        if (aiPolishRequestController) {
+          aiPolishRequestController.abort();
+          aiPolishRequestController = null;
+        }
+      }
+
+      function finishAiPolishRequest(requestId) {
+        if (requestId !== aiPolishRequestId) return false;
+        if (aiPolishRequestTimeoutId !== null) {
+          clearTimeout(aiPolishRequestTimeoutId);
+          aiPolishRequestTimeoutId = null;
+        }
+        aiPolishRequestController = null;
+        return true;
+      }
 
       const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
       const DEEPSEEK_MODEL = 'deepseek-chat';
@@ -8025,28 +10681,24 @@
         if (!apiUrl || !model) {
           throw new Error(t('home.aiPolish.noApiKey'));
         }
-        const reqBody = {
-          model,
-          messages,
-          temperature: 0.7,
-          stream: false,
-        };
-        if (maxTokens) reqBody.max_tokens = maxTokens;
-        const res = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify(reqBody),
-          signal,
-        });
-        if (!res.ok) {
-          const errText = await res.text().catch(() => '');
-          throw new Error(`${t('home.aiPolish.apiError')}: ${res.status} ${errText}`);
+        try {
+          return await requestAiCompletion({
+            url: apiUrl,
+            apiKey,
+            model,
+            messages,
+            maxTokens,
+            signal
+          });
+        } catch (error) {
+          if (error instanceof AiProviderError) {
+            const suffix = error.code === 'http_error' && error.status !== null
+              ? `: ${error.status}`
+              : '';
+            throw new Error(`${t('home.aiPolish.apiError')}${suffix}`);
+          }
+          throw error;
         }
-        const data = await res.json();
-        return data.choices?.[0]?.message?.content || '';
       }
 
       function openAiPolishOverlay() {
@@ -8076,6 +10728,8 @@
       }
 
       function resetAiPolishState() {
+        cancelAiPolishRequest();
+        hideAiPolishMask();
         if (aiPolishInput) aiPolishInput.value = '';
         if (aiPolishRightEmpty) aiPolishRightEmpty.style.display = '';
         if (aiPolishDirections) aiPolishDirections.style.display = 'none';
@@ -8114,9 +10768,45 @@
         if (aiPolishMask) aiPolishMask.classList.remove('visible');
       }
 
+      async function copyAiPolishText(text) {
+        if (navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return;
+          } catch {
+            // WebView clipboard permissions can be unavailable; use the
+            // in-document fallback before treating the copy as failed.
+          }
+        }
+        const input = document.createElement('textarea');
+        input.value = text;
+        input.setAttribute('readonly', '');
+        input.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+        document.body.appendChild(input);
+        input.select();
+        const copied = document.execCommand?.('copy');
+        input.remove();
+        if (!copied) throw new Error('clipboard-unavailable');
+      }
+
       async function handleAiPolishStart() {
         const text = aiPolishInput?.value?.trim();
         if (!text) return;
+        if (text.length > AI_POLISH_LIMITS.maxInputChars) {
+          alert(t('home.aiPolish.inputTooLong', { max: AI_POLISH_LIMITS.maxInputChars }));
+          return;
+        }
+        if (aiPolishRequestController) return;
+
+        const controller = new AbortController();
+        const requestId = ++aiPolishRequestId;
+        let timedOut = false;
+        aiPolishRequestController = controller;
+        aiPolishRequestTimeoutId = setTimeout(() => {
+          if (requestId !== aiPolishRequestId || controller.signal.aborted) return;
+          timedOut = true;
+          controller.abort();
+        }, AI_POLISH_REQUEST_TIMEOUT_MS);
 
         aiPolishOriginalContent = text;
         showAiPolishMask(t('home.aiPolish.analyzing'));
@@ -8130,15 +10820,23 @@
           const content = await callDeepSeek([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
-          ]);
+          ], controller.signal);
+
+          if (requestId !== aiPolishRequestId) return;
+          if (typeof content !== 'string' || !content.trim() || content.length > AI_POLISH_LIMITS.maxResponseChars) {
+            throw new AiPolishError('result_too_large', 'AI response exceeds the supported size.');
+          }
 
           // Parse JSON from response using balanced brace matching
           const jsonStr = extractJson(content);
-          if (!jsonStr) throw new Error(t('home.aiPolish.parseError'));
-          const parsed = JSON.parse(jsonStr);
-          aiPolishDirectionsData = parsed.directions || [];
-
-          if (aiPolishDirectionsData.length === 0) throw new Error(t('home.aiPolish.noDirections'));
+          if (!jsonStr) throw new AiPolishError('invalid_result', 'AI did not return directions JSON.');
+          let parsed;
+          try {
+            parsed = JSON.parse(jsonStr);
+          } catch {
+            throw new AiPolishError('invalid_result', 'AI returned invalid directions JSON.');
+          }
+          aiPolishDirectionsData = normalizeAiPolishDirections(parsed);
 
           // Show direction options in right panel
           if (aiPolishRightEmpty) aiPolishRightEmpty.style.display = 'none';
@@ -8154,17 +10852,39 @@
             });
           }
         } catch (e) {
+          if (requestId !== aiPolishRequestId) return;
           console.error('[AI Polish] Analysis error:', e);
-          alert(t('home.aiPolish.networkError'));
+          if (controller.signal.aborted) {
+            if (timedOut) alert(t('home.aiPolish.requestTimeout'));
+          } else if (e instanceof AiPolishError) {
+            alert(e.code === 'result_too_large'
+              ? t('home.aiPolish.resultTooLarge')
+              : t('home.aiPolish.parseError'));
+          } else {
+            alert(t('home.aiPolish.networkError'));
+          }
         } finally {
-          hideAiPolishMask();
-          if (aiPolishDrawer) aiPolishDrawer.classList.remove('processing');
+          if (finishAiPolishRequest(requestId)) {
+            hideAiPolishMask();
+            if (aiPolishDrawer) aiPolishDrawer.classList.remove('processing');
+          }
         }
       }
 
       async function handleDirectionSelect(idx) {
         const dir = aiPolishDirectionsData[idx];
         if (!dir) return;
+        if (aiPolishRequestController) return;
+
+        const controller = new AbortController();
+        const requestId = ++aiPolishRequestId;
+        let timedOut = false;
+        aiPolishRequestController = controller;
+        aiPolishRequestTimeoutId = setTimeout(() => {
+          if (requestId !== aiPolishRequestId || controller.signal.aborted) return;
+          timedOut = true;
+          controller.abort();
+        }, AI_POLISH_REQUEST_TIMEOUT_MS);
 
         showAiPolishMask(t('home.aiPolish.polishing'));
         if (aiPolishDrawer) aiPolishDrawer.classList.add('processing');
@@ -8177,15 +10897,17 @@
           const polished = await callDeepSeek([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
-          ]);
+          ], controller.signal);
+
+          if (requestId !== aiPolishRequestId) return;
+          const safePolished = normalizeAiPolishedText(polished);
 
           // Show polished result in right panel
           if (aiPolishDirections) aiPolishDirections.style.display = 'none';
           if (aiPolishComparison) aiPolishComparison.style.display = '';
-          if (aiPolishPolishedText) aiPolishPolishedText.textContent = polished.trim();
+          if (aiPolishPolishedText) aiPolishPolishedText.textContent = safePolished;
           // Change start button to "清理结果" (clear result)
           aiPolishResultMode = true;
-          if (window.incrementToolUsage) window.incrementToolUsage();
           if (aiPolishStartBtn) {
             aiPolishStartBtn.classList.remove('disabled');
             const btnLabel = aiPolishStartBtn.querySelector('span');
@@ -8197,11 +10919,22 @@
             }
           }
         } catch (e) {
+          if (requestId !== aiPolishRequestId) return;
           console.error('[AI Polish] Polish error:', e);
-          alert(t('home.aiPolish.networkError'));
+          if (controller.signal.aborted) {
+            if (timedOut) alert(t('home.aiPolish.requestTimeout'));
+          } else if (e instanceof AiPolishError) {
+            alert(e.code === 'result_too_large'
+              ? t('home.aiPolish.resultTooLarge')
+              : t('home.aiPolish.parseError'));
+          } else {
+            alert(t('home.aiPolish.networkError'));
+          }
         } finally {
-          hideAiPolishMask();
-          if (aiPolishDrawer) aiPolishDrawer.classList.remove('processing');
+          if (finishAiPolishRequest(requestId)) {
+            hideAiPolishMask();
+            if (aiPolishDrawer) aiPolishDrawer.classList.remove('processing');
+          }
         }
       }
 
@@ -8235,6 +10968,13 @@
       if (aiPolishInput) {
         aiPolishInput.addEventListener('input', () => {
           const hasText = aiPolishInput.value.trim().length > 0;
+          if (aiPolishDirectionsData.length > 0 && !aiPolishRequestController && !aiPolishResultMode) {
+            // Directions describe the previous input. Do not let a user apply
+            // them after they have edited the source text.
+            aiPolishDirectionsData = [];
+            if (aiPolishDirections) aiPolishDirections.style.display = 'none';
+            if (aiPolishRightEmpty) aiPolishRightEmpty.style.display = '';
+          }
           if (hasText) {
             aiPolishStartBtn?.classList.remove('disabled');
           } else {
@@ -8244,24 +10984,21 @@
       }
 
       if (aiPolishCopyBtn) {
-        aiPolishCopyBtn.addEventListener('click', () => {
+        aiPolishCopyBtn.addEventListener('click', async () => {
           const text = aiPolishPolishedText?.textContent || '';
           if (!text) return;
-          if (navigator.clipboard) {
-            navigator.clipboard.writeText(text).then(() => {
-              aiPolishCopyBtn.classList.add('copied');
-              const icon = aiPolishCopyBtn.querySelector('i[data-lucide]');
-              if (icon) icon.setAttribute('data-lucide', 'check');
+          try {
+            await copyAiPolishText(text);
+            aiPolishCopyBtn.classList.add('copied');
+            const icon = aiPolishCopyBtn.querySelector('i[data-lucide]');
+            if (icon) icon.setAttribute('data-lucide', 'check');
+            if (window.lucide) window.lucide.createIcons();
+            setTimeout(() => {
+              aiPolishCopyBtn.classList.remove('copied');
+              if (icon) icon.setAttribute('data-lucide', 'copy');
               if (window.lucide) window.lucide.createIcons();
-              setTimeout(() => {
-                aiPolishCopyBtn.classList.remove('copied');
-                if (icon) icon.setAttribute('data-lucide', 'copy');
-                if (window.lucide) window.lucide.createIcons();
-              }, 2000);
-            }).catch(() => {
-              alert(t('home.aiPolish.copyFailed'));
-            });
-          } else {
+            }, 2000);
+          } catch {
             alert(t('home.aiPolish.copyFailed'));
           }
         });
@@ -8295,6 +11032,33 @@
       let aiTranslateResultMode = false;
       let aiTranslateOriginalContent = '';
       let aiTranslateDitherInstance = null;
+      let aiTranslateRequestController = null;
+      let aiTranslateRequestTimeoutId = null;
+      let aiTranslateRequestId = 0;
+
+      const AI_TRANSLATE_REQUEST_TIMEOUT_MS = 90_000;
+
+      function cancelAiTranslateRequest() {
+        aiTranslateRequestId += 1;
+        if (aiTranslateRequestTimeoutId !== null) {
+          clearTimeout(aiTranslateRequestTimeoutId);
+          aiTranslateRequestTimeoutId = null;
+        }
+        if (aiTranslateRequestController) {
+          aiTranslateRequestController.abort();
+          aiTranslateRequestController = null;
+        }
+      }
+
+      function finishAiTranslateRequest(requestId) {
+        if (requestId !== aiTranslateRequestId) return false;
+        if (aiTranslateRequestTimeoutId !== null) {
+          clearTimeout(aiTranslateRequestTimeoutId);
+          aiTranslateRequestTimeoutId = null;
+        }
+        aiTranslateRequestController = null;
+        return true;
+      }
 
       const TRANSLATE_LANGUAGES = [
         { code: 'en', name: 'English', nativeNameKey: 'home.aiTranslate.langEnglish', pattern: /[a-zA-Z]/g },
@@ -8310,27 +11074,7 @@
       ];
 
       function detectMainLanguage(text) {
-        const counts = {};
-        TRANSLATE_LANGUAGES.forEach(lang => {
-          if (lang.pattern) {
-            const matches = text.match(lang.pattern);
-            counts[lang.code] = matches ? matches.length : 0;
-          } else {
-            counts[lang.code] = 0;
-          }
-        });
-
-        let maxCode = null;
-        let maxCount = 0;
-        Object.entries(counts).forEach(([code, count]) => {
-          if (count > maxCount) {
-            maxCount = count;
-            maxCode = code;
-          }
-        });
-        // If no CJK/Cyrillic/Korean detected, default to English (latin script)
-        if (!maxCode) maxCode = 'en';
-        return maxCode;
+        return detectAiTranslateSourceLanguage(text);
       }
 
       function openAiTranslateOverlay() {
@@ -8361,6 +11105,8 @@
       }
 
       function resetAiTranslateState() {
+        cancelAiTranslateRequest();
+        hideAiTranslateMask();
         if (aiTranslateInput) aiTranslateInput.value = '';
         if (aiTranslateRightEmpty) aiTranslateRightEmpty.style.display = '';
         if (aiTranslateLangSelect) aiTranslateLangSelect.style.display = 'none';
@@ -8396,7 +11142,7 @@
           const detectedLang = detectMainLanguage(aiTranslateOriginalContent);
           aiTranslateLangList.innerHTML = '';
           TRANSLATE_LANGUAGES.forEach(lang => {
-            if (lang.code === detectedLang) return; // Exclude detected source language
+            if (detectedLang && lang.code === detectedLang) return; // Exclude a reliably detected source language
             const btn = document.createElement('button');
             btn.className = 'ai-polish-direction-btn ai-translate-lang-btn';
             btn.innerHTML = `<span class="ai-polish-direction-btn-name">${escapeHtml(t(lang.nativeNameKey))}</span><span class="ai-polish-direction-btn-desc">${escapeHtml(lang.name)}</span>`;
@@ -8408,6 +11154,21 @@
 
       async function handleAiTranslateStart(lang) {
         if (!aiTranslateOriginalContent) return;
+        if (aiTranslateOriginalContent.length > AI_TRANSLATE_LIMITS.maxInputChars) {
+          alert(t('home.aiTranslate.inputTooLong', { max: AI_TRANSLATE_LIMITS.maxInputChars }));
+          return;
+        }
+        if (aiTranslateRequestController) return;
+
+        const controller = new AbortController();
+        const requestId = ++aiTranslateRequestId;
+        let timedOut = false;
+        aiTranslateRequestController = controller;
+        aiTranslateRequestTimeoutId = setTimeout(() => {
+          if (requestId !== aiTranslateRequestId || controller.signal.aborted) return;
+          timedOut = true;
+          controller.abort();
+        }, AI_TRANSLATE_REQUEST_TIMEOUT_MS);
 
         if (aiTranslateLangSelect) aiTranslateLangSelect.style.display = 'none';
         showAiTranslateMask(t('home.aiTranslate.translating'));
@@ -8420,21 +11181,31 @@
           const content = await callDeepSeek([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
-          ]);
+          ], controller.signal);
+
+          if (requestId !== aiTranslateRequestId) return;
+          if (typeof content !== 'string' || !content.trim()) {
+            throw new AiTranslateError('invalid_result', 'AI returned an empty response.');
+          }
+          if (content.length > AI_TRANSLATE_LIMITS.maxResponseChars) {
+            throw new AiTranslateError('result_too_large', 'AI response exceeds the supported size.');
+          }
 
           const jsonStr = extractJson(content);
-          if (!jsonStr) throw new Error(t('home.aiTranslate.parseError'));
-          const parsed = JSON.parse(jsonStr);
-          const pairs = parsed.pairs || [];
-
-          if (pairs.length === 0) throw new Error(t('home.aiTranslate.noResult'));
+          if (!jsonStr) throw new AiTranslateError('invalid_result', 'AI did not return translation JSON.');
+          let parsed;
+          try {
+            parsed = JSON.parse(jsonStr);
+          } catch {
+            throw new AiTranslateError('invalid_result', 'AI returned invalid translation JSON.');
+          }
+          const pairs = normalizeAiTranslatePairs(parsed);
 
           // Render highlighted sentences on both sides
-          renderAiTranslateResult(pairs);
+          renderAiTranslateResult(pairs, aiTranslateOriginalContent);
 
           // Change start button to "清理结果"
           aiTranslateResultMode = true;
-          if (window.incrementToolUsage) window.incrementToolUsage();
           if (aiTranslateStartBtn) {
             aiTranslateStartBtn.classList.remove('disabled');
             const btnLabel = aiTranslateStartBtn.querySelector('span');
@@ -8446,15 +11217,26 @@
             }
           }
         } catch (e) {
+          if (requestId !== aiTranslateRequestId) return;
           console.error('[AI Translate] Error:', e);
-          alert(t('home.aiTranslate.networkError'));
+          if (controller.signal.aborted) {
+            if (timedOut) alert(t('home.aiTranslate.requestTimeout'));
+          } else if (e instanceof AiTranslateError) {
+            alert(e.code === 'result_too_large'
+              ? t('home.aiTranslate.resultTooLarge')
+              : t('home.aiTranslate.parseError'));
+          } else {
+            alert(t('home.aiTranslate.networkError'));
+          }
         } finally {
-          hideAiTranslateMask();
-          if (aiTranslateDrawer) aiTranslateDrawer.classList.remove('processing');
+          if (finishAiTranslateRequest(requestId)) {
+            hideAiTranslateMask();
+            if (aiTranslateDrawer) aiTranslateDrawer.classList.remove('processing');
+          }
         }
       }
 
-      function renderAiTranslateResult(pairs) {
+      function renderAiTranslateResult(pairs, sourceText) {
         // Render right side (translated) with highlighted sentences
         if (aiTranslateComparison) aiTranslateComparison.style.display = '';
         if (aiTranslateResult) {
@@ -8481,7 +11263,10 @@
               leftPanel.appendChild(highlightDiv);
             }
             highlightDiv.innerHTML = '';
-            pairs.forEach(pair => {
+            const sourcePairs = aiTranslateOriginalsMatch(sourceText, pairs)
+              ? pairs
+              : [{ original: sourceText, translated: '' }];
+            sourcePairs.forEach(pair => {
               const span = document.createElement('span');
               span.className = 'ai-translate-sentence';
               span.textContent = pair.original || '';
@@ -8496,16 +11281,32 @@
 
       function copySentenceText(el, text) {
         if (!text) return;
-        if (!navigator.clipboard) {
-          alert(t('home.aiTranslate.copyFailed'));
-          return;
-        }
-        navigator.clipboard.writeText(text).then(() => {
+        copyAiTranslateText(text).then(() => {
           el.classList.add('copied-flash');
           setTimeout(() => el.classList.remove('copied-flash'), 600);
         }).catch(() => {
           alert(t('home.aiTranslate.copyFailed'));
         });
+      }
+
+      async function copyAiTranslateText(text) {
+        if (navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return;
+          } catch {
+            // Fall through for WebView clipboard-permission failures.
+          }
+        }
+        const input = document.createElement('textarea');
+        input.value = text;
+        input.setAttribute('readonly', '');
+        input.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+        document.body.appendChild(input);
+        input.select();
+        const copied = document.execCommand?.('copy');
+        input.remove();
+        if (!copied) throw new Error('clipboard-unavailable');
       }
 
       function restoreAiTranslateInput() {
@@ -8541,6 +11342,10 @@
           }
           const text = aiTranslateInput?.value?.trim();
           if (!text) return;
+          if (text.length > AI_TRANSLATE_LIMITS.maxInputChars) {
+            alert(t('home.aiTranslate.inputTooLong', { max: AI_TRANSLATE_LIMITS.maxInputChars }));
+            return;
+          }
           aiTranslateOriginalContent = text;
           showAiTranslateLangSelect();
         });
@@ -8549,6 +11354,11 @@
       if (aiTranslateInput) {
         aiTranslateInput.addEventListener('input', () => {
           const hasText = aiTranslateInput.value.trim().length > 0;
+          if (aiTranslateOriginalContent && aiTranslateInput.value.trim() !== aiTranslateOriginalContent) {
+            aiTranslateOriginalContent = '';
+            if (aiTranslateLangSelect) aiTranslateLangSelect.style.display = 'none';
+            if (aiTranslateRightEmpty) aiTranslateRightEmpty.style.display = '';
+          }
           if (hasText) {
             aiTranslateStartBtn?.classList.remove('disabled');
           } else {
@@ -8558,24 +11368,21 @@
       }
 
       if (aiTranslateCopyBtn) {
-        aiTranslateCopyBtn.addEventListener('click', () => {
+        aiTranslateCopyBtn.addEventListener('click', async () => {
           const text = aiTranslateResult?.textContent || '';
           if (!text) return;
-          if (navigator.clipboard) {
-            navigator.clipboard.writeText(text).then(() => {
-              aiTranslateCopyBtn.classList.add('copied');
-              const icon = aiTranslateCopyBtn.querySelector('i[data-lucide]');
-              if (icon) icon.setAttribute('data-lucide', 'check');
+          try {
+            await copyAiTranslateText(text);
+            aiTranslateCopyBtn.classList.add('copied');
+            const icon = aiTranslateCopyBtn.querySelector('i[data-lucide]');
+            if (icon) icon.setAttribute('data-lucide', 'check');
+            if (window.lucide) window.lucide.createIcons();
+            setTimeout(() => {
+              aiTranslateCopyBtn.classList.remove('copied');
+              if (icon) icon.setAttribute('data-lucide', 'copy');
               if (window.lucide) window.lucide.createIcons();
-              setTimeout(() => {
-                aiTranslateCopyBtn.classList.remove('copied');
-                if (icon) icon.setAttribute('data-lucide', 'copy');
-                if (window.lucide) window.lucide.createIcons();
-              }, 2000);
-            }).catch(() => {
-              alert(t('home.aiTranslate.copyFailed'));
-            });
-          } else {
+            }, 2000);
+          } catch {
             alert(t('home.aiTranslate.copyFailed'));
           }
         });
@@ -8608,6 +11415,33 @@
       const aiDocEditBg = document.getElementById('aiDocEditBg');
       const aiDocEditScroll = document.getElementById('aiDocEditScroll');
       const aiDocEditExportBtn = document.getElementById('aiDocEditExportBtn');
+      const aiDocUndoBtn = document.getElementById('aiDocUndoBtn');
+      const aiDocRedoBtn = document.getElementById('aiDocRedoBtn');
+      const aiDocMoveUpBtn = document.getElementById('aiDocMoveUpBtn');
+      const aiDocMoveDownBtn = document.getElementById('aiDocMoveDownBtn');
+      const aiDocDeleteBtn = document.getElementById('aiDocDeleteBtn');
+      const aiDocSelectionStatus = document.getElementById('aiDocSelectionStatus');
+      const aiDocFontSizeInput = document.getElementById('aiDocFontSizeInput');
+      const aiDocBoldBtn = document.getElementById('aiDocBoldBtn');
+      const aiDocAlignLeftBtn = document.getElementById('aiDocAlignLeftBtn');
+      const aiDocAlignCenterBtn = document.getElementById('aiDocAlignCenterBtn');
+      const aiDocAlignRightBtn = document.getElementById('aiDocAlignRightBtn');
+      const aiDocTextColorInput = document.getElementById('aiDocTextColorInput');
+      const aiDocBackgroundColorInput = document.getElementById('aiDocBackgroundColorInput');
+      const aiDocBorderColorInput = document.getElementById('aiDocBorderColorInput');
+      const aiDocMoreStyleBtn = document.getElementById('aiDocMoreStyleBtn');
+      const aiDocStyleInspector = document.getElementById('aiDocStyleInspector');
+      const aiDocStyleInspectorClose = document.getElementById('aiDocStyleInspectorClose');
+      const aiDocLineHeightInput = document.getElementById('aiDocLineHeightInput');
+      const aiDocPaddingInput = document.getElementById('aiDocPaddingInput');
+      const aiDocBorderWidthInput = document.getElementById('aiDocBorderWidthInput');
+      const aiDocOpacityInput = document.getElementById('aiDocOpacityInput');
+      const aiDocLineHeightValue = document.getElementById('aiDocLineHeightValue');
+      const aiDocPaddingValue = document.getElementById('aiDocPaddingValue');
+      const aiDocBorderWidthValue = document.getElementById('aiDocBorderWidthValue');
+      const aiDocOpacityValue = document.getElementById('aiDocOpacityValue');
+      const aiDocGlobalAlignSelect = document.getElementById('aiDocGlobalAlignSelect');
+      const aiDocApplyGlobalStyleBtn = document.getElementById('aiDocApplyGlobalStyleBtn');
       const aiDocSuccessOverlay = document.getElementById('aiDocSuccessOverlay');
       const aiDocSuccessPath = document.getElementById('aiDocSuccessPath');
       const aiDocSuccessOpenFolder = document.getElementById('aiDocSuccessOpenFolder');
@@ -8621,21 +11455,293 @@
       let aiDocLayoutData = null; // { pages: [{ regions: [...] }] }
       let aiDocFontRegularBytes = null;
       let aiDocFontBoldBytes = null;
+      let aiDocRequestController = null;
+      let aiDocRequestTimeoutId = null;
+      let aiDocRequestId = 0;
+      let aiDocSelectedRegionId = null;
+      let aiDocRegionIdSeed = 0;
+      let aiDocUndoStack = [];
+      let aiDocRedoStack = [];
+
+      const AI_DOC_REQUEST_TIMEOUT_MS = 90_000;
+      const AI_DOC_HISTORY_LIMIT = 50;
+      const isAiDocEditorDemo = import.meta.env.DEV
+        && new URLSearchParams(window.location.search).get('ai-doc-editor-demo') === '1';
+
+      function cancelAiDocRequest() {
+        aiDocRequestId += 1;
+        if (aiDocRequestTimeoutId !== null) {
+          clearTimeout(aiDocRequestTimeoutId);
+          aiDocRequestTimeoutId = null;
+        }
+        if (aiDocRequestController) {
+          aiDocRequestController.abort();
+          aiDocRequestController = null;
+        }
+      }
+
+      function finishAiDocRequest(requestId) {
+        if (requestId !== aiDocRequestId) return false;
+        if (aiDocRequestTimeoutId !== null) {
+          clearTimeout(aiDocRequestTimeoutId);
+          aiDocRequestTimeoutId = null;
+        }
+        aiDocRequestController = null;
+        return true;
+      }
+
+      function appendAiDocHistory(role, content) {
+        const compact = compactAiDocHistoryMessage(content);
+        if (!compact) return;
+        aiDocChatHistory = [...aiDocChatHistory, { role, content: compact }]
+          .slice(-AI_DOC_LIMITS.maxHistoryMessages);
+      }
 
       const AI_DOC_PRESET_PROMPTS = [
-        { labelKey: 'home.aiDoc.chipRent', prompt: '请帮我生成一份标准个人租房合同，要求：1. 包含出租方和承租方信息栏；2. 明确房屋地址、面积、租金、押金、付款方式；3. 详细列出租赁期限、房屋用途、维修责任；4. 加入违约条款、提前解约条件和费用承担；5. 末尾预留双方签字和日期区域；6. 排版专业，使用 A4 页面，包含标题、副标题、章节标题、正文、列表项、签字区和日期。内容详实，每页至少 15 个区域，禁止大面积留白。' },
-        { labelKey: 'home.aiDoc.chipResign', prompt: '请帮我生成一份正式离职申请书/离职报告，要求：1. 标题为离职报告；2. 包含申请人信息、部门、职位、入职日期；3. 说明离职原因、最后工作日；4. 表达感谢和工作交接意愿；5. 加入交接事项清单；6. 末尾预留签名和日期区域；7. 排版专业，使用 A4 页面，包含标题、副标题、章节标题、正文、列表项、签字区和日期。内容详实，每页至少 15 个区域。' },
-        { labelKey: 'home.aiDoc.chipMeeting', prompt: '请帮我生成一份项目周会会议纪要，要求：1. 包含会议主题、时间、地点、主持人、参会人员；2. 列出会议议程和讨论事项；3. 详细记录每个议题的讨论内容、结论和待办事项；4. 明确责任人（Responsible）和截止时间（Deadline）；5. 加入下次会议安排；6. 排版专业，使用 A4 页面，包含标题、副标题、章节标题、正文、列表项。内容详实，每页至少 15 个区域，禁止大面积留白。' },
-        { labelKey: 'home.aiDoc.chipPrd', prompt: '请帮我生成一份产品需求文档（PRD），要求：1. 标题为产品需求文档；2. 包含产品背景、目标用户、核心目标；3. 详细描述功能需求，拆分为多个功能模块；4. 每个功能包含需求描述、业务流程、输入输出、异常处理；5. 加入非功能需求、项目排期、风险说明；6. 排版专业，使用 A4 页面，包含标题、副标题、章节标题、正文、列表项、表格行。内容详实，每页至少 15 个区域，禁止大面积留白。' },
-        { labelKey: 'home.aiDoc.chipBusiness', prompt: '请帮我生成一份初创项目商业计划书，要求：1. 标题为商业计划书；2. 包含项目概述、市场痛点、解决方案；3. 详细分析目标市场、市场规模、竞争对手；4. 描述商业模式、盈利模式、运营计划；5. 介绍团队、财务预测、融资需求；6. 加入风险分析和未来规划；7. 排版专业，使用 A4 页面，至少 3 页，包含标题、副标题、章节标题、正文、列表项、表格行、强调段落和注释。内容详实，每页至少 15 个区域。' },
-        { labelKey: 'home.aiDoc.chipResume', prompt: '请帮我生成一份个人简历，要求：1. 标题为个人简历；2. 包含个人信息、联系方式、求职意向；3. 详细列出教育背景、工作经历（每段经历包含公司名称、职位、时间、工作职责和业绩）；4. 列出专业技能、项目经验、证书荣誉；5. 加入自我评价；6. 排版专业，使用 A4 页面，包含标题、副标题、章节标题、正文、列表项、表格行。内容详实，每页至少 15 个区域，禁止大面积留白。' }
+        { labelKey: 'home.aiDoc.chipRent', prompt: '请帮我生成一份标准个人租房合同，要求：1. 包含出租方和承租方信息栏；2. 明确房屋地址、面积、租金、押金、付款方式；3. 详细列出租赁期限、房屋用途、维修责任；4. 加入违约条款、提前解约条件和费用承担；5. 末尾预留双方签字和日期区域；6. 使用清晰的 A4 商务版式，相关字段用表格行整合，条款使用分级标题和正文。' },
+        { labelKey: 'home.aiDoc.chipResign', prompt: '请帮我生成一份正式离职申请书/离职报告，要求：1. 标题为离职报告；2. 包含申请人信息、部门、职位、入职日期；3. 说明离职原因、最后工作日；4. 表达感谢和工作交接意愿；5. 加入交接事项清单；6. 末尾预留签名和日期区域；7. 使用克制、正式的 A4 公文版式。' },
+        { labelKey: 'home.aiDoc.chipMeeting', prompt: '请帮我生成一份一页的项目周会会议纪要，要求：1. 包含会议主题、时间、地点、主持人、参会人员；2. 列出会议议程和讨论事项；3. 记录每个议题的结论；4. 待办事项使用紧凑表格行，明确责任人和截止时间；5. 加入下次会议安排；6. 使用信息层次清晰、现代专业的 A4 商务版式。' },
+        { labelKey: 'home.aiDoc.chipPrd', prompt: '请帮我生成一份产品需求文档（PRD），要求：1. 包含产品背景、目标用户、核心目标；2. 按功能模块描述需求、业务流程、输入输出和异常处理；3. 加入非功能需求、项目排期、风险说明；4. 使用 A4 专业文档版式，以章节、正文、表格和重点摘要组织内容，不堆砌零散区域。' },
+        { labelKey: 'home.aiDoc.chipBusiness', prompt: '请帮我生成一份初创项目商业计划书，要求：1. 包含项目概述、市场痛点、解决方案；2. 分析目标市场、市场规模、竞争对手；3. 描述商业模式、运营计划、团队、财务预测和融资需求；4. 加入风险分析和未来规划；5. 至少 3 页，使用现代、清晰的 A4 商务报告版式，以重点摘要、章节、表格和注释建立视觉层次。' },
+        { labelKey: 'home.aiDoc.chipResume', prompt: '请帮我生成一份个人简历，要求：1. 包含个人信息、联系方式、求职意向；2. 列出教育背景、工作经历、专业技能、项目经验和证书荣誉；3. 加入简洁的自我评价；4. 使用一至两页 A4 现代简历版式，以清晰的信息分组和时间层次组织内容。' }
       ];
 
       const A4_WIDTH = 794;
       const A4_HEIGHT = 1123;
-      const PDF_A4_WIDTH = 595.28;
-      const PDF_A4_HEIGHT = 841.89;
-      const SCALE_PX_TO_PDF = PDF_A4_WIDTH / A4_WIDTH;
+
+      const AI_DOC_REGION_LABELS = {
+        zh: {
+          title: '标题', subtitle: '副标题', 'section-heading': '章节标题', 'sub-heading': '小标题',
+          body: '正文', 'body-indent': '缩进正文', 'list-item': '列表项', image: '图片',
+          signature: '签名', date: '日期', divider: '分隔线', 'page-header': '页眉',
+          'page-footer': '页脚', 'table-row': '表格行', note: '注释', emphasis: '重点摘要'
+        },
+        en: {
+          title: 'Title', subtitle: 'Subtitle', 'section-heading': 'Section', 'sub-heading': 'Subheading',
+          body: 'Body', 'body-indent': 'Indented body', 'list-item': 'List item', image: 'Image',
+          signature: 'Signature', date: 'Date', divider: 'Divider', 'page-header': 'Header',
+          'page-footer': 'Footer', 'table-row': 'Table row', note: 'Note', emphasis: 'Emphasis'
+        }
+      };
+
+      function createAiDocEditorId() {
+        aiDocRegionIdSeed += 1;
+        return `ai-doc-${Date.now().toString(36)}-${aiDocRegionIdSeed.toString(36)}`;
+      }
+
+      function initialAiDocFlowGap(previous, current) {
+        if (!previous) return 0;
+        if (previous.type === 'table-row' && current.type === 'table-row') return 0;
+        if (previous.type === 'title' && current.type === 'subtitle') return 8;
+        if (current.type === 'section-heading') return 10;
+        return 4;
+      }
+
+      function prepareAiDocLayoutForEditing(layout) {
+        const pagesNeedingInitialOrder = (layout?.pages || []).map(page => (
+          !page.regions.every(region => typeof region.editorId === 'string' && region.editorId)
+        ));
+        const editable = ensureAiDocEditorIds(layout, createAiDocEditorId);
+        editable.pages.forEach((page, pageIndex) => {
+          if (pagesNeedingInitialOrder[pageIndex]) {
+            page.regions.sort((a, b) => (a.y || 0) - (b.y || 0));
+            let previousContent = null;
+            page.regions.forEach(region => {
+              if (['page-header', 'page-footer'].includes(region.type)) return;
+              if (!Number.isFinite(region.flowGap)) {
+                region.flowGap = initialAiDocFlowGap(previousContent, region);
+              }
+              previousContent = region;
+            });
+          }
+        });
+        return editable;
+      }
+
+      function resetAiDocEditorHistory() {
+        aiDocSelectedRegionId = null;
+        aiDocUndoStack = [];
+        aiDocRedoStack = [];
+        updateAiDocEditorControls();
+      }
+
+      function findAiDocRegionById(editorId) {
+        if (!editorId || !aiDocLayoutData?.pages) return null;
+        for (let pageIdx = 0; pageIdx < aiDocLayoutData.pages.length; pageIdx++) {
+          const regionIdx = aiDocLayoutData.pages[pageIdx].regions.findIndex(region => region.editorId === editorId);
+          if (regionIdx >= 0) {
+            return { pageIdx, regionIdx, region: aiDocLayoutData.pages[pageIdx].regions[regionIdx] };
+          }
+        }
+        return null;
+      }
+
+      function updateAiDocEditorControls() {
+        if (aiDocUndoBtn) aiDocUndoBtn.disabled = aiDocUndoStack.length === 0;
+        if (aiDocRedoBtn) aiDocRedoBtn.disabled = aiDocRedoStack.length === 0;
+
+        const selected = findAiDocRegionById(aiDocSelectedRegionId);
+        const isEditable = Boolean(selected && !['page-header', 'page-footer'].includes(selected.region.type));
+        let canMoveUp = false;
+        let canMoveDown = false;
+        if (isEditable) {
+          const content = aiDocLayoutData.pages[selected.pageIdx].regions
+            .filter(region => !['page-header', 'page-footer'].includes(region.type));
+          const position = content.findIndex(region => region.editorId === aiDocSelectedRegionId);
+          canMoveUp = position > 0;
+          canMoveDown = position >= 0 && position < content.length - 1;
+        }
+        if (aiDocMoveUpBtn) aiDocMoveUpBtn.disabled = !canMoveUp;
+        if (aiDocMoveDownBtn) aiDocMoveDownBtn.disabled = !canMoveDown;
+        if (aiDocDeleteBtn) aiDocDeleteBtn.disabled = !isEditable;
+
+        const style = selected?.region?.style || {};
+        const editableText = Boolean(isEditable && !['image', 'divider'].includes(selected.region.type));
+        if (aiDocFontSizeInput) {
+          aiDocFontSizeInput.disabled = !editableText;
+          if (editableText) aiDocFontSizeInput.value = String(Math.round(selected.region.fontSize || 14));
+        }
+        if (aiDocBoldBtn) {
+          aiDocBoldBtn.disabled = !editableText;
+          aiDocBoldBtn.classList.toggle('active', Boolean(editableText && selected.region.bold));
+          aiDocBoldBtn.setAttribute('aria-pressed', String(Boolean(editableText && selected.region.bold)));
+        }
+        const alignmentButtons = { left: aiDocAlignLeftBtn, center: aiDocAlignCenterBtn, right: aiDocAlignRightBtn };
+        Object.entries(alignmentButtons).forEach(([alignment, button]) => {
+          if (!button) return;
+          button.disabled = !editableText;
+          button.classList.toggle('active', Boolean(editableText && (selected.region.align || 'left') === alignment));
+          button.setAttribute('aria-pressed', String(Boolean(editableText && (selected.region.align || 'left') === alignment)));
+        });
+        const setColorInput = (input, value, fallback) => {
+          if (!input) return;
+          input.disabled = !isEditable;
+          input.value = /^#[0-9a-f]{6}$/i.test(value || '') ? value : fallback;
+          const swatch = input.previousElementSibling;
+          if (swatch?.style) {
+            if (input.parentElement?.classList.contains('ai-doc-color-control-text')) swatch.style.color = input.value;
+            else swatch.style.backgroundColor = input.value;
+          }
+        };
+        setColorInput(aiDocTextColorInput, style.textColor, selected?.region?.type === 'emphasis' ? '#ffffff' : '#242424');
+        setColorInput(aiDocBackgroundColorInput, style.backgroundColor, selected?.region?.type === 'emphasis' ? '#1b1b1b' : '#ffffff');
+        setColorInput(aiDocBorderColorInput, style.borderColor, '#d8d8d6');
+        if (aiDocMoreStyleBtn) aiDocMoreStyleBtn.disabled = !isEditable;
+        const syncRange = (input, output, value, fallback, suffix = '') => {
+          if (!input) return;
+          input.disabled = !isEditable;
+          input.value = String(value ?? fallback);
+          if (output) output.textContent = `${input.value}${suffix}`;
+        };
+        syncRange(aiDocLineHeightInput, aiDocLineHeightValue, style.lineHeight, 1.58);
+        syncRange(aiDocPaddingInput, aiDocPaddingValue, style.padding, 0);
+        syncRange(aiDocBorderWidthInput, aiDocBorderWidthValue, style.borderWidth, 0);
+        syncRange(aiDocOpacityInput, aiDocOpacityValue, style.opacity, 1, '%');
+        if (aiDocOpacityValue) aiDocOpacityValue.textContent = `${Math.round(Number(aiDocOpacityInput?.value || 1) * 100)}%`;
+
+        if (aiDocSelectionStatus) {
+          if (!selected) {
+            aiDocSelectionStatus.textContent = t('home.aiDoc.noLayerSelected');
+          } else {
+            const lang = getLang() === 'en' ? 'en' : 'zh';
+            const label = AI_DOC_REGION_LABELS[lang][selected.region.type] || selected.region.type;
+            aiDocSelectionStatus.textContent = t('home.aiDoc.selectedLayer', {
+              type: label,
+              width: Math.round(selected.region.w || 0)
+            });
+          }
+        }
+      }
+
+      function applyAiDocSelectedStyle(patch) {
+        const selected = findAiDocRegionById(aiDocSelectedRegionId);
+        if (!selected || ['page-header', 'page-footer'].includes(selected.region.type)) return;
+        const previousLayout = cloneAiDocLayout(aiDocLayoutData);
+        const typography = ['fontSize', 'bold', 'align'];
+        typography.forEach(key => {
+          if (patch[key] !== undefined) selected.region[key] = patch[key];
+        });
+        const stylePatch = Object.fromEntries(Object.entries(patch).filter(([key]) => !typography.includes(key)));
+        if (Object.keys(stylePatch).length) selected.region.style = { ...(selected.region.style || {}), ...stylePatch };
+        recordAiDocEdit(previousLayout);
+        renderAiDocEditPages(aiDocLayoutData);
+      }
+
+      function applyAiDocGlobalAlignment() {
+        const align = aiDocGlobalAlignSelect?.value;
+        if (!align || !aiDocLayoutData?.pages) return;
+        const previousLayout = cloneAiDocLayout(aiDocLayoutData);
+        let changed = false;
+        aiDocLayoutData.pages.forEach(page => page.regions.forEach(region => {
+          if (['image', 'divider', 'page-header', 'page-footer'].includes(region.type)) return;
+          if (region.align !== align) { region.align = align; changed = true; }
+        }));
+        if (!changed) return;
+        recordAiDocEdit(previousLayout);
+        renderAiDocEditPages(aiDocLayoutData);
+      }
+
+      function selectAiDocRegion(editorId) {
+        aiDocSelectedRegionId = editorId || null;
+        if (aiDocEditScroll) {
+          aiDocEditScroll.querySelectorAll('.ai-doc-region.selected').forEach(regionEl => {
+            regionEl.classList.toggle('selected', regionEl.dataset.editorId === aiDocSelectedRegionId);
+          });
+          const selectedEl = aiDocSelectedRegionId
+            ? aiDocEditScroll.querySelector(`.ai-doc-region[data-editor-id="${aiDocSelectedRegionId}"]`)
+            : null;
+          if (selectedEl) selectedEl.classList.add('selected');
+        }
+        updateAiDocEditorControls();
+      }
+
+      function recordAiDocEdit(previousLayout) {
+        if (!previousLayout) return;
+        aiDocUndoStack.push(previousLayout);
+        if (aiDocUndoStack.length > AI_DOC_HISTORY_LIMIT) aiDocUndoStack.shift();
+        aiDocRedoStack = [];
+        updateAiDocEditorControls();
+      }
+
+      function applyAiDocHistoryLayout(layout) {
+        aiDocLayoutData = prepareAiDocLayoutForEditing(layout);
+        if (!findAiDocRegionById(aiDocSelectedRegionId)) aiDocSelectedRegionId = null;
+        renderAiDocEditPages(aiDocLayoutData);
+      }
+
+      function undoAiDocEdit() {
+        if (!aiDocUndoStack.length || !aiDocLayoutData) return;
+        aiDocRedoStack.push(cloneAiDocLayout(aiDocLayoutData));
+        applyAiDocHistoryLayout(aiDocUndoStack.pop());
+        updateAiDocEditorControls();
+      }
+
+      function redoAiDocEdit() {
+        if (!aiDocRedoStack.length || !aiDocLayoutData) return;
+        aiDocUndoStack.push(cloneAiDocLayout(aiDocLayoutData));
+        applyAiDocHistoryLayout(aiDocRedoStack.pop());
+        updateAiDocEditorControls();
+      }
+
+      function moveSelectedAiDocRegion(direction) {
+        if (!aiDocLayoutData || !aiDocSelectedRegionId) return;
+        const previousLayout = cloneAiDocLayout(aiDocLayoutData);
+        const result = moveAiDocRegionInFlow(aiDocLayoutData, aiDocSelectedRegionId, direction);
+        if (!result.moved) return;
+        aiDocLayoutData = result.layout;
+        recordAiDocEdit(previousLayout);
+        renderAiDocEditPages(aiDocLayoutData);
+      }
+
+      function deleteSelectedAiDocRegion() {
+        const selected = findAiDocRegionById(aiDocSelectedRegionId);
+        if (!selected || ['page-header', 'page-footer'].includes(selected.region.type)) return;
+        const previousLayout = cloneAiDocLayout(aiDocLayoutData);
+        aiDocLayoutData.pages[selected.pageIdx].regions.splice(selected.regionIdx, 1);
+        aiDocSelectedRegionId = null;
+        recordAiDocEdit(previousLayout);
+        renderAiDocEditPages(aiDocLayoutData);
+      }
 
       function openAiDocOverlay() {
         if (!aiDocOverlay) return;
@@ -8664,8 +11770,11 @@
       }
 
       function resetAiDocState() {
+        cancelAiDocRequest();
+        hideAiDocMask();
         aiDocChatHistory = [];
         aiDocLayoutData = null;
+        resetAiDocEditorHistory();
         // Clean up all document-level event listeners from regions
         aiDocCleanupFns.forEach(fn => fn());
         aiDocCleanupFns = [];
@@ -8675,6 +11784,7 @@
           addAiDocPromptChips();
         }
         if (aiDocChatInput) aiDocChatInput.value = '';
+        if (aiDocChatSend) aiDocChatSend.disabled = true;
         if (aiDocCanvasEmpty) aiDocCanvasEmpty.style.display = '';
         if (aiDocThumbScroll) {
           aiDocThumbScroll.style.display = 'none';
@@ -8683,43 +11793,13 @@
         if (aiDocCanvasToolbar) aiDocCanvasToolbar.style.display = 'none';
       }
 
-      // Shared user-avatar helper: tries localStorage photo, falls back to initial + gradient
-      const AI_CHAT_USER_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
-
+      // Conversations use the local ToolKnit mark instead of account-specific avatars.
       function fillUserAvatar(avatarEl) {
-        let userAvatarUrl = null, userName = '';
-        try {
-          const userJson = localStorage.getItem('toolknit_user');
-          if (userJson) {
-            const userObj = JSON.parse(userJson);
-            userAvatarUrl = userObj.avatar || null;
-            userName = userObj.username || userObj.email || '';
-          }
-        } catch (e) {}
-        if (userAvatarUrl) {
-          const img = document.createElement('img');
-          img.src = userAvatarUrl;
-          img.alt = 'Me';
-          img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-          img.onerror = function() {
-            this.style.display = 'none';
-            _applyAvatarFallback(avatarEl, userName);
-          };
-          avatarEl.appendChild(img);
-        } else {
-          _applyAvatarFallback(avatarEl, userName);
-        }
-      }
-      function _applyAvatarFallback(avatarEl, name) {
-        const initial = (name && name[0]) ? name[0].toUpperCase() : '';
-        if (initial) {
-          avatarEl.innerHTML = '<span style="font-size:14px;font-weight:700;color:#fff;">' + initial + '</span>';
-          avatarEl.style.background = 'linear-gradient(135deg,#667eea,#764ba2)';
-        } else {
-          avatarEl.innerHTML = AI_CHAT_USER_SVG;
-          avatarEl.style.background = 'linear-gradient(135deg,#667eea,#764ba2)';
-          avatarEl.style.color = '#fff';
-        }
+        const img = document.createElement('img');
+        img.src = '/assets/toolknit-icon.png';
+        img.alt = 'ToolKnit';
+        img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+        avatarEl.replaceChildren(img);
       }
 
       function addAiDocChatMsg(role, text, isGenLink = false) {
@@ -8800,23 +11880,46 @@
       async function handleAiDocSend() {
         const text = aiDocChatInput?.value?.trim();
         if (!text) return;
+        if (text.length > AI_DOC_LIMITS.maxPromptChars) {
+          addAiDocChatMsg('ai', t('home.aiDoc.promptTooLong', { max: AI_DOC_LIMITS.maxPromptChars }));
+          return;
+        }
+        if (aiDocRequestController) return;
+
+        const controller = new AbortController();
+        const requestId = ++aiDocRequestId;
+        let timedOut = false;
+        aiDocRequestController = controller;
+        aiDocRequestTimeoutId = setTimeout(() => {
+          if (requestId !== aiDocRequestId || controller.signal.aborted) return;
+          timedOut = true;
+          controller.abort();
+        }, AI_DOC_REQUEST_TIMEOUT_MS);
+
         addAiDocChatMsg('user', text);
         aiDocChatInput.value = '';
         aiDocChatSend.disabled = true;
-        aiDocChatHistory.push({ role: 'user', content: text });
+        appendAiDocHistory('user', text);
 
         showAiDocMask(t('home.aiDoc.thinking'));
 
         try {
-          const systemPrompt = `你是一位顶级文档排版设计师，擅长生成内容密集、排版精美的专业 A4 文档。
-用户会描述他们需要的文档类型和内容，你的任务是通过对话收集足够信息后生成一份高质量的多页文档。
+          const systemPrompt = `你是一位顶级文档排版设计师，擅长生成内容充实、排版精美的专业 A4 文档。
+用户会描述他们需要的文档类型和内容，你的任务是通过对话收集足够信息后生成一份与需求页数相符的高质量文档。
 
 ## 核心原则
-1. **内容为王**：每个 region 的 text 必须是完整的、详实的文字内容，不能是简短的占位符
-2. **禁止留白**：每一页从 y=60 排列到 y=1060，region 之间间距不超过 12px，不允许出现超过 30px 的垂直空白
-3. **文字要长**：正文 region 的 text 应该是完整的段落（至少 50-100 字），不要只写一两句话
-4. **充实内容**：如果用户要求的文档内容不够填满 3 页，主动补充相关条款、注意事项、说明、附则等内容
-5. **多分区域**：宁可多分几个小 region 也不要一个巨大 region 里只放几行字
+1. **内容完整且克制**：每个 region 的 text 必须有实际内容，不能使用占位符；但绝不为显得详实而重复、扩写或堆砌文字
+2. **自然排版**：按内容所需高度排列，region 之间保持 6-16px 间距；不要为了填满页面而加入内容，也不要因内容很短而硬塞到页面底部
+3. **文字适量**：正文 region 的 text 应是完整、清晰的段落（通常 20-80 字），不要只写一两个词，也不要超过实际页面承载能力
+4. **页数服从需求**：用户明确指定页数时必须严格遵从；不得为了填满页面、凑页数或重复内容而增加页面
+5. **合理分区**：使用足够的 region 组织内容，但不要把一句话、一个字段或一个表格单元格拆成多个无意义的 region
+
+## 专业版式原则
+- 采用现代黑白商务报告风格：强标题、清晰章节、克制的灰阶信息块，不使用装饰性符号堆砌
+- 元数据（时间、地点、人员、编号）优先合并成 2-4 列的 table-row，不要逐字段生成独立正文
+- 待办、计划、对比和责任清单必须使用 table-row，每一行用“ | ”分隔列，列顺序保持一致
+- 重要结论使用 emphasis，补充说明和下次安排使用 note；普通内容不要滥用强调样式
+- title 下可使用一条简短 subtitle，但不要生成页眉和页脚，ToolKnit 会自动完成页面装饰和准确页码
 
 ## A4 画布规格
 - 宽 794px × 高 1123px
@@ -8826,43 +11929,45 @@
 - 缩进正文：x=76, w=662
 
 ## region type 样式指南
-1. **title**：居中, fontSize 22-26, bold, y=60, h=50
-2. **subtitle**：居中, fontSize 12-13, bold=false, y=115, h=22, 灰色
-3. **section-heading**：左对齐, fontSize 14, bold, 上方留 14px, h=28
-4. **sub-heading**：左对齐, fontSize 12, bold, 上方留 8px, h=22
-5. **body**：左对齐, fontSize 11.5, h=根据文字行数精确计算（行数×17+8）
-6. **body-indent**：左对齐, fontSize 11.5, x=76, w=662, 用于条款正文
-7. **list-item**：左对齐, fontSize 11.5, x=76, w=662, text前加"• "或"1. "
+1. **title**：居中, fontSize 28-32, bold, y=60, h=56
+2. **subtitle**：居中, fontSize 13-15, bold=false, y=124, h=24, 灰色
+3. **section-heading**：左对齐, fontSize 16-19, bold, 上方留 18px, h=34
+4. **sub-heading**：左对齐, fontSize 14-16, bold, 上方留 10px, h=26
+5. **body**：左对齐, fontSize 13.5-15, h=根据文字行数精确计算（行数×22+8）
+6. **body-indent**：左对齐, fontSize 13.5-15, x=76, w=662, 用于条款正文
+7. **list-item**：左对齐, fontSize 13-14, x=76, w=662, text前加"• "或"1. "
 8. **image**：图片占位, label 描述内容
-9. **signature**：fontSize 12, 签字线
-10. **date**：fontSize 12
+9. **signature**：fontSize 13-14, 签字线
+10. **date**：fontSize 13-14
 11. **divider**：h=2, text="", 视觉分隔
 12. **page-header**：居中, fontSize 9, y=30, h=18, 灰色
 13. **page-footer**：居中, fontSize 9, y=1085, h=18, 灰色
-14. **table-row**：fontSize 11, text用" | "分隔列
-15. **note**（注释/提示）：左对齐, fontSize 10.5, x=76, w=662, 用于补充说明
-16. **emphasis**（强调段落）：左对齐, fontSize 12, bold=true, 用于重要提示
+14. **table-row**：fontSize 12-14, text用" | "分隔 2-4 列，相邻行列数必须一致
+15. **note**（注释/提示）：左对齐, fontSize 11.5-13, x=76, w=662, 用于补充说明
+16. **emphasis**（强调段落）：左对齐, fontSize 13-15, bold=true, 用于重要结论摘要
 
 ## 布局计算公式
-- 正文字号 11.5px，行高约 17px
-- 一个 body region 的高度 = 文字行数 × 17 + 8
-- 估算文字行数：中文字符数 / (w / fontSize) ≈ 字符数 / 59
-- region 之间的 y 间距 = 上一个 region 的 y + h + 间距(6-12px)
+- 正文字号 14px，行高约 22px
+- 一个 body region 的高度 = 文字行数 × 22 + 8
+- 估算文字行数：中文字符数 / (w / fontSize) ≈ 字符数 / 48
+- region 之间的 y 间距 = 上一个 region 的 y + h + 间距(10-16px)
 - 每页可用高度约 1000px（60 到 1060）
 
 ## 输出长度硬性限制（极其重要，违反会导致文档无法显示）
 - 由于模型单次输出长度有限，最终 JSON 总字符数绝对不能超过 13000 字符，否则会被截断导致用户看不到文档
-- 文档总页数必须控制在 3-8 页之间，绝对不要超过 8 页
+- 文档总页数必须控制在 1-8 页之间，绝对不要超过 8 页
+- 用户要求“1 页”或“一页”时，pages 数组必须恰好只有 1 项，且该页最多 20 个内容 region；未指定页数的简短需求默认生成 1 页
+- 对于单页文档，优先将相关字段合并为一条 table-row 或一个紧凑正文 region，宁可精炼文字，也绝不能生成第二页
 - 如果用户要求超过 8 页（例如"生成15页"），你必须把内容精炼浓缩到 8 页以内完成，并在 summary 中说明"已将内容浓缩为 N 页以保证完整生成"
-- 每页 8-15 个 region 即可，不要过度堆砌
+- 每页通常使用 3-16 个内容 region；简单单页文档不需要为了凑数量堆砌 region
 - 每个正文 region 的 text 控制在 1-3 行（20-80字），简明扼要，不要冗长
+- 不要输出 page-header 或 page-footer；ToolKnit 会在最终渲染后自动生成准确页码
 - 优先保证文档结构完整（标题、章节、正文、结尾齐全），宁可内容精简也不要被截断
 
 ## 内容组织建议
-- 第一页：标题 + 副标题 + 概述 + 2-3 个核心章节
-- 中间页：按主题分章节，每章节配 1-2 段精炼正文
-- 最后页：总结 + 附则/签字区/日期
-- 内容不足时适当补充，但始终遵守 8 页和 13000 字符上限
+- 单页文档：标题 + 必要信息 + 核心章节/正文 + 结尾信息，内容应完整而简洁
+- 多页文档：第一页概述，中间页按主题分章节，最后页总结、附则、签字区或日期
+- 只补充用户需求直接相关的信息；始终遵守用户页数、8 页和 13000 字符上限
 
 ## 图片占位确认流程（硬性规则）
 1. 如果用户描述中明确要求图片占位（如"要有X张图片"、"包含图片占位"、"插入图片"等），不要直接生成 JSON，必须先用 ready: false 回复确认。
@@ -8878,25 +11983,31 @@
 4. 如果 JSON 输出被代码块标记包裹，前端会解析失败，用户看不到生成的文档
 5. 闲聊或不需要生成文档时，返回普通文字即可，不要带 JSON
 
-## JSON 示例（注意内容密度）
-{"ready": true, "summary": "已为您生成产品介绍文档", "pages": [{"regions": [{"type": "page-header", "x": 56, "y": 30, "w": 682, "h": 18, "text": "ToolKnit 桌面版产品介绍", "fontSize": 9, "bold": false, "align": "center"}, {"type": "title", "x": 56, "y": 60, "w": 682, "h": 50, "text": "ToolKnit 桌面版 — 全能本地工具箱", "fontSize": 24, "bold": true, "align": "center"}, {"type": "subtitle", "x": 56, "y": 115, "w": 682, "h": 22, "text": "78+ 款工具 · 100% 离线运行 · 隐私零泄露", "fontSize": 12, "bold": false, "align": "center"}, {"type": "section-heading", "x": 56, "y": 150, "w": 682, "h": 28, "text": "一、产品概述", "fontSize": 14, "bold": true, "align": "left"}, {"type": "body", "x": 56, "y": 184, "w": 682, "h": 76, "text": "ToolKnit 是一款集成了 PDF 处理、图片编辑、视频转换、音频处理、文本工具、计算器、创意设计、AI 智能助手等 10 大分类共 78+ 款工具的桌面应用程序。基于 Tauri 2.x 框架构建，前端采用原生 HTML/CSS/JavaScript，后端使用 Rust 提供高性能本地处理能力。所有文件操作均在用户设备本地完成，不上传任何数据到服务器，从架构层面杜绝隐私泄露风险。", "fontSize": 11.5, "bold": false, "align": "left"}, {"type": "section-heading", "x": 56, "y": 270, "w": 682, "h": 28, "text": "二、技术架构", "fontSize": 14, "bold": true, "align": "left"}, {"type": "body", "x": 56, "y": 304, "w": 682, "h": 93, "text": "ToolKnit 桌面版采用 Tauri 2.x 作为应用框架，相较于 Electron 方案，Tauri 使用系统原生 WebView，安装包体积仅约 15MB，内存占用降低 60% 以上。Rust 后端负责文件 I/O、系统调用、加密解密等高性能任务，前端通过 Tauri IPC 进行通信。PDF 处理基于 pdf-lib-plus-encrypt 库，支持 PDF 合并、拆分、旋转、压缩、加密、解密、水印增强等全套操作。", "fontSize": 11.5, "bold": false, "align": "left"}, {"type": "page-footer", "x": 56, "y": 1085, "w": 682, "h": 18, "text": "第 1 页 / 共 3 页", "fontSize": 9, "bold": false, "align": "center"}]}]}
+## JSON 示例（注意结构、层级和内容密度）
+{"ready":true,"summary":"已生成一页项目周会会议纪要","pages":[{"regions":[{"type":"title","x":56,"y":60,"w":682,"h":50,"text":"项目周会会议纪要","fontSize":30,"bold":true,"align":"center"},{"type":"subtitle","x":56,"y":120,"w":682,"h":24,"text":"PRODUCT DELIVERY / WEEK 25","fontSize":14,"bold":false,"align":"center"},{"type":"table-row","x":56,"y":164,"w":682,"h":42,"text":"会议时间 | 2026年8月2日 14:00 | 主持人 | 张伟","fontSize":13,"bold":false,"align":"left"},{"type":"table-row","x":56,"y":206,"w":682,"h":42,"text":"会议地点 | 3F 会议室 A | 参会人数 | 6 人","fontSize":13,"bold":false,"align":"left"},{"type":"section-heading","x":56,"y":280,"w":682,"h":34,"text":"01 / 本周结论","fontSize":18,"bold":true,"align":"left"},{"type":"emphasis","x":56,"y":334,"w":682,"h":54,"text":"支付链路进入联调阶段，本周优先完成异常回退与第三方接口稳定性验证。","fontSize":14,"bold":true,"align":"left"},{"type":"body","x":56,"y":408,"w":682,"h":62,"text":"用户中心模块已完成设计评审，前端进入开发排期。数据报表继续补充复杂筛选场景，测试团队同步准备回归用例。","fontSize":14.5,"bold":false,"align":"left"},{"type":"section-heading","x":56,"y":502,"w":682,"h":34,"text":"02 / 待办事项","fontSize":18,"bold":true,"align":"left"},{"type":"table-row","x":56,"y":556,"w":682,"h":42,"text":"事项 | 责任人 | 截止日期 | 优先级","fontSize":13,"bold":true,"align":"left"},{"type":"table-row","x":56,"y":598,"w":682,"h":42,"text":"完成支付页面开发 | 李娜 | 08-07 | 高","fontSize":13,"bold":false,"align":"left"},{"type":"table-row","x":56,"y":640,"w":682,"h":42,"text":"验证异常回退链路 | 王强 | 08-08 | 高","fontSize":13,"bold":false,"align":"left"},{"type":"note","x":56,"y":706,"w":682,"h":48,"text":"下次会议：8月9日 14:00。请各责任人在会前更新任务状态并附上可验证结果。","fontSize":12.5,"bold":false,"align":"left"}]}]}
 
 坐标系：x 范围 0-794, y 范围 0-1123`;
 
           const content = await callDeepSeek([
             { role: 'system', content: systemPrompt },
             ...aiDocChatHistory.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
-          ], null, 8192);
+          ], controller.signal, 8192);
 
-          aiDocChatHistory.push({ role: 'assistant', content });
+          if (requestId !== aiDocRequestId) return;
+          if (typeof content !== 'string' || !content.trim()) {
+            throw new AiDocLayoutError('invalid_layout', 'AI returned an empty response.');
+          }
+          if (content.length > AI_DOC_LIMITS.maxResponseChars) {
+            throw new AiDocLayoutError('response_too_large', 'AI response exceeds the supported size.');
+          }
 
           // Try to extract JSON from response using balanced brace matching
-          console.log('[AI Doc] raw content length:', content?.length, 'preview:', content?.slice(0, 200));
           const jsonStr = extractJson(content);
-          console.log('[AI Doc] extracted jsonStr length:', jsonStr?.length, 'preview:', jsonStr?.slice(0, 200));
           if (!jsonStr) {
             // No JSON, treat as plain conversation
-            addAiDocChatMsg('ai', content);
+            const response = compactAiDocHistoryMessage(content);
+            addAiDocChatMsg('ai', response);
+            appendAiDocHistory('assistant', response);
             return;
           }
 
@@ -8916,31 +12027,54 @@
           }
 
           if (parsed.ready === false && parsed.question) {
-            addAiDocChatMsg('ai', parsed.question);
+            const question = compactAiDocHistoryMessage(parsed.question);
+            if (!question) throw new AiDocLayoutError('invalid_layout', 'AI question is empty.');
+            addAiDocChatMsg('ai', question);
+            appendAiDocHistory('assistant', question);
             return;
           }
 
-          if (parsed.ready === true && parsed.pages && Array.isArray(parsed.pages) && parsed.pages.length > 0) {
+          if (parsed.ready === true || (parsed.ready === undefined && Array.isArray(parsed.columns) && Array.isArray(parsed.rows))) {
+            const normalizedLayout = normalizeAiDocLayout(parsed);
             // Show summary as chat message with click-to-preview
-            const summaryText = parsed.summary || t('home.aiDoc.docReady');
+            const summaryText = normalizedLayout.summary || t('home.aiDoc.docReady');
             const bubble = addAiDocChatMsg('ai', summaryText, true);
-            aiDocLayoutData = parsed;
+            aiDocLayoutData = prepareAiDocLayoutForEditing(normalizedLayout);
+            resetAiDocEditorHistory();
+            appendAiDocHistory('assistant', `文档已生成：${summaryText}。后续如需修改，请说明要调整的内容。`);
             bubble.addEventListener('click', () => {
               openAiDocEditOverlay();
             });
             // Auto-render thumbnails immediately
-            renderAiDocThumbnails(parsed);
+            renderAiDocThumbnails(aiDocLayoutData);
           } else {
-            // Fallback: show raw text
+            // Never surface raw, malformed model JSON as a user-facing chat message.
             console.warn('[AI Doc] parsed missing ready/pages:', parsed);
-            addAiDocChatMsg('ai', content);
+            addAiDocChatMsg('ai', t('home.aiDoc.parseError'));
           }
         } catch (e) {
+          if (requestId !== aiDocRequestId) return;
           console.error('[AI Doc] Error:', e);
-          addAiDocChatMsg('ai', t('home.aiDoc.networkError'));
+          if (controller.signal.aborted) {
+            if (timedOut) addAiDocChatMsg('ai', t('home.aiDoc.requestTimeout'));
+          } else if (e instanceof AiDocLayoutError) {
+            const errorMessageKey = {
+              response_too_large: 'home.aiDoc.responseTooLarge',
+              too_many_pages: 'home.aiDoc.tooManyPages',
+              too_many_regions: 'home.aiDoc.tooManyRegions',
+              region_text_too_large: 'home.aiDoc.regionTextTooLarge',
+              field_text_too_large: 'home.aiDoc.regionTextTooLarge',
+              document_text_too_large: 'home.aiDoc.documentTextTooLarge'
+            }[e.code] || 'home.aiDoc.parseError';
+            addAiDocChatMsg('ai', t(errorMessageKey));
+          } else {
+            addAiDocChatMsg('ai', t('home.aiDoc.networkError'));
+          }
         } finally {
-          hideAiDocMask();
-          aiDocChatSend.disabled = false;
+          if (finishAiDocRequest(requestId)) {
+            hideAiDocMask();
+            aiDocChatSend.disabled = !aiDocChatInput?.value?.trim();
+          }
         }
       }
 
@@ -8991,14 +12125,41 @@
       }
 
       // Read-only region for thumbnails (no drag, no resize, no edit)
+      function renderAiDocTableCells(textEl, text) {
+        const cells = String(text || '').split('|').map(cell => cell.trim()).filter(Boolean);
+        if (cells.length < 2) {
+          textEl.textContent = text || '';
+          return;
+        }
+        textEl.replaceChildren(...cells.map(cellText => {
+          const cell = document.createElement('span');
+          cell.className = 'ai-doc-table-cell';
+          cell.textContent = cellText;
+          return cell;
+        }));
+      }
+
       function createAiDocRegionReadOnly(region) {
         const el = document.createElement('div');
         el.className = 'ai-doc-region';
+        el.dataset.regionType = region.type;
+        if (region.type === 'table-row' && region.bold) el.dataset.tableHeader = 'true';
         el.style.left = (region.x || 0) + 'px';
         el.style.top = (region.y || 0) + 'px';
         el.style.width = (region.w || 200) + 'px';
         el.style.minHeight = (region.h || 40) + 'px';
         el.style.height = 'auto';
+
+        // Keep the editor preview faithful to the PDF renderer. Defaults remain
+        // type-driven in CSS; explicit user styles always win through inline CSS.
+        const regionStyle = region.style || {};
+        if (regionStyle.backgroundColor) el.style.backgroundColor = regionStyle.backgroundColor;
+        if (regionStyle.borderColor) el.style.borderColor = regionStyle.borderColor;
+        if (regionStyle.borderWidth !== undefined) {
+          el.style.borderStyle = 'solid';
+          el.style.borderWidth = `${regionStyle.borderWidth}px`;
+        }
+        if (regionStyle.opacity !== undefined) el.style.opacity = String(regionStyle.opacity);
         el.style.cursor = 'default';
         el.style.outline = 'none';
 
@@ -9054,9 +12215,7 @@
               textEl.style.fontSize = (region.fontSize || 9) + 'px';
               break;
             case 'table-row':
-              textEl.style.fontFamily = 'monospace';
-              textEl.style.whiteSpace = 'pre';
-              textEl.style.fontSize = (region.fontSize || 11) + 'px';
+              textEl.style.fontSize = (region.fontSize || 13) + 'px';
               break;
             case 'note':
               textEl.style.fontSize = (region.fontSize || 10.5) + 'px';
@@ -9068,8 +12227,9 @@
               textEl.style.fontSize = (region.fontSize || 12) + 'px';
               break;
             default:
-              textEl.style.fontSize = (region.fontSize || 12) + 'px';
+              textEl.style.fontSize = (region.fontSize || 14) + 'px';
           }
+          if (region.type === 'table-row') renderAiDocTableCells(textEl, region.text);
           el.appendChild(textEl);
         }
         return el;
@@ -9078,12 +12238,18 @@
       // Open full-screen edit overlay
       function openAiDocEditOverlay() {
         if (!aiDocEditOverlay || !aiDocLayoutData) return;
+        aiDocLayoutData = prepareAiDocLayoutForEditing(aiDocLayoutData);
         aiDocEditOverlay.classList.add('visible');
         // Clean up previous edit listeners
         aiDocCleanupFns.forEach(fn => fn());
         aiDocCleanupFns = [];
-        // Render full A4 pages with editing enabled
-        renderAiDocEditPages(aiDocLayoutData);
+        // The first opening starts from the document top; later edits preserve
+        // this container's viewport through renderAiDocEditPages.
+        if (aiDocEditScroll) {
+          aiDocEditScroll.scrollTop = 0;
+          aiDocEditScroll.scrollLeft = 0;
+        }
+        renderAiDocEditPages(aiDocLayoutData, { preserveScroll: false });
         // Init dither background for edit overlay
         if (aiDocEditBg && !aiDocEditDitherInstance) {
           aiDocEditDitherInstance = initDither(aiDocEditBg, {
@@ -9104,6 +12270,7 @@
         aiDocCleanupFns.forEach(fn => fn());
         aiDocCleanupFns = [];
         if (aiDocEditScroll) aiDocEditScroll.innerHTML = '';
+        if (aiDocLayoutData) renderAiDocThumbnails(aiDocLayoutData);
         if (aiDocEditDitherInstance) {
           aiDocEditDitherInstance();
           aiDocEditDitherInstance = null;
@@ -9111,8 +12278,16 @@
       }
 
       // Render full-size A4 pages in edit overlay (with editing enabled)
-      function renderAiDocEditPages(data) {
-        if (!aiDocEditScroll || !data.pages) return;
+      function renderAiDocEditPages(sourceData, { preserveScroll = true } = {}) {
+        if (!aiDocEditScroll || !sourceData?.pages) return;
+        // Rebuilding the editable pages briefly removes all scrollable height.
+        // Capture it first and restore it after the new DOM has been laid out.
+        const previousScroll = preserveScroll
+          ? { top: aiDocEditScroll.scrollTop, left: aiDocEditScroll.scrollLeft }
+          : null;
+        // Reflow must never mutate the model-normalized source. Local edits are
+        // applied to this shallow editable copy; data URLs remain immutable strings.
+        const data = prepareAiDocLayoutForEditing(sourceData);
         // Clean up previous drag/resize listeners to prevent leak when reflowing
         // (uploadAiDocImage triggers reflow repeatedly; without this, document-level
         // mousemove/mouseup listeners accumulate and cause drag glitches + slowdown).
@@ -9122,34 +12297,106 @@
 
         const PAGE_BOTTOM = 1060;
         const PAGE_TOP = 60;
-        const GAP = 8;
+        const GAP = 12;
         const HEADER_Y = 30;
         const FOOTER_Y = 1085;
 
         const newPages = [];
 
+        const createEditablePage = () => {
+          const pageElement = document.createElement('div');
+          pageElement.className = 'ai-doc-page';
+          pageElement.style.width = A4_WIDTH + 'px';
+          pageElement.style.minHeight = A4_HEIGHT + 'px';
+          pageElement.addEventListener('mousedown', event => {
+            if (event.target === pageElement) selectAiDocRegion(null);
+          });
+          aiDocEditScroll.appendChild(pageElement);
+          return pageElement;
+        };
+
+        const getEditorFlowGap = (previous, current) => {
+          if (!previous) return 0;
+          if (Number.isFinite(current.flowGap)) return Math.max(0, Math.min(42, current.flowGap));
+          if (previous.type === 'table-row' && current.type === 'table-row') return 0;
+          if (previous.type === 'title' && current.type === 'subtitle') return 10;
+          if (current.type === 'section-heading') return 20;
+          return GAP;
+        };
+
+        const balancePageSpacing = (pageElement, regions) => {
+          const content = regions.filter(region => !['page-header', 'page-footer'].includes(region.type));
+          if (content.length < 5) return;
+          const lastRegion = content[content.length - 1];
+          const usedBottom = (lastRegion.y || PAGE_TOP) + (lastRegion.h || 0);
+          if (usedBottom >= 900) return;
+          const expandableGapIndexes = content
+            .map((region, index) => index > 0 && getEditorFlowGap(content[index - 1], region) > 0 ? index : -1)
+            .filter(index => index >= 0);
+          if (!expandableGapIndexes.length) return;
+          const extraGap = Math.min(28, Math.max(0, (920 - usedBottom) / expandableGapIndexes.length));
+          if (extraGap < 1) return;
+          let accumulatedOffset = 0;
+          content.forEach((region, index) => {
+            if (expandableGapIndexes.includes(index)) {
+              const previous = content[index - 1];
+              region.flowGap = Math.round((getEditorFlowGap(previous, region) + extraGap) * 100) / 100;
+              accumulatedOffset += extraGap;
+            }
+            if (accumulatedOffset === 0) return;
+            region.y += accumulatedOffset;
+            const regionElement = pageElement.querySelector(`[data-editor-id="${region.editorId}"]`);
+            if (regionElement) regionElement.style.top = region.y + 'px';
+          });
+        };
+
         // Process each original page separately, preserving AI page structure
         data.pages.forEach((page, originalPageIdx) => {
           if (!page.regions || page.regions.length === 0) return;
 
-          const sorted = [...page.regions].sort((a, b) => (a.y || 0) - (b.y || 0));
+          const sorted = [...page.regions];
           const header = sorted.find(r => r.type === 'page-header');
           const footer = sorted.find(r => r.type === 'page-footer');
           const contentRegions = sorted.filter(r => r.type !== 'page-header' && r.type !== 'page-footer');
+
+          const appendFooter = (targetPage, targetPageIdx, targetRegions) => {
+            const fallbackFooter = {
+              type: 'page-footer', x: 56, y: FOOTER_Y, w: 682, h: 18,
+              text: '', fontSize: 9, bold: false, align: 'center'
+            };
+            // Page labels are filled once every actual page is known. Never
+            // reuse a model-provided label such as "1 / 1" after reflow.
+            const f = {
+              ...(footer || fallbackFooter),
+              editorId: createAiDocEditorId(),
+              y: FOOTER_Y,
+              text: ''
+            };
+            const fEl = createAiDocRegion(f, targetPageIdx, targetRegions.length);
+            if (fEl) {
+              targetPage.appendChild(fEl);
+              targetRegions.push(f);
+            }
+          };
+
+          const minimumRegionHeight = (region) => {
+            if (region.type === 'image') return region.imageHeight || region.h || 100;
+            if (region.type === 'divider') return 2;
+            if (region.type === 'title') return 32;
+            if (region.type === 'section-heading') return 24;
+            return 16;
+          };
 
           // pageIdx must always equal this page's final index in newPages so that
           // uploadAiDocImage / drag / resize write back to the correct region.
           let pageIdx = newPages.length;
 
           // Start the first page for this original page
-          let pageDiv = document.createElement('div');
-          pageDiv.className = 'ai-doc-page';
-          pageDiv.style.width = A4_WIDTH + 'px';
-          pageDiv.style.minHeight = A4_HEIGHT + 'px';
-          aiDocEditScroll.appendChild(pageDiv);
+          let pageDiv = createEditablePage();
 
           let currentPageRegions = [];
           let currentY = PAGE_TOP;
+          let previousContentRegion = null;
 
           // Add header to first page
           if (header) {
@@ -9162,29 +12409,30 @@
           }
 
           for (const r of contentRegions) {
-            const minH = r.h || 40;
-            // If content overflows and we already have content, start a new page
-            if (currentY + minH > PAGE_BOTTOM && currentPageRegions.length > (header ? 1 : 0)) {
-              // Add footer to current page
-              if (footer) {
-                const f = { ...footer, y: FOOTER_Y, text: footer.text || t('home.aiDoc.pageNumber', { n: pageIdx + 1 }) };
-                const fEl = createAiDocRegion(f, pageIdx, currentPageRegions.length);
-                if (fEl) {
-                  pageDiv.appendChild(fEl);
-                  currentPageRegions.push(f);
-                }
-              }
+            const gapBefore = getEditorFlowGap(previousContentRegion, r);
+            r.y = currentY + gapBefore;
+            let el = createAiDocRegion(r, pageIdx, currentPageRegions.length);
+            if (!el) continue;
+
+            pageDiv.appendChild(el);
+            // Model-provided heights are estimates. Measure the real rendered
+            // text without that estimate first; otherwise harmless overlarge
+            // regions create artificial pages and blank PDF tails.
+            if (r.type !== 'image' && r.type !== 'divider') el.style.minHeight = '0px';
+            const actualH = Math.max(minimumRegionHeight(r), el.offsetHeight);
+            const hasContent = currentPageRegions.some(region => region.type !== 'page-header');
+
+            if (r.y + actualH > PAGE_BOTTOM && hasContent) {
+              el.remove();
+              balancePageSpacing(pageDiv, currentPageRegions);
+              appendFooter(pageDiv, pageIdx, currentPageRegions);
               newPages.push({ regions: currentPageRegions });
 
-              // Start new page — pageIdx tracks the next slot in newPages
               pageIdx = newPages.length;
               currentPageRegions = [];
               currentY = PAGE_TOP;
-              pageDiv = document.createElement('div');
-              pageDiv.className = 'ai-doc-page';
-              pageDiv.style.width = A4_WIDTH + 'px';
-              pageDiv.style.minHeight = A4_HEIGHT + 'px';
-              aiDocEditScroll.appendChild(pageDiv);
+              previousContentRegion = null;
+              pageDiv = createEditablePage();
 
               if (header) {
                 const h = { ...header, y: HEADER_Y };
@@ -9194,53 +12442,72 @@
                   currentPageRegions.push(h);
                 }
               }
-            }
-
-            // Place region at currentY
-            r.y = currentY;
-            const el = createAiDocRegion(r, pageIdx, currentPageRegions.length);
-            if (el) {
+              r.y = currentY;
+              el = createAiDocRegion(r, pageIdx, currentPageRegions.length);
+              if (!el) continue;
               pageDiv.appendChild(el);
-              const measuredH = el.offsetHeight;
-              const actualH = Math.max(minH, measuredH);
-              r.h = actualH;
-              currentY += actualH + GAP;
+              if (r.type !== 'image' && r.type !== 'divider') el.style.minHeight = '0px';
             }
+
+            r.h = actualH;
+            el.style.minHeight = actualH + 'px';
+            currentY = r.y + actualH;
             currentPageRegions.push(r);
+            previousContentRegion = r;
           }
 
-          // Add footer to last page of this original page
-          if (footer) {
-            const f = { ...footer, y: FOOTER_Y, text: footer.text || t('home.aiDoc.pageNumber', { n: pageIdx + 1 }) };
-            const fEl = createAiDocRegion(f, pageIdx, currentPageRegions.length);
-            if (fEl) {
-              pageDiv.appendChild(fEl);
-              currentPageRegions.push(f);
-            }
-          }
+          balancePageSpacing(pageDiv, currentPageRegions);
+          appendFooter(pageDiv, pageIdx, currentPageRegions);
 
           newPages.push({ regions: currentPageRegions });
         });
 
         // Update layout data with new pages
         data.pages = newPages;
+        aiDocLayoutData = data;
 
-        // Add page numbers to all pages
+        // Apply final labels after reflow; these labels are authoritative for
+        // both preview and subsequent PDF export.
         const allPageDivs = aiDocEditScroll.querySelectorAll('.ai-doc-page');
         const totalPages = allPageDivs.length;
         allPageDivs.forEach((pd, idx) => {
+          const regions = data.pages[idx]?.regions || [];
+          const footerIdx = regions.findIndex(region => region.type === 'page-footer');
+          if (footerIdx >= 0) {
+            const footerText = t('home.aiDoc.pageOfTotal', { current: idx + 1, total: totalPages });
+            regions[footerIdx].text = footerText;
+            const footerTextEl = pd.querySelector(`.ai-doc-region[data-page-idx="${idx}"][data-region-idx="${footerIdx}"] .ai-doc-region-text`);
+            if (footerTextEl) footerTextEl.textContent = footerText;
+          }
           const pageNum = document.createElement('div');
           pageNum.className = 'ai-doc-page-num';
           pageNum.textContent = `${idx + 1} / ${totalPages}`;
           pd.appendChild(pageNum);
         });
 
-        if (window.lucide) window.lucide.createIcons();
+        selectAiDocRegion(aiDocSelectedRegionId);
+
+        try { createIcons({ icons }); }
+        catch (e) { if (window.lucide) window.lucide.createIcons(); }
+
+        if (previousScroll) {
+          requestAnimationFrame(() => {
+            if (!aiDocEditScroll?.isConnected) return;
+            const maxTop = Math.max(0, aiDocEditScroll.scrollHeight - aiDocEditScroll.clientHeight);
+            const maxLeft = Math.max(0, aiDocEditScroll.scrollWidth - aiDocEditScroll.clientWidth);
+            aiDocEditScroll.scrollTop = Math.min(previousScroll.top, maxTop);
+            aiDocEditScroll.scrollLeft = Math.min(previousScroll.left, maxLeft);
+          });
+        }
       }
 
       function createAiDocRegion(region, pageIdx, regionIdx) {
         const el = document.createElement('div');
         el.className = 'ai-doc-region';
+        el.dataset.regionType = region.type;
+        if (region.type === 'table-row' && region.bold) el.dataset.tableHeader = 'true';
+        el.dataset.editorId = region.editorId || createAiDocEditorId();
+        region.editorId = el.dataset.editorId;
         el.dataset.pageIdx = pageIdx;
         el.dataset.regionIdx = regionIdx;
         el.style.left = (region.x || 0) + 'px';
@@ -9250,8 +12517,23 @@
         el.style.minHeight = (region.h || 40) + 'px';
         el.style.height = 'auto';
 
+        const regionStyle = region.style || {};
+        if (regionStyle.backgroundColor) el.style.backgroundColor = regionStyle.backgroundColor;
+        if (regionStyle.borderColor) el.style.borderColor = regionStyle.borderColor;
+        if (regionStyle.borderWidth !== undefined) {
+          el.style.borderStyle = 'solid';
+          el.style.borderWidth = `${regionStyle.borderWidth}px`;
+        }
+        if (regionStyle.opacity !== undefined) el.style.opacity = String(regionStyle.opacity);
+
+        const isLockedRegion = ['page-header', 'page-footer'].includes(region.type);
+        if (isLockedRegion) el.classList.add('locked');
+
         if (region.type === 'image') {
           el.classList.add('ai-doc-region-image');
+          const imageHeight = region.imageHeight || region.h || 120;
+          el.style.height = imageHeight + 'px';
+          el.style.minHeight = imageHeight + 'px';
           if (region.imageData) {
             const img = document.createElement('img');
             img.src = region.imageData;
@@ -9267,7 +12549,7 @@
             placeholder.innerHTML = `<i data-lucide="image"></i><span>${escapeHtml(region.label || t('home.aiDoc.imgUploadHint'))}</span>`;
             el.appendChild(placeholder);
           }
-          el.addEventListener('dblclick', () => uploadAiDocImage(el, regionIdx, pageIdx));
+          el.addEventListener('dblclick', () => uploadAiDocImage(el, region.editorId));
           if (window.lucide) window.lucide.createIcons();
         } else if (region.type === 'divider') {
           const dividerEl = document.createElement('div');
@@ -9284,6 +12566,9 @@
           textEl.style.fontSize = (region.fontSize || 12) + 'px';
           textEl.style.fontWeight = region.bold ? 'bold' : 'normal';
           textEl.style.textAlign = region.align || 'left';
+          if (regionStyle.textColor) textEl.style.color = regionStyle.textColor;
+          if (regionStyle.padding !== undefined) textEl.style.padding = `${regionStyle.padding}px`;
+          if (regionStyle.lineHeight !== undefined) textEl.style.lineHeight = String(regionStyle.lineHeight);
 
           // Apply styles based on region type
           switch (region.type) {
@@ -9323,9 +12608,7 @@
               textEl.style.fontSize = (region.fontSize || 12) + 'px';
               break;
             case 'table-row':
-              textEl.style.fontSize = (region.fontSize || 11) + 'px';
-              textEl.style.fontFamily = 'monospace';
-              textEl.style.whiteSpace = 'pre';
+              textEl.style.fontSize = (region.fontSize || 13) + 'px';
               break;
             case 'note':
               textEl.style.fontSize = (region.fontSize || 10.5) + 'px';
@@ -9338,13 +12621,25 @@
               textEl.style.color = '#333';
               break;
             default: // body
-              textEl.style.fontSize = (region.fontSize || 12) + 'px';
+              textEl.style.fontSize = (region.fontSize || 14) + 'px';
+          }
+          if (region.type === 'table-row') {
+            renderAiDocTableCells(textEl, region.text);
+            textEl.querySelectorAll('.ai-doc-table-cell').forEach(cell => {
+              if (regionStyle.dividerColor || regionStyle.borderColor) cell.style.borderLeftColor = regionStyle.dividerColor || regionStyle.borderColor;
+              if (regionStyle.dividerWidth !== undefined) cell.style.borderLeftWidth = `${regionStyle.dividerWidth}px`;
+            });
           }
           el.appendChild(textEl);
 
           // Double-click to edit text
+          let textEditPreviousLayout = null;
           el.addEventListener('dblclick', (e) => {
+            if (isLockedRegion) return;
             e.stopPropagation();
+            selectAiDocRegion(region.editorId);
+            textEditPreviousLayout = cloneAiDocLayout(aiDocLayoutData);
+            if (region.type === 'table-row') textEl.textContent = region.text || '';
             textEl.setAttribute('contenteditable', 'true');
             textEl.focus();
             // Select all
@@ -9356,9 +12651,16 @@
           });
           textEl.addEventListener('blur', () => {
             textEl.removeAttribute('contenteditable');
-            // Update layout data
-            if (aiDocLayoutData?.pages?.[pageIdx]?.regions?.[regionIdx]) {
-              aiDocLayoutData.pages[pageIdx].regions[regionIdx].text = textEl.textContent;
+            const selected = findAiDocRegionById(region.editorId);
+            if (!selected) return;
+            const nextText = textEl.textContent;
+            if (selected.region.text !== nextText) {
+              selected.region.text = nextText;
+              recordAiDocEdit(textEditPreviousLayout);
+              textEditPreviousLayout = null;
+              requestAnimationFrame(() => renderAiDocEditPages(aiDocLayoutData));
+            } else if (region.type === 'table-row') {
+              renderAiDocTableCells(textEl, selected.region.text);
             }
           });
           textEl.addEventListener('keydown', (e) => {
@@ -9368,106 +12670,200 @@
           });
         }
 
-        // Drag to move
-        const cleanupDrag = makeAiDocRegionDraggable(el, pageIdx, regionIdx);
-        if (cleanupDrag) aiDocCleanupFns.push(cleanupDrag);
+        if (!isLockedRegion) {
+          el.addEventListener('click', event => {
+            if (event.target.getAttribute('contenteditable') === 'true') return;
+            event.stopPropagation();
+            selectAiDocRegion(region.editorId);
+          });
 
-        // Resize handle
-        const handle = document.createElement('div');
-        handle.className = 'ai-doc-resize-handle';
-        el.appendChild(handle);
-        const cleanupResize = makeAiDocRegionResizable(el, handle, pageIdx, regionIdx);
-        if (cleanupResize) aiDocCleanupFns.push(cleanupResize);
+          const cleanupDrag = makeAiDocRegionDraggable(el, region.editorId);
+          if (cleanupDrag) aiDocCleanupFns.push(cleanupDrag);
+
+          const resizeAnchors = region.type === 'image' ? ['left', 'corner'] : ['right'];
+          resizeAnchors.forEach(anchor => {
+            const handle = document.createElement('div');
+            handle.className = `ai-doc-resize-handle ai-doc-resize-handle-${anchor}`;
+            handle.dataset.resizeAnchor = anchor;
+            el.appendChild(handle);
+            const cleanupResize = makeAiDocRegionResizable(el, handle, region.editorId);
+            if (cleanupResize) aiDocCleanupFns.push(cleanupResize);
+          });
+        }
 
         return el;
       }
 
-      function makeAiDocRegionDraggable(el, pageIdx, regionIdx) {
+      function makeAiDocRegionDraggable(el, editorId) {
         let isDragging = false;
-        let startX, startY, origX, origY;
+        let startX = 0;
+        let startY = 0;
+        let moved = false;
+        let previousLayout = null;
 
         const onMouseDown = (e) => {
           if (e.target.getAttribute('contenteditable') === 'true') return;
           if (e.target.classList.contains('ai-doc-resize-handle')) return;
+          selectAiDocRegion(editorId);
           isDragging = true;
           startX = e.clientX;
           startY = e.clientY;
-          origX = parseInt(el.style.left);
-          origY = parseInt(el.style.top);
-          el.classList.add('selected');
+          moved = false;
+          previousLayout = cloneAiDocLayout(aiDocLayoutData);
+          el.classList.add('dragging');
           e.preventDefault();
         };
 
         const onMouseMove = (e) => {
           if (!isDragging) return;
-          let newX = origX + (e.clientX - startX);
-          let newY = origY + (e.clientY - startY);
-          // Use offsetWidth/offsetHeight: el.style.height is 'auto', so parseInt would be NaN.
-          newX = Math.max(0, Math.min(A4_WIDTH - el.offsetWidth, newX));
-          newY = Math.max(0, Math.min(A4_HEIGHT - el.offsetHeight, newY));
-          el.style.left = newX + 'px';
-          el.style.top = newY + 'px';
+          const deltaX = e.clientX - startX;
+          const deltaY = e.clientY - startY;
+          const selected = findAiDocRegionById(editorId);
+          const isImage = selected?.region.type === 'image';
+          moved = moved || Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4;
+          el.style.transform = isImage
+            ? `translate(${deltaX}px, ${deltaY}px)`
+            : `translateY(${deltaY}px)`;
         };
 
-        const onMouseUp = () => {
+        const onMouseUp = (e) => {
           if (!isDragging) return;
           isDragging = false;
-          el.classList.remove('selected');
-          if (aiDocLayoutData?.pages?.[pageIdx]?.regions?.[regionIdx]) {
-            aiDocLayoutData.pages[pageIdx].regions[regionIdx].x = parseInt(el.style.left);
-            aiDocLayoutData.pages[pageIdx].regions[regionIdx].y = parseInt(el.style.top);
+          el.classList.remove('dragging');
+          el.style.transform = '';
+          if (!moved) return;
+
+          const selected = findAiDocRegionById(editorId);
+          if (!selected) return;
+          const page = aiDocLayoutData.pages[selected.pageIdx];
+          const isImage = selected.region.type === 'image';
+          let horizontalChanged = false;
+          if (isImage) {
+            const width = el.offsetWidth;
+            const rawLeft = (parseFloat(el.style.left) || 0) + (e.clientX - startX);
+            const maxLeft = Math.max(0, A4_WIDTH - width);
+            const snapTargets = [0, 56, (A4_WIDTH - width) / 2, A4_WIDTH - 56 - width, maxLeft]
+              .filter(value => value >= 0 && value <= maxLeft);
+            const snappedLeft = snapTargets.reduce((best, target) => (
+              Math.abs(target - rawLeft) < Math.abs(best - rawLeft) ? target : best
+            ), Math.min(maxLeft, Math.max(0, rawLeft)));
+            const nextLeft = Math.abs(snappedLeft - rawLeft) <= 10
+              ? snappedLeft
+              : Math.min(maxLeft, Math.max(0, rawLeft));
+            horizontalChanged = Math.round(nextLeft) !== Math.round(selected.region.x || 0);
+            selected.region.x = Math.round(nextLeft);
           }
+          const contentRegions = page.regions.filter(region => !['page-header', 'page-footer'].includes(region.type));
+          const otherRegions = contentRegions.filter(region => region.editorId !== editorId);
+          const originalTop = parseFloat(el.style.top) || 0;
+          const dropCenter = originalTop + (e.clientY - startY) + el.offsetHeight / 2;
+          let insertAt = 0;
+          otherRegions.forEach(region => {
+            const regionEl = aiDocEditScroll.querySelector(`[data-editor-id="${region.editorId}"]`);
+            const center = (parseFloat(regionEl?.style.top) || region.y || 0) + (regionEl?.offsetHeight || region.h || 0) / 2;
+            if (dropCenter > center) insertAt += 1;
+          });
+          const reorderedContent = [...otherRegions];
+          reorderedContent.splice(insertAt, 0, selected.region);
+          const previousOrder = contentRegions.map(region => region.editorId).join('|');
+          const nextOrder = reorderedContent.map(region => region.editorId).join('|');
+          if (previousOrder === nextOrder) {
+            if (!horizontalChanged) return;
+            recordAiDocEdit(previousLayout);
+            renderAiDocEditPages(aiDocLayoutData);
+            return;
+          }
+
+          const header = page.regions.filter(region => region.type === 'page-header');
+          const footer = page.regions.filter(region => region.type === 'page-footer');
+          page.regions = [...header, ...reorderedContent, ...footer];
+          recordAiDocEdit(previousLayout);
+          renderAiDocEditPages(aiDocLayoutData);
         };
 
         el.addEventListener('mousedown', onMouseDown);
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
 
-        // Return cleanup function to remove listeners
         return () => {
+          el.removeEventListener('mousedown', onMouseDown);
           document.removeEventListener('mousemove', onMouseMove);
           document.removeEventListener('mouseup', onMouseUp);
         };
       }
 
-      function makeAiDocRegionResizable(el, handle, pageIdx, regionIdx) {
+      function makeAiDocRegionResizable(el, handle, editorId) {
         let isResizing = false;
-        let startX, startY, origW, origH;
+        let startX = 0;
+        let startY = 0;
+        let origW = 0;
+        let origH = 0;
+        let origLeft = 0;
+        let origTop = 0;
+        let resizeAnchor = 'right';
+        let previousLayout = null;
 
         const onMouseDown = (e) => {
           e.stopPropagation();
+          selectAiDocRegion(editorId);
           isResizing = true;
           startX = e.clientX;
           startY = e.clientY;
-          // el.style.height is 'auto'; read the rendered size instead to avoid NaN.
           origW = el.offsetWidth;
           origH = el.offsetHeight;
+          origLeft = parseFloat(el.style.left) || 0;
+          origTop = parseFloat(el.style.top) || 0;
+          resizeAnchor = handle.dataset.resizeAnchor || 'right';
+          previousLayout = cloneAiDocLayout(aiDocLayoutData);
+          e.preventDefault();
         };
 
         const onMouseMove = (e) => {
           if (!isResizing) return;
-          let newW = origW + (e.clientX - startX);
-          let newH = origH + (e.clientY - startY);
-          newW = Math.max(30, Math.min(A4_WIDTH - parseInt(el.style.left), newW));
-          newH = Math.max(20, Math.min(A4_HEIGHT - parseInt(el.style.top), newH));
+          const selected = findAiDocRegionById(editorId);
+          if (!selected) return;
+          const isImage = selected.region.type === 'image';
+          const resizeFromLeft = isImage && resizeAnchor === 'left';
+          const minimumWidth = isImage ? 80 : 120;
+          const pointerDeltaX = e.clientX - startX;
+          const maxWidth = resizeFromLeft ? origLeft + origW : A4_WIDTH - origLeft;
+          const newW = Math.max(minimumWidth, Math.min(maxWidth, resizeFromLeft
+            ? origW - pointerDeltaX
+            : origW + pointerDeltaX));
+          const newLeft = resizeFromLeft ? origLeft + origW - newW : origLeft;
           el.style.width = newW + 'px';
-          el.style.height = newH + 'px';
-          el.style.minHeight = newH + 'px';
+          if (isImage) {
+            const maxHeight = A4_HEIGHT - origTop;
+            const newH = resizeFromLeft
+              ? Math.max(80, Math.min(maxHeight, Math.round(origH * (newW / Math.max(1, origW)))))
+              : Math.max(80, Math.min(maxHeight, origH + (e.clientY - startY)));
+            el.style.left = newLeft + 'px';
+            el.style.height = newH + 'px';
+            el.style.minHeight = newH + 'px';
+          } else {
+            el.style.height = 'auto';
+            el.style.minHeight = '0px';
+          }
         };
 
         const onMouseUp = () => {
           if (!isResizing) return;
           isResizing = false;
-          if (aiDocLayoutData?.pages?.[pageIdx]?.regions?.[regionIdx]) {
-            const region = aiDocLayoutData.pages[pageIdx].regions[regionIdx];
-            region.w = parseInt(el.style.width);
-            region.h = parseInt(el.style.height);
-            // Keep image height in sync so reflow/export use the resized dimensions.
-            if (region.type === 'image' && region.imageData) {
-              region.imageHeight = region.h;
-              region.imageWidth = region.w;
-            }
+          const selected = findAiDocRegionById(editorId);
+          if (!selected) return;
+          const newW = Math.round(el.offsetWidth);
+          const newH = Math.round(el.offsetHeight);
+          if (newW === Math.round(selected.region.w || 0)
+            && (selected.region.type !== 'image' || newH === Math.round(selected.region.h || 0))) return;
+          selected.region.w = newW;
+          selected.region.h = newH;
+          if (selected.region.type === 'image') {
+            selected.region.x = Math.round(parseFloat(el.style.left) || 0);
+            selected.region.imageHeight = newH;
+            selected.region.imageWidth = newW;
           }
+          recordAiDocEdit(previousLayout);
+          renderAiDocEditPages(aiDocLayoutData);
         };
 
         handle.addEventListener('mousedown', onMouseDown);
@@ -9475,25 +12871,54 @@
         document.addEventListener('mouseup', onMouseUp);
 
         return () => {
+          handle.removeEventListener('mousedown', onMouseDown);
           document.removeEventListener('mousemove', onMouseMove);
           document.removeEventListener('mouseup', onMouseUp);
         };
       }
 
-      async function uploadAiDocImage(el, regionIdx, pageIdx) {
+      async function uploadAiDocImage(el, editorId) {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/*';
+        input.accept = '.png,.jpg,.jpeg,image/png,image/jpeg';
         input.addEventListener('change', async (e) => {
           const file = e.target.files?.[0];
           if (!file) return;
+          const targetAtUpload = findAiDocRegionById(editorId);
+          if (!targetAtUpload || targetAtUpload.region.type !== 'image') return;
+          if (!isSupportedAiDocImage(file)) {
+            addAiDocChatMsg('ai', t('home.aiDoc.imageFormatError'));
+            return;
+          }
+          if (Number.isFinite(file.size) && file.size > AI_DOC_LIMITS.maxImageBytes) {
+            addAiDocChatMsg('ai', t('home.aiDoc.imageTooLarge', { max: 10 }));
+            return;
+          }
+          const imageMime = file.type === 'image/png' || /\.png$/i.test(file.name || '')
+            ? 'image/png'
+            : 'image/jpeg';
+          let sourceBytes = Number(file.size);
+          if (!Number.isSafeInteger(sourceBytes) || sourceBytes < 0) {
+            addAiDocChatMsg('ai', t('home.aiDoc.imageReadError'));
+            return;
+          }
           let dataUrl;
           if (isTauri && file.path) {
             try {
               const { invoke } = await import('@tauri-apps/api/core');
+              const fileSize = Number(await invoke('get_file_size', { path: file.path }));
+              if (!Number.isSafeInteger(fileSize) || fileSize < 0 || fileSize > AI_DOC_LIMITS.maxImageBytes) {
+                addAiDocChatMsg('ai', t('home.aiDoc.imageTooLarge', { max: 10 }));
+                return;
+              }
+              sourceBytes = fileSize;
               const rawBytes = await invoke('read_file_bytes', { path: file.path });
               const bytes = Array.isArray(rawBytes) ? Uint8Array.from(rawBytes) : new Uint8Array(rawBytes);
-              const blob = new Blob([bytes], { type: file.type || 'image/png' });
+              if (bytes.byteLength > AI_DOC_LIMITS.maxImageBytes) {
+                addAiDocChatMsg('ai', t('home.aiDoc.imageTooLarge', { max: 10 }));
+                return;
+              }
+              const blob = new Blob([bytes], { type: imageMime });
               dataUrl = await new Promise((resolve, reject) => {
                 const r = new FileReader();
                 r.onload = () => resolve(r.result);
@@ -9512,11 +12937,35 @@
               r.readAsDataURL(file);
             });
           }
+          const existingBytes = aiDocLayoutData?.pages?.reduce((total, page) => (
+            total + (page?.regions || []).reduce((pageTotal, region) => {
+              if (region.editorId === editorId) return pageTotal;
+              const bytes = Number(region?.imageByteLength);
+              return pageTotal + (Number.isSafeInteger(bytes) && bytes > 0 ? bytes : 0);
+            }, 0)
+          ), 0) || 0;
+          try {
+            assertAiDocImageBudget(existingBytes, sourceBytes);
+          } catch (error) {
+            if (error instanceof AiDocLayoutError && error.code === 'images_too_large') {
+              addAiDocChatMsg('ai', t('home.aiDoc.imagesTooLarge', { max: 40 }));
+            } else {
+              addAiDocChatMsg('ai', t('home.aiDoc.imageReadError'));
+            }
+            return;
+          }
           const tempImg = new Image();
           tempImg.onload = () => {
+              const previousLayout = cloneAiDocLayout(aiDocLayoutData);
+              const currentTarget = findAiDocRegionById(editorId);
+              if (!currentTarget || currentTarget.region.type !== 'image') return;
               const naturalW = tempImg.naturalWidth;
               const naturalH = tempImg.naturalHeight;
-              const regionW = parseInt(el.style.width) || 200;
+              if (!naturalW || !naturalH || naturalW * naturalH > AI_DOC_LIMITS.maxImagePixels) {
+                addAiDocChatMsg('ai', t('home.aiDoc.imageDimensionsTooLarge'));
+                return;
+              }
+              const regionW = currentTarget.region.w || parseInt(el.style.width) || 200;
               // Calculate display height maintaining aspect ratio, fit within region width
               const displayW = regionW;
               const displayH = Math.round(naturalH * (displayW / naturalW));
@@ -9525,30 +12974,22 @@
               const finalH = Math.min(displayH, maxH);
               const finalW = Math.round(naturalW * (finalH / naturalH));
 
-              el.innerHTML = '';
-              const img = document.createElement('img');
-              img.src = dataUrl;
-              img.style.width = finalW + 'px';
-              img.style.height = finalH + 'px';
-              img.style.objectFit = 'contain';
-              img.style.display = 'block';
-              el.appendChild(img);
-
               // Update layout data with actual image dimensions
-              if (aiDocLayoutData?.pages?.[pageIdx]?.regions?.[regionIdx]) {
-                const region = aiDocLayoutData.pages[pageIdx].regions[regionIdx];
-                region.imageData = dataUrl;
-                region.imageWidth = finalW;
-                region.imageHeight = finalH;
-                region.w = finalW;
-                region.h = finalH;
-                el.style.width = finalW + 'px';
-                el.style.minHeight = finalH + 'px';
-              }
+              const region = currentTarget.region;
+              region.imageData = dataUrl;
+              region.imageWidth = finalW;
+              region.imageHeight = finalH;
+              region.imageByteLength = sourceBytes;
+              region.w = finalW;
+              region.h = finalH;
+              recordAiDocEdit(previousLayout);
               // Reflow entire document to adjust subsequent regions and prevent overlap
               if (aiDocLayoutData) {
                 renderAiDocEditPages(aiDocLayoutData);
               }
+          };
+          tempImg.onerror = () => {
+            addAiDocChatMsg('ai', t('home.aiDoc.imageReadError'));
           };
           tempImg.src = dataUrl;
         });
@@ -9556,18 +12997,23 @@
       }
 
       async function loadAiDocFontBytes() {
-        // Only one font file exists; load it once and reuse for both regular and bold
-        // to avoid embedding two identical copies into the PDF (halves font overhead).
-        if (aiDocFontRegularBytes) return;
+        if (aiDocFontRegularBytes && aiDocFontBoldBytes) return;
         try {
-          const res = await fetch('./DouyinSansBold.otf');
-          if (!res.ok) throw new Error('font fetch status ' + res.status);
-          const buf = await res.arrayBuffer();
-          // Guard against SPA fallback returning index.html (sfntVersion would be '<!DO').
-          const head = new Uint8Array(buf.slice(0, 4));
-          if (head[0] === 0x3C) throw new Error('font fetch returned HTML, not a font file');
-          aiDocFontRegularBytes = buf;
-          aiDocFontBoldBytes = buf;
+          const [regularResponse, semiboldResponse] = await Promise.all([
+            fetch('/assets/fonts/MiSans-Regular.ttf'),
+            fetch('/assets/fonts/MiSans-Semibold.ttf')
+          ]);
+          if (!regularResponse.ok || !semiboldResponse.ok) throw new Error('font fetch failed');
+          const [regularBytes, semiboldBytes] = await Promise.all([
+            regularResponse.arrayBuffer(),
+            semiboldResponse.arrayBuffer()
+          ]);
+          if (new Uint8Array(regularBytes, 0, 1)[0] === 0x3C
+            || new Uint8Array(semiboldBytes, 0, 1)[0] === 0x3C) {
+            throw new Error('font fetch returned HTML');
+          }
+          aiDocFontRegularBytes = regularBytes;
+          aiDocFontBoldBytes = semiboldBytes;
         } catch (e) {
           console.error('[AI Doc] Failed to load font:', e);
           aiDocFontRegularBytes = null;
@@ -9580,251 +13026,66 @@
         showAiDocMask(t('home.aiDoc.exporting'));
 
         try {
+          const layout = cloneAiDocLayout(aiDocLayoutData);
           await loadAiDocFontBytes();
-          const pdfLib = await import('pdf-lib-plus-encrypt');
-          const { PDFDocument, StandardFonts, rgb } = pdfLib;
-          const fontkit = (await import('@pdf-lib/fontkit')).default;
-          const pdfDoc = await PDFDocument.create();
-          pdfDoc.registerFontkit(fontkit);
-
-          // Embed full font (not subset) for maximum compatibility across all PDF readers.
-          // Since regular and bold share one file, embed once and reuse to keep PDF small.
-          let fontRegular, fontBold;
-          if (aiDocFontRegularBytes) {
-            fontRegular = await pdfDoc.embedFont(aiDocFontRegularBytes);
-          } else {
-            fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-          }
-          fontBold = fontRegular;
-
-          // Preserve page structure: process each original page separately
-          const PAGE_BOTTOM_PX = 1060;
-          const PAGE_TOP_PX = 60;
-          const GAP_PX = 8;
-          const HEADER_Y_PX = 30;
-          const FOOTER_Y_PX = 1085;
-
-          // First pass: figure out total pages
-          const pageInfos = [];
-          aiDocLayoutData.pages.forEach(page => {
-            if (!page.regions || page.regions.length === 0) return;
-            const sorted = [...page.regions].sort((a, b) => (a.y || 0) - (b.y || 0));
-            const header = sorted.find(r => r.type === 'page-header') || null;
-            const footer = sorted.find(r => r.type === 'page-footer') || null;
-            const contentRegions = sorted.filter(r => r.type !== 'page-header' && r.type !== 'page-footer');
-            let pageCount = 1;
-            let currentY = PAGE_TOP_PX;
-            for (const r of contentRegions) {
-              const fontSizePdf = (r.fontSize || 12) * SCALE_PX_TO_PDF;
-              const wPdf = (r.w || 200) * SCALE_PX_TO_PDF;
-              const isBold = r.bold || ['title', 'section-heading', 'sub-heading', 'emphasis'].includes(r.type);
-              const fnt = isBold ? fontBold : fontRegular;
-              const neededH = calcRegionHeightPx(r, fnt, fontSizePdf, wPdf);
-              if (currentY + neededH > PAGE_BOTTOM_PX && currentY > PAGE_TOP_PX) {
-                pageCount++;
-                currentY = PAGE_TOP_PX;
-              }
-              currentY += neededH + GAP_PX;
-            }
-            pageInfos.push({ header, footer, contentRegions, pageCount });
+          // The desktop editor and CLI intentionally share one renderer. The
+          // previous inlined renderer had diverged from the CLI and could turn
+          // a two-page layout into three pages because it trusted oversized AI
+          // height estimates instead of the measured text height.
+          const { bytes: pdfBytes } = await buildAiDocPdf({
+            layout,
+            fontRegularBytes: aiDocFontRegularBytes || undefined,
+            fontBoldBytes: aiDocFontBoldBytes || undefined,
+            footerText: (current, total) => t('home.aiDoc.pageOfTotal', { current, total }),
+            imagePlaceholder: t('home.aiDoc.imgPlaceholder')
           });
-          const totalPages = pageInfos.reduce((sum, p) => sum + p.pageCount, 0);
 
-          // Helper to draw a single region on a pdfPage
-          async function drawRegionOnPdf(region, pdfPage, ph) {
-            const x = (region.x || 0) * SCALE_PX_TO_PDF;
-            const y = ph - ((region.y || 0) + (region.h || 40)) * SCALE_PX_TO_PDF;
-            const w = (region.w || 200) * SCALE_PX_TO_PDF;
-            const h = (region.h || 40) * SCALE_PX_TO_PDF;
-            const fontSize = (region.fontSize || 12) * SCALE_PX_TO_PDF;
-            let color = rgb(0.1, 0.1, 0.1);
-            if (['page-header', 'page-footer'].includes(region.type)) {
-              color = rgb(0.6, 0.6, 0.6);
-            } else if (region.type === 'subtitle') {
-              color = rgb(0.4, 0.4, 0.4);
-            } else if (region.type === 'note') {
-              color = rgb(0.5, 0.5, 0.5);
-            } else if (region.type === 'emphasis') {
-              color = rgb(0.2, 0.2, 0.2);
+          if (isAiDocEditorDemo) {
+            let binary = '';
+            for (let offset = 0; offset < pdfBytes.length; offset += 0x8000) {
+              binary += String.fromCharCode(...pdfBytes.subarray(offset, offset + 0x8000));
             }
-            const isBold = region.bold || ['title', 'section-heading', 'sub-heading', 'emphasis'].includes(region.type);
-            const font = isBold ? fontBold : fontRegular;
-
-            if (region.type === 'image' && region.imageData) {
-              try {
-                const base64Data = region.imageData.split(',')[1];
-                const imgBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-                let img;
-                if (region.imageData.includes('image/png')) {
-                  img = await pdfDoc.embedPng(imgBytes);
-                } else {
-                  img = await pdfDoc.embedJpg(imgBytes);
-                }
-                // Use image's actual aspect ratio, fit within region width
-                const imgScale = Math.min(w / img.width, h / img.height);
-                const drawW = img.width * imgScale;
-                const drawH = img.height * imgScale;
-                const drawX = x + (w - drawW) / 2;
-                const drawY = y + (h - drawH) / 2;
-                pdfPage.drawImage(img, { x: drawX, y: drawY, width: drawW, height: drawH });
-              } catch (err) {
-                console.error('[AI Doc] Image embed error:', err);
-              }
-            } else if (region.type === 'image' && !region.imageData) {
-              pdfPage.drawRectangle({
-                x, y, width: w, height: h,
-                color: rgb(0.88, 0.88, 0.88),
-                borderColor: rgb(0.7, 0.7, 0.7),
-                borderWidth: 0.5
-              });
-              const placeholderText = region.label || t('home.aiDoc.imgPlaceholder');
-              const placeholderFontSize = Math.min(fontSize, 10);
-              const textWidth = font.widthOfTextAtSize(placeholderText, placeholderFontSize);
-              const textX = x + (w - textWidth) / 2;
-              const textY = y + h / 2 - placeholderFontSize / 2;
-              pdfPage.drawText(placeholderText, {
-                x: textX, y: textY, size: placeholderFontSize,
-                font: fontRegular, color: rgb(0.6, 0.6, 0.6)
-              });
-            } else if (region.type === 'divider') {
-              pdfPage.drawLine({
-                start: { x, y: y + h / 2 },
-                end: { x: x + w, y: y + h / 2 },
-                thickness: 0.5,
-                color: rgb(0.8, 0.8, 0.8)
-              });
-            } else if (region.text) {
-              const lines = wrapPdfText(region.text, font, fontSize, w);
-              const lineHeight = fontSize * 1.5;
-              const actualHeight = lines.length * lineHeight + fontSize * 0.5;
-              const effectiveH = Math.max(h, actualHeight);
-              let textY = y + effectiveH - fontSize;
-
-              lines.forEach(line => {
-                let textX = x;
-                if (region.align === 'center') {
-                  const textWidth = font.widthOfTextAtSize(line, fontSize);
-                  textX = x + (w - textWidth) / 2;
-                } else if (region.align === 'right') {
-                  const textWidth = font.widthOfTextAtSize(line, fontSize);
-                  textX = x + w - textWidth;
-                }
-                pdfPage.drawText(line, { x: textX, y: textY, size: fontSize, font, color });
-                textY -= lineHeight;
-              });
-
-              if (region.type === 'section-heading') {
-                const headingText = region.text || '';
-                const textWidth = font.widthOfTextAtSize(headingText, fontSize);
-                let lineX = x;
-                if (region.align === 'center') {
-                  lineX = x + (w - textWidth) / 2;
-                }
-                pdfPage.drawLine({
-                  start: { x: lineX, y: y + h - fontSize - 4 },
-                  end: { x: lineX + Math.min(textWidth, w), y: y + h - fontSize - 4 },
-                  thickness: 0.5,
-                  color: rgb(0.8, 0.8, 0.8)
-                });
-              }
+            let bridge = document.getElementById('aiDocEditorDemoPdf');
+            if (!bridge) {
+              bridge = document.createElement('textarea');
+              bridge.id = 'aiDocEditorDemoPdf';
+              bridge.hidden = true;
+              document.body.appendChild(bridge);
             }
+            bridge.value = btoa(binary);
+            bridge.dataset.byteLength = String(pdfBytes.length);
           }
-
-          // Helper to calculate region height in px
-          function calcRegionHeightPx(region, font, fontSize, w) {
-            if (region.text && region.type !== 'divider') {
-              const lines = wrapPdfText(region.text, font, fontSize, w);
-              const lineHeight = fontSize * 1.5;
-              const actualHeightPdf = lines.length * lineHeight + fontSize * 0.5;
-              const actualHeightPx = actualHeightPdf / SCALE_PX_TO_PDF;
-              return Math.max(region.h || 40, actualHeightPx);
-            } else if (region.type === 'image') {
-              return region.imageHeight || region.h || 100;
-            } else {
-              return region.h || 20;
-            }
-          }
-
-          // Second pass: draw pages preserving original page structure
-          let currentPageNum = 0;
-          let currentYPx = PAGE_TOP_PX;
-          let pdfPage = pdfDoc.addPage([PDF_A4_WIDTH, PDF_A4_HEIGHT]);
-          let { height: currentPh } = pdfPage.getSize();
-
-          for (const info of pageInfos) {
-            // Start a new page for each original page
-            if (currentPageNum > 0) {
-              currentYPx = PAGE_TOP_PX;
-              pdfPage = pdfDoc.addPage([PDF_A4_WIDTH, PDF_A4_HEIGHT]);
-              currentPh = pdfPage.getSize().height;
-            }
-            currentPageNum++;
-
-            // Draw header on this page
-            if (info.header) {
-              const h = { ...info.header, y: HEADER_Y_PX };
-              await drawRegionOnPdf(h, pdfPage, currentPh);
-            }
-
-            for (const region of info.contentRegions) {
-              const fontSizePdf = (region.fontSize || 12) * SCALE_PX_TO_PDF;
-              const wPdf = (region.w || 200) * SCALE_PX_TO_PDF;
-              const isBold = region.bold || ['title', 'section-heading', 'sub-heading', 'emphasis'].includes(region.type);
-              const fnt = isBold ? fontBold : fontRegular;
-              const neededH = calcRegionHeightPx(region, fnt, fontSizePdf, wPdf);
-
-              // Check overflow within this original page
-              if (currentYPx + neededH > PAGE_BOTTOM_PX && currentYPx > PAGE_TOP_PX) {
-                // Draw footer on current page
-                if (info.footer) {
-                  const f = { ...info.footer, y: FOOTER_Y_PX, text: t('home.aiDoc.pageOfTotal', { current: currentPageNum, total: totalPages }) };
-                  await drawRegionOnPdf(f, pdfPage, currentPh);
-                }
-                // New page
-                currentPageNum++;
-                pdfPage = pdfDoc.addPage([PDF_A4_WIDTH, PDF_A4_HEIGHT]);
-                currentPh = pdfPage.getSize().height;
-                currentYPx = PAGE_TOP_PX;
-                // Draw header on new page
-                if (info.header) {
-                  const h = { ...info.header, y: HEADER_Y_PX };
-                  await drawRegionOnPdf(h, pdfPage, currentPh);
-                }
-              }
-
-              // Place region
-              region.y = currentYPx;
-              region.h = neededH;
-              await drawRegionOnPdf(region, pdfPage, currentPh);
-              currentYPx += neededH + GAP_PX;
-            }
-
-            // Draw footer on last page of this original page
-            if (info.footer) {
-              const f = { ...info.footer, y: FOOTER_Y_PX, text: t('home.aiDoc.pageOfTotal', { current: currentPageNum, total: totalPages }) };
-              await drawRegionOnPdf(f, pdfPage, currentPh);
-            }
-          }
-
-          const pdfBytes = await pdfDoc.save();
 
           if (isTauri) {
             const { invoke } = await import('@tauri-apps/api/core');
             const outputDir = await getOutputDir('AI_Doc');
             const fileName = `ai_doc_${Date.now()}.pdf`;
-            const fullPath = outputDir + '\\' + fileName;
-            // write_file_bytes auto-creates parent directories
-            await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(pdfBytes) });
-            aiDocLastExportPath = fullPath;
-            showAiDocSuccess(fullPath);
+            const outputPath = await invoke('write_unique_file_bytes', {
+              directory: outputDir,
+              fileName,
+              bytes: Array.from(pdfBytes)
+            });
+            aiDocLastExportPath = outputPath;
+            showAiDocSuccess(outputPath);
           } else {
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
+            let url;
+            let shouldRevoke = false;
+            if (typeof URL.createObjectURL === 'function') {
+              url = URL.createObjectURL(blob);
+              shouldRevoke = true;
+            } else {
+              let binary = '';
+              for (let offset = 0; offset < pdfBytes.length; offset += 0x8000) {
+                binary += String.fromCharCode(...pdfBytes.subarray(offset, offset + 0x8000));
+              }
+              url = `data:application/pdf;base64,${btoa(binary)}`;
+            }
             const a = document.createElement('a');
             a.href = url;
             a.download = `ai_doc_${Date.now()}.pdf`;
             a.click();
-            URL.revokeObjectURL(url);
+            if (shouldRevoke) URL.revokeObjectURL(url);
           }
         } catch (e) {
           console.error('[AI Doc] Export error:', e);
@@ -9834,33 +13095,9 @@
         }
       }
 
-      function wrapPdfText(text, font, fontSize, maxWidth) {
-        const paragraphs = text.split('\n');
-        const lines = [];
-        paragraphs.forEach(para => {
-          if (!para) { lines.push(''); return; }
-          // Split into tokens: CJK chars are individual tokens, latin words stay together
-          const tokens = para.match(/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]|[a-zA-Z0-9]+|\s+|./g) || [];
-          let current = '';
-          for (const token of tokens) {
-            const test = current + token;
-            const width = font.widthOfTextAtSize(test, fontSize);
-            if (width > maxWidth && current) {
-              lines.push(current.trimEnd());
-              current = token.trimStart();
-            } else {
-              current = test;
-            }
-          }
-          if (current) lines.push(current);
-        });
-        return lines;
-      }
-
       function showAiDocSuccess(filePath) {
         if (aiDocSuccessPath) aiDocSuccessPath.textContent = filePath;
         if (aiDocSuccessOverlay) aiDocSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       function showAiDocError() {
@@ -9879,6 +13116,59 @@
       if (aiDocEditExportBtn) {
         aiDocEditExportBtn.addEventListener('click', exportAiDocPdf);
       }
+
+      if (aiDocUndoBtn) aiDocUndoBtn.addEventListener('click', undoAiDocEdit);
+      if (aiDocRedoBtn) aiDocRedoBtn.addEventListener('click', redoAiDocEdit);
+      if (aiDocMoveUpBtn) aiDocMoveUpBtn.addEventListener('click', () => moveSelectedAiDocRegion(-1));
+      if (aiDocMoveDownBtn) aiDocMoveDownBtn.addEventListener('click', () => moveSelectedAiDocRegion(1));
+      if (aiDocDeleteBtn) aiDocDeleteBtn.addEventListener('click', deleteSelectedAiDocRegion);
+      aiDocFontSizeInput?.addEventListener('change', () => {
+        const size = Number(aiDocFontSizeInput.value);
+        if (Number.isFinite(size)) applyAiDocSelectedStyle({ fontSize: Math.max(6, Math.min(96, Math.round(size))) });
+      });
+      aiDocBoldBtn?.addEventListener('click', () => {
+        const selected = findAiDocRegionById(aiDocSelectedRegionId);
+        if (selected) applyAiDocSelectedStyle({ bold: !selected.region.bold });
+      });
+      aiDocAlignLeftBtn?.addEventListener('click', () => applyAiDocSelectedStyle({ align: 'left' }));
+      aiDocAlignCenterBtn?.addEventListener('click', () => applyAiDocSelectedStyle({ align: 'center' }));
+      aiDocAlignRightBtn?.addEventListener('click', () => applyAiDocSelectedStyle({ align: 'right' }));
+      aiDocTextColorInput?.addEventListener('change', () => applyAiDocSelectedStyle({ textColor: aiDocTextColorInput.value.toUpperCase() }));
+      aiDocBackgroundColorInput?.addEventListener('change', () => applyAiDocSelectedStyle({ backgroundColor: aiDocBackgroundColorInput.value.toUpperCase() }));
+      aiDocBorderColorInput?.addEventListener('change', () => applyAiDocSelectedStyle({ borderColor: aiDocBorderColorInput.value.toUpperCase(), borderWidth: 1 }));
+      aiDocMoreStyleBtn?.addEventListener('click', () => {
+        const visible = !aiDocStyleInspector?.classList.contains('visible');
+        aiDocStyleInspector?.classList.toggle('visible', visible);
+        aiDocStyleInspector?.setAttribute('aria-hidden', String(!visible));
+      });
+      aiDocStyleInspectorClose?.addEventListener('click', () => { aiDocStyleInspector?.classList.remove('visible'); aiDocStyleInspector?.setAttribute('aria-hidden', 'true'); });
+      const bindAiDocRange = (input, output, key, format = value => value) => {
+        input?.addEventListener('input', () => { if (output) output.textContent = format(input.value); });
+        input?.addEventListener('change', () => { const value = Number(input.value); if (Number.isFinite(value)) applyAiDocSelectedStyle({ [key]: value }); });
+      };
+      bindAiDocRange(aiDocLineHeightInput, aiDocLineHeightValue, 'lineHeight');
+      bindAiDocRange(aiDocPaddingInput, aiDocPaddingValue, 'padding');
+      bindAiDocRange(aiDocBorderWidthInput, aiDocBorderWidthValue, 'borderWidth');
+      bindAiDocRange(aiDocOpacityInput, aiDocOpacityValue, 'opacity', value => `${Math.round(Number(value) * 100)}%`);
+      aiDocApplyGlobalStyleBtn?.addEventListener('click', applyAiDocGlobalAlignment);
+
+      document.addEventListener('keydown', event => {
+        if (!aiDocEditOverlay?.classList.contains('visible')) return;
+        const editingText = event.target?.getAttribute?.('contenteditable') === 'true';
+        if (editingText) return;
+        const modifier = event.ctrlKey || event.metaKey;
+        if (modifier && event.key.toLowerCase() === 'z') {
+          event.preventDefault();
+          if (event.shiftKey) redoAiDocEdit();
+          else undoAiDocEdit();
+        } else if (modifier && event.key.toLowerCase() === 'y') {
+          event.preventDefault();
+          redoAiDocEdit();
+        } else if (event.key === 'Delete' || event.key === 'Backspace') {
+          event.preventDefault();
+          deleteSelectedAiDocRegion();
+        }
+      });
 
       if (aiDocSuccessOk) {
         aiDocSuccessOk.addEventListener('click', () => {
@@ -9951,6 +13241,33 @@
           aiDocChatSend.disabled = true;
         });
       }
+
+      if (isAiDocEditorDemo) {
+        const demoLayout = normalizeAiDocLayout({
+          ready: true,
+          summary: 'AI document editor development fixture',
+          pages: [{
+            regions: [
+              { type: 'title', x: 56, y: 60, w: 682, h: 56, text: '项目周会会议纪要', fontSize: 30, bold: true, align: 'center' },
+              { type: 'subtitle', x: 56, y: 124, w: 682, h: 24, text: 'PRODUCT DELIVERY / WEEK 25', fontSize: 14, bold: false, align: 'center' },
+              { type: 'table-row', x: 56, y: 164, w: 682, h: 42, text: '会议时间 | 2026年8月2日 14:00 | 主持人 | 张伟', fontSize: 13, bold: false, align: 'left' },
+              { type: 'table-row', x: 56, y: 206, w: 682, h: 42, text: '会议地点 | 3F 会议室 A | 参会人数 | 6 人', fontSize: 13, bold: false, align: 'left' },
+              { type: 'section-heading', x: 56, y: 270, w: 682, h: 34, text: '01 / 本周结论', fontSize: 18, bold: true, align: 'left' },
+              { type: 'emphasis', x: 56, y: 316, w: 682, h: 58, text: '支付链路进入联调阶段，本周优先完成第三方接口稳定性验证与异常回退方案。', fontSize: 14, bold: true, align: 'left' },
+              { type: 'body', x: 56, y: 390, w: 682, h: 70, text: '用户中心模块已完成设计评审，前端进入开发排期。数据报表继续补充复杂筛选场景，测试团队同步准备回归用例。', fontSize: 14.5, bold: false, align: 'left' },
+              { type: 'section-heading', x: 56, y: 486, w: 682, h: 34, text: '02 / 待办事项', fontSize: 18, bold: true, align: 'left' },
+              { type: 'table-row', x: 56, y: 532, w: 682, h: 42, text: '事项 | 责任人 | 截止日期 | 优先级', fontSize: 13, bold: true, align: 'left' },
+              { type: 'table-row', x: 56, y: 574, w: 682, h: 42, text: '完成支付页面开发 | 李娜 | 08-07 | 高', fontSize: 13, bold: false, align: 'left' },
+              { type: 'table-row', x: 56, y: 616, w: 682, h: 42, text: '验证异常回退链路 | 王强 | 08-08 | 高', fontSize: 13, bold: false, align: 'left' },
+              { type: 'table-row', x: 56, y: 658, w: 682, h: 42, text: '补充报表筛选用例 | 赵敏 | 08-09 | 中', fontSize: 13, bold: false, align: 'left' },
+              { type: 'note', x: 56, y: 724, w: 682, h: 56, text: '下次会议：8月9日 14:00。请各责任人在会前更新任务状态并附上可验证结果。', fontSize: 12.5, bold: false, align: 'left' }
+            ]
+          }]
+        });
+        aiDocLayoutData = prepareAiDocLayoutForEditing(demoLayout);
+        resetAiDocEditorHistory();
+        requestAnimationFrame(openAiDocEditOverlay);
+      }
       // ===== End AI Document Tool =====
 
       // ===== AI Table Tool =====
@@ -9963,17 +13280,92 @@
       const aiTableCanvasEmpty = document.getElementById('aiTableCanvasEmpty');
       const aiTablePreviewScroll = document.getElementById('aiTablePreviewScroll');
       const aiTableCanvasToolbar = document.getElementById('aiTableCanvasToolbar');
+      const aiTableHelpBtn = document.getElementById('aiTableHelpBtn');
+      const aiTableUndoBtn = document.getElementById('aiTableUndoBtn');
       const aiTableResetBtn = document.getElementById('aiTableResetBtn');
       const aiTableSuccessOverlay = document.getElementById('aiTableSuccessOverlay');
       const aiTableSuccessPath = document.getElementById('aiTableSuccessPath');
       const aiTableSuccessOpenFolder = document.getElementById('aiTableSuccessOpenFolder');
       const aiTableSuccessOk = document.getElementById('aiTableSuccessOk');
+      const aiTableMask = document.getElementById('aiTableMask');
+      const aiTableMaskText = document.getElementById('aiTableMaskText');
 
       let aiTableDitherInstance = null;
       let aiTableChatHistory = [];
       let aiTableData = null; // { title, columns, rows, charts }
+      let aiTableUndoStack = [];
       let aiTableLastExportPath = '';
       let aiTableChartCanvases = []; // [{ canvas, instance, chartDef }] for PNG/PDF export
+      let aiTableRequestController = null;
+      let aiTableRequestTimeoutId = null;
+      let aiTableRequestId = 0;
+      let aiTableRenderVersion = 0;
+      let aiTableChartRenderPromise = Promise.resolve();
+
+      const AI_TABLE_REQUEST_TIMEOUT_MS = 90_000;
+      const AI_TABLE_MAX_UNDO = 20;
+
+      function cloneAiTableData(data) {
+        return data ? JSON.parse(JSON.stringify(data)) : null;
+      }
+
+      function updateAiTableUndoButton() {
+        if (!aiTableUndoBtn) return;
+        const canUndo = aiTableUndoStack.length > 0;
+        aiTableUndoBtn.disabled = !canUndo;
+        aiTableUndoBtn.title = canUndo ? t('home.aiTable.undo') : t('home.aiTable.undoEmpty');
+      }
+
+      function pushAiTableUndoState() {
+        if (!aiTableData) return;
+        aiTableUndoStack.push(cloneAiTableData(aiTableData));
+        if (aiTableUndoStack.length > AI_TABLE_MAX_UNDO) aiTableUndoStack.shift();
+        updateAiTableUndoButton();
+      }
+
+      function undoAiTableLastEdit() {
+        const previous = aiTableUndoStack.pop();
+        if (!previous) {
+          updateAiTableUndoButton();
+          return;
+        }
+        aiTableData = previous;
+        renderAiTablePreview(aiTableData);
+        addAiTableChatMsg('ai', t('home.aiTable.undone'));
+      }
+
+      function aiTableValuesEqual(a, b) {
+        return String(a ?? '') === String(b ?? '');
+      }
+
+      function cancelAiTableRequest() {
+        aiTableRequestId += 1;
+        if (aiTableRequestTimeoutId !== null) {
+          clearTimeout(aiTableRequestTimeoutId);
+          aiTableRequestTimeoutId = null;
+        }
+        if (aiTableRequestController) {
+          aiTableRequestController.abort();
+          aiTableRequestController = null;
+        }
+      }
+
+      function finishAiTableRequest(requestId) {
+        if (requestId !== aiTableRequestId) return false;
+        if (aiTableRequestTimeoutId !== null) {
+          clearTimeout(aiTableRequestTimeoutId);
+          aiTableRequestTimeoutId = null;
+        }
+        aiTableRequestController = null;
+        return true;
+      }
+
+      function appendAiTableHistory(role, content) {
+        const compact = compactAiTableHistoryMessage(content);
+        if (!compact) return;
+        aiTableChatHistory = [...aiTableChatHistory, { role, content: compact }]
+          .slice(-AI_TABLE_LIMITS.maxHistoryMessages);
+      }
 
       // Inline SVGs (avoid relying on lucide re-scan for dynamically created buttons)
       const AI_TABLE_ICON_PLUS = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
@@ -10006,8 +13398,12 @@
       }
 
       function resetAiTableState() {
+        cancelAiTableRequest();
+        hideAiTableMask();
         aiTableChatHistory = [];
         aiTableData = null;
+        aiTableUndoStack = [];
+        aiTableRenderVersion += 1;
         // Destroy Chart.js instances before clearing to prevent memory leaks
         aiTableChartCanvases.forEach(c => { try { c.instance && c.instance.destroy(); } catch (e) {} });
         aiTableChartCanvases = [];
@@ -10021,6 +13417,7 @@
         if (aiTableCanvasEmpty) aiTableCanvasEmpty.style.display = '';
         if (aiTablePreviewScroll) { aiTablePreviewScroll.style.display = 'none'; aiTablePreviewScroll.innerHTML = ''; }
         if (aiTableCanvasToolbar) aiTableCanvasToolbar.style.display = 'none';
+        updateAiTableUndoButton();
       }
 
       function addAiTableChatMsg(role, text, isGenLink = false) {
@@ -10082,26 +13479,37 @@
       }
 
       function showAiTableMask(text) {
-        const mask = document.getElementById('aiDocMask');
-        const maskText = document.getElementById('aiDocMaskText');
-        if (maskText) maskText.textContent = text;
-        if (mask) mask.classList.add('visible');
+        if (aiTableMaskText) aiTableMaskText.textContent = text;
+        if (aiTableMask) aiTableMask.classList.add('visible');
       }
 
       function hideAiTableMask() {
-        const mask = document.getElementById('aiDocMask');
-        if (mask) mask.classList.remove('visible');
+        if (aiTableMask) aiTableMask.classList.remove('visible');
       }
 
       async function handleAiTableSend() {
         const text = aiTableChatInput?.value?.trim();
         if (!text) return;
+        if (text.length > AI_TABLE_LIMITS.maxPromptChars) {
+          addAiTableChatMsg('ai', t('home.aiTable.promptTooLong', { max: AI_TABLE_LIMITS.maxPromptChars }));
+          return;
+        }
+        if (aiTableRequestController) return;
+
+        const controller = new AbortController();
+        const requestId = ++aiTableRequestId;
+        let timedOut = false;
+        aiTableRequestController = controller;
+        aiTableRequestTimeoutId = setTimeout(() => {
+          if (requestId !== aiTableRequestId || controller.signal.aborted) return;
+          timedOut = true;
+          controller.abort();
+        }, AI_TABLE_REQUEST_TIMEOUT_MS);
+
         addAiTableChatMsg('user', text);
         aiTableChatInput.value = '';
         aiTableChatSend.disabled = true;
-        aiTableChatHistory.push({ role: 'user', content: text });
-        // Limit chat history to last 10 messages to avoid token overflow
-        if (aiTableChatHistory.length > 10) aiTableChatHistory = aiTableChatHistory.slice(-10);
+        appendAiTableHistory('user', text);
         showAiTableMask(t('home.aiTable.thinking'));
 
         try {
@@ -10110,14 +13518,14 @@
 
 ## 输出长度硬性限制
 - JSON 总字符数不超过 12000，否则会被截断
-- 表格行数控制在 5-20 行，列数 3-8 列
-- 图表数量 1-3 个
+- 表格行数控制在 5-50 行，列数 3-12 列
+- 图表数量 0-4 个；没有数值列时不要生成图表
 
 ## JSON 格式（必须直接返回，不要 markdown 代码块）
-{"ready": true, "title": "表格标题", "summary": "简短描述", "columns": [{"key": "name", "label": "姓名", "type": "text"}, {"key": "score", "label": "得分", "type": "number"}], "rows": [["张三", 95], ["李四", 88]], "charts": [{"type": "bar", "title": "得分对比", "labelColumn": 0, "valueColumns": [1]}]}
+{"ready": true, "title": "表格标题", "summary": "简短描述", "columns": [{"key": "name", "label": "姓名", "type": "text"}, {"key": "score", "label": "得分", "type": "number"}, {"key": "date", "label": "日期", "type": "date"}], "rows": [["张三", 95, "2026-01-01"], ["李四", 88, "2026-01-02"]], "charts": [{"type": "bar", "title": "得分对比", "labelColumn": 0, "valueColumns": [1]}]}
 
 ## 字段说明
-- columns: 列定义，key 是英文标识，label 是中文列名，type 是 "text" 或 "number"
+- columns: 列定义，key 是英文标识，label 是列名，type 是 "text"、"number" 或 "date"
 - rows: 二维数组，每个子数组是一行数据，顺序与 columns 对应
 - charts: 可选，图表数组
   - type: "bar"（柱状图）、"line"（折线图）、"pie"（饼图）
@@ -10134,13 +13542,22 @@
           const content = await callDeepSeek([
             { role: 'system', content: systemPrompt },
             ...aiTableChatHistory.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
-          ], null, 8192);
+          ], controller.signal, 8192);
 
-          aiTableChatHistory.push({ role: 'assistant', content });
-          console.log('[AI Table] raw content length:', content?.length, 'preview:', content?.slice(0, 200));
+          if (requestId !== aiTableRequestId) return;
+          if (typeof content !== 'string' || !content.trim()) {
+            throw new AiTableDataError('invalid_table', 'AI returned an empty response.');
+          }
+          if (content.length > AI_TABLE_LIMITS.maxResponseChars) {
+            throw new AiTableDataError('table_too_large', 'AI response exceeds the supported size.');
+          }
           const jsonStr = extractJson(content);
-          console.log('[AI Table] extracted jsonStr length:', jsonStr?.length, 'preview:', jsonStr?.slice(0, 200));
-          if (!jsonStr) { addAiTableChatMsg('ai', content); return; }
+          if (!jsonStr) {
+            const response = compactAiTableHistoryMessage(content);
+            addAiTableChatMsg('ai', response);
+            appendAiTableHistory('assistant', response);
+            return;
+          }
 
           let parsed;
           try { parsed = JSON.parse(jsonStr); }
@@ -10151,52 +13568,58 @@
             catch (e2) { addAiTableChatMsg('ai', t('home.aiTable.parseError')); return; }
           }
 
-          if (parsed.ready === false && parsed.question) { addAiTableChatMsg('ai', parsed.question); return; }
+          if (parsed.ready === false && parsed.question) {
+            const question = compactAiTableHistoryMessage(parsed.question);
+            if (!question) throw new AiTableDataError('invalid_table', 'AI question is empty.');
+            addAiTableChatMsg('ai', question);
+            appendAiTableHistory('assistant', question);
+            return;
+          }
 
-          if (parsed.ready === true && parsed.columns && Array.isArray(parsed.columns) && parsed.rows && Array.isArray(parsed.rows)) {
-            // Validate and sanitize data structure
-            parsed.columns = parsed.columns.map(c => ({
-              key: String(c?.key || 'col'),
-              label: String(c?.label || c?.key || t('home.aiTable.defaultColumn')),
-              type: c?.type === 'number' ? 'number' : 'text',
-            }));
-            const colCount = parsed.columns.length;
-            parsed.rows = parsed.rows
-              .filter(r => Array.isArray(r))
-              .map(r => {
-                // Pad or truncate rows to match column count
-                const row = r.slice(0, colCount);
-                while (row.length < colCount) row.push('');
-                return row.map(v => (v == null ? '' : v));
-              });
-            if (colCount === 0 || parsed.rows.length === 0) {
-              addAiTableChatMsg('ai', t('home.aiTable.emptyData'));
-              return;
-            }
-            const summaryText = parsed.summary || t('home.aiTable.summaryFallback');
-            const bubble = addAiTableChatMsg('ai', summaryText, true);
-            aiTableData = parsed;
+          // Some providers omit the optional ready flag even though they
+          // returned a complete table. Treat the presence of bounded table
+          // fields as a completed response; normalizeAiTableData still
+          // performs the authoritative schema validation below.
+          if (isAiTableResponseReady(parsed)) {
+            const normalizedTable = normalizeAiTableData(parsed);
+            const summaryText = normalizedTable.summary || t('home.aiTable.summaryFallback');
+            const bubble = addAiTableChatMsg('ai', `${summaryText}\n\n${t('home.aiTable.afterGenerateGuide')}`, true);
+            aiTableData = normalizedTable;
+            aiTableUndoStack = [];
+            updateAiTableUndoButton();
+            appendAiTableHistory('assistant', `${summaryText} ${t('home.aiTable.afterGenerateGuide')}`);
             bubble.addEventListener('click', () => {
               if (aiTablePreviewScroll) aiTablePreviewScroll.scrollIntoView({ behavior: 'smooth' });
             });
-            renderAiTablePreview(parsed);
+            renderAiTablePreview(normalizedTable);
           } else {
             console.warn('[AI Table] parsed missing fields:', parsed);
-            addAiTableChatMsg('ai', content);
+            addAiTableChatMsg('ai', t('home.aiTable.parseError'));
           }
         } catch (e) {
+          if (requestId !== aiTableRequestId) return;
           console.error('[AI Table] Error:', e);
-          addAiTableChatMsg('ai', t('home.aiTable.errNetwork'));
+          if (controller.signal.aborted) {
+            if (timedOut) addAiTableChatMsg('ai', t('home.aiTable.requestTimeout'));
+          } else if (e instanceof AiTableDataError) {
+            addAiTableChatMsg('ai', e.code === 'table_too_large'
+              ? t('home.aiTable.tableTooLarge')
+              : t('home.aiTable.parseError'));
+          } else {
+            addAiTableChatMsg('ai', t('home.aiTable.errNetwork'));
+          }
         } finally {
-          hideAiTableMask();
-          // Re-enable send only if there is text in the input
-          if (aiTableChatSend) aiTableChatSend.disabled = !aiTableChatInput?.value?.trim();
+          if (finishAiTableRequest(requestId)) {
+            hideAiTableMask();
+            if (aiTableChatSend) aiTableChatSend.disabled = !aiTableChatInput?.value?.trim();
+          }
         }
       }
 
       // ===== Table Rendering & Editing =====
       function renderAiTablePreview(data) {
         if (!aiTablePreviewScroll || !data.columns) return;
+        const renderVersion = ++aiTableRenderVersion;
         if (aiTableCanvasEmpty) aiTableCanvasEmpty.style.display = 'none';
         aiTablePreviewScroll.style.display = '';
         if (aiTableCanvasToolbar) aiTableCanvasToolbar.style.display = '';
@@ -10204,13 +13627,38 @@
         // Destroy previous Chart.js instances to avoid leaks
         aiTableChartCanvases.forEach(c => { try { c.instance && c.instance.destroy(); } catch (e) {} });
         aiTableChartCanvases = [];
+        updateAiTableUndoButton();
+
+        const editGuide = document.createElement('div');
+        editGuide.className = 'ai-table-edit-guide';
+        editGuide.innerHTML = `
+          <div class="ai-table-edit-guide-copy">
+            <div class="ai-table-edit-guide-title">${escapeHtml(t('home.aiTable.editGuideTitle'))}</div>
+            <div class="ai-table-edit-guide-text">${escapeHtml(t('home.aiTable.editGuideBody'))}</div>
+          </div>
+          <div class="ai-table-edit-guide-side">
+            <div class="ai-table-preview-stats">${escapeHtml(t('home.aiTable.editGuideStats', {
+              rows: data.rows.length,
+              columns: data.columns.length,
+              charts: (data.charts || []).length
+            }))}</div>
+            <button class="ai-table-guide-link" type="button">
+              <i data-lucide="circle-help"></i>
+              <span>${escapeHtml(t('home.aiTable.help'))}</span>
+            </button>
+          </div>
+        `;
+        editGuide.querySelector('.ai-table-guide-link')?.addEventListener('click', () => openHelpOverlay('ai-table'));
+        aiTablePreviewScroll.appendChild(editGuide);
 
         // Title
         if (data.title) {
           const titleEl = document.createElement('h3');
           titleEl.className = 'ai-table-title';
           titleEl.textContent = data.title;
-          titleEl.addEventListener('dblclick', () => {
+          titleEl.title = t('home.aiTable.editTitleTip');
+          titleEl.addEventListener('click', () => {
+            if (titleEl.isContentEditable) return;
             titleEl.setAttribute('contenteditable', 'true');
             titleEl.focus();
             const r = document.createRange(); r.selectNodeContents(titleEl);
@@ -10218,7 +13666,14 @@
           });
           titleEl.addEventListener('blur', () => {
             titleEl.removeAttribute('contenteditable');
-            if (aiTableData) aiTableData.title = titleEl.textContent;
+            if (aiTableData) {
+              const nextTitle = titleEl.textContent.trim().slice(0, AI_TABLE_LIMITS.maxTitleChars);
+              if (!aiTableValuesEqual(aiTableData.title, nextTitle)) {
+                pushAiTableUndoState();
+                aiTableData.title = nextTitle;
+              }
+              titleEl.textContent = aiTableData.title;
+            }
           });
           aiTablePreviewScroll.appendChild(titleEl);
         }
@@ -10234,9 +13689,23 @@
         const headerRow = document.createElement('tr');
         data.columns.forEach((col, colIdx) => {
           const th = document.createElement('th');
-          th.textContent = col.label || col.key;
           th.dataset.colIdx = colIdx;
           th.addEventListener('click', () => sortAiTable(colIdx));
+          const label = document.createElement('span');
+          label.textContent = col.label || col.key;
+          th.appendChild(label);
+          if (data.columns.length > 1) {
+            const deleteColBtn = document.createElement('button');
+            deleteColBtn.className = 'ai-table-col-delete';
+            deleteColBtn.innerHTML = AI_TABLE_ICON_TRASH;
+            deleteColBtn.title = t('home.aiTable.deleteColumn');
+            deleteColBtn.setAttribute('aria-label', t('home.aiTable.deleteColumn'));
+            deleteColBtn.addEventListener('click', (event) => {
+              event.stopPropagation();
+              removeAiTableColumn(colIdx);
+            });
+            th.appendChild(deleteColBtn);
+          }
           headerRow.appendChild(th);
         });
         // Action column header
@@ -10262,10 +13731,14 @@
         addRowBtn.innerHTML = AI_TABLE_ICON_PLUS + ' ' + escapeHtml(t('home.aiTable.addRow'));
         addRowBtn.addEventListener('click', () => {
           if (!aiTableData) return;
+          if (aiTableData.rows.length >= AI_TABLE_LIMITS.maxRows) {
+            addAiTableChatMsg('ai', t('home.aiTable.rowLimit', { max: AI_TABLE_LIMITS.maxRows }));
+            return;
+          }
+          pushAiTableUndoState();
           const newRow = aiTableData.columns.map(c => c.type === 'number' ? 0 : '');
           aiTableData.rows.push(newRow);
-          const tr = createAiTableRow(newRow, aiTableData.rows.length - 1, aiTableData.columns);
-          tbody.appendChild(tr);
+          renderAiTablePreview(aiTableData);
         });
         tableWrap.appendChild(addRowBtn);
 
@@ -10275,8 +13748,19 @@
         addColBtn.innerHTML = AI_TABLE_ICON_PLUS + ' ' + escapeHtml(t('home.aiTable.addCol'));
         addColBtn.addEventListener('click', () => {
           if (!aiTableData) return;
-          const colIdx = aiTableData.columns.length;
-          aiTableData.columns.push({ key: 'col_' + colIdx, label: t('home.aiTable.addCol'), type: 'text' });
+          if (aiTableData.columns.length >= AI_TABLE_LIMITS.maxColumns) {
+            addAiTableChatMsg('ai', t('home.aiTable.columnLimit', { max: AI_TABLE_LIMITS.maxColumns }));
+            return;
+          }
+          pushAiTableUndoState();
+          const usedKeys = new Set(aiTableData.columns.map(column => column.key));
+          let keyIndex = aiTableData.columns.length + 1;
+          let key = `col_${keyIndex}`;
+          while (usedKeys.has(key)) {
+            keyIndex += 1;
+            key = `col_${keyIndex}`;
+          }
+          aiTableData.columns.push({ key, label: t('home.aiTable.addCol'), type: 'text' });
           aiTableData.rows.forEach(r => r.push(''));
           // Re-render
           renderAiTablePreview(aiTableData);
@@ -10312,7 +13796,17 @@
           });
         }
 
+        const statsEl = editGuide.querySelector('.ai-table-preview-stats');
+        if (statsEl) {
+          statsEl.textContent = t('home.aiTable.editGuideStats', {
+            rows: data.rows.length,
+            columns: data.columns.length,
+            charts: (data.charts || []).length
+          });
+        }
+
         // Charts
+        const chartRenderJobs = [];
         if (data.charts && data.charts.length > 0) {
           data.charts.forEach((chart, chartIdx) => {
             const chartWrap = document.createElement('div');
@@ -10330,13 +13824,30 @@
             chartWrap.appendChild(canvasHolder);
             aiTablePreviewScroll.appendChild(chartWrap);
             // Draw chart after DOM insertion so canvas has dimensions
-            requestAnimationFrame(() => {
-              renderAiTableChartJs(canvas, chart, data);
-            });
+            chartRenderJobs.push(new Promise(resolve => {
+              requestAnimationFrame(async () => {
+                try {
+                  const rendered = await renderAiTableChartJs(canvas, chart, data, renderVersion);
+                  resolve({ ok: rendered !== false });
+                } catch (error) {
+                  // Keep the preview usable when one chart fails, while
+                  // retaining the concrete error for exports and diagnostics.
+                  console.error('[AI Table] Chart render failed:', error);
+                  resolve({ ok: false, error });
+                }
+              });
+            }));
           });
         }
+        aiTableChartRenderPromise = Promise.all(chartRenderJobs);
+        aiTableChartRenderPromise.then((results) => {
+          if (renderVersion !== aiTableRenderVersion) return;
+          const failed = results.find(result => !result?.ok);
+          if (failed) addAiTableChatMsg('ai', t('home.aiTable.errChart'));
+        });
 
-        if (window.lucide) window.lucide.createIcons();
+        try { createIcons({ icons }); }
+        catch (e) { if (window.lucide) window.lucide.createIcons(); }
       }
 
       function createAiTableRow(row, rowIdx, columns) {
@@ -10346,7 +13857,9 @@
           const td = document.createElement('td');
           td.textContent = row[colIdx] !== undefined ? String(row[colIdx]) : '';
           td.dataset.colIdx = colIdx;
-          td.addEventListener('dblclick', () => {
+          td.title = t('home.aiTable.editCellTip');
+          td.addEventListener('click', () => {
+            if (td.isContentEditable) return;
             td.setAttribute('contenteditable', 'true');
             td.focus();
             const r = document.createRange(); r.selectNodeContents(td);
@@ -10355,14 +13868,43 @@
           td.addEventListener('blur', () => {
             td.removeAttribute('contenteditable');
             if (aiTableData && aiTableData.rows[rowIdx]) {
-              const val = td.textContent.trim();
+              const val = td.textContent.trim().slice(0, AI_TABLE_LIMITS.maxCellChars);
+              const previousValue = aiTableData.rows[rowIdx][colIdx];
               if (col.type === 'number') {
-                const num = parseFloat(val);
-                aiTableData.rows[rowIdx][colIdx] = isNaN(num) ? 0 : num;
+                if (val === '') {
+                  if (!aiTableValuesEqual(previousValue, '')) pushAiTableUndoState();
+                  aiTableData.rows[rowIdx][colIdx] = '';
+                } else {
+                  const num = parseAiTableNumber(val);
+                  if (num === null) {
+                    td.textContent = previousValue == null ? '' : String(previousValue);
+                    addAiTableChatMsg('ai', t('home.aiTable.invalidNumber'));
+                    return;
+                  }
+                  if (!aiTableValuesEqual(previousValue, num)) pushAiTableUndoState();
+                  aiTableData.rows[rowIdx][colIdx] = num;
+                }
                 td.textContent = String(aiTableData.rows[rowIdx][colIdx]);
               } else {
+                const textChars = aiTableData.rows.reduce((total, sourceRow, sourceRowIdx) => (
+                  total + sourceRow.reduce((rowTotal, value, sourceColIdx) => {
+                    if (sourceRowIdx === rowIdx && sourceColIdx === colIdx) return rowTotal + val.length;
+                    return rowTotal + (typeof value === 'string' ? value.length : 0);
+                  }, 0)
+                ), 0);
+                try {
+                  assertAiTableTextBudget(textChars);
+                } catch {
+                  td.textContent = previousValue == null ? '' : String(previousValue);
+                  addAiTableChatMsg('ai', t('home.aiTable.tableTooLarge'));
+                  return;
+                }
+                if (!aiTableValuesEqual(previousValue, val)) pushAiTableUndoState();
                 aiTableData.rows[rowIdx][colIdx] = val;
+                td.textContent = val;
               }
+              // Keep charts and every export format aligned with manual edits.
+              renderAiTablePreview(aiTableData);
             }
           });
           td.addEventListener('keydown', (e) => { if (e.key === 'Escape') td.blur(); });
@@ -10374,8 +13916,11 @@
         const delBtn = document.createElement('button');
         delBtn.className = 'ai-table-del-btn';
         delBtn.innerHTML = AI_TABLE_ICON_TRASH;
+        delBtn.title = t('home.aiTable.deleteRow');
+        delBtn.setAttribute('aria-label', t('home.aiTable.deleteRow'));
         delBtn.addEventListener('click', () => {
           if (!aiTableData || !aiTableData.rows[rowIdx]) return;
+          pushAiTableUndoState();
           aiTableData.rows.splice(rowIdx, 1);
           renderAiTablePreview(aiTableData);
         });
@@ -10384,15 +13929,34 @@
         return tr;
       }
 
+      function removeAiTableColumn(colIdx) {
+        if (!aiTableData || aiTableData.columns.length <= 1) {
+          addAiTableChatMsg('ai', t('home.aiTable.minColumn'));
+          return;
+        }
+        pushAiTableUndoState();
+        aiTableData.columns.splice(colIdx, 1);
+        aiTableData.rows.forEach(row => row.splice(colIdx, 1));
+        aiTableData.charts = (aiTableData.charts || []).map(chart => {
+          const remap = (index) => index === colIdx ? null : (index > colIdx ? index - 1 : index);
+          const valueColumns = (chart.valueColumns || []).map(remap).filter(index => index !== null);
+          const labelColumn = remap(chart.labelColumn);
+          return { ...chart, labelColumn: labelColumn === null ? 0 : labelColumn, valueColumns };
+        }).filter(chart => chart.valueColumns.length > 0);
+        renderAiTablePreview(aiTableData);
+      }
+
       let aiTableSortCol = -1, aiTableSortAsc = true;
       function sortAiTable(colIdx) {
         if (!aiTableData || !aiTableData.columns[colIdx]) return;
+        if (!aiTableData.rows || aiTableData.rows.length < 2) return;
         const col = aiTableData.columns[colIdx];
         const isNumeric = col.type === 'number';
         // Toggle direction if clicking the same column
         if (aiTableSortCol === colIdx) aiTableSortAsc = !aiTableSortAsc;
         else { aiTableSortCol = colIdx; aiTableSortAsc = true; }
         const dir = aiTableSortAsc ? 1 : -1;
+        pushAiTableUndoState();
         aiTableData.rows.sort((a, b) => {
           const va = a[colIdx], vb = b[colIdx];
           if (isNumeric) return ((parseFloat(va) || 0) - (parseFloat(vb) || 0)) * dir;
@@ -10497,14 +14061,15 @@
         },
       };
 
-      async function renderAiTableChartJs(canvas, chartDef, data) {
+      async function renderAiTableChartJs(canvas, chartDef, data, renderVersion) {
         let ChartJS;
         try {
           ChartJS = (await import('chart.js/auto')).default;
         } catch (e) {
           console.error('[AI Table] Chart.js load failed:', e);
-          return;
+          throw new Error('Chart.js could not be loaded.', { cause: e });
         }
+        if (renderVersion !== aiTableRenderVersion) return false;
 
         const labelCol = chartDef.labelColumn || 0;
         const valCols = (chartDef.valueColumns && chartDef.valueColumns.length) ? chartDef.valueColumns : [1];
@@ -10515,7 +14080,7 @@
 
         let config;
         if (chartDef.type === 'pie') {
-          const values = data.rows.map(r => parseFloat(r[valCols[0]]) || 0);
+          const values = data.rows.map(r => parseAiTableNumber(r[valCols[0]]) ?? 0);
           config = {
             type: 'doughnut',
             data: {
@@ -10549,7 +14114,7 @@
         } else {
           const isLine = chartDef.type === 'line';
           const datasets = valCols.map((vi, si) => {
-            const seriesData = data.rows.map(r => parseFloat(r[vi]) || 0);
+            const seriesData = data.rows.map(r => parseAiTableNumber(r[vi]));
             const s = AI_TABLE_SERIES[si % AI_TABLE_SERIES.length];
             if (isLine) {
               return {
@@ -10620,19 +14185,20 @@
         }
 
         const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Chart canvas context is unavailable.');
         const instance = new ChartJS(ctx, config);
+        if (renderVersion !== aiTableRenderVersion) {
+          instance.destroy();
+          return false;
+        }
         aiTableChartCanvases.push({ canvas, instance, chartDef });
+        return true;
       }
 
       // ===== Export Functions =====
       function exportAiTableCsv() {
         if (!aiTableData) return;
-        const cols = aiTableData.columns;
-        const lines = [cols.map(c => '"' + (c.label || c.key).replace(/"/g, '""') + '"').join(',')];
-        aiTableData.rows.forEach(row => {
-          lines.push(row.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','));
-        });
-        const csv = '\uFEFF' + lines.join('\n');
+        const csv = makeAiTableCsv(aiTableData);
         downloadAiTableFile(csv, 'text/csv;charset=utf-8', `ai_table_${Date.now()}.csv`);
       }
 
@@ -10640,11 +14206,18 @@
         if (!aiTableData) return;
         showAiTableMask(t('home.aiTable.exportingExcel'));
         try {
+          // Chart.js renders on the next animation frame. Wait for that
+          // frame before taking snapshots, otherwise an XLSX export can
+          // contain an empty chart even though the preview is still drawing.
+          const chartResults = await aiTableChartRenderPromise;
+          const failedChart = chartResults.find(result => !result?.ok);
+          if (failedChart) throw (failedChart.error || new Error('Chart rendering failed.'));
+
           // ExcelJS supports full cell styling (borders, fonts, fills) unlike SheetJS community build
           const ExcelJS = (await import('exceljs')).default;
           const cols = aiTableData.columns;
           const wb = new ExcelJS.Workbook();
-          const sheetName = aiTableData.title ? aiTableData.title.slice(0, 31).replace(/[\\/?*\[\]:]/g, '') : 'Sheet1';
+          const sheetName = normalizeAiTableSheetName(aiTableData.title);
           const ws = wb.addWorksheet(sheetName);
 
           const thin = { style: 'thin', color: { argb: 'FFBFBFBF' } };
@@ -10663,7 +14236,7 @@
           if (aiTableData.title) {
             ws.mergeCells(1, 1, 1, cols.length);
             const titleCell = ws.getCell(1, 1);
-            titleCell.value = aiTableData.title;
+            titleCell.value = safeSpreadsheetCellValue(aiTableData.title);
             titleCell.font = { bold: true, size: 16, color: { argb: 'FF1A1A1A' } };
             titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
             ws.getRow(1).height = 28;
@@ -10674,7 +14247,7 @@
           const headerRow = ws.getRow(startRow);
           cols.forEach((c, ci) => {
             const cell = headerRow.getCell(ci + 1);
-            cell.value = c.label || c.key;
+            cell.value = safeSpreadsheetCellValue(c.label || c.key);
             cell.font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2E2E2E' } };
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -10688,8 +14261,10 @@
             cols.forEach((c, ci) => {
               const cell = r.getCell(ci + 1);
               let val = row[ci];
-              if (c.type === 'number' && val !== '' && val != null && !isNaN(parseFloat(val))) val = parseFloat(val);
-              cell.value = val;
+              const numericValue = c.type === 'number' ? parseAiTableNumber(val) : null;
+              cell.value = c.type === 'number' && numericValue !== null
+                ? numericValue
+                : safeSpreadsheetCellValue(val);
               cell.alignment = { horizontal: c.type === 'number' ? 'right' : 'left', vertical: 'middle' };
               cell.border = allBorders;
               if (ri % 2 === 1) {
@@ -10706,6 +14281,59 @@
             ws.getColumn(ci + 1).width = Math.min(Math.max(max + 3, 10), 50);
           });
 
+          // Keep chart output alongside the editable table. ExcelJS accepts a
+          // data URL in browser builds and embeds the actual rendered bitmap.
+          if (aiTableData.charts && aiTableData.charts.length > 0) {
+            if (aiTableChartCanvases.length !== aiTableData.charts.length) {
+              throw new Error('Rendered chart count does not match the table data.');
+            }
+            const chartsName = t('home.aiTable.chartSheet') || 'Charts';
+            const chartsBaseName = normalizeAiTableSheetName(chartsName);
+            const usedSheetNames = new Set([sheetName.toLocaleLowerCase()]);
+            let chartsSheetName = chartsBaseName;
+            let sheetSuffix = 2;
+            while (usedSheetNames.has(chartsSheetName.toLocaleLowerCase())) {
+              const suffix = ` ${sheetSuffix++}`;
+              chartsSheetName = `${chartsBaseName.slice(0, 31 - suffix.length)}${suffix}`;
+            }
+            const chartsWs = wb.addWorksheet(chartsSheetName);
+            chartsWs.views = [{ showGridLines: false }];
+            for (let column = 1; column <= 12; column++) chartsWs.getColumn(column).width = 12;
+            chartsWs.mergeCells(1, 1, 1, 12);
+            const chartsHeading = chartsWs.getCell(1, 1);
+            chartsHeading.value = aiTableData.title
+              ? `${aiTableData.title} - ${chartsName}`
+              : chartsName;
+            chartsHeading.font = { bold: true, size: 16, color: { argb: 'FF1A1A1A' } };
+            chartsHeading.alignment = { horizontal: 'center', vertical: 'middle' };
+            chartsWs.getRow(1).height = 28;
+
+            let chartRow = 3;
+            aiTableChartCanvases.forEach(({ canvas: chartCanvas, chartDef }, chartIndex) => {
+              const titleRow = chartRow;
+              chartsWs.mergeCells(titleRow, 1, titleRow, 12);
+              const chartTitle = chartsWs.getCell(titleRow, 1);
+              chartTitle.value = chartDef.title || `${t('home.aiTable.defaultChartTitle')} ${chartIndex + 1}`;
+              chartTitle.font = { bold: true, size: 12, color: { argb: 'FF262626' } };
+              chartTitle.alignment = { horizontal: 'left', vertical: 'middle' };
+              chartsWs.getRow(titleRow).height = 22;
+
+              const imageData = chartCanvas.toDataURL('image/png');
+              if (!imageData || imageData.length < 128) {
+                throw new Error(`Chart ${chartIndex + 1} produced an empty image.`);
+              }
+              const imageId = wb.addImage({ base64: imageData, extension: 'png' });
+              chartsWs.addImage(imageId, {
+                tl: { col: 0, row: titleRow },
+                ext: { width: 760, height: 380 }
+              });
+              // Reserve enough worksheet rows for the image before placing
+              // the next chart; this keeps multiple charts from overlapping.
+              chartRow += 22;
+            });
+            wb.views = [{ activeTab: 1 }];
+          }
+
           const buffer = await wb.xlsx.writeBuffer();
           const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
           await saveAiTableBlob(blob, `ai_table_${Date.now()}.xlsx`);
@@ -10715,10 +14343,11 @@
         } finally { hideAiTableMask(); }
       }
 
-      function exportAiTablePng() {
+      async function exportAiTablePng() {
         if (!aiTableData) return;
         showAiTableMask(t('home.aiTable.exportingPng'));
         try {
+          await aiTableChartRenderPromise;
           // Build a composite canvas: table text + charts
           const padding = 40;
           const tableW = 600;
@@ -10796,6 +14425,7 @@
         if (!aiTableData) return;
         showAiTableMask(t('home.aiTable.exportingPdf'));
         try {
+          await aiTableChartRenderPromise;
           await loadAiDocFontBytes();
           const pdfLib = await import('pdf-lib-plus-encrypt');
           const { PDFDocument, StandardFonts, rgb } = pdfLib;
@@ -10836,18 +14466,21 @@
           const fontSize = 9;
           const cellPad = 5;
 
-          // Header
-          page.drawRectangle({ x: margin, y: y - rowH, width: pageW - margin * 2, height: rowH, color: rgb(0.18, 0.18, 0.18) });
-          cols.forEach((col, ci) => {
-            page.drawText(fitText(col.label || col.key, colW - cellPad * 2, fontSize), { x: margin + ci * colW + cellPad, y: y - rowH + 7, size: fontSize, font, color: rgb(1, 1, 1) });
-          });
-          y -= rowH;
+          const drawTableHeader = () => {
+            page.drawRectangle({ x: margin, y: y - rowH, width: pageW - margin * 2, height: rowH, color: rgb(0.18, 0.18, 0.18) });
+            cols.forEach((col, ci) => {
+              page.drawText(fitText(col.label || col.key, colW - cellPad * 2, fontSize), { x: margin + ci * colW + cellPad, y: y - rowH + 7, size: fontSize, font, color: rgb(1, 1, 1) });
+            });
+            y -= rowH;
+          };
+          drawTableHeader();
 
           // Rows
           aiTableData.rows.forEach((row, ri) => {
             if (y - rowH < margin) {
               page = pdfDoc.addPage([pageW, pageH]);
               y = pageH - margin;
+              drawTableHeader();
             }
             if (ri % 2 === 1) {
               page.drawRectangle({ x: margin, y: y - rowH, width: pageW - margin * 2, height: rowH, color: rgb(0.95, 0.95, 0.95) });
@@ -10881,10 +14514,13 @@
             const { invoke } = await import('@tauri-apps/api/core');
             const outputDir = await getOutputDir('AI_Table');
             const fileName = `ai_table_${Date.now()}.pdf`;
-            const fullPath = outputDir + '\\' + fileName;
-            await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(pdfBytes) });
-            aiTableLastExportPath = fullPath;
-            showAiTableSuccess(fullPath);
+            const outputPath = await invoke('write_unique_file_bytes', {
+              directory: outputDir,
+              fileName,
+              bytes: Array.from(pdfBytes)
+            });
+            aiTableLastExportPath = outputPath;
+            showAiTableSuccess(outputPath);
           } else {
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const url = URL.createObjectURL(blob);
@@ -10903,10 +14539,13 @@
           const { invoke } = await import('@tauri-apps/api/core');
           const arrayBuffer = await blob.arrayBuffer();
           const outputDir = await getOutputDir('AI_Table');
-          const fullPath = outputDir + '\\' + fileName;
-          await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(new Uint8Array(arrayBuffer)) });
-          aiTableLastExportPath = fullPath;
-          showAiTableSuccess(fullPath);
+          const outputPath = await invoke('write_unique_file_bytes', {
+            directory: outputDir,
+            fileName,
+            bytes: Array.from(new Uint8Array(arrayBuffer))
+          });
+          aiTableLastExportPath = outputPath;
+          showAiTableSuccess(outputPath);
         } else {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -10924,11 +14563,12 @@
       function showAiTableSuccess(filePath) {
         if (aiTableSuccessPath) aiTableSuccessPath.textContent = filePath;
         if (aiTableSuccessOverlay) aiTableSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       // ===== AI Table Event Listeners =====
       if (aiTableBack) aiTableBack.addEventListener('click', closeAiTableOverlay);
+      if (aiTableHelpBtn) aiTableHelpBtn.addEventListener('click', () => openHelpOverlay('ai-table'));
+      if (aiTableUndoBtn) aiTableUndoBtn.addEventListener('click', undoAiTableLastEdit);
       if (aiTableResetBtn) aiTableResetBtn.addEventListener('click', () => { resetAiTableState(); });
       if (aiTableSuccessOk) aiTableSuccessOk.addEventListener('click', () => { if (aiTableSuccessOverlay) aiTableSuccessOverlay.classList.remove('visible'); });
       if (aiTableSuccessOpenFolder) aiTableSuccessOpenFolder.addEventListener('click', async () => {
@@ -11005,6 +14645,13 @@
       let colorExtractorDitherInstance = null;
       let colorExtractorCurrentImg = null;
       let colorExtractorColors = [];
+      let colorExtractorRequestId = 0;
+      let colorExtractorPreviewUrl = null;
+
+      function releaseColorExtractorPreviewUrl() {
+        if (colorExtractorPreviewUrl) URL.revokeObjectURL(colorExtractorPreviewUrl);
+        colorExtractorPreviewUrl = null;
+      }
 
       function openColorExtractorOverlay() {
         if (!colorExtractorOverlay) return;
@@ -11024,6 +14671,7 @@
         if (colorExtractorDitherInstance) { colorExtractorDitherInstance(); colorExtractorDitherInstance = null; }
       }
       function resetColorExtractorState() {
+        colorExtractorRequestId += 1;
         // Clear any pending animation timers
         colorExtractorAnimationTimers.forEach(timer => clearTimeout(timer));
         colorExtractorAnimationTimers = [];
@@ -11038,6 +14686,7 @@
         if (colorExtractorFileInput) colorExtractorFileInput.value = '';
         if (colorExtractorImagePreview) colorExtractorImagePreview.style.display = 'none';
         if (colorExtractorImage) colorExtractorImage.src = '';
+        releaseColorExtractorPreviewUrl();
         if (colorExtractorResult) colorExtractorResult.classList.remove('visible');
         if (colorExtractorCircles) colorExtractorCircles.innerHTML = '';
         if (colorExtractorCirclesView) colorExtractorCirclesView.classList.remove('hidden');
@@ -11086,8 +14735,15 @@
         canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
         canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
         const ctx = canvas.getContext('2d');
+        if (!ctx) return [];
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let data;
+        try {
+          data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        } catch (error) {
+          console.error('[Color Extractor] Pixel read error:', error);
+          return [];
+        }
 
         // Sample pixels (skip alpha=0)
         const pixels = [];
@@ -11145,75 +14801,88 @@
       }
 
       // File handling
-      const COLOR_EXTRACTOR_MAX_SIZE = 20 * 1024 * 1024; // 20MB
-      let colorExtractorUsageCounted = false;
       let colorExtractorAnimationTimers = []; // Track animation timers for cleanup
       let colorExtractorIsAnimating = false; // Prevent multiple simultaneous animations
 
       async function handleColorExtractorFile(file) {
-        if (!file || !file.type.startsWith('image/')) return;
-        if (file.size > COLOR_EXTRACTOR_MAX_SIZE) {
-          console.warn('[Color Extractor] File too large:', file.size);
+        resetColorExtractorState();
+        const requestId = colorExtractorRequestId;
+        try {
+          assertColorExtractorFile(file);
+        } catch (error) {
+          showToast(error instanceof RangeError
+            ? t('home.colorExtractor.fileTooLarge', { max: 20 })
+            : t('home.colorExtractor.unsupportedFormat'));
           return;
         }
+
+        const mimeType = file.type === 'image/png' || /\.png$/i.test(file.name || '')
+          ? 'image/png'
+          : (file.type === 'image/webp' || /\.webp$/i.test(file.name || '') ? 'image/webp' : 'image/jpeg');
+        const useLoadedImage = (img, imageUrl) => {
+          if (requestId !== colorExtractorRequestId) {
+            URL.revokeObjectURL(imageUrl);
+            return;
+          }
+          try {
+            assertColorExtractorDimensions(img.naturalWidth, img.naturalHeight);
+          } catch (error) {
+            showToast(t('home.colorExtractor.dimensionsTooLarge'));
+            return;
+          }
+          colorExtractorCurrentImg = img;
+          if (colorExtractorUploadZone) colorExtractorUploadZone.style.display = 'none';
+          if (colorExtractorImagePreview && colorExtractorImage) {
+            colorExtractorImage.src = imageUrl;
+            colorExtractorImagePreview.style.display = '';
+          }
+          doExtractColors();
+        };
+        const loadImage = (blob) => {
+          const imageUrl = URL.createObjectURL(blob);
+          const img = new Image();
+          img.onload = () => useLoadedImage(img, imageUrl);
+          img.onerror = () => {
+            URL.revokeObjectURL(imageUrl);
+            if (requestId === colorExtractorRequestId) showToast(t('home.colorExtractor.extractFailed'));
+          };
+          colorExtractorPreviewUrl = imageUrl;
+          img.src = imageUrl;
+        };
         // In Tauri mode, read file bytes via backend to ensure data accessibility
         if (isTauri && file.path) {
           try {
             const { invoke } = await import('@tauri-apps/api/core');
+            const fileSize = Number(await invoke('get_file_size', { path: file.path }));
+            assertColorExtractorFile(file, fileSize);
             const rawBytes = await invoke('read_file_bytes', { path: file.path });
             const bytes = Array.isArray(rawBytes) ? Uint8Array.from(rawBytes) : new Uint8Array(rawBytes);
-            const blob = new Blob([bytes], { type: file.type || 'image/png' });
-            const dataUrl = await new Promise((resolve, reject) => {
-              const r = new FileReader();
-              r.onload = () => resolve(r.result);
-              r.onerror = () => reject(new Error('FileReader error'));
-              r.readAsDataURL(blob);
-            });
-            const img = new Image();
-            img.onload = () => {
-              if (!img.naturalWidth || !img.naturalHeight) {
-                console.error('[Color Extractor] Invalid image dimensions');
-                return;
-              }
-              colorExtractorCurrentImg = img;
-              colorExtractorUsageCounted = false;
-              if (colorExtractorUploadZone) colorExtractorUploadZone.style.display = 'none';
-              if (colorExtractorImagePreview && colorExtractorImage) {
-                colorExtractorImage.src = dataUrl;
-                colorExtractorImagePreview.style.display = '';
-              }
-              doExtractColors();
-            };
-            img.onerror = () => { console.error('[Color Extractor] Image load failed'); };
-            img.src = dataUrl;
+            assertColorExtractorFile(file, bytes.byteLength);
+            assertColorExtractorImageBytes(bytes);
+            const blob = new Blob([bytes], { type: mimeType });
+            loadImage(blob);
             return;
           } catch (e) {
             console.error('[Color Extractor] Tauri file read error:', e);
+            if (requestId === colorExtractorRequestId) {
+              showToast(e instanceof RangeError
+                ? t('home.colorExtractor.fileTooLarge', { max: 20 })
+                : t('home.colorExtractor.extractFailed'));
+            }
+            return;
           }
         }
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onload = () => {
-            if (!img.naturalWidth || !img.naturalHeight) {
-              console.error('[Color Extractor] Invalid image dimensions');
-              return;
-            }
-            colorExtractorCurrentImg = img;
-            colorExtractorUsageCounted = false;
-            if (colorExtractorUploadZone) colorExtractorUploadZone.style.display = 'none';
-            if (colorExtractorImagePreview && colorExtractorImage) {
-              colorExtractorImage.src = e.target.result;
-              colorExtractorImagePreview.style.display = '';
-            }
-            // Auto-extract with default count
-            doExtractColors();
-          };
-          img.onerror = () => { console.error('[Color Extractor] Image load failed'); };
-          img.src = e.target.result;
-        };
-        reader.onerror = () => { console.error('[Color Extractor] File read failed'); };
-        reader.readAsDataURL(file);
+        try {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          if (requestId !== colorExtractorRequestId) return;
+          assertColorExtractorImageBytes(bytes);
+          loadImage(file);
+        } catch (error) {
+          if (requestId !== colorExtractorRequestId) return;
+          showToast(error instanceof RangeError
+            ? t('home.colorExtractor.dimensionsTooLarge')
+            : t('home.colorExtractor.extractFailed'));
+        }
       }
 
       function doExtractColors() {
@@ -11234,10 +14903,6 @@
         }
         colorExtractorColors = colors;
         renderColorCircles(colors);
-        if (!colorExtractorUsageCounted && window.incrementToolUsage) {
-          window.incrementToolUsage();
-          colorExtractorUsageCounted = true;
-        }
       }
 
       function renderColorCircles(colors) {
@@ -11276,24 +14941,7 @@
       }
 
       function resetColorExtractor() {
-        if (colorExtractorUploadZone) colorExtractorUploadZone.style.display = '';
-        if (colorExtractorImagePreview) colorExtractorImagePreview.style.display = 'none';
-        if (colorExtractorImage) colorExtractorImage.src = '';
-        if (colorExtractorResult) colorExtractorResult.classList.remove('visible');
-        if (colorExtractorCircles) colorExtractorCircles.innerHTML = '';
-        if (colorExtractorCirclesView) colorExtractorCirclesView.classList.remove('hidden');
-        if (colorExtractorFill) {
-          colorExtractorFill.classList.remove('expanded');
-          colorExtractorFill.style.removeProperty('--fill-color');
-          colorExtractorFill.style.removeProperty('--fill-x');
-          colorExtractorFill.style.removeProperty('--fill-y');
-          colorExtractorFill.style.removeProperty('--fill-scale');
-        }
-        if (colorExtractorDetailView) colorExtractorDetailView.classList.remove('visible');
-        if (colorExtractorDetailCols) colorExtractorDetailCols.innerHTML = '';
-        colorExtractorCurrentImg = null;
-        colorExtractorColors = [];
-        colorExtractorUsageCounted = false;
+        resetColorExtractorState();
       }
 
       function expandColorToDetail(color, circleEl) {
@@ -11533,29 +15181,12 @@
       const textStatsAvgLineLength = document.getElementById('textStatsAvgLineLength');
       const textStatsReadingTime = document.getElementById('textStatsReadingTime');
       let textStatsPlasmaInstance = null;
+      let textStatsFrameId = null;
+      let textStatsDebounceTimer = null;
+      let textStatsFocusTimer = null;
 
       function calcTextStats(text) {
-        if (!text) return { chars: 0, charsNoSpace: 0, spaces: 0, words: 0, englishWords: 0, lines: 0, paragraphs: 0, sentences: 0, chineseChars: 0, letters: 0, uppercase: 0, lowercase: 0, digits: 0, punctuation: 0, longestLine: 0, avgLineLength: 0, readingTime: 0 };
-        const chars = text.length;
-        const charsNoSpace = text.replace(/\s/g, '').length;
-        const spaces = (text.match(/ /g) || []).length;
-        const lineArr = text === '' ? [] : text.split(/\r?\n/);
-        const lines = lineArr.length;
-        const paragraphs = text.trim() === '' ? 0 : text.trim().split(/\n\s*\n/).filter(p => p.trim().length > 0).length;
-        const sentences = (text.match(/[^。！？.!?]+[。！？.!?]+/g) || []).length;
-        const chineseChars = (text.match(/[\u4e00-\u9fff]/g) || []).length;
-        const englishWords = text.replace(/[\u4e00-\u9fff]/g, ' ').trim().split(/\s+/).filter(w => /[a-zA-Z]/.test(w)).length;
-        const words = chineseChars + englishWords;
-        const letters = (text.match(/[a-zA-Z]/g) || []).length;
-        const uppercase = (text.match(/[A-Z]/g) || []).length;
-        const lowercase = (text.match(/[a-z]/g) || []).length;
-        const digits = (text.match(/[0-9]/g) || []).length;
-        const punctuation = (text.match(/[，。！？、；：\u201c\u201d\u2018\u2019（）【】《》…—·,.!?;:"'()\[\]{}]/g) || []).length;
-        const longestLine = lineArr.length > 0 ? Math.max(...lineArr.map(l => l.length)) : 0;
-        const totalLineChars = lineArr.reduce((sum, l) => sum + l.length, 0);
-        const avgLineLength = lines > 0 ? Math.round(totalLineChars / lines) : 0;
-        const readingTime = words > 0 ? Math.max(1, Math.ceil(words / 300)) : 0;
-        return { chars, charsNoSpace, spaces, words, englishWords, lines, paragraphs, sentences, chineseChars, letters, uppercase, lowercase, digits, punctuation, longestLine, avgLineLength, readingTime };
+        return calculateTextStats(text);
       }
 
       function updateTextStats() {
@@ -11582,6 +15213,25 @@
         if (textStatsReadingTime) textStatsReadingTime.textContent = isEmpty ? 0 : stats.readingTime;
       }
 
+      function scheduleTextStatsUpdate() {
+        const scheduleFrame = () => {
+          if (textStatsFrameId !== null) return;
+          textStatsFrameId = requestAnimationFrame(() => {
+            textStatsFrameId = null;
+            updateTextStats();
+          });
+        };
+        if (textStatsInput?.value.length > 20_000) {
+          if (textStatsDebounceTimer !== null) clearTimeout(textStatsDebounceTimer);
+          textStatsDebounceTimer = setTimeout(() => {
+            textStatsDebounceTimer = null;
+            scheduleFrame();
+          }, 120);
+          return;
+        }
+        scheduleFrame();
+      }
+
       function openTextStatsOverlay() {
         if (!textStatsOverlay) return;
         textStatsOverlay.classList.add('visible');
@@ -11591,17 +15241,41 @@
             color: '#6B6B6B', speed: 0.8, direction: 'forward', scale: 1, opacity: 1, mouseInteractive: false
           });
         }
-        setTimeout(() => { if (textStatsInput) textStatsInput.focus(); }, 300);
+        if (textStatsFocusTimer !== null) clearTimeout(textStatsFocusTimer);
+        textStatsFocusTimer = setTimeout(() => {
+          textStatsFocusTimer = null;
+          if (textStatsOverlay?.classList.contains('visible')) textStatsInput?.focus();
+        }, 300);
       }
 
       function closeTextStatsOverlay() {
         if (!textStatsOverlay) return;
         textStatsOverlay.classList.remove('visible');
+        if (textStatsFrameId !== null) {
+          cancelAnimationFrame(textStatsFrameId);
+          textStatsFrameId = null;
+        }
+        if (textStatsDebounceTimer !== null) {
+          clearTimeout(textStatsDebounceTimer);
+          textStatsDebounceTimer = null;
+        }
+        if (textStatsFocusTimer !== null) {
+          clearTimeout(textStatsFocusTimer);
+          textStatsFocusTimer = null;
+        }
         if (textStatsPlasmaInstance) { textStatsPlasmaInstance(); textStatsPlasmaInstance = null; }
       }
 
       if (textStatsBack) textStatsBack.addEventListener('click', closeTextStatsOverlay);
-      if (textStatsInput) textStatsInput.addEventListener('input', updateTextStats);
+      if (textStatsInput) {
+        textStatsInput.addEventListener('input', () => {
+          if (textStatsInput.value.length > TEXT_STATS_LIMITS.maxInputChars) {
+            textStatsInput.value = textStatsInput.value.slice(0, TEXT_STATS_LIMITS.maxInputChars);
+            window.showToast(t('home.textStats.inputTooLong', { max: TEXT_STATS_LIMITS.maxInputChars }));
+          }
+          scheduleTextStatsUpdate();
+        });
+      }
       if (textStatsClearBtn) {
         textStatsClearBtn.addEventListener('click', () => {
           if (textStatsInput) { textStatsInput.value = ''; textStatsInput.focus(); updateTextStats(); }
@@ -11647,12 +15321,15 @@
             labels.avgLineLength + ': ' + (isEmpty ? 0 : stats.avgLineLength),
             labels.readingTime + ': ' + (isEmpty ? 0 : stats.readingTime)
           ];
+          if (!navigator.clipboard?.writeText) {
+            window.showToast(t('home.textStats.copyFailed'));
+            return;
+          }
           navigator.clipboard.writeText(lines.join('\n')).then(() => {
             const original = textStatsCopyBtn.textContent;
             textStatsCopyBtn.textContent = '✓';
             setTimeout(() => { textStatsCopyBtn.textContent = original; }, 1500);
-            if (window.incrementToolUsage) window.incrementToolUsage();
-          }).catch(() => {});
+          }).catch(() => window.showToast(t('home.textStats.copyFailed')));
         });
       }
 
@@ -11675,35 +15352,10 @@
       const textFormatClearBtn = document.getElementById('textFormatClearBtn');
       const textFormatUseAsInputBtn = document.getElementById('textFormatUseAsInputBtn');
       let textFormatPlasmaInstance = null;
-
-      function toHalfWidth(str) {
-        return str.replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/\u3000/g, ' ');
-      }
-      function toFullWidth(str) {
-        return str.replace(/[\u0020-\u007E]/g, ch => ch === ' ' ? '\u3000' : String.fromCharCode(ch.charCodeAt(0) + 0xFEE0));
-      }
+      let textFormatFocusTimer = null;
 
       function executeFormat(action, text) {
-        if (!text) return '';
-        switch (action) {
-          case 'uppercase': return text.toUpperCase();
-          case 'lowercase': return text.toLowerCase();
-          case 'titlecase': return text.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-          case 'capitalize': return text.replace(/([.!?。！？]\s*)([a-z\u4e00-\u9fff])/g, (m, p1, p2) => p1 + p2.toUpperCase()).replace(/^([a-z\u4e00-\u9fff])/, (m, p1) => p1.toUpperCase());
-          case 'trimSpaces': return text.replace(/[ \t]+/g, ' ').replace(/^[ \t]+|[ \t]+$/gm, '');
-          case 'trimLines': return text.split(/\r?\n/).map(l => l.trim()).join('\n');
-          case 'removeEmptyLines': return text.split(/\r?\n/).filter(l => l.trim().length > 0).join('\n');
-          case 'removeDuplicateLines': { const seen = new Set(); return text.split(/\r?\n/).filter(l => { if (seen.has(l)) return false; seen.add(l); return true; }).join('\n'); }
-          case 'sortAsc': return text.split(/\r?\n/).sort((a, b) => a.localeCompare(b)).join('\n');
-          case 'sortDesc': return text.split(/\r?\n/).sort((a, b) => b.localeCompare(a)).join('\n');
-          case 'addLineNumbers': return text.split(/\r?\n/).map((l, i) => (i + 1) + '. ' + l).join('\n');
-          case 'removeLineNumbers': return text.split(/\r?\n/).map(l => l.replace(/^\s*\d+[\.\、\)]\s*/, '')).join('\n');
-          case 'reverseLines': return text.split(/\r?\n/).reverse().join('\n');
-          case 'reverseText': return [...text].reverse().join('');
-          case 'toHalfWidth': return toHalfWidth(text);
-          case 'toFullWidth': return toFullWidth(text);
-          default: return text;
-        }
+        return executeTextFormat(action, text);
       }
 
       function openTextFormatOverlay() {
@@ -11714,12 +15366,20 @@
             color: '#6B6B6B', speed: 0.8, direction: 'forward', scale: 1, opacity: 1, mouseInteractive: false
           });
         }
-        setTimeout(() => { if (textFormatInput) textFormatInput.focus(); }, 300);
+        if (textFormatFocusTimer !== null) clearTimeout(textFormatFocusTimer);
+        textFormatFocusTimer = setTimeout(() => {
+          textFormatFocusTimer = null;
+          if (textFormatOverlay?.classList.contains('visible')) textFormatInput?.focus();
+        }, 300);
       }
 
       function closeTextFormatOverlay() {
         if (!textFormatOverlay) return;
         textFormatOverlay.classList.remove('visible');
+        if (textFormatFocusTimer !== null) {
+          clearTimeout(textFormatFocusTimer);
+          textFormatFocusTimer = null;
+        }
         if (textFormatPlasmaInstance) { textFormatPlasmaInstance(); textFormatPlasmaInstance = null; }
       }
 
@@ -11730,19 +15390,42 @@
           if (!btn) return;
           const text = textFormatInput ? textFormatInput.value : '';
           if (!text) return;
-          const result = executeFormat(btn.dataset.action, text);
-          if (textFormatOutput) textFormatOutput.value = result;
-          if (window.incrementToolUsage) window.incrementToolUsage();
+          try {
+            const result = executeFormat(btn.dataset.action, text);
+            if (textFormatOutput) textFormatOutput.value = result;
+          } catch (error) {
+            if (error instanceof TextFormatError && error.code === 'result_too_long') {
+              window.showToast(t('home.textFormat.resultTooLong', { max: TEXT_FORMAT_LIMITS.maxInputChars }));
+            } else if (error instanceof TextFormatError && error.code === 'too_many_lines') {
+              window.showToast(t('home.textFormat.tooManyLines', { max: TEXT_FORMAT_LIMITS.maxLines }));
+            } else if (error instanceof RangeError) {
+              window.showToast(t('home.textFormat.inputTooLong', { max: TEXT_FORMAT_LIMITS.maxInputChars }));
+            } else {
+              console.error('[Text Format] Processing error:', error);
+            }
+          }
+        });
+      }
+      if (textFormatInput) {
+        textFormatInput.addEventListener('input', () => {
+          if (textFormatInput.value.length > TEXT_FORMAT_LIMITS.maxInputChars) {
+            textFormatInput.value = textFormatInput.value.slice(0, TEXT_FORMAT_LIMITS.maxInputChars);
+            window.showToast(t('home.textFormat.inputTooLong', { max: TEXT_FORMAT_LIMITS.maxInputChars }));
+          }
         });
       }
       if (textFormatCopyBtn) {
         textFormatCopyBtn.addEventListener('click', () => {
           if (!textFormatOutput || !textFormatOutput.value) return;
+          if (!navigator.clipboard?.writeText) {
+            window.showToast(t('home.textFormat.copyFailed'));
+            return;
+          }
           navigator.clipboard.writeText(textFormatOutput.value).then(() => {
             const original = textFormatCopyBtn.textContent;
             textFormatCopyBtn.textContent = '✓';
             setTimeout(() => { textFormatCopyBtn.textContent = original; }, 1500);
-          }).catch(() => {});
+          }).catch(() => window.showToast(t('home.textFormat.copyFailed')));
         });
       }
       if (textFormatClearBtn) {
@@ -11755,6 +15438,10 @@
       if (textFormatUseAsInputBtn) {
         textFormatUseAsInputBtn.addEventListener('click', () => {
           if (!textFormatOutput || !textFormatOutput.value) return;
+          if (textFormatOutput.value.length > TEXT_FORMAT_LIMITS.maxInputChars) {
+            window.showToast(t('home.textFormat.resultTooLong', { max: TEXT_FORMAT_LIMITS.maxInputChars }));
+            return;
+          }
           if (textFormatInput) textFormatInput.value = textFormatOutput.value;
           if (textFormatOutput) textFormatOutput.value = '';
           if (textFormatInput) textFormatInput.focus();
@@ -11981,7 +15668,6 @@
         if (typingTestResultCorrect) typingTestResultCorrect.textContent = correctChars;
         if (typingTestResultWrong) typingTestResultWrong.textContent = wrongChars;
         if (typingTestResultRating) typingTestResultRating.textContent = rating;
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       function endTypingTest() {
@@ -12445,7 +16131,6 @@
         // Show results
         if (bmiCalcResultEmpty) bmiCalcResultEmpty.style.display = 'none';
         if (bmiCalcResultContent) bmiCalcResultContent.style.display = '';
-        if (window.incrementToolUsage) window.incrementToolUsage();
 
         const bmiValueEl = document.getElementById('bmiValue');
         const bmiTagEl = document.getElementById('bmiTag');
@@ -12593,7 +16278,6 @@
           }
           if (tsCalcResultEmpty) tsCalcResultEmpty.style.display = 'none';
           if (tsCalcResultContent) tsCalcResultContent.style.display = '';
-          if (window.incrementToolUsage) window.incrementToolUsage();
 
           let resultStr = '';
           if (tsCalcFormat === 'local') resultStr = formatLocalDate(d);
@@ -12625,7 +16309,6 @@
           const tsMs = d.getTime();
           if (tsCalcResultEmpty) tsCalcResultEmpty.style.display = 'none';
           if (tsCalcResultContent) tsCalcResultContent.style.display = '';
-          if (window.incrementToolUsage) window.incrementToolUsage();
 
           let resultStr = '';
           if (tsCalcFormat2 === 'unix') resultStr = tsSec.toString();
@@ -12933,7 +16616,6 @@
 
         if (mortgageCalcResultEmpty) mortgageCalcResultEmpty.style.display = 'none';
         if (mortgageCalcResultContent) mortgageCalcResultContent.style.display = '';
-        if (window.incrementToolUsage) window.incrementToolUsage();
 
         const monthlyValueEl = document.getElementById('mortgageCalcMonthlyValue');
         const monthlyLabelEl = document.getElementById('mortgageCalcMonthlyLabel');
@@ -13234,7 +16916,6 @@
 
         if (interestCalcResultEmpty) interestCalcResultEmpty.style.display = 'none';
         if (interestCalcResultContent) interestCalcResultContent.style.display = '';
-        if (window.incrementToolUsage) window.incrementToolUsage();
 
         const totalValueEl = document.getElementById('interestCalcTotalValue');
         const totalTagEl = document.getElementById('interestCalcTotalTag');
@@ -13406,6 +17087,7 @@
       const passwordGenStrengthText = document.getElementById('passwordGenStrengthText');
       const passwordGenStrengthFill = document.getElementById('passwordGenStrengthFill');
       const passwordGenHistoryList = document.getElementById('passwordGenHistoryList');
+      const passwordGenClearBtn = document.getElementById('passwordGenClearBtn');
       const passwordGenLengthSlider = document.getElementById('passwordGenLengthSlider');
       const passwordGenLengthValue = document.getElementById('passwordGenLengthValue');
 
@@ -13413,63 +17095,55 @@
       let passwordGenDitherInstance = null;
       let passwordGenHistory = [];
 
-      const CHARSETS = {
-        uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-        lowercase: 'abcdefghijklmnopqrstuvwxyz',
-        numbers: '0123456789',
-        symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?~'
-      };
-      const SIMILAR_CHARS = '0O1lI';
+      function clearPasswordSensitiveContent() {
+        passwordGenHistory = [];
+        if (passwordGenOutput) passwordGenOutput.textContent = '';
+        if (passwordGenStrengthText) passwordGenStrengthText.textContent = '--';
+        if (passwordGenStrengthFill) {
+          passwordGenStrengthFill.style.width = '0';
+          passwordGenStrengthFill.style.background = '';
+        }
+        if (passwordGenHistoryList) passwordGenHistoryList.replaceChildren();
+        if (passwordGenResultEmpty) passwordGenResultEmpty.style.display = '';
+        if (passwordGenResultContent) passwordGenResultContent.style.display = 'none';
+      }
 
-      function getPasswordCharset() {
-        let charset = '';
+      function getPasswordOptions() {
         const upperEl = document.getElementById('passwordGenUppercase');
         const lowerEl = document.getElementById('passwordGenLowercase');
         const numEl = document.getElementById('passwordGenNumbers');
         const symEl = document.getElementById('passwordGenSymbols');
         const excludeEl = document.getElementById('passwordGenExcludeSimilar');
-
-        if (upperEl && upperEl.checked) charset += CHARSETS.uppercase;
-        if (lowerEl && lowerEl.checked) charset += CHARSETS.lowercase;
-        if (numEl && numEl.checked) charset += CHARSETS.numbers;
-        if (symEl && symEl.checked) charset += CHARSETS.symbols;
-
-        if (excludeEl && excludeEl.checked) {
-          charset = charset.split('').filter(c => !SIMILAR_CHARS.includes(c)).join('');
-        }
-
-        return charset;
-      }
-
-      function generateSecureRandom(max) {
-        const array = new Uint32Array(1);
-        crypto.getRandomValues(array);
-        return array[0] % max;
+        return {
+          uppercase: Boolean(upperEl?.checked),
+          lowercase: Boolean(lowerEl?.checked),
+          numbers: Boolean(numEl?.checked),
+          symbols: Boolean(symEl?.checked),
+          excludeSimilar: Boolean(excludeEl?.checked)
+        };
       }
 
       function generatePassword() {
         const length = parseInt(passwordGenLengthSlider ? passwordGenLengthSlider.value : '16');
-        let charset = getPasswordCharset();
-
-        if (!charset) {
+        let generated;
+        try {
+          generated = generateSecurePassword({ length, ...getPasswordOptions() });
+        } catch (error) {
+          console.error('[Password Generator] Generation error:', error);
           if (passwordGenResultEmpty) passwordGenResultEmpty.style.display = '';
           if (passwordGenResultContent) passwordGenResultContent.style.display = 'none';
+          window.showToast(t('home.passwordGen.generateFailed'));
           return;
         }
-
-        let password = '';
-        for (let i = 0; i < length; i++) {
-          password += charset[generateSecureRandom(charset.length)];
-        }
+        const { password, charsetSize } = generated;
 
         if (passwordGenResultEmpty) passwordGenResultEmpty.style.display = 'none';
         if (passwordGenResultContent) passwordGenResultContent.style.display = '';
-        if (window.incrementToolUsage) window.incrementToolUsage();
 
         if (passwordGenOutput) passwordGenOutput.textContent = password;
 
         // Strength assessment
-        const strengthInfo = assessPasswordStrength(password, charset.length);
+        const strengthInfo = assessPasswordStrength(password.length, charsetSize);
         if (passwordGenStrengthText) passwordGenStrengthText.textContent = t('home.passwordGen.' + strengthInfo.label);
         if (passwordGenStrengthFill) {
           passwordGenStrengthFill.style.width = strengthInfo.percent + '%';
@@ -13482,30 +17156,33 @@
         renderPasswordHistory();
       }
 
-      function assessPasswordStrength(password, charsetSize) {
-        const entropy = password.length * Math.log2(charsetSize);
-        if (entropy < 40) return { label: 'weak', percent: 25, color: '#ef4444' };
-        if (entropy < 60) return { label: 'fair', percent: 50, color: '#f59e0b' };
-        if (entropy < 80) return { label: 'strong', percent: 75, color: '#22c55e' };
-        return { label: 'veryStrong', percent: 100, color: '#10b981' };
-      }
-
       function renderPasswordHistory() {
         if (!passwordGenHistoryList) return;
-        passwordGenHistoryList.innerHTML = passwordGenHistory.map(pw =>
-          '<div class="password-gen-history-item">' +
-            '<span style="flex:1;">' + pw + '</span>' +
-            '<button class="password-gen-history-item-copy" data-pw="' + pw.replace(/"/g, '&quot;') + '">' + (t('home.passwordGen.copy')) + '</button>' +
-          '</div>'
-        ).join('');
-
-        passwordGenHistoryList.querySelectorAll('.password-gen-history-item-copy').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const pw = btn.dataset.pw;
-            if (navigator.clipboard) navigator.clipboard.writeText(pw);
-            btn.textContent = t('home.passwordGen.copied');
-            setTimeout(() => { btn.textContent = t('home.passwordGen.copy'); }, 1500);
+        passwordGenHistoryList.replaceChildren();
+        passwordGenHistory.forEach(password => {
+          const item = document.createElement('div');
+          item.className = 'password-gen-history-item';
+          const text = document.createElement('span');
+          text.style.flex = '1';
+          text.textContent = password;
+          const copyButton = document.createElement('button');
+          copyButton.className = 'password-gen-history-item-copy';
+          copyButton.textContent = t('home.passwordGen.copy');
+          copyButton.addEventListener('click', async () => {
+            if (!navigator.clipboard?.writeText) {
+              window.showToast(t('home.passwordGen.copyFailed'));
+              return;
+            }
+            try {
+              await navigator.clipboard.writeText(password);
+              copyButton.textContent = t('home.passwordGen.copied');
+              setTimeout(() => { copyButton.textContent = t('home.passwordGen.copy'); }, 1500);
+            } catch (error) {
+              window.showToast(t('home.passwordGen.copyFailed'));
+            }
           });
+          item.append(text, copyButton);
+          passwordGenHistoryList.appendChild(item);
         });
       }
 
@@ -13566,13 +17243,11 @@
           if (defaultTab) defaultTab.classList.add('active');
         }
         applyStrengthPreset('simple');
-        passwordGenHistory = [];
-        if (passwordGenResultEmpty) passwordGenResultEmpty.style.display = '';
-        if (passwordGenResultContent) passwordGenResultContent.style.display = 'none';
-        if (passwordGenHistoryList) passwordGenHistoryList.innerHTML = '';
+        clearPasswordSensitiveContent();
       }
 
       function closePasswordGenOverlay() {
+        clearPasswordSensitiveContent();
         if (passwordGenOverlay) passwordGenOverlay.classList.remove('visible');
         if (passwordGenDitherInstance) {
           passwordGenDitherInstance();
@@ -13603,23 +17278,33 @@
 
       if (passwordGenBtn) {
         passwordGenBtn.addEventListener('click', () => {
-          if (transitionMask) transitionMask.classList.add('visible');
           if (passwordGenBtn) passwordGenBtn.disabled = true;
-          setTimeout(() => {
+          requestAnimationFrame(() => {
             generatePassword();
-            if (transitionMask) transitionMask.classList.remove('visible');
             if (passwordGenBtn) passwordGenBtn.disabled = false;
-          }, 1000);
+          });
         });
       }
 
       if (passwordGenCopyBtn) {
-        passwordGenCopyBtn.addEventListener('click', () => {
+        passwordGenCopyBtn.addEventListener('click', async () => {
           const pw = passwordGenOutput ? passwordGenOutput.textContent : '';
-          if (pw && navigator.clipboard) navigator.clipboard.writeText(pw);
-          passwordGenCopyBtn.textContent = t('home.passwordGen.copied');
-          setTimeout(() => { passwordGenCopyBtn.textContent = t('home.passwordGen.copy'); }, 1500);
+          if (!pw || !navigator.clipboard?.writeText) {
+            window.showToast(t('home.passwordGen.copyFailed'));
+            return;
+          }
+          try {
+            await navigator.clipboard.writeText(pw);
+            passwordGenCopyBtn.textContent = t('home.passwordGen.copied');
+            setTimeout(() => { passwordGenCopyBtn.textContent = t('home.passwordGen.copy'); }, 1500);
+          } catch (error) {
+            window.showToast(t('home.passwordGen.copyFailed'));
+          }
         });
+      }
+
+      if (passwordGenClearBtn) {
+        passwordGenClearBtn.addEventListener('click', clearPasswordSensitiveContent);
       }
 
       // Open from tool list
@@ -13656,13 +17341,14 @@
       const pdfMergeSuccessOk = document.getElementById('pdfMergeSuccessOk');
       let selectedPdfMergeFiles = [];
       let pdfMergeProcessing = false;
+      let pdfMergeCommitting = false;
 
       function addPdfMergeFiles(fileList) {
         if (!fileList || fileList.length === 0) return;
         for (const file of fileList) {
           const dup = file.path
             ? selectedPdfMergeFiles.some(f => f.path === file.path)
-            : selectedPdfMergeFiles.some(f => f.name === file.name && f.size === file.size);
+            : selectedPdfMergeFiles.some(f => f === file);
           if (dup) continue;
           selectedPdfMergeFiles.push(file);
         }
@@ -13677,6 +17363,32 @@
       function clearPdfMergeFiles() {
         selectedPdfMergeFiles = [];
         renderPdfMergeFiles();
+      }
+
+      async function getPdfMergeFileSize(file) {
+        if (isTauri && file.path) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const size = await invoke('get_file_size', { path: file.path });
+          if (!Number.isSafeInteger(size) || size < 0) {
+            throw new Error(`Invalid file size for ${file.name}`);
+          }
+          file.size = size;
+          return size;
+        }
+        if (!Number.isSafeInteger(file.size) || file.size < 0) {
+          throw new Error(`Invalid file size for ${file.name}`);
+        }
+        return file.size;
+      }
+
+      async function preflightPdfMergeFiles() {
+        const { assertPdfMergeSelection } = await import('./pdf-merge-core.js');
+        const sizes = await Promise.all(selectedPdfMergeFiles.map(getPdfMergeFileSize));
+        const totalBytes = sizes.reduce((total, size) => total + size, 0);
+        if (!Number.isSafeInteger(totalBytes)) {
+          throw new Error('PDF inputs are too large to merge safely');
+        }
+        assertPdfMergeSelection(selectedPdfMergeFiles, totalBytes);
       }
 
       function renderPdfMergeFiles() {
@@ -13701,7 +17413,7 @@
           `;
           pdfMergeFiles.appendChild(item);
         });
-        document.querySelectorAll('.audio-convert-file-remove').forEach(btn => {
+        pdfMergeFiles.querySelectorAll('.audio-convert-file-remove').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const idx = parseInt(btn.dataset.index, 10);
@@ -13823,11 +17535,18 @@
           if (pdfMergeProcessText) pdfMergeProcessText.textContent = t('home.pdfMerge.loadingPreview');
 
           try {
-            await loadPdfPreviewAndOpenDrawer();
-            if (pdfMergeProcessMask) pdfMergeProcessMask.classList.remove('visible');
-            if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '0%';
+            const multiPageFiles = await loadPdfMergeSources();
+            if (multiPageFiles.length > 0) {
+              if (pdfMergeProcessMask) pdfMergeProcessMask.classList.remove('visible');
+              if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '0%';
+              openPdfMergeSelectionNotice(multiPageFiles);
+            } else {
+              await beginPdfMergeCommit();
+            }
           } catch (e) {
-            console.error('PDF preview load error:', e);
+            console.error('PDF merge source load error:', e);
+            releasePdfMergePreviewResources();
+            resetPdfMergeSelectionFlow();
             if (pdfMergeProcessMask) pdfMergeProcessMask.classList.remove('visible');
             if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '0%';
             pdfMergeProcessing = false;
@@ -13836,246 +17555,392 @@
         });
       }
 
-      // ===== PDF Preview Drawer =====
-      const pdfPreviewDrawer = document.getElementById('pdfPreviewDrawer');
-      const pdfPreviewBackdrop = document.getElementById('pdfPreviewBackdrop');
-      const pdfPreviewClose = document.getElementById('pdfPreviewClose');
-      const pdfPreviewBody = document.getElementById('pdfPreviewBody');
-      const pdfPreviewMergeBtn = document.getElementById('pdfPreviewMergeBtn');
+      // ===== PDF Merge Page Selection =====
+      const pdfMergeSelection = document.getElementById('pdfMergeSelection');
+      const pdfMergeSelectionEyebrow = document.getElementById('pdfMergeSelectionEyebrow');
+      const pdfMergeChoosePagesBtn = document.getElementById('pdfMergeChoosePagesBtn');
+      const pdfMergeUseAllPagesBtn = document.getElementById('pdfMergeUseAllPagesBtn');
+      const pdfMergePickerProgress = document.getElementById('pdfMergePickerProgress');
+      const pdfMergePickerFileName = document.getElementById('pdfMergePickerFileName');
+      const pdfMergePickerSelectedCount = document.getElementById('pdfMergePickerSelectedCount');
+      const pdfMergePickerInputStatus = document.getElementById('pdfMergePickerInputStatus');
+      const pdfMergePageStrip = document.getElementById('pdfMergePageStrip');
+      const pdfMergeSelectAllPagesBtn = document.getElementById('pdfMergeSelectAllPagesBtn');
+      const pdfMergeSelectionNextBtn = document.getElementById('pdfMergeSelectionNextBtn');
 
-      // pdfPagesData: [{ fileIndex, pageIndex, rotation, canvas }]
+      // Each entry is an implementation-neutral merge instruction.
       let pdfPagesData = [];
       let pdfLoadedDocs = [];
+      let pdfMergeSelectionFiles = [];
+      let pdfMergeCurrentSelectionIndex = 0;
+      let pdfMergePreviewRenderToken = 0;
 
-      async function loadPdfPreviewAndOpenDrawer() {
-        // Clear previous state
-        pdfPagesData = [];
+      function releasePdfMergePreviewResources() {
+        pdfMergePreviewRenderToken += 1;
+        pdfLoadedDocs.forEach(({ doc }) => { try { doc.destroy(); } catch (_) {} });
         pdfLoadedDocs = [];
-        if (pdfPreviewBody) pdfPreviewBody.innerHTML = '';
+        pdfPagesData = [];
+        if (pdfMergePageStrip) pdfMergePageStrip.replaceChildren();
+      }
 
-        // Configure pdf.js worker
-        const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-          'pdfjs-dist/build/pdf.worker.mjs',
-          import.meta.url
-        ).toString();
+      function resetPdfMergeSelectionFlow() {
+        pdfMergeSelectionFiles = [];
+        pdfMergeCurrentSelectionIndex = 0;
+        if (pdfMergeSelection) {
+          pdfMergeSelection.classList.remove('visible');
+          pdfMergeSelection.dataset.phase = '';
+          pdfMergeSelection.setAttribute('aria-hidden', 'true');
+        }
+        if (pdfMergeOverlay) pdfMergeOverlay.classList.remove('is-selection-flow');
+      }
 
-        // Read each file and render pages
-        for (let fi = 0; fi < selectedPdfMergeFiles.length; fi++) {
-          const file = selectedPdfMergeFiles[fi];
-          let fileData;
+      function hidePdfMergeSelectionFlow() {
+        if (pdfMergeSelection) {
+          pdfMergeSelection.classList.remove('visible');
+          pdfMergeSelection.setAttribute('aria-hidden', 'true');
+        }
+        if (pdfMergeOverlay) pdfMergeOverlay.classList.remove('is-selection-flow');
+      }
 
-          if (isTauri && file.path) {
-            const { invoke } = await import('@tauri-apps/api/core');
-            const bytes = await invoke('read_file_bytes', { path: file.path });
-            // Tauri returns Vec<u8> as a plain JS array; ensure proper Uint8Array conversion
-            if (Array.isArray(bytes)) {
-              fileData = Uint8Array.from(bytes);
-            } else if (bytes instanceof ArrayBuffer) {
-              fileData = new Uint8Array(bytes);
-            } else if (bytes instanceof Uint8Array) {
-              fileData = bytes;
-            } else if (bytes && typeof bytes.length === 'number') {
-              fileData = Uint8Array.from(bytes);
+      async function loadPdfMergeSources() {
+        releasePdfMergePreviewResources();
+
+        try {
+          await preflightPdfMergeFiles();
+          const { PDF_MERGE_LIMITS } = await import('./pdf-merge-core.js');
+          const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
+          pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+
+          for (let fi = 0; fi < selectedPdfMergeFiles.length; fi++) {
+            const file = selectedPdfMergeFiles[fi];
+            let fileData;
+
+            if (isTauri && file.path) {
+              const { invoke } = await import('@tauri-apps/api/core');
+              const bytes = await invoke('read_file_bytes', { path: file.path });
+              if (Array.isArray(bytes)) {
+                fileData = Uint8Array.from(bytes);
+              } else if (bytes instanceof ArrayBuffer) {
+                fileData = new Uint8Array(bytes);
+              } else if (bytes instanceof Uint8Array) {
+                fileData = bytes;
+              } else if (bytes && typeof bytes.length === 'number') {
+                fileData = Uint8Array.from(bytes);
+              } else {
+                throw new Error(`Invalid file data for ${file.name}: ${typeof bytes}`);
+              }
+              if (fileData.length === 0) throw new Error(`File ${file.name} is empty`);
             } else {
-              throw new Error(`Invalid file data for ${file.name}: ${typeof bytes}`);
+              fileData = new Uint8Array(await file.arrayBuffer());
             }
-            if (fileData.length === 0) throw new Error(`File ${file.name} is empty`);
-          } else {
-            fileData = new Uint8Array(await file.arrayBuffer());
+
+            const wasmUrl = new URL('assets/', document.baseURI).href;
+            const loadingTask = pdfjsLib.getDocument({ data: fileData.slice(), wasmUrl, useWasm: true });
+            const pdfDoc = await loadingTask.promise;
+            if (pdfPagesData.length + pdfDoc.numPages > PDF_MERGE_LIMITS.maxPreviewPages) {
+              try { await pdfDoc.destroy(); } catch (_) {}
+              throw new Error(`PDF inputs exceed the ${PDF_MERGE_LIMITS.maxPreviewPages}-page preview limit`);
+            }
+            pdfLoadedDocs.push({ doc: pdfDoc, fileData });
+
+            for (let pi = 1; pi <= pdfDoc.numPages; pi++) {
+              pdfPagesData.push({
+                fileIndex: fi,
+                pageIndex: pi,
+                rotation: 0,
+                selected: true
+              });
+            }
           }
 
-          const _wasmUrl = new URL('assets/', document.baseURI).href;
-          const loadingTask = pdfjsLib.getDocument({ data: fileData.slice(), wasmUrl: _wasmUrl, useWasm: true });
-          const pdfDoc = await loadingTask.promise;
-          pdfLoadedDocs.push({ doc: pdfDoc, fileData });
+          return pdfLoadedDocs
+            .map(({ doc }, fileIndex) => ({ fileIndex, pageCount: doc.numPages }))
+            .filter(({ pageCount }) => pageCount > 1);
+        } catch (error) {
+          releasePdfMergePreviewResources();
+          throw error;
+        }
+      }
 
-          for (let pi = 1; pi <= pdfDoc.numPages; pi++) {
-            const page = await pdfDoc.getPage(pi);
-            const viewport = page.getViewport({ scale: 1 });
-            const targetWidth = 376;
-            const scale = targetWidth / viewport.width;
-            const scaledViewport = page.getViewport({ scale });
+      function openPdfMergeSelectionNotice(multiPageFiles) {
+        pdfMergeSelectionFiles = multiPageFiles;
+        pdfMergeCurrentSelectionIndex = 0;
+        if (pdfMergeSelectionEyebrow) {
+          pdfMergeSelectionEyebrow.textContent = t('home.pdfMerge.multiPageDetected', { count: multiPageFiles.length });
+        }
+        if (pdfMergeSelection) {
+          pdfMergeSelection.dataset.phase = 'notice';
+          pdfMergeSelection.classList.add('visible');
+          pdfMergeSelection.setAttribute('aria-hidden', 'false');
+        }
+        if (pdfMergeOverlay) pdfMergeOverlay.classList.add('is-selection-flow');
+      }
 
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = scaledViewport.width;
-            canvas.height = scaledViewport.height;
-            await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+      function getPdfMergePagesForFile(fileIndex) {
+        return pdfPagesData.filter(pageData => pageData.fileIndex === fileIndex);
+      }
 
-            pdfPagesData.push({
-              fileIndex: fi,
-              pageIndex: pi,
-              rotation: 0,
-              canvas
-            });
-          }
+      function getSelectedPdfMergePages() {
+        return pdfPagesData.filter(pageData => pageData.selected);
+      }
+
+      function updatePdfMergeSelectionControls() {
+        const currentFile = pdfMergeSelectionFiles[pdfMergeCurrentSelectionIndex];
+        if (!currentFile) return;
+        const currentPages = getPdfMergePagesForFile(currentFile.fileIndex);
+        const selectedCount = currentPages.filter(pageData => pageData.selected).length;
+        const allPagesSelected = currentPages.length > 0 && selectedCount === currentPages.length;
+
+        if (pdfMergePickerProgress) {
+          pdfMergePickerProgress.textContent = t('home.pdfMerge.pickerProgress', {
+            current: pdfMergeCurrentSelectionIndex + 1,
+            total: pdfMergeSelectionFiles.length
+          });
+        }
+        if (pdfMergePickerFileName) {
+          pdfMergePickerFileName.textContent = t('home.pdfMerge.pickerFile', {
+            name: selectedPdfMergeFiles[currentFile.fileIndex]?.name || ''
+          });
+        }
+        if (pdfMergePickerInputStatus) {
+          pdfMergePickerInputStatus.textContent = t('home.pdfMerge.pickerInputStatus', {
+            count: selectedPdfMergeFiles.length
+          });
+        }
+        if (pdfMergePickerSelectedCount) {
+          pdfMergePickerSelectedCount.textContent = t('home.pdfMerge.pickerSelected', {
+            selected: selectedCount,
+            total: currentPages.length
+          });
+        }
+        if (pdfMergeSelectAllPagesBtn) {
+          pdfMergeSelectAllPagesBtn.textContent = t(allPagesSelected
+            ? 'home.pdfMerge.deselectAllPages'
+            : 'home.pdfMerge.selectAllPages');
+        }
+        if (pdfMergeSelectionNextBtn) {
+          const isLastFile = pdfMergeCurrentSelectionIndex === pdfMergeSelectionFiles.length - 1;
+          pdfMergeSelectionNextBtn.textContent = t(isLastFile
+            ? 'home.pdfMerge.selectionComplete'
+            : 'home.pdfMerge.nextFile');
+          pdfMergeSelectionNextBtn.disabled = selectedCount === 0;
+        }
+      }
+
+      function setPdfMergePageTileSelected(pageEl, selected) {
+        pageEl.classList.toggle('is-selected', selected);
+        pageEl.setAttribute('aria-pressed', String(selected));
+      }
+
+      function renderPdfMergePagePicker() {
+        const currentFile = pdfMergeSelectionFiles[pdfMergeCurrentSelectionIndex];
+        if (!currentFile || !pdfMergePageStrip) return;
+
+        const pagePreviews = [];
+        const pageFragment = document.createDocumentFragment();
+        for (const pageData of getPdfMergePagesForFile(currentFile.fileIndex)) {
+          const pageEl = document.createElement('button');
+          pageEl.type = 'button';
+          pageEl.className = 'pdf-merge-page-tile';
+          pageEl.setAttribute('aria-label', `Page ${pageData.pageIndex}`);
+          setPdfMergePageTileSelected(pageEl, pageData.selected);
+
+          const previewFrame = document.createElement('span');
+          previewFrame.className = 'pdf-merge-page-frame is-loading';
+          const loading = document.createElement('span');
+          loading.className = 'pdf-merge-page-loading';
+          previewFrame.appendChild(loading);
+
+          const pageIndex = document.createElement('span');
+          pageIndex.className = 'pdf-merge-page-index';
+          pageIndex.textContent = String(pageData.pageIndex);
+
+          const check = document.createElement('span');
+          check.className = 'pdf-merge-page-check';
+          check.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4.2 4.2L19 6.8"></path></svg>';
+
+          pageEl.append(previewFrame, pageIndex, check);
+          pageEl.addEventListener('click', () => {
+            pageData.selected = !pageData.selected;
+            setPdfMergePageTileSelected(pageEl, pageData.selected);
+            updatePdfMergeSelectionControls();
+          });
+          pageFragment.appendChild(pageEl);
+          pagePreviews.push({ pageData, previewFrame });
         }
 
-        renderPreviewPages();
-        if (pdfPreviewDrawer) pdfPreviewDrawer.classList.add('visible');
+        pdfMergePageStrip.replaceChildren(pageFragment);
+        updatePdfMergeSelectionControls();
+        const renderToken = ++pdfMergePreviewRenderToken;
+        void renderPdfMergePagePreviews(currentFile.fileIndex, pagePreviews, renderToken);
       }
 
-      function renderPreviewPages() {
-        if (!pdfPreviewBody) return;
-        pdfPreviewBody.innerHTML = '';
+      async function renderPdfMergePagePreviews(fileIndex, pagePreviews, renderToken) {
+        const sourceDocument = pdfLoadedDocs[fileIndex]?.doc;
+        if (!sourceDocument) return;
 
-        pdfPagesData.forEach((pageData, idx) => {
-          const pageEl = document.createElement('div');
-          pageEl.className = 'pdf-preview-page';
-          pageEl.draggable = true;
-          pageEl.dataset.index = idx;
+        let nextPreviewIndex = 0;
+        const renderOne = async () => {
+          while (nextPreviewIndex < pagePreviews.length) {
+            const preview = pagePreviews[nextPreviewIndex++];
+            try {
+              const page = await sourceDocument.getPage(preview.pageData.pageIndex);
+              const baseViewport = page.getViewport({ scale: 1 });
+              const viewport = page.getViewport({ scale: 232 / baseViewport.width });
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d', { alpha: false });
+              if (!context) throw new Error('Unable to create PDF preview canvas');
+              canvas.width = Math.ceil(viewport.width);
+              canvas.height = Math.ceil(viewport.height);
+              await page.render({ canvasContext: context, viewport }).promise;
+              try { page.cleanup(); } catch (_) {}
 
-          const canvas = pageData.canvas;
-          canvas.style.transform = `rotate(${pageData.rotation}deg)`;
-          canvas.style.maxWidth = '100%';
-          canvas.style.height = 'auto';
-          canvas.style.borderRadius = '4px';
-          canvas.style.transition = 'transform 0.3s ease';
-          pageEl.appendChild(canvas);
-
-          const indexLabel = document.createElement('span');
-          indexLabel.className = 'pdf-preview-page-index';
-          indexLabel.textContent = `${idx + 1}`;
-          pageEl.appendChild(indexLabel);
-
-          const rotateBtn = document.createElement('button');
-          rotateBtn.className = 'pdf-preview-page-rotate-btn';
-          rotateBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>';
-          rotateBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            pageData.rotation = (pageData.rotation + 90) % 360;
-            pageData.canvas.style.transform = `rotate(${pageData.rotation}deg)`;
-          });
-          pageEl.appendChild(rotateBtn);
-
-          pdfPreviewBody.appendChild(pageEl);
-        });
-
-        // Drag-to-reorder
-        let dragSrcIdx = null;
-        pdfPreviewBody.querySelectorAll('.pdf-preview-page').forEach(item => {
-          item.addEventListener('dragstart', (e) => {
-            dragSrcIdx = parseInt(item.dataset.index, 10);
-            item.classList.add('dragging');
-          });
-          item.addEventListener('dragend', () => {
-            item.classList.remove('dragging');
-            pdfPreviewBody.querySelectorAll('.pdf-preview-page').forEach(el => el.classList.remove('drag-over'));
-          });
-          item.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            const targetIdx = parseInt(item.dataset.index, 10);
-            if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
-            item.classList.add('drag-over');
-          });
-          item.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const targetIdx = parseInt(item.dataset.index, 10);
-            if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
-            const moved = pdfPagesData.splice(dragSrcIdx, 1)[0];
-            pdfPagesData.splice(targetIdx, 0, moved);
-            dragSrcIdx = null;
-            renderPreviewPages();
-          });
-        });
-      }
-
-      function closePreviewDrawer() {
-        if (pdfPreviewDrawer) pdfPreviewDrawer.classList.remove('visible');
-        pdfMergeProcessing = false;
-        // Cleanup pdf.js documents to free memory
-        pdfLoadedDocs.forEach(d => { try { d.doc.destroy(); } catch (_) {} });
-        pdfLoadedDocs = [];
-        pdfPagesData = [];
-      }
-
-      if (pdfPreviewClose) {
-        pdfPreviewClose.addEventListener('click', closePreviewDrawer);
-      }
-      if (pdfPreviewBackdrop) {
-        pdfPreviewBackdrop.addEventListener('click', closePreviewDrawer);
-      }
-
-      if (pdfPreviewMergeBtn) {
-        pdfPreviewMergeBtn.addEventListener('click', async () => {
-          // Close drawer, show mask
-          if (pdfPreviewDrawer) pdfPreviewDrawer.classList.remove('visible');
-          if (pdfMergeProcessMask) pdfMergeProcessMask.classList.add('visible');
-          if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '30%';
-          if (pdfMergeProcessText) pdfMergeProcessText.textContent = t('home.pdfMerge.processing');
-          const startTime = Date.now();
-
-          try {
-            const outputPath = await performPdfMerge();
-            if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '100%';
-            const elapsed = Date.now() - startTime;
-            const remaining = Math.max(0, 1500 - elapsed);
-            setTimeout(() => {
-              if (pdfMergeProcessMask) pdfMergeProcessMask.classList.remove('visible');
-              if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '0%';
-              pdfMergeProcessing = false;
-              showPdfMergeSuccess(outputPath);
-            }, remaining);
-          } catch (e) {
-            console.error('PDF merge error:', e);
-            const elapsed = Date.now() - startTime;
-            const remaining = Math.max(0, 1500 - elapsed);
-            setTimeout(() => {
-              if (pdfMergeProcessMask) pdfMergeProcessMask.classList.remove('visible');
-              if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '0%';
-              pdfMergeProcessing = false;
-              alert(t('common.errorOccurred', { error: String(e) }));
-            }, remaining);
+              if (renderToken !== pdfMergePreviewRenderToken || !preview.previewFrame.isConnected) {
+                canvas.width = 0;
+                canvas.height = 0;
+                return;
+              }
+              preview.previewFrame.replaceChildren(canvas);
+              preview.previewFrame.classList.remove('is-loading');
+            } catch (error) {
+              console.warn('Unable to render PDF page preview:', error);
+              if (renderToken === pdfMergePreviewRenderToken && preview.previewFrame.isConnected) {
+                preview.previewFrame.classList.remove('is-loading');
+                preview.previewFrame.classList.add('has-error');
+              }
+            }
           }
+        };
+
+        await Promise.all(Array.from({ length: Math.min(3, pagePreviews.length) }, renderOne));
+      }
+
+      function showPdfMergePagePicker() {
+        if (!pdfMergeSelectionFiles.length) return;
+        if (pdfMergeSelection) {
+          pdfMergeSelection.dataset.phase = 'pages';
+          pdfMergeSelection.classList.add('visible');
+          pdfMergeSelection.setAttribute('aria-hidden', 'false');
+        }
+        if (pdfMergeOverlay) pdfMergeOverlay.classList.add('is-selection-flow');
+        renderPdfMergePagePicker();
+      }
+
+      if (pdfMergeChoosePagesBtn) {
+        pdfMergeChoosePagesBtn.addEventListener('click', showPdfMergePagePicker);
+      }
+
+      if (pdfMergeUseAllPagesBtn) {
+        pdfMergeUseAllPagesBtn.addEventListener('click', () => {
+          pdfPagesData.forEach(pageData => { pageData.selected = true; });
+          void beginPdfMergeCommit();
         });
+      }
+
+      if (pdfMergeSelectAllPagesBtn) {
+        pdfMergeSelectAllPagesBtn.addEventListener('click', () => {
+          const currentFile = pdfMergeSelectionFiles[pdfMergeCurrentSelectionIndex];
+          if (!currentFile) return;
+          const currentPages = getPdfMergePagesForFile(currentFile.fileIndex);
+          const shouldSelectAll = currentPages.some(pageData => !pageData.selected);
+          currentPages.forEach(pageData => { pageData.selected = shouldSelectAll; });
+          pdfMergePageStrip?.querySelectorAll('.pdf-merge-page-tile').forEach(pageEl => {
+            setPdfMergePageTileSelected(pageEl, shouldSelectAll);
+          });
+          updatePdfMergeSelectionControls();
+        });
+      }
+
+      if (pdfMergeSelectionNextBtn) {
+        pdfMergeSelectionNextBtn.addEventListener('click', () => {
+          const currentFile = pdfMergeSelectionFiles[pdfMergeCurrentSelectionIndex];
+          if (!currentFile) return;
+          const hasSelection = getPdfMergePagesForFile(currentFile.fileIndex)
+            .some(pageData => pageData.selected);
+          if (!hasSelection) {
+            window.showToast(t('home.pdfMerge.selectAtLeastOne'));
+            return;
+          }
+          if (pdfMergeCurrentSelectionIndex < pdfMergeSelectionFiles.length - 1) {
+            pdfMergeCurrentSelectionIndex += 1;
+            renderPdfMergePagePicker();
+            return;
+          }
+          void beginPdfMergeCommit();
+        });
+      }
+
+      onLangChange(() => {
+        if (!pdfMergeSelection?.classList.contains('visible')) return;
+        if (pdfMergeSelection.dataset.phase === 'notice') {
+          if (pdfMergeSelectionEyebrow) {
+            pdfMergeSelectionEyebrow.textContent = t('home.pdfMerge.multiPageDetected', {
+              count: pdfMergeSelectionFiles.length
+            });
+          }
+          return;
+        }
+        updatePdfMergeSelectionControls();
+      });
+
+      async function beginPdfMergeCommit() {
+        if (!pdfMergeProcessing || pdfMergeCommitting || getSelectedPdfMergePages().length === 0) return;
+        pdfMergeCommitting = true;
+        hidePdfMergeSelectionFlow();
+        if (pdfMergeProcessMask) pdfMergeProcessMask.classList.add('visible');
+        if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '30%';
+        if (pdfMergeProcessText) pdfMergeProcessText.textContent = t('home.pdfMerge.processing');
+        const startTime = Date.now();
+
+        try {
+          const outputPath = await performPdfMerge();
+          if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '100%';
+          const elapsed = Date.now() - startTime;
+          const remaining = Math.max(0, 1500 - elapsed);
+          setTimeout(() => {
+            if (pdfMergeProcessMask) pdfMergeProcessMask.classList.remove('visible');
+            if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '0%';
+            pdfMergeProcessing = false;
+            pdfMergeCommitting = false;
+            resetPdfMergeSelectionFlow();
+            showPdfMergeSuccess(outputPath);
+          }, remaining);
+        } catch (error) {
+          console.error('PDF merge error:', error);
+          const elapsed = Date.now() - startTime;
+          const remaining = Math.max(0, 1500 - elapsed);
+          setTimeout(() => {
+            if (pdfMergeProcessMask) pdfMergeProcessMask.classList.remove('visible');
+            if (pdfMergeProcessBarFill) pdfMergeProcessBarFill.style.width = '0%';
+            pdfMergeCommitting = false;
+            if (pdfMergeSelectionFiles.length > 0) {
+              if (pdfMergeSelection) {
+                pdfMergeSelection.classList.add('visible');
+                pdfMergeSelection.setAttribute('aria-hidden', 'false');
+              }
+              if (pdfMergeOverlay) pdfMergeOverlay.classList.add('is-selection-flow');
+            } else {
+              pdfMergeProcessing = false;
+            }
+            alert(t('common.errorOccurred', { error: String(error) }));
+          }, remaining);
+        }
       }
 
       async function performPdfMerge() {
-        const { PDFDocument, degrees } = await import('pdf-lib');
+        const { mergePdfPages } = await import('./pdf-merge-core.js');
+        const mergedBytes = await mergePdfPages({ documents: pdfLoadedDocs, pages: getSelectedPdfMergePages() });
 
-        const mergedPdf = await PDFDocument.create();
-        const srcPdfCache = new Map();
-
-        for (const pageData of pdfPagesData) {
-          const docInfo = pdfLoadedDocs[pageData.fileIndex];
-          if (!docInfo || !docInfo.fileData) throw new Error(`Missing file data for file index ${pageData.fileIndex}`);
-          const fileData = docInfo.fileData;
-          if (fileData.length === 0) throw new Error(`File data is empty for file index ${pageData.fileIndex}`);
-          const pageIndex = pageData.pageIndex;
-          const rotation = pageData.rotation;
-
-          let srcPdf = srcPdfCache.get(pageData.fileIndex);
-          if (!srcPdf) {
-            srcPdf = await PDFDocument.load(fileData.slice());
-            srcPdfCache.set(pageData.fileIndex, srcPdf);
-          }
-          const [copiedPage] = await mergedPdf.copyPages(srcPdf, [pageIndex - 1]);
-
-          const existingRotation = copiedPage.getRotation().angle;
-          copiedPage.setRotation(degrees(existingRotation + rotation));
-
-          mergedPdf.addPage(copiedPage);
-        }
-
-        const mergedBytes = await mergedPdf.save();
-
-        // Save to Documents/ToolKnit/merged/
+        // Keep merge exports in the same configured output root as every other desktop tool.
         let outputPath;
         if (isTauri) {
           const { invoke } = await import('@tauri-apps/api/core');
-          const outputDir = await getOutputDir('merged');
-          let fileName = 'merged.pdf';
-          let fullPath = outputDir + '\\' + fileName;
-          let counter = 1;
-          while (await invoke('exists_path', { path: fullPath }).catch(() => false)) {
-            fileName = `merged_${counter}.pdf`;
-            fullPath = outputDir + '\\' + fileName;
-            counter++;
-          }
-          await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(mergedBytes) });
-          // Note: Tauri invoke serializes Vec<u8> from JS arrays; using Array.from for compatibility
-          outputPath = fullPath;
+          const outputDir = await getOutputDir('PDF_Merge');
+          outputPath = await invoke('write_unique_file_bytes', {
+            directory: outputDir,
+            fileName: 'merged.pdf',
+            bytes: Array.from(mergedBytes)
+          });
         } else {
           // Browser fallback: download
           const blob = new Blob([mergedBytes], { type: 'application/pdf' });
@@ -14092,10 +17957,7 @@
       }
 
       function showPdfMergeSuccess(outputPath) {
-        // Cleanup pdf.js documents
-        pdfLoadedDocs.forEach(d => { try { d.doc.destroy(); } catch (_) {} });
-        pdfLoadedDocs = [];
-        pdfPagesData = [];
+        releasePdfMergePreviewResources();
 
         const count = selectedPdfMergeFiles.length;
         if (pdfMergeSuccessMeta) {
@@ -14110,7 +17972,6 @@
         if (pdfMergeSuccessOverlay) {
           pdfMergeSuccessOverlay.classList.add('visible');
         }
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       if (pdfMergeSuccessOk) {
@@ -14165,7 +18026,8 @@
       let selectedPdfCompressFiles = [];
       let pdfCompressProcessing = false;
       let pdfCompressLevel = 'medium';
-      let pdfCompressResults = []; // [{ name, originalSize, compressedSize, path, compressedBytes }]}
+      let pdfCompressResults = [];
+      let pdfCompressOutputDir = '';
 
       function openPdfCompressOverlay() {
         if (!pdfCompressOverlay) return;
@@ -14179,13 +18041,16 @@
       }
 
       function closePdfCompressOverlay() {
+        if (pdfCompressProcessing) {
+          window.showToast(t('home.pdfCompress.processing'));
+          return;
+        }
         if (!pdfCompressOverlay) return;
         pdfCompressOverlay.classList.remove('visible');
         if (pdfCompressFerrofluidInstance) {
           pdfCompressFerrofluidInstance();
           pdfCompressFerrofluidInstance = null;
         }
-        pdfCompressProcessing = false;
         if (pdfCompressProcessMask) pdfCompressProcessMask.classList.remove('visible');
         if (pdfCompressProcessBarFill) pdfCompressProcessBarFill.style.width = '0%';
         clearPdfCompressFiles();
@@ -14220,6 +18085,7 @@
 
       function addPdfCompressFiles(fileList) {
         if (!fileList || fileList.length === 0) return;
+        if (pdfCompressProcessing) return;
         for (const file of fileList) {
           const dup = file.path
             ? selectedPdfCompressFiles.some(f => f.path === file.path)
@@ -14268,6 +18134,7 @@
             if (!isNaN(idx)) removePdfCompressFile(idx);
           });
         });
+        enableSortableFileList(pdfCompressFiles, selectedPdfCompressFiles, renderPdfCompressFiles, () => pdfCompressProcessing);
         togglePdfCompressProcessButton();
       }
 
@@ -14286,6 +18153,22 @@
           };
           pdfCompressProcessBtn.addEventListener('transitionend', onTransitionEnd);
         }
+      }
+
+      async function getPdfCompressErrorMessage(error) {
+        const { getPdfCompressErrorCode } = await import('./pdf-compress-core.js');
+        const code = getPdfCompressErrorCode(error);
+        const messageKey = {
+          'desktop-only': 'errorDesktopOnly',
+          'input-too-large': 'errorTooLarge',
+          'too-many-pages': 'errorTooManyPages',
+          'invalid-level': 'errorInvalidLevel',
+          'invalid-pdf': 'errorInvalidPdf',
+          'password-protected': 'errorPasswordProtected',
+          'qpdf-unavailable': 'errorEngineUnavailable',
+          'compression-failed': 'errorFailed'
+        }[code] || 'errorFailed';
+        return t(`home.pdfCompress.${messageKey}`);
       }
 
       function showPdfCompressDropZone() {
@@ -14330,6 +18213,7 @@
 
       if (pdfCompressCta) {
         pdfCompressCta.addEventListener('click', async () => {
+          if (pdfCompressProcessing) return;
           if (isTauri) {
             try {
               const { open } = await import('@tauri-apps/plugin-dialog');
@@ -14373,12 +18257,13 @@
           if (pdfCompressProcessText) pdfCompressProcessText.textContent = t('home.pdfCompress.processing');
 
           try {
-            const { PDFDocument } = await import('pdf-lib');
+            const { assertPdfCompressSelection } = await import('./pdf-compress-core.js');
             const { invoke } = await import('@tauri-apps/api/core');
-
-            const MAX_FILE_SIZE = 500 * 1024 * 1024;
+            assertPdfCompressSelection(selectedPdfCompressFiles);
+            if (!isTauri) throw new Error('pdf-compress:desktop-only');
 
             pdfCompressResults = [];
+            pdfCompressOutputDir = '';
             const errors = [];
             for (let i = 0; i < selectedPdfCompressFiles.length; i++) {
               const file = selectedPdfCompressFiles[i];
@@ -14387,58 +18272,22 @@
               if (pdfCompressProcessText) pdfCompressProcessText.textContent = `${t('home.pdfCompress.processing')} (${i + 1}/${selectedPdfCompressFiles.length})`;
 
               try {
-                if (file.size > MAX_FILE_SIZE) {
-                  errors.push(`${file.name}: ${t('home.pdfCompress.tooLarge')}`);
-                  continue;
-                }
-
-                if (isTauri && file.path) {
-                  const rawBytes = await invoke('read_file_bytes', { path: file.path });
-                  const fileData = Array.isArray(rawBytes) ? Uint8Array.from(rawBytes) : new Uint8Array(rawBytes);
-                  const pdfDoc = await PDFDocument.load(fileData.slice(), { ignoreEncryption: true });
-
-                  if (pdfCompressLevel === 'high') {
-                    pdfDoc.setCreator('');
-                    pdfDoc.setProducer('');
-                    pdfDoc.setTitle('');
-                    pdfDoc.setAuthor('');
-                    pdfDoc.setSubject('');
-                    pdfDoc.setKeywords([]);
-                    pdfDoc.setCreationDate(new Date(0));
-                    pdfDoc.setModificationDate(new Date(0));
-                  }
-
-                  const compressedBytes = await pdfDoc.save({
-                    useObjectStreams: pdfCompressLevel !== 'low'
-                  });
-                  const compressedSize = compressedBytes.length;
-
-                  pdfCompressResults.push({
-                    name: file.name,
-                    originalSize: file.size || 0,
-                    compressedSize,
-                    path: file.path || '',
-                    compressedBytes
-                  });
-                } else {
-                  const compressedSize = Math.floor((file.size || 0) * 0.6);
-                  pdfCompressResults.push({
-                    name: file.name,
-                    originalSize: file.size || 0,
-                    compressedSize,
-                    path: file.path || '',
-                    compressedBytes: null
-                  });
-                }
+                if (!file.path) throw new Error('pdf-compress:desktop-only');
+                const result = await invoke('compress_pdf', { inputPath: file.path, level: pdfCompressLevel, outputDir: await getOutputDir('PDF_Compress') });
+                pdfCompressOutputDir = result.output_dir || pdfCompressOutputDir;
+                pdfCompressResults.push({
+                  name: file.name,
+                  originalSize: result.original_size,
+                  compressedSize: result.compressed_size,
+                  outputPath: result.output_path || ''
+                });
               } catch (fileErr) {
                 console.error(`[PDF Compress] Failed: ${file.name}`, fileErr);
-                errors.push(`${file.name}: ${String(fileErr.message || fileErr)}`);
+                errors.push(`${file.name}: ${await getPdfCompressErrorMessage(fileErr)}`);
               }
             }
 
             if (pdfCompressProcessBarFill) pdfCompressProcessBarFill.style.width = '100%';
-            await new Promise(r => setTimeout(r, 300));
-
             if (pdfCompressProcessMask) pdfCompressProcessMask.classList.remove('visible');
             if (pdfCompressProcessBarFill) pdfCompressProcessBarFill.style.width = '0%';
             pdfCompressProcessing = false;
@@ -14447,10 +18296,12 @@
               renderCompressResults();
               if (pdfCompressDrawer) pdfCompressDrawer.classList.add('visible');
             }
-            if (errors.length > 0) {
+            if (pdfCompressResults.length > 0 && errors.length > 0) {
               alert(`${t('home.pdfCompress.partialFail')}:\n${errors.join('\n')}`);
             }
-            if (pdfCompressResults.length === 0 && errors.length > 0) {
+            if (pdfCompressResults.length === 0 && errors.length === 0) {
+              alert(t('home.pdfCompress.errorFailed'));
+            } else if (pdfCompressResults.length === 0 && errors.length > 0) {
               alert(`${t('home.pdfCompress.compressFailed')}:\n${errors.join('\n')}`);
             }
           } catch (e) {
@@ -14458,7 +18309,7 @@
             if (pdfCompressProcessMask) pdfCompressProcessMask.classList.remove('visible');
             if (pdfCompressProcessBarFill) pdfCompressProcessBarFill.style.width = '0%';
             pdfCompressProcessing = false;
-            alert(t('common.errorOccurred', { error: String(e) }));
+            alert(t('common.errorOccurred', { error: await getPdfCompressErrorMessage(e) }));
           }
         });
       }
@@ -14470,6 +18321,7 @@
         pdfCompressResults.forEach((result, idx) => {
           const item = document.createElement('div');
           item.className = 'pdf-compress-result-item';
+          const hasSavedOutput = Boolean(result.outputPath);
           const ratio = result.originalSize > 0
             ? Math.round((1 - result.compressedSize / result.originalSize) * 100)
             : 0;
@@ -14486,7 +18338,7 @@
               <span class="pdf-compress-result-compressed">${formatFileSize(result.compressedSize)}</span>
               <span class="${ratioClass}">${ratioText}</span>
             </div>
-            <button class="pdf-compress-result-download" data-index="${idx}">
+            <button class="pdf-compress-result-download" data-index="${idx}" type="button" aria-label="${hasSavedOutput ? t('home.pdfCompress.revealFile') : t('home.pdfCompress.noSmallerOutput')}" ${hasSavedOutput ? '' : 'disabled'}>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
           `;
@@ -14500,24 +18352,12 @@
             const idx = parseInt(btn.dataset.index, 10);
             if (!isNaN(idx) && pdfCompressResults[idx]) {
               const result = pdfCompressResults[idx];
-              if (isTauri && result.compressedBytes) {
+              if (isTauri && result.outputPath) {
                 try {
-                  const { invoke } = await import('@tauri-apps/api/core');
-                  const outputDir = await getOutputDir('Compressed');
-                  const baseName = result.name.replace(/\.pdf$/i, '');
-                  let fileName = baseName + '_compressed.pdf';
-                  let fullPath = outputDir + '\\' + fileName;
-                  let counter = 1;
-                  while (await invoke('exists_path', { path: fullPath }).catch(() => false)) {
-                    fileName = `${baseName}_compressed_${counter}.pdf`;
-                    fullPath = outputDir + '\\' + fileName;
-                    counter++;
-                  }
-                  await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(result.compressedBytes) });
-                  showPdfCompressSuccess(fullPath, 'single');
+                  await openOutputFolder(result.outputPath);
                 } catch (err) {
-                  console.error('[PDF Compress] Save file error:', err);
-                  alert(String(err));
+                  console.error('[PDF Compress] Reveal file error:', err);
+                  alert(t('home.pdfCompress.errorOpenOutput'));
                 }
               }
             }
@@ -14526,38 +18366,22 @@
 
         // Update footer button text
         if (pdfCompressDownloadAllBtn) {
-          pdfCompressDownloadAllBtn.textContent = t('home.pdfCompress.downloadAll');
+          const hasSavedOutput = pdfCompressResults.some(result => result.outputPath);
+          pdfCompressDownloadAllBtn.textContent = t('home.pdfCompress.openOutputFolder');
+          pdfCompressDownloadAllBtn.disabled = !hasSavedOutput;
         }
       }
 
       if (pdfCompressDownloadAllBtn) {
         pdfCompressDownloadAllBtn.addEventListener('click', async () => {
           if (pdfCompressResults.length === 0) return;
-          if (isTauri) {
+          if (isTauri && pdfCompressResults.some(result => result.outputPath)) {
             try {
               const { invoke } = await import('@tauri-apps/api/core');
-              const outputDir = await getOutputDir('Compressed');
-              let lastSavedPath = '';
-              for (const result of pdfCompressResults) {
-                if (!result.compressedBytes) continue;
-                const baseName = result.name.replace(/\.pdf$/i, '');
-                let fileName = baseName + '_compressed.pdf';
-                let fullPath = outputDir + '\\' + fileName;
-                let counter = 1;
-                while (await invoke('exists_path', { path: fullPath }).catch(() => false)) {
-                  fileName = `${baseName}_compressed_${counter}.pdf`;
-                  fullPath = outputDir + '\\' + fileName;
-                  counter++;
-                }
-                await invoke('write_file_bytes', { path: fullPath, bytes: Array.from(result.compressedBytes) });
-                lastSavedPath = outputDir;
-              }
-              if (lastSavedPath) {
-                showPdfCompressSuccess(lastSavedPath, 'all');
-              }
+              await invoke('open_path', { path: pdfCompressOutputDir });
             } catch (err) {
-              console.error('[PDF Compress] Save all error:', err);
-              alert(String(err));
+              console.error('[PDF Compress] Open output folder error:', err);
+              alert(t('home.pdfCompress.errorOpenOutput'));
             }
           }
         });
@@ -14587,7 +18411,6 @@
           if (pdfCompressSuccessMeta) pdfCompressSuccessMeta.textContent = t('home.pdfCompress.successSingleMeta');
         }
         if (pdfCompressSuccessOverlay) pdfCompressSuccessOverlay.classList.add('visible');
-        if (window.incrementToolUsage) window.incrementToolUsage();
       }
 
       if (pdfCompressSuccessOk) {
@@ -14599,8 +18422,7 @@
         pdfCompressSuccessOpenFolder.addEventListener('click', async () => {
           if (isTauri && lastPdfCompressSavedPath) {
             try {
-              const { invoke } = await import('@tauri-apps/api/core');
-              await invoke('reveal_in_folder', { path: lastPdfCompressSavedPath });
+              await openOutputFolder(lastPdfCompressSavedPath);
             } catch (e) {
               console.error('[PDF Compress] Reveal error:', e);
             }
@@ -14610,13 +18432,10 @@
 
       // ===== Favorites System =====
       const FAV_KEY = 'toolknit_favorites';
+      const MAX_FAVORITES = 6;
       const toastEl = document.getElementById('favToast');
       const toastText = document.getElementById('favToastText');
       let toastTimer = null;
-
-      function isLoggedIn() {
-        return !!localStorage.getItem('toolknit_token');
-      }
 
       function showToast(msg) {
         if (!toastEl || !toastText) return;
@@ -14630,12 +18449,13 @@
 
       function getFavorites() {
         try {
-          return JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+          const favorites = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+          return Array.isArray(favorites) ? favorites.slice(0, MAX_FAVORITES) : [];
         } catch { return []; }
       }
 
       function saveFavorites(favs) {
-        localStorage.setItem(FAV_KEY, JSON.stringify(favs));
+        localStorage.setItem(FAV_KEY, JSON.stringify(favs.slice(0, MAX_FAVORITES)));
       }
 
       function isFavorited(toolId) {
@@ -14643,11 +18463,16 @@
       }
 
       function addFavorite(toolId, name, iconHtml, category) {
-        if (isFavorited(toolId)) return;
+        if (isFavorited(toolId)) return false;
         const favs = getFavorites();
+        if (favs.length >= MAX_FAVORITES) {
+          showToast(t('home.favLimit'));
+          return false;
+        }
         favs.push({ tool: toolId, name, iconHtml, category, ts: Date.now() });
         saveFavorites(favs);
         renderFavorites();
+        return true;
       }
 
       function removeFavorite(toolId) {
@@ -14670,18 +18495,60 @@
         return { toolId, name, iconHtml, category };
       }
 
+      function currentToolCategory(toolId, fallback = '') {
+        const item = Array.from(document.querySelectorAll('.content-section:not([data-category="home"]) .audio-list-item'))
+          .find(candidate => candidate.dataset.tool === toolId);
+        return item?.closest('.content-section')?.dataset.category || fallback;
+      }
+
+      function resolveHomeToolInfo(record) {
+        const toolId = record?.tool || '';
+        const item = Array.from(document.querySelectorAll('.content-section:not([data-category="home"]) .audio-list-item'))
+          .find(candidate => candidate.dataset.tool === toolId);
+        if (item) return getToolInfo(item);
+        return {
+          toolId,
+          name: record?.name || toolId || t('common.tool'),
+          iconHtml: '',
+          category: record?.category || ''
+        };
+      }
+
+      function seedDefaultFavorites() {
+        if (localStorage.getItem(FAV_KEY) !== null) return;
+
+        const candidates = Array.from(document.querySelectorAll('.content-section:not([data-category="home"]) .audio-list-item'));
+        const defaults = candidates
+          .sort(() => Math.random() - 0.5)
+          .slice(0, MAX_FAVORITES)
+          .map(item => {
+            const info = getToolInfo(item);
+            return { tool: info.toolId, name: info.name, iconHtml: info.iconHtml, category: info.category, ts: Date.now() };
+          });
+
+        if (defaults.length > 0) saveFavorites(defaults);
+      }
+
       // Right-click on audio-list-item → direct toggle favorite
       // Also track recent usage on click
       const RECENT_KEY = 'toolknit_recent_tools';
       const MAX_RECENT = 3;
 
-      // Global: when a tool overlay's back button is clicked, return to home if navigated from home
-      document.addEventListener('click', (e) => {
-        if (e.target.closest('.settings-back') && navigatedFromHome) {
-          navigatedFromHome = false;
-          setTimeout(() => switchCategory('home'), 100);
-        }
-      }, true);
+      // A home shortcut may briefly switch to a category solely to open its tool.
+      // Return only after that tool overlay has actually closed, so the category
+      // never flashes between the overlay and the home screen.
+      document.addEventListener('click', (event) => {
+        const backButton = event.target.closest('.settings-back');
+        if (!backButton || !navigatedFromHome) return;
+        const toolOverlay = backButton.closest('[id$="Overlay"]');
+        if (!toolOverlay) return;
+
+        queueMicrotask(() => {
+          if (!navigatedFromHome || toolOverlay.classList.contains('visible')) return;
+          clearHomeToolNavigation();
+          switchCategory('home');
+        });
+      });
 
       function getRecent() {
         try {
@@ -14707,8 +18574,7 @@
           if (isFavorited(info.toolId)) {
             removeFavorite(info.toolId);
             showToast(t('home.favRemoved'));
-          } else {
-            addFavorite(info.toolId, info.name, info.iconHtml, info.category);
+          } else if (addFavorite(info.toolId, info.name, info.iconHtml, info.category)) {
             showToast(t('home.favAdded'));
           }
         });
@@ -14738,15 +18604,18 @@
           return;
         }
 
-        container.innerHTML = favs.map(f => `
-          <div class="fav-item" data-tool="${f.tool}" data-category="${f.category || ''}">
-            <div class="fav-icon">${f.iconHtml || ''}</div>
-            <div class="fav-name">${f.name}</div>
-            <div class="fav-remove" data-tool="${f.tool}">
+        container.innerHTML = favs.map(f => {
+          const info = resolveHomeToolInfo(f);
+          return `
+          <div class="fav-item" data-tool="${escapeHtml(info.toolId)}" data-category="${escapeHtml(info.category || '')}">
+            <div class="fav-icon">${info.iconHtml}</div>
+            <div class="fav-name">${escapeHtml(info.name)}</div>
+            <div class="fav-remove" data-tool="${escapeHtml(info.toolId)}">
               <i data-lucide="x"></i>
             </div>
           </div>
-        `).join('');
+        `;
+        }).join('');
 
         if (typeof createIcons === 'function') createIcons({ icons });
 
@@ -14755,14 +18624,7 @@
             if (e.target.closest('.fav-remove')) return;
             const toolId = el.dataset.tool;
             const category = el.dataset.category;
-            if (category) {
-              navigatedFromHome = true;
-              switchCategory(category);
-              setTimeout(() => {
-                const toolItem = document.querySelector(`.audio-list-item[data-tool="${toolId}"]`);
-                if (toolItem) toolItem.click();
-              }, 1100);
-            }
+            launchToolFromHome(toolId, category);
           });
         });
 
@@ -14801,14 +18663,7 @@
           el.addEventListener('click', () => {
             const toolId = el.dataset.tool;
             const category = el.dataset.category;
-            if (category) {
-              navigatedFromHome = true;
-              switchCategory(category);
-              setTimeout(() => {
-                const toolItem = document.querySelector(`.audio-list-item[data-tool="${toolId}"]`);
-                if (toolItem) toolItem.click();
-              }, 1100);
-            }
+            launchToolFromHome(toolId, category, 1100);
           });
         });
       }
@@ -14822,30 +18677,27 @@
           container.innerHTML = `<div class="placeholder-box" data-i18n="home.empty">${escapeHtml(t('home.empty'))}</div>`;
           return;
         }
-        container.innerHTML = recent.map(r => `
-          <div class="rec-item" data-tool="${escapeHtml(r.tool)}" data-category="${escapeHtml(r.category || '')}">
-            <div class="rec-icon">${r.iconHtml || ''}</div>
-            <div class="rec-name">${escapeHtml(r.name)}</div>
+        container.innerHTML = recent.map(r => {
+          const info = resolveHomeToolInfo(r);
+          return `
+          <div class="rec-item" data-tool="${escapeHtml(info.toolId)}" data-category="${escapeHtml(info.category || '')}">
+            <div class="rec-icon">${info.iconHtml}</div>
+            <div class="rec-name">${escapeHtml(info.name)}</div>
           </div>
-        `).join('');
+        `;
+        }).join('');
         if (typeof createIcons === 'function') createIcons({ icons });
         container.querySelectorAll('.rec-item').forEach(el => {
           el.addEventListener('click', () => {
             const toolId = el.dataset.tool;
             const category = el.dataset.category;
-            if (category) {
-              navigatedFromHome = true;
-              switchCategory(category);
-              setTimeout(() => {
-                const toolItem = document.querySelector(`.audio-list-item[data-tool="${toolId}"]`);
-                if (toolItem) toolItem.click();
-              }, 1100);
-            }
+            launchToolFromHome(toolId, category, 1100);
           });
         });
       }
 
       // Initial render
+      seedDefaultFavorites();
       renderFavorites();
       renderRecommended();
       renderRecent();
@@ -14853,5 +18705,6 @@
       // Re-render on language change
       onLangChange(() => {
         renderFavorites();
+        renderRecommended();
         renderRecent();
       });

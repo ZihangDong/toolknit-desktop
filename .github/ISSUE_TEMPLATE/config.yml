@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/ZihangDong/toolknit-desktop/security
+    about: Please use private vulnerability reporting rather than a public issue.
+  - name: Discussions
+    url: https://github.com/ZihangDong/toolknit-desktop/discussions
+    about: Ask questions, share workflows, and discuss broader ideas.

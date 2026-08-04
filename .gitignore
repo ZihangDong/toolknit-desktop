@@ -52,3 +52,24 @@ toolknit-installer/
 
 # 打包后的安装程序(体积大,通过 GitHub Releases 分发)
 ToolKnit-Desktop-Setup.exe
+
+# ToolKnit Desktop 本地构建/运行输出
+toolknit-desktop/dist/
+toolknit-desktop/output/
+toolknit-desktop/tmp/
+toolknit-desktop/src-tauri/target/
+
+# FFmpeg 体积大，桌面端设置页按需下载，GitHub Release/npm 均不内置
+toolknit-desktop/src-tauri/resources/ffmpeg/
+
+# @toolknit/cli prepack 阶段自动暂存的资源，不提交到仓库
+toolknit-desktop/cli/vendor/
+toolknit-desktop/cli/lib/core/
+toolknit-desktop/cli/resources/fonts/
+toolknit-desktop/cli/*.tgz
+
+# README 资源误命名副本
+toolknit-desktop/docs/assets/readme-hero.gif.gif
+
+# GitHub 只识别根目录 .github；子应用目录里的副本不提交
+toolknit-desktop/.github/

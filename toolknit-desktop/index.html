@@ -7,11 +7,23 @@
     <link rel="stylesheet" href="./src/styles.css">
   </head>
   <body>
+    <div class="custom-background" id="customBackground" aria-hidden="true"></div>
     <div class="darkveil-bg" id="darkveilBg"></div>
     <div class="transition-mask" id="transitionMask">
       <div class="tk-mascot-lg" aria-hidden="true"></div>
     </div>
     <div class="toast-container" id="toastContainer"></div>
+    <div class="global-window-controls" aria-label="窗口控制">
+      <button class="ctrl-btn" type="button" data-i18n-title="common.minimize" title="最小化" data-action="minimize">
+        <i data-lucide="minus"></i>
+      </button>
+      <button class="ctrl-btn" type="button" data-i18n-title="common.maximize" title="最大化" data-action="maximize">
+        <i data-lucide="square"></i>
+      </button>
+      <button class="ctrl-btn close" type="button" data-i18n-title="common.close" title="关闭" data-action="close">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
 
     <div class="settings-overlay" id="settingsOverlay">
       <div class="settings-header">
@@ -44,18 +56,57 @@
         </div>
 
         <div class="settings-section">
-          <h3 class="settings-section-title" data-i18n="settings.version">版本与更新</h3>
+          <h3 class="settings-section-title" data-i18n="settings.versionInfo">版本信息</h3>
           <div class="settings-row">
-            <span class="settings-version" data-i18n="changelog.currentVersion">v1.0 Beta</span>
+            <span class="settings-version">v1.2.7</span>
           </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title" data-i18n="settings.aiFeatures">AI 功能</h3>
+          <div class="settings-row">
+            <span class="settings-version" data-i18n="settings.aiFeaturesDesc">配置本地 AI 平台密钥</span>
+            <button class="settings-btn" id="settingsApiKey" data-i18n="settings.configureApiKey">配置密钥</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title" data-i18n="settings.offlineModels">离线识别模型</h3>
+          <div class="settings-row">
+            <span class="settings-path" id="offlineModelSummary" data-i18n="settings.offlineModelsEmpty">尚未安装离线识别模型</span>
+            <button class="settings-btn" id="manageOfflineModels" data-i18n="settings.manageModels">管理模型</button>
+          </div>
+          <p class="settings-hint" data-i18n="settings.offlineModelsHint">模型只需下载一次，安装后可离线识别音频和视频中的中英文语音。</p>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title" data-i18n="settings.ffmpegRuntime">FFmpeg 运行时</h3>
+          <div class="settings-row">
+            <span class="settings-path" id="ffmpegRuntimeSummary" data-i18n="settings.ffmpegRuntimeEmpty">未安装，音视频工具需要安装后才能使用</span>
+            <button class="settings-btn" id="manageFfmpegRuntime" data-i18n="settings.manageFfmpeg">管理 FFmpeg</button>
+          </div>
+          <p class="settings-hint" data-i18n="settings.ffmpegRuntimeHint">FFmpeg 不再随安装包提供；可从官方源或国内镜像按需下载到本机。</p>
         </div>
 
         <div class="settings-section">
           <h3 class="settings-section-title" data-i18n="settings.storagePath">默认存储位置</h3>
           <div class="settings-row">
             <span class="settings-path" id="storagePathDisplay">--</span>
+            <button class="settings-btn" id="chooseStorageFolder" data-i18n="settings.customStorageFolder">自定义位置</button>
             <button class="settings-btn" id="openStorageFolder" data-i18n="settings.openFolder">打开文件夹</button>
           </div>
+          <p class="settings-hint" data-i18n="settings.storageHint">输出会自动按 PDF、图像、音频、视频、AI 文档等功能分类保存。</p>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title" data-i18n="settings.customBackground">自定义背景</h3>
+          <div class="settings-row">
+            <span class="settings-path" id="customBackgroundStatus" data-i18n="settings.defaultBackground">使用 ToolKnit 默认动态背景</span>
+            <button class="settings-btn" id="chooseCustomBackground" data-i18n="settings.uploadBackground">上传图像或视频</button>
+            <button class="settings-btn" id="clearCustomBackground" data-i18n="settings.clearBackground" disabled>清除</button>
+          </div>
+          <input id="customBackgroundInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/ogg,video/quicktime" hidden>
+          <p class="settings-hint" data-i18n="settings.backgroundHint">自定义背景会应用于首页和全部分类页面；清除后立即恢复默认设计。</p>
         </div>
 
         <div class="settings-section">
@@ -73,6 +124,39 @@
             <a class="settings-link" href="#" id="usagePolicyLink" data-i18n="settings.usagePolicy">使用规范</a>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="transcription-model-overlay" id="transcriptionModelOverlay" aria-hidden="true">
+      <div class="transcription-model-panel" role="dialog" aria-modal="true" aria-labelledby="transcriptionModelTitle">
+        <div class="transcription-model-header">
+          <div>
+            <span class="tools-eyebrow" data-i18n="home.transcription.modelEyebrow">Offline Model Manager</span>
+            <h2 id="transcriptionModelTitle" data-i18n="home.transcription.modelTitle">离线识别模型</h2>
+          </div>
+          <button class="pdf-page-workspace-close" type="button" id="transcriptionModelClose" data-i18n-aria-label="common.close" aria-label="关闭">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <p class="transcription-model-intro" data-i18n="home.transcription.modelIntro">选择一个模型下载。模型只在本机运行；下载源可切换为官方或国内镜像。</p>
+        <div class="transcription-source-row" role="group" data-i18n-aria-label="home.transcription.sourceLabel">
+          <span data-i18n="home.transcription.sourceLabel">下载源</span>
+          <div class="audio-convert-format-options" id="transcriptionSourceOptions">
+            <button type="button" class="audio-convert-format-option active" data-source="auto" data-i18n="home.transcription.sourceAuto">自动</button>
+            <button type="button" class="audio-convert-format-option" data-source="official" data-i18n="home.transcription.sourceOfficial">官方</button>
+            <button type="button" class="audio-convert-format-option" data-source="china" data-i18n="home.transcription.sourceChina">国内镜像</button>
+          </div>
+        </div>
+        <div class="transcription-model-list" id="transcriptionModelList"></div>
+      </div>
+    </div>
+
+    <div class="transcription-model-overlay" id="ffmpegRuntimeOverlay" aria-hidden="true">
+      <div class="transcription-model-panel" role="dialog" aria-modal="true" aria-labelledby="ffmpegRuntimeTitle">
+        <div class="transcription-model-header"><div><span class="tools-eyebrow">Media Runtime</span><h2 id="ffmpegRuntimeTitle" data-i18n="settings.ffmpegRuntime">FFmpeg 运行时</h2></div><button class="pdf-page-workspace-close" type="button" id="ffmpegRuntimeClose" data-i18n-aria-label="common.close" aria-label="关闭"><i data-lucide="x"></i></button></div>
+        <p class="transcription-model-intro" data-i18n="settings.ffmpegRuntimeHint">FFmpeg 不再随安装包提供；可从官方源或国内镜像按需下载到本机。</p>
+        <div class="transcription-source-row" role="group"><span data-i18n="home.transcription.sourceLabel">下载源</span><div class="audio-convert-format-options" id="ffmpegRuntimeSourceOptions"><button type="button" class="audio-convert-format-option active" data-source="auto" data-i18n="home.transcription.sourceAuto">自动</button><button type="button" class="audio-convert-format-option" data-source="official" data-i18n="home.transcription.sourceOfficial">官方</button><button type="button" class="audio-convert-format-option" data-source="china" data-i18n="home.transcription.sourceChina">国内镜像</button></div></div>
+        <div class="transcription-model-list" id="ffmpegRuntimeList"></div>
       </div>
     </div>
 
@@ -94,7 +178,12 @@
             <div class="help-nav-item active" data-help-section="overview" data-i18n="help.nav.overview">功能概览</div>
             <div class="help-nav-item" data-help-section="install" data-i18n="help.nav.install">安装与启动</div>
             <div class="help-nav-item" data-help-section="settings" data-i18n="help.nav.settings">设置与偏好</div>
+            <div class="help-nav-item" data-help-section="cli-guide" data-i18n="help.nav.cliGuide">CLI 命令行入门</div>
             <div class="help-nav-item" data-help-section="update" data-i18n="help.nav.update">版本更新</div>
+          </div>
+          <div class="help-nav-group">
+            <div class="help-nav-group-title" data-i18n="help.group.agent">AI Agent 协作</div>
+            <div class="help-nav-item" data-help-section="agent-guide" data-i18n="help.nav.agentGuide">AI Agent 快速手册</div>
           </div>
           <div class="help-nav-group">
             <div class="help-nav-group-title" data-i18n="help.group.pdfTools">PDF 工具</div>
@@ -110,6 +199,7 @@
             <div class="help-nav-group-title" data-i18n="help.group.imageTools">图像工具</div>
             <div class="help-nav-item" data-help-section="img-convert" data-i18n="help.nav.imgConvert">图片格式转换</div>
             <div class="help-nav-item" data-help-section="img-compress" data-i18n="help.nav.imgCompress">图片压缩</div>
+            <div class="help-nav-item" data-help-section="image-stitch" data-i18n="help.nav.imageStitch">长图拼接</div>
             <div class="help-nav-item" data-help-section="icon-gen" data-i18n="help.nav.iconGen">图标生成器</div>
           </div>
           <div class="help-nav-group">
@@ -117,45 +207,39 @@
             <div class="help-nav-item" data-help-section="audio-convert" data-i18n="help.nav.audioConvert">音频格式转换</div>
             <div class="help-nav-item" data-help-section="bpm-detect" data-i18n="help.nav.bpmDetect">BPM 节拍测速</div>
             <div class="help-nav-item" data-help-section="audio-clip" data-i18n="help.nav.audioClip">音频剪辑</div>
-            <div class="help-nav-item" data-help-section="audio-trim" data-i18n="help.nav.audioTrim">音频裁剪</div>
-            <div class="help-nav-item" data-help-section="audio-merge" data-i18n="help.nav.audioMerge">音频合并</div>
             <div class="help-nav-item" data-help-section="audio-extract" data-i18n="help.nav.audioExtract">音频提取</div>
           </div>
           <div class="help-nav-group">
             <div class="help-nav-group-title" data-i18n="help.group.videoTools">视频工具</div>
             <div class="help-nav-item" data-help-section="video-convert" data-i18n="help.nav.videoConvert">视频格式转换</div>
-            <div class="help-nav-item" data-help-section="video-compress" data-i18n="help.nav.videoCompress">视频压缩</div>
-            <div class="help-nav-item" data-help-section="video-trim" data-i18n="help.nav.videoTrim">视频裁剪</div>
-            <div class="help-nav-item" data-help-section="video-gif" data-i18n="help.nav.videoGif">视频转 GIF</div>
-            <div class="help-nav-item" data-help-section="video-merge" data-i18n="help.nav.videoMerge">视频合并</div>
+            <div class="help-nav-item" data-help-section="video-frame" data-i18n="help.nav.videoFrame">视频高清单帧图</div>
+            <div class="help-nav-item" data-help-section="video-gif" data-i18n="help.nav.videoGif">视频截取 GIF</div>
           </div>
           <div class="help-nav-group">
             <div class="help-nav-group-title" data-i18n="help.group.textTools">文本工具</div>
-            <div class="help-nav-item" data-help-section="text-diff" data-i18n="help.nav.textDiff">文本对比</div>
-            <div class="help-nav-item" data-help-section="text-counter" data-i18n="help.nav.textCounter">字符统计</div>
-            <div class="help-nav-item" data-help-section="text-formatter" data-i18n="help.nav.textFormatter">格式化</div>
-            <div class="help-nav-item" data-help-section="text-encoder" data-i18n="help.nav.textEncoder">编码转换</div>
+            <div class="help-nav-item" data-help-section="transcription" data-i18n="help.nav.transcription">音视频提取文字</div>
+            <div class="help-nav-item" data-help-section="text-stats" data-i18n="help.nav.textStats">文本统计器</div>
+            <div class="help-nav-item" data-help-section="text-format" data-i18n="help.nav.textFormat">文本格式化</div>
           </div>
           <div class="help-nav-group">
             <div class="help-nav-group-title" data-i18n="help.group.calcTools">计算器工具</div>
-            <div class="help-nav-item" data-help-section="calc-scientific" data-i18n="help.nav.scientific">科学计算</div>
-            <div class="help-nav-item" data-help-section="calc-unit" data-i18n="help.nav.unitConvert">单位换算</div>
-            <div class="help-nav-item" data-help-section="calc-currency" data-i18n="help.nav.currency">汇率换算</div>
-            <div class="help-nav-item" data-help-section="calc-loan" data-i18n="help.nav.loan">贷款计算</div>
+            <div class="help-nav-item" data-help-section="bmi-calc" data-i18n="help.nav.bmiCalc">体脂率计算器</div>
+            <div class="help-nav-item" data-help-section="timestamp-calc" data-i18n="help.nav.timestampCalc">时间戳计算器</div>
+            <div class="help-nav-item" data-help-section="mortgage-calc" data-i18n="help.nav.mortgageCalc">房贷计算器</div>
+            <div class="help-nav-item" data-help-section="interest-calc" data-i18n="help.nav.interestCalc">利息计算器</div>
+            <div class="help-nav-item" data-help-section="password-gen" data-i18n="help.nav.passwordGen">密码生成器</div>
           </div>
           <div class="help-nav-group">
             <div class="help-nav-group-title" data-i18n="help.group.creativeTools">创意工具</div>
-            <div class="help-nav-item" data-help-section="creative-color" data-i18n="help.nav.colorExtractor">配色提取器</div>
-            <div class="help-nav-item" data-help-section="creative-palette" data-i18n="help.nav.palette">配色生成</div>
-            <div class="help-nav-item" data-help-section="creative-password" data-i18n="help.nav.passwordGen">密码生成器</div>
-            <div class="help-nav-item" data-help-section="creative-typing" data-i18n="help.nav.typingTest">打字测试器</div>
+            <div class="help-nav-item" data-help-section="color-extractor" data-i18n="help.nav.colorExtractor">配色提取器</div>
+            <div class="help-nav-item" data-help-section="typing-test" data-i18n="help.nav.typingTest">打字测试器</div>
           </div>
           <div class="help-nav-group">
             <div class="help-nav-group-title" data-i18n="help.group.aiTools">AI 工具</div>
             <div class="help-nav-item" data-help-section="ai-polish" data-i18n="help.nav.aiPolish">AI 文字润色</div>
             <div class="help-nav-item" data-help-section="ai-translate" data-i18n="help.nav.aiTranslate">AI 智能翻译</div>
             <div class="help-nav-item" data-help-section="ai-doc" data-i18n="help.nav.aiDoc">AI 文档生成</div>
-            <div class="help-nav-item" data-help-section="ai-chat" data-i18n="help.nav.aiChat">AI 对话</div>
+            <div class="help-nav-item" data-help-section="ai-table" data-i18n="help.nav.aiTable">AI 表格生成</div>
           </div>
           <div class="help-nav-group">
             <div class="help-nav-group-title" data-i18n="help.group.faq">常见问题</div>
@@ -363,6 +447,96 @@
       </div>
     </div>
 
+    <div class="audio-convert-overlay transcription-overlay" id="transcriptionOverlay">
+      <div class="plasma-bg" id="transcriptionPlasmaBg"></div>
+      <div class="audio-convert-drop-zone" id="transcriptionDropZone"><span class="drop-hint" data-i18n="home.transcription.dropHint">松手即可上传</span></div>
+      <div class="audio-convert-header">
+        <button class="settings-back" id="transcriptionBack" data-i18n-title="settings.back">
+          <div class="svg-wrapper-1"><div class="svg-wrapper"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" class="icon"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></div></div>
+          <span data-i18n="settings.back">返回</span>
+        </button>
+      </div>
+      <div class="audio-convert-body">
+        <div class="audio-convert-hero">
+          <div class="audio-convert-hero-top">
+            <div class="audio-convert-hero-label" data-i18n="home.transcription.heroLabel">Local Speech To Text</div>
+            <h1 class="audio-convert-hero-title" data-i18n="home.transcription.title">音视频提取文字</h1>
+            <p class="audio-convert-hero-subtitle" data-i18n="home.transcription.subtitle">离线识别中英文语音，输出可编辑的 TXT 与 SRT 字幕文件。</p>
+            <div class="transcription-controls">
+              <div class="audio-convert-format-selector">
+                <span class="audio-convert-format-label" data-i18n="home.transcription.language">识别语言</span>
+                <div class="audio-convert-format-options" id="transcriptionLanguageOptions">
+                  <button type="button" class="audio-convert-format-option active" data-language="auto" data-i18n="home.transcription.languageAuto">自动识别</button>
+                  <button type="button" class="audio-convert-format-option" data-language="zh" data-i18n="home.transcription.languageChinese">中文</button>
+                  <button type="button" class="audio-convert-format-option" data-language="en" data-i18n="home.transcription.languageEnglish">English</button>
+                </div>
+              </div>
+              <label class="transcription-refine-toggle">
+                <input type="checkbox" id="transcriptionRefine">
+                <span class="transcription-refine-control" aria-hidden="true"></span>
+                <span data-i18n="home.transcription.refine">使用 DeepSeek 二次润色</span>
+              </label>
+            </div>
+            <button class="audio-convert-cta" id="transcriptionCta" type="button"><i data-lucide="upload"></i><span id="transcriptionCtaText">上传音频或视频</span></button>
+            <div class="transcription-selected-file" id="transcriptionSelectedFile" role="status" aria-live="polite" hidden>
+              <span id="transcriptionSelectedFileName"></span>
+            </div>
+          </div>
+          <div class="audio-convert-files" id="transcriptionFiles"></div>
+        </div>
+        <button class="audio-convert-process-btn" id="transcriptionProcessBtn" data-i18n="home.transcription.process" style="display:none;">开始识别</button>
+        <div class="audio-convert-formats transcription-note">
+          <h3 class="audio-convert-formats-title" data-i18n="home.transcription.outputTitle">输出文件</h3>
+          <div class="audio-convert-conversion-map"><span class="map-text" data-i18n="home.transcription.outputHint">原始 JSON、TXT、SRT 会始终保留；开启润色后会另外生成正式版 TXT 与 SRT。</span></div>
+        </div>
+      </div>
+      <input id="transcriptionInput" type="file" accept="audio/*,video/*,.mp3,.aac,.m4a,.wav,.flac,.alac,.ogg,.wma,.mp4,.mkv,.avi,.mov,.webm,.flv,.wmv,.ts" hidden>
+      <div class="audio-convert-process-mask" id="transcriptionProcessMask"><div class="audio-convert-process-content"><div class="audio-convert-loader"></div><div class="audio-convert-process-text" id="transcriptionProcessText" data-i18n="home.transcription.preparing">正在准备识别...</div><div class="audio-convert-process-bar"><div class="audio-convert-process-bar-fill" id="transcriptionProcessBarFill"></div></div></div></div>
+    </div>
+
+    <div class="audio-convert-success-overlay dependency-gate-overlay" id="dependencyGateOverlay" aria-hidden="true">
+      <div class="audio-convert-success-dialog dependency-gate-dialog" role="dialog" aria-modal="true" aria-labelledby="dependencyGateTitle">
+        <div class="dependency-gate-icon"><i data-lucide="download"></i></div>
+        <h3 class="audio-convert-success-title" id="dependencyGateTitle" data-i18n="home.dependencies.title">需要补齐本地依赖</h3>
+        <p class="audio-convert-success-meta" id="dependencyGateDesc" data-i18n="home.dependencies.desc">安装完成后即可进入当前功能，依赖也可以随时在设置中管理。</p>
+        <div class="audio-convert-success-detail dependency-gate-list" id="dependencyGateList"></div>
+        <div class="dependency-gate-progress" id="dependencyGateProgress" hidden>
+          <div class="dependency-gate-progress-track"><span id="dependencyGateProgressFill"></span></div>
+          <span id="dependencyGateProgressText"></span>
+        </div>
+        <p class="dependency-gate-error" id="dependencyGateError" role="alert" hidden></p>
+        <div class="audio-convert-success-actions">
+          <button class="audio-convert-success-btn audio-convert-success-btn-secondary" id="dependencyGateCancel" type="button" data-i18n="home.dependencies.cancel">取消</button>
+          <button class="audio-convert-success-btn audio-convert-success-btn-primary" id="dependencyGateInstall" type="button" data-i18n="home.dependencies.installAll">开始下载全部依赖</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transcription Success Overlay -->
+    <div class="audio-clip-success-overlay" id="transcriptionSuccessOverlay">
+      <div class="audio-clip-success-dialog">
+        <div class="audio-clip-success-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <h3 class="audio-clip-success-title" data-i18n="home.transcription.complete">识别完成</h3>
+        <div class="audio-clip-success-meta" id="transcriptionSuccessMeta"></div>
+        <div class="audio-convert-success-detail">
+          <div class="audio-convert-success-row">
+            <span class="audio-convert-success-key" data-i18n="home.transcription.successCount">生成文件</span>
+            <span class="audio-convert-success-value" id="transcriptionSuccessCount"></span>
+          </div>
+          <div class="audio-convert-success-row">
+            <span class="audio-convert-success-key" data-i18n="home.transcription.successPath">保存路径</span>
+            <span class="audio-convert-success-value" id="transcriptionSuccessPath"></span>
+          </div>
+        </div>
+        <div class="audio-clip-success-actions">
+          <button class="audio-clip-success-btn audio-clip-success-btn-secondary" id="transcriptionSuccessOpenFolder" data-i18n="home.transcription.openFolder">打开文件夹</button>
+          <button class="audio-clip-success-btn audio-clip-success-btn-primary" id="transcriptionSuccessOk" data-i18n="home.transcription.ok">确定</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Image Convert Tool Page -->
     <div class="audio-convert-overlay" id="imageConvertOverlay">
       <div class="plasma-bg" id="imageConvertPlasmaBg"></div>
@@ -390,7 +564,7 @@
           <div class="audio-convert-hero-top">
             <div class="audio-convert-hero-label" data-i18n="home.imageConvert.heroLabel">Image Format Converter</div>
             <h1 class="audio-convert-hero-title" data-i18n="home.imageConvert.title">图片格式转换</h1>
-            <p class="audio-convert-hero-subtitle" data-i18n="home.imageConvert.subtitle">支持 JPG、PNG、WebP、BMP、GIF 五种主流图片格式互转，批量处理一键完成。</p>
+            <p class="audio-convert-hero-subtitle" data-i18n="home.imageConvert.subtitle">支持 JPG、PNG、WebP、BMP、GIF、SVG 六种图片格式输出，批量处理一键完成。</p>
             <div class="audio-convert-format-selector">
               <span class="audio-convert-format-label" data-i18n="home.imageConvert.targetFormat">目标格式</span>
               <div class="audio-convert-format-options" id="imageConvertFormatOptions">
@@ -399,6 +573,7 @@
                 <button class="audio-convert-format-option" data-format="WEBP">WebP</button>
                 <button class="audio-convert-format-option" data-format="BMP">BMP</button>
                 <button class="audio-convert-format-option" data-format="GIF">GIF</button>
+                <button class="audio-convert-format-option" data-format="SVG">SVG</button>
               </div>
             </div>
             <button class="audio-convert-cta" id="imageConvertCta">
@@ -461,7 +636,7 @@
           <div class="audio-convert-hero-top">
             <div class="audio-convert-hero-label" data-i18n="home.imageCompress.heroLabel">Image Compressor</div>
             <h1 class="audio-convert-hero-title" data-i18n="home.imageCompress.title">图片压缩</h1>
-            <p class="audio-convert-hero-subtitle" data-i18n="home.imageCompress.subtitle">支持 JPG、PNG、WebP、BMP、GIF 图片压缩，三档画质可选，批量处理一键完成。</p>
+            <p class="audio-convert-hero-subtitle" data-i18n="home.imageCompress.subtitle">支持 JPG、PNG、WebP 图片压缩，三档画质可选，批量处理一键完成。</p>
             <div class="audio-convert-format-selector">
               <span class="audio-convert-format-label" data-i18n="home.imageCompress.qualityLabel">压缩画质</span>
               <div class="audio-convert-format-options" id="imageCompressQualityOptions">
@@ -484,11 +659,9 @@
             <div class="audio-convert-format-chip"><span class="format-name">JPG</span></div>
             <div class="audio-convert-format-chip"><span class="format-name">PNG</span></div>
             <div class="audio-convert-format-chip"><span class="format-name">WebP</span></div>
-            <div class="audio-convert-format-chip"><span class="format-name">BMP</span></div>
-            <div class="audio-convert-format-chip"><span class="format-name">GIF</span></div>
           </div>
           <div class="audio-convert-conversion-map">
-            <span class="map-text" data-i18n="home.imageCompress.mapText">保留原始格式，仅降低文件体积</span>
+            <span class="map-text" data-i18n="home.imageCompress.mapText">保留原始格式，仅在文件确实更小时输出</span>
           </div>
         </div>
       </div>
@@ -600,6 +773,221 @@
         </div>
       </div>
     </div>
+
+    <div class="audio-convert-overlay" id="videoFrameOverlay">
+      <div class="plasma-bg" id="videoFramePlasmaBg"></div>
+      <div class="audio-convert-drop-zone" id="videoFrameDropZone"><span class="drop-hint">松手即可上传视频</span></div>
+      <div class="audio-convert-header">
+        <button class="settings-back" id="videoFrameBack" type="button">
+          <div class="svg-wrapper-1" aria-hidden="true">
+            <div class="svg-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" class="icon"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
+            </div>
+          </div>
+          <span>返回</span>
+        </button>
+      </div>
+      <div class="video-frame-body">
+        <div class="video-frame-heading"><span class="audio-convert-hero-label">Frame Capture</span><h1 class="audio-convert-hero-title">视频高清单帧图</h1><p class="audio-convert-hero-subtitle">定位到任意时间点，逐帧微调并按原始分辨率导出 PNG 或 JPG。</p></div>
+        <div class="video-frame-empty" id="videoFrameEmpty"><button class="audio-convert-cta" id="videoFramePick"><i data-lucide="upload"></i><span>上传视频文件</span></button><p>MP4 / MOV / MKV / WebM / AVI 等常见格式</p></div>
+        <div class="video-frame-editor" id="videoFrameEditor" hidden>
+          <div class="video-frame-preview">
+            <video id="videoFramePreviewVideo" class="video-frame-video-preview" muted playsinline preload="metadata" hidden></video>
+            <img id="videoFramePreviewImage" alt="视频预览帧" hidden>
+            <button class="video-gif-preview-toggle video-frame-preview-toggle" id="videoFramePreviewToggle" type="button" disabled aria-label="播放视频" aria-pressed="false" title="播放视频">
+              <svg class="video-gif-preview-play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+              <svg class="video-gif-preview-pause-icon" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M7 5h4v14H7zM13 5h4v14h-4z"></path></svg>
+            </button>
+            <div class="video-frame-time" id="videoFrameTime">00:00.000</div>
+          </div>
+          <div class="video-frame-file"><span id="videoFrameName"></span><button id="videoFrameChange" type="button">更换文件</button></div>
+          <input id="videoFrameTimeline" class="video-frame-timeline" type="range" min="0" max="0" step="1" value="0">
+          <div class="video-frame-controls"><button id="videoFramePrev" type="button" title="上一帧"><i data-lucide="chevron-left"></i></button><input id="videoFrameTimestamp" type="number" min="0" step="1"><span>毫秒</span><button id="videoFrameNext" type="button" title="下一帧"><i data-lucide="chevron-right"></i></button><div class="audio-convert-format-options" id="videoFrameFormat"><button class="audio-convert-format-option active" data-format="png">PNG 无损</button><button class="audio-convert-format-option" data-format="jpg">JPG 高清</button></div></div>
+          <button class="audio-convert-process-btn visible" id="videoFrameExport" type="button">导出当前帧</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="audio-convert-process-mask" id="videoFrameProcessMask">
+      <div class="tk-mascot-lg" aria-hidden="true"></div>
+      <div class="audio-convert-process-bar"><div class="audio-convert-process-bar-fill" id="videoFrameProcessBarFill"></div></div>
+      <div class="audio-convert-process-text" id="videoFrameProcessText">正在导出单帧图...</div>
+      <button class="audio-convert-cancel-btn" id="videoFrameCancelBtn" type="button">取消</button>
+    </div>
+    <div class="audio-convert-success-overlay" id="videoFrameSuccessOverlay">
+      <div class="audio-convert-success-dialog">
+        <div class="audio-convert-success-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <h3 class="audio-convert-success-title">单帧图已导出</h3>
+        <div class="audio-convert-success-meta" id="videoFrameSuccessMeta"></div>
+        <div class="audio-convert-success-detail">
+          <div class="audio-convert-success-row"><span class="audio-convert-success-key">格式</span><span class="audio-convert-success-value" id="videoFrameSuccessFormat"></span></div>
+          <div class="audio-convert-success-row"><span class="audio-convert-success-key">时间点</span><span class="audio-convert-success-value" id="videoFrameSuccessTime"></span></div>
+          <div class="audio-convert-success-row"><span class="audio-convert-success-key">保存路径</span><span class="audio-convert-success-value" id="videoFrameSuccessPath"></span></div>
+        </div>
+        <div class="audio-convert-success-actions"><button class="audio-convert-success-btn audio-convert-success-btn-secondary" id="videoFrameOpenFolder" type="button">打开文件夹</button><button class="audio-convert-success-btn audio-convert-success-btn-primary" id="videoFrameSuccessOk" type="button">确定</button></div>
+      </div>
+    </div>
+
+    <div class="audio-convert-overlay image-stitch-overlay" id="imageStitchOverlay">
+      <div class="plasma-bg" id="imageStitchPlasmaBg"></div>
+      <div class="audio-convert-header">
+        <button class="settings-back" id="imageStitchBack" type="button">
+          <div class="svg-wrapper-1" aria-hidden="true">
+            <div class="svg-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" class="icon"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
+            </div>
+          </div>
+          <span data-i18n="home.imageStitch.back">返回</span>
+        </button>
+      </div>
+      <main class="image-stitch-body">
+        <header class="image-stitch-heading">
+          <div>
+            <h1 class="audio-convert-hero-title" data-i18n="home.imageStitch.title">长图拼接</h1>
+            <p class="audio-convert-hero-subtitle" data-i18n="home.imageStitch.subtitle">调整顺序与统一尺寸，在本地无损拼成一张完整长图。</p>
+          </div>
+          <div class="image-stitch-heading-actions">
+            <button class="image-stitch-icon-button" id="imageStitchHelp" type="button" title="使用帮助"><i data-lucide="circle-help"></i></button>
+            <button class="image-stitch-text-button" id="imageStitchPdfPick" type="button"><i data-lucide="file-text"></i><span data-i18n="home.imageStitch.addPdf">从 PDF 导入</span></button>
+            <button class="image-stitch-text-button" id="imageStitchPick" type="button"><i data-lucide="plus"></i><span data-i18n="home.imageStitch.add">添加图片</span></button>
+            <button class="image-stitch-text-button danger" id="imageStitchClear" type="button" disabled><i data-lucide="trash-2"></i><span data-i18n="home.imageStitch.clear">全部清空</span></button>
+          </div>
+        </header>
+
+        <div class="image-stitch-workspace">
+          <aside class="image-stitch-queue-panel">
+            <div class="image-stitch-panel-heading">
+              <span data-i18n="home.imageStitch.queue">拼接顺序</span>
+              <strong id="imageStitchCount">0 / 100</strong>
+            </div>
+            <div class="image-stitch-queue-empty" id="imageStitchQueueEmpty">
+              <i data-lucide="images"></i>
+              <strong data-i18n="home.imageStitch.emptyTitle">添加至少两张图片</strong>
+              <span data-i18n="home.imageStitch.emptyDesc">支持 JPG、PNG、WebP、BMP 与静态 GIF</span>
+            </div>
+            <div class="image-stitch-queue" id="imageStitchQueue" aria-live="polite"></div>
+          </aside>
+
+          <section class="image-stitch-preview-panel">
+            <div class="image-stitch-panel-heading">
+              <span data-i18n="home.imageStitch.preview">实时预览</span>
+              <strong id="imageStitchEstimate">-- × --</strong>
+            </div>
+            <div class="image-stitch-preview-viewport" id="imageStitchPreviewViewport">
+              <div class="image-stitch-preview-empty" id="imageStitchPreviewEmpty">
+                <span>2+</span>
+                <p data-i18n="home.imageStitch.previewEmpty">图片会按左侧顺序在这里组合</p>
+              </div>
+              <div class="image-stitch-preview-composition vertical" id="imageStitchPreview" hidden></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="image-stitch-settings" aria-label="Stitch settings">
+          <div class="image-stitch-setting-group">
+            <span class="image-stitch-setting-label" data-i18n="home.imageStitch.direction">方向</span>
+            <div class="audio-convert-format-options" id="imageStitchMode">
+              <button class="audio-convert-format-option active" data-mode="vertical" type="button" data-i18n="home.imageStitch.vertical">上下拼接</button>
+              <button class="audio-convert-format-option" data-mode="horizontal" type="button" data-i18n="home.imageStitch.horizontal">左右拼接</button>
+            </div>
+          </div>
+          <div class="image-stitch-setting-group">
+            <span class="image-stitch-setting-label" data-i18n="home.imageStitch.reference">统一尺寸</span>
+            <div class="audio-convert-format-options" id="imageStitchReference">
+              <button class="audio-convert-format-option active" data-reference="first" type="button" data-i18n="home.imageStitch.first">首张</button>
+              <button class="audio-convert-format-option" data-reference="smallest" type="button" data-i18n="home.imageStitch.smallest">最小</button>
+              <button class="audio-convert-format-option" data-reference="largest" type="button" data-i18n="home.imageStitch.largest">最大</button>
+            </div>
+          </div>
+          <label class="image-stitch-number-setting"><span data-i18n="home.imageStitch.spacing">间距</span><input id="imageStitchSpacing" type="number" min="0" max="500" value="0"><em>px</em></label>
+          <label class="image-stitch-number-setting"><span data-i18n="home.imageStitch.scale">比例</span><input id="imageStitchScale" type="number" min="10" max="100" value="100"><em>%</em></label>
+          <label class="image-stitch-color-setting"><span data-i18n="home.imageStitch.background">背景</span><input id="imageStitchBackground" type="color" value="#ffffff"></label>
+          <label class="image-stitch-alpha-setting"><span data-i18n="home.imageStitch.opacity">不透明度</span><input id="imageStitchBackgroundAlpha" type="range" min="0" max="100" value="100"><em id="imageStitchBackgroundAlphaValue">100%</em></label>
+          <div class="image-stitch-setting-group">
+            <span class="image-stitch-setting-label" data-i18n="home.imageStitch.format">格式</span>
+            <div class="audio-convert-format-options" id="imageStitchFormat">
+              <button class="audio-convert-format-option active" data-format="png" type="button">PNG</button>
+              <button class="audio-convert-format-option" data-format="jpg" type="button">JPG</button>
+            </div>
+          </div>
+          <label class="image-stitch-number-setting" id="imageStitchQualityWrap" hidden><span data-i18n="home.imageStitch.quality">质量</span><input id="imageStitchQuality" type="number" min="60" max="100" value="92"><em>%</em></label>
+          <label class="image-stitch-name-setting"><span data-i18n="home.imageStitch.outputName">文件名</span><input id="imageStitchOutputName" type="text" maxlength="96" placeholder="stitched_image" autocomplete="off" spellcheck="false"></label>
+        </section>
+
+        <footer class="image-stitch-footer">
+          <span><i data-lucide="shield-check"></i><span data-i18n="home.imageStitch.local">图片仅在本机处理，源文件不会被修改</span></span>
+          <button class="audio-convert-process-btn visible" id="imageStitchExport" type="button" disabled><span data-i18n="home.imageStitch.export">开始拼接</span></button>
+        </footer>
+      </main>
+      <div class="audio-convert-drop-zone" id="imageStitchDropZone"><span class="drop-hint" data-i18n="home.imageStitch.drop">松手即可添加图片</span></div>
+      <div class="image-stitch-processing" id="imageStitchProcessing" aria-live="polite">
+        <div class="image-stitch-processing-content">
+          <span class="image-stitch-processing-value" id="imageStitchProgressValue">0%</span>
+          <div class="audio-convert-process-bar"><div class="audio-convert-process-bar-fill" id="imageStitchProgressFill"></div></div>
+          <p id="imageStitchProgressText" data-i18n="home.imageStitch.preparing">正在检查图片...</p>
+          <button class="audio-convert-cancel-btn" id="imageStitchCancel" type="button" data-i18n="home.imageStitch.cancel">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="audio-convert-success-overlay" id="imageStitchSuccessOverlay">
+      <div class="audio-convert-success-dialog">
+        <div class="audio-convert-success-icon">✓</div>
+        <h3 class="audio-convert-success-title" data-i18n="home.imageStitch.successTitle">长图已导出</h3>
+        <div class="audio-convert-success-meta" id="imageStitchSuccessMeta"></div>
+        <div class="audio-convert-success-detail">
+          <div class="audio-convert-success-row"><span class="audio-convert-success-key" data-i18n="home.imageStitch.finalSize">最终尺寸</span><span class="audio-convert-success-value" id="imageStitchSuccessSize"></span></div>
+          <div class="audio-convert-success-row"><span class="audio-convert-success-key" data-i18n="home.imageStitch.savePath">保存路径</span><span class="audio-convert-success-value" id="imageStitchSuccessPath"></span></div>
+        </div>
+        <div class="audio-convert-success-actions">
+          <button class="audio-convert-success-btn audio-convert-success-btn-secondary" id="imageStitchOpenFolder" type="button" data-i18n="home.imageStitch.openFolder">打开文件夹</button>
+          <button class="audio-convert-success-btn audio-convert-success-btn-primary" id="imageStitchSuccessOk" type="button" data-i18n="home.imageStitch.ok">确定</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="audio-convert-overlay" id="videoGifOverlay">
+      <div class="plasma-bg" id="videoGifPlasmaBg"></div>
+      <div class="audio-convert-drop-zone" id="videoGifDropZone"><span class="drop-hint">松手即可上传视频</span></div>
+      <div class="audio-convert-header"><button class="settings-back" id="videoGifBack" type="button"><div class="svg-wrapper-1" aria-hidden="true"><div class="svg-wrapper"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" class="icon"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></div></div><span>返回</span></button></div>
+      <div class="video-frame-body">
+        <div class="video-frame-heading"><span class="audio-convert-hero-label">GIF Studio</span><h1 class="audio-convert-hero-title">视频截取 GIF</h1><p class="audio-convert-hero-subtitle">用起始帧和结束帧截取片段，最长 30 秒，逐帧微调后导出循环 GIF。</p></div>
+        <div class="video-frame-empty" id="videoGifEmpty"><button class="audio-convert-cta" id="videoGifPick" type="button"><i data-lucide="upload"></i><span>上传视频文件</span></button><p>MP4 / MOV / MKV / WebM / AVI 等常见格式</p></div>
+        <div class="video-frame-editor" id="videoGifEditor" hidden>
+          <div class="video-frame-preview video-gif-preview">
+            <img id="videoGifPreviewImage" alt="GIF 选帧预览">
+            <video id="videoGifRangePreview" class="video-gif-range-preview" muted playsinline preload="metadata" hidden></video>
+            <button class="video-gif-preview-toggle" id="videoGifPreviewToggle" type="button" disabled aria-label="播放所选片段" aria-pressed="false" title="播放所选片段">
+              <svg class="video-gif-preview-play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+              <svg class="video-gif-preview-pause-icon" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M7 5h4v14H7zM13 5h4v14h-4z"></path></svg>
+            </button>
+            <div class="video-frame-time" id="videoGifPreviewTime">00:00.000</div>
+          </div>
+          <div class="video-frame-file"><span id="videoGifName"></span><button id="videoGifChange" type="button">更换文件</button></div>
+          <div class="video-gif-timeline-wrap" id="videoGifTimelineWrap" style="--gif-start:0%;--gif-end:0%;--gif-cursor:0%;">
+            <div class="video-gif-timeline-visual" aria-hidden="true">
+              <span class="video-gif-timeline-track"></span>
+              <span class="video-gif-timeline-selected"></span>
+              <span class="video-gif-range-marker video-gif-range-marker-start"></span>
+              <span class="video-gif-range-marker video-gif-range-marker-end"></span>
+              <span class="video-gif-playhead"></span>
+            </div>
+            <input id="videoGifTimeline" class="video-frame-timeline video-gif-timeline-input" type="range" min="0" max="0" step="1" value="0">
+          </div>
+          <div class="video-gif-selection">
+            <button class="video-gif-point active" id="videoGifSelectStart" type="button"><span>起始帧</span><strong id="videoGifStartLabel">00:00.000</strong></button>
+            <span class="video-gif-connector" aria-hidden="true"></span>
+            <button class="video-gif-point" id="videoGifSelectEnd" type="button"><span>结束帧</span><strong id="videoGifEndLabel">00:30.000</strong></button>
+            <span class="video-gif-duration" id="videoGifDurationLabel">30.000 秒 / 最多 30 秒</span>
+          </div>
+          <div class="video-frame-controls video-gif-controls"><button id="videoGifPrev" type="button" title="上一帧"><i data-lucide="chevron-left"></i></button><span id="videoGifAdjustHint">正在调整起始帧</span><button id="videoGifNext" type="button" title="下一帧"><i data-lucide="chevron-right"></i></button><div class="video-gif-output-options"><div class="video-gif-output-group"><span>帧率</span><div class="audio-convert-format-options" id="videoGifFrameRate"><button class="audio-convert-format-option" data-fps="6" type="button">6 FPS</button><button class="audio-convert-format-option" data-fps="8" type="button">8 FPS</button><button class="audio-convert-format-option active" data-fps="12" type="button">12 FPS</button><button class="audio-convert-format-option" data-fps="16" type="button">16 FPS</button><button class="audio-convert-format-option" data-fps="20" type="button">20 FPS</button></div></div><div class="video-gif-output-group"><span>宽度</span><div class="audio-convert-format-options" id="videoGifResolution"><button class="audio-convert-format-option" data-width="360" type="button">360 px</button><button class="audio-convert-format-option" data-width="480" type="button">480 px</button><button class="audio-convert-format-option active" data-width="640" type="button">640 px</button><button class="audio-convert-format-option" data-width="960" type="button">960 px</button><button class="audio-convert-format-option" data-width="1280" type="button">1280 px</button></div></div><div class="video-gif-output-group"><span>质量</span><div class="audio-convert-format-options" id="videoGifQuality"><button class="audio-convert-format-option" data-quality="high" type="button">清晰</button><button class="audio-convert-format-option active" data-quality="balanced" type="button">均衡</button><button class="audio-convert-format-option" data-quality="small" type="button">小体积</button><button class="audio-convert-format-option" data-quality="tiny" type="button">极小</button></div></div></div></div>
+          <div class="video-gif-estimate" id="videoGifEstimate">预计体积：选择视频后自动估算</div>
+          <button class="audio-convert-process-btn visible" id="videoGifExport" type="button">导出 GIF</button>
+        </div>
+      </div>
+    </div>
+    <div class="audio-convert-process-mask" id="videoGifProcessMask"><div class="tk-mascot-lg" aria-hidden="true"></div><div class="audio-convert-process-bar"><div class="audio-convert-process-bar-fill" id="videoGifProcessBarFill"></div></div><div class="audio-convert-process-text" id="videoGifProcessText">正在生成 GIF...</div><button class="audio-convert-cancel-btn" id="videoGifCancelBtn" type="button">取消</button></div>
+    <div class="audio-convert-success-overlay" id="videoGifSuccessOverlay"><div class="audio-convert-success-dialog"><div class="audio-convert-success-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div><h3 class="audio-convert-success-title">GIF 已导出</h3><div class="audio-convert-success-meta" id="videoGifSuccessMeta"></div><div class="audio-convert-success-detail"><div class="audio-convert-success-row"><span class="audio-convert-success-key">截取时长</span><span class="audio-convert-success-value" id="videoGifSuccessDuration"></span></div><div class="audio-convert-success-row"><span class="audio-convert-success-key">输出规格</span><span class="audio-convert-success-value" id="videoGifSuccessSpec"></span></div><div class="audio-convert-success-row"><span class="audio-convert-success-key">文件大小</span><span class="audio-convert-success-value" id="videoGifSuccessSize"></span></div><div class="audio-convert-success-row"><span class="audio-convert-success-key">保存路径</span><span class="audio-convert-success-value" id="videoGifSuccessPath"></span></div></div><div class="audio-convert-success-actions"><button class="audio-convert-success-btn audio-convert-success-btn-secondary" id="videoGifOpenFolder" type="button">打开文件夹</button><button class="audio-convert-success-btn audio-convert-success-btn-primary" id="videoGifSuccessOk" type="button">确定</button></div></div></div>
 
     <!-- BPM Detect Tool Page -->
     <div class="bpm-detect-overlay" id="bpmDetectOverlay">
@@ -895,16 +1283,6 @@
             <div class="audio-convert-hero-label" data-i18n="home.audioExtract.heroLabel">Audio Extractor</div>
             <h1 class="audio-convert-hero-title extract-hero-title" data-i18n="home.audioExtract.title">音频提取器</h1>
             <p class="audio-convert-hero-subtitle" data-i18n="home.audioExtract.subtitle">从视频文件中提取音轨，保存为独立音频文件，支持 MP4、MKV、AVI、MOV、WebM 等主流视频格式。</p>
-            <div class="audio-extract-format-selector">
-              <span class="audio-convert-format-label" data-i18n="home.audioExtract.targetFormat">输出格式</span>
-              <div class="audio-convert-format-options" id="audioExtractFormatOptions">
-                <button class="audio-convert-format-option active" data-format="MP3">MP3</button>
-                <button class="audio-convert-format-option" data-format="AAC">AAC</button>
-                <button class="audio-convert-format-option" data-format="WAV">WAV</button>
-                <button class="audio-convert-format-option" data-format="FLAC">FLAC</button>
-                <button class="audio-convert-format-option" data-format="OGG">OGG</button>
-              </div>
-            </div>
             <button class="audio-extract-cta" id="audioExtractCta">
               <i data-lucide="upload"></i>
               <span data-i18n="home.audioExtract.cta">上传视频文件</span>
@@ -921,10 +1299,26 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
+            <div class="audio-extract-format-selector">
+              <span class="audio-convert-format-label" data-i18n="home.audioExtract.targetFormat">输出格式</span>
+              <div class="audio-convert-format-options" id="audioExtractFormatOptions">
+                <button class="audio-convert-format-option active" data-format="MP3" type="button">MP3</button>
+                <button class="audio-convert-format-option" data-format="AAC" type="button">AAC</button>
+                <button class="audio-convert-format-option" data-format="WAV" type="button">WAV</button>
+                <button class="audio-convert-format-option" data-format="FLAC" type="button">FLAC</button>
+                <button class="audio-convert-format-option" data-format="OGG" type="button">OGG</button>
+              </div>
+            </div>
             <!-- Audio track selector -->
             <div class="audio-extract-track-selector" id="audioExtractTrackSelector" style="display:none;">
               <label class="audio-extract-track-label" data-i18n="home.audioExtract.selectTrack">选择音轨</label>
               <select class="audio-extract-track-select" id="audioExtractTrackSelect"></select>
+            </div>
+            <div class="audio-extract-actions">
+              <button class="audio-extract-cta audio-extract-start" id="audioExtractStart" type="button" disabled>
+                <i data-lucide="audio-lines"></i>
+                <span data-i18n="home.audioExtract.extractBtn">提取音频</span>
+              </button>
             </div>
           </div>
 
@@ -1072,22 +1466,43 @@
       </div>
     </div>
 
-    <!-- PDF Merger Preview Drawer -->
-    <div class="pdf-preview-drawer" id="pdfPreviewDrawer">
-      <div class="pdf-preview-drawer-backdrop" id="pdfPreviewBackdrop"></div>
-      <div class="pdf-preview-drawer-panel">
-        <div class="pdf-preview-drawer-header">
-          <span class="pdf-preview-drawer-title" data-i18n="home.pdfMerge.previewTitle">PDF 预览</span>
-          <button class="pdf-preview-drawer-close" id="pdfPreviewClose">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        </div>
-        <div class="pdf-preview-drawer-body" id="pdfPreviewBody"></div>
-        <div class="pdf-preview-drawer-footer">
-          <button class="pdf-preview-merge-btn" id="pdfPreviewMergeBtn" data-i18n="home.pdfMerge.startMerge">开始合并</button>
+    <!-- PDF Merger Page Selection Flow -->
+    <section class="pdf-merge-selection" id="pdfMergeSelection" aria-hidden="true">
+      <div class="pdf-merge-selection-notice" id="pdfMergeSelectionNotice">
+        <div class="pdf-merge-selection-notice-content">
+          <p class="pdf-merge-selection-eyebrow" id="pdfMergeSelectionEyebrow"></p>
+          <h2 class="pdf-merge-selection-title" data-i18n="home.pdfMerge.multiPageTitle">检测到多页 PDF</h2>
+          <p class="pdf-merge-selection-copy" data-i18n="home.pdfMerge.multiPageDescription">这些文件包含多个页面。你可以逐份选择需要合并的页面，也可以直接保留全部页面。</p>
+          <div class="pdf-merge-selection-notice-actions">
+            <button class="pdf-merge-selection-btn pdf-merge-selection-btn-secondary" id="pdfMergeChoosePagesBtn" data-i18n="home.pdfMerge.choosePages">选择页面</button>
+            <button class="pdf-merge-selection-btn pdf-merge-selection-btn-primary" id="pdfMergeUseAllPagesBtn" data-i18n="home.pdfMerge.useAllPages">全部选择</button>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div class="pdf-merge-page-picker" id="pdfMergePagePicker">
+        <header class="pdf-merge-page-picker-header">
+          <div>
+            <p class="pdf-merge-selection-eyebrow" id="pdfMergePickerProgress"></p>
+            <h2 class="pdf-merge-page-picker-title" data-i18n="home.pdfMerge.pickerTitle">选择要合并的页面</h2>
+            <p class="pdf-merge-page-picker-file" id="pdfMergePickerFileName"></p>
+          </div>
+          <span class="pdf-merge-page-picker-count" id="pdfMergePickerSelectedCount"></span>
+        </header>
+        <div class="pdf-merge-page-stage" id="pdfMergePageStage">
+          <div class="pdf-merge-page-strip" id="pdfMergePageStrip" aria-live="polite"></div>
+        </div>
+        <footer class="pdf-merge-page-picker-footer">
+          <div class="pdf-merge-page-picker-status">
+            <span id="pdfMergePickerInputStatus"></span>
+          </div>
+          <div class="pdf-merge-page-picker-actions">
+            <button class="pdf-merge-selection-btn pdf-merge-selection-btn-secondary" id="pdfMergeSelectAllPagesBtn" data-i18n="home.pdfMerge.selectAllPages">全部选择</button>
+            <button class="pdf-merge-selection-btn pdf-merge-selection-btn-primary" id="pdfMergeSelectionNextBtn"></button>
+          </div>
+        </footer>
+      </div>
+    </section>
 
     <!-- PDF Split Tool Page -->
     <div class="pdf-merge-overlay" id="pdfSplitOverlay">
@@ -1110,7 +1525,7 @@
           <div class="audio-convert-hero-top">
             <div class="audio-convert-hero-label" data-i18n="home.pdfSplit.heroLabel">PDF Splitter</div>
             <h1 class="audio-convert-hero-title" data-i18n="home.pdfSplit.title">PDF 文件拆分</h1>
-            <p class="audio-convert-hero-subtitle" data-i18n="home.pdfSplit.subtitle">按页码范围从 PDF 中提取页面，生成新的 PDF 文件，支持预览选页、批量拆分，一键完成。</p>
+            <p class="audio-convert-hero-subtitle" data-i18n="home.pdfSplit.subtitle">预览并选择需要导出的页面，按单页生成新的 PDF 文件，全程在本地完成。</p>
             <button class="audio-convert-cta" id="pdfSplitCta">
               <i data-lucide="upload"></i>
               <span data-i18n="home.pdfSplit.cta">上传 PDF 文件</span>
@@ -1124,15 +1539,15 @@
           <div class="pdf-merge-info-grid">
             <div class="pdf-merge-info-item">
               <i data-lucide="scissors"></i>
-              <span data-i18n="home.pdfSplit.info1">按页码范围提取页面，生成新的 PDF 文件</span>
+              <span data-i18n="home.pdfSplit.info1">选择需要的页面，按单页生成新的 PDF 文件</span>
             </div>
             <div class="pdf-merge-info-item">
               <i data-lucide="file-text"></i>
-              <span data-i18n="home.pdfSplit.info2">支持预览每个页面，可视化选择拆分范围</span>
+              <span data-i18n="home.pdfSplit.info2">预览每个页面，可视化选择需要导出的页面</span>
             </div>
             <div class="pdf-merge-info-item">
               <i data-lucide="layers"></i>
-              <span data-i18n="home.pdfSplit.info3">可拆分为单个页面或指定页码范围的多个文件</span>
+              <span data-i18n="home.pdfSplit.info3">支持单页导出与所选页面批量导出</span>
             </div>
             <div class="pdf-merge-info-item">
               <i data-lucide="lock"></i>
@@ -1177,22 +1592,32 @@
       </div>
     </div>
 
-    <!-- PDF Split Result Drawer -->
-    <div class="pdf-preview-drawer" id="pdfSplitDrawer">
-      <div class="pdf-preview-drawer-backdrop" id="pdfSplitDrawerBackdrop"></div>
-      <div class="pdf-preview-drawer-panel">
-        <div class="pdf-preview-drawer-header">
-          <span class="pdf-preview-drawer-title" data-i18n="home.pdfSplit.resultTitle">拆分结果</span>
-          <button class="pdf-preview-drawer-close" id="pdfSplitDrawerClose">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    <!-- PDF Split Page Workspace -->
+    <section class="pdf-page-workspace" id="pdfSplitWorkspace" aria-hidden="true">
+      <header class="pdf-page-workspace-header">
+        <div>
+          <p class="pdf-merge-selection-eyebrow" id="pdfSplitWorkspaceStatus"></p>
+          <h2 class="pdf-page-workspace-title" data-i18n="home.pdfSplit.resultTitle">拆分页选择</h2>
+          <p class="pdf-page-workspace-file" id="pdfSplitWorkspaceHint"></p>
+        </div>
+        <div class="pdf-page-workspace-header-actions">
+          <span class="pdf-page-workspace-count" id="pdfSplitSelectedCount"></span>
+          <button class="pdf-page-workspace-close" id="pdfSplitWorkspaceClose" type="button" aria-label="Close">
+            <i data-lucide="x" aria-hidden="true"></i>
           </button>
         </div>
-        <div class="pdf-preview-drawer-body" id="pdfSplitDrawerBody"></div>
-        <div class="pdf-preview-drawer-footer" id="pdfSplitDrawerFooter">
-          <button class="pdf-preview-merge-btn" id="pdfSplitDownloadAllBtn" data-i18n="home.pdfSplit.downloadAll">全部下载</button>
-        </div>
+      </header>
+      <div class="pdf-merge-page-stage" id="pdfSplitPageStage">
+        <div class="pdf-merge-page-strip" id="pdfSplitPageStrip" aria-live="polite"></div>
       </div>
-    </div>
+      <footer class="pdf-page-workspace-footer">
+        <div class="pdf-page-workspace-status" id="pdfSplitSelectionMeta"></div>
+        <div class="pdf-page-workspace-footer-actions">
+          <button class="pdf-merge-selection-btn pdf-merge-selection-btn-secondary" id="pdfSplitSelectAllBtn" data-i18n="home.pdfSplit.selectAll">全选</button>
+          <button class="pdf-merge-selection-btn pdf-merge-selection-btn-primary" id="pdfSplitDownloadAllBtn" data-i18n="home.pdfSplit.downloadSelected">导出已选页面</button>
+        </div>
+      </footer>
+    </section>
 
     <!-- PDF Rotate Tool Page -->
     <div class="pdf-merge-overlay" id="pdfRotateOverlay">
@@ -1220,6 +1645,7 @@
               <i data-lucide="upload"></i>
               <span data-i18n="home.pdfRotate.cta">上传 PDF 文件</span>
             </button>
+            <input id="pdfRotateInput" type="file" accept=".pdf,application/pdf" hidden tabindex="-1">
           </div>
           <div class="audio-convert-files" id="pdfRotateFiles"></div>
         </div>
@@ -1282,23 +1708,32 @@
       </div>
     </div>
 
-    <!-- PDF Rotate Result Drawer -->
-    <div class="pdf-preview-drawer" id="pdfRotateDrawer">
-      <div class="pdf-preview-drawer-backdrop" id="pdfRotateDrawerBackdrop"></div>
-      <div class="pdf-preview-drawer-panel">
-        <div class="pdf-preview-drawer-header">
-          <span class="pdf-preview-drawer-title" data-i18n="home.pdfRotate.resultTitle">旋转预览</span>
-          <button class="pdf-preview-drawer-close" id="pdfRotateDrawerClose">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    <!-- PDF Rotate Page Workspace -->
+    <section class="pdf-page-workspace" id="pdfRotateWorkspace" aria-hidden="true">
+      <header class="pdf-page-workspace-header">
+        <div>
+          <p class="pdf-merge-selection-eyebrow" id="pdfRotateWorkspaceStatus"></p>
+          <h2 class="pdf-page-workspace-title" data-i18n="home.pdfRotate.resultTitle">旋转预览</h2>
+          <p class="pdf-page-workspace-file" id="pdfRotateWorkspaceFileName"></p>
+        </div>
+        <div class="pdf-page-workspace-header-actions">
+          <span class="pdf-page-workspace-count" id="pdfRotatePageCount"></span>
+          <button class="pdf-page-workspace-close" id="pdfRotateWorkspaceClose" type="button" aria-label="Close">
+            <i data-lucide="x" aria-hidden="true"></i>
           </button>
         </div>
-        <div class="pdf-preview-drawer-body" id="pdfRotateDrawerBody"></div>
-        <div class="pdf-preview-drawer-footer" id="pdfRotateDrawerFooter">
-          <button class="pdf-preview-merge-btn" id="pdfRotateRotateAllBtn" data-i18n="home.pdfRotate.rotateAll">整体旋转 90°</button>
-          <button class="pdf-preview-merge-btn" id="pdfRotateDownloadAllBtn" data-i18n="home.pdfRotate.downloadAll">导出全部</button>
-        </div>
+      </header>
+      <div class="pdf-merge-page-stage" id="pdfRotatePageStage">
+        <div class="pdf-merge-page-strip" id="pdfRotatePageStrip" aria-live="polite"></div>
       </div>
-    </div>
+      <footer class="pdf-page-workspace-footer">
+        <div class="pdf-page-workspace-status" id="pdfRotateWorkspaceFooterStatus"></div>
+        <div class="pdf-page-workspace-footer-actions">
+          <button class="pdf-merge-selection-btn pdf-merge-selection-btn-secondary" id="pdfRotateRotateAllBtn" data-i18n="home.pdfRotate.rotateAll">整体旋转 90°</button>
+          <button class="pdf-merge-selection-btn pdf-merge-selection-btn-primary" id="pdfRotateDownloadAllBtn" data-i18n="home.pdfRotate.downloadAll">导出全部</button>
+        </div>
+      </footer>
+    </section>
 
     <!-- PDF Encrypt Tool Page -->
     <div class="pdf-merge-overlay" id="pdfEncryptOverlay">
@@ -1326,6 +1761,7 @@
               <i data-lucide="upload"></i>
               <span data-i18n="home.pdfEncrypt.cta">上传 PDF 文件</span>
             </button>
+            <input id="pdfEncryptInput" type="file" accept=".pdf,application/pdf" hidden tabindex="-1">
           </div>
           <div class="audio-convert-files" id="pdfEncryptFiles"></div>
         </div>
@@ -1361,7 +1797,7 @@
         <div class="pdf-encrypt-field">
           <label class="pdf-encrypt-label" data-i18n="home.pdfEncrypt.passwordLabel">密码</label>
           <div class="pdf-encrypt-input-wrap">
-            <input type="password" class="pdf-encrypt-input" id="pdfEncryptPasswordInput" data-i18n-placeholder="home.pdfEncrypt.passwordPlaceholder" placeholder="请输入密码" />
+            <input type="password" class="pdf-encrypt-input" id="pdfEncryptPasswordInput" data-i18n-placeholder="home.pdfEncrypt.passwordPlaceholder" placeholder="请输入密码" minlength="8" autocomplete="new-password" />
             <button class="pdf-encrypt-eye-btn" id="pdfEncryptEyeBtn1" type="button" aria-label="toggle password visibility">
               <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
@@ -1371,7 +1807,7 @@
         <div class="pdf-encrypt-field">
           <label class="pdf-encrypt-label" data-i18n="home.pdfEncrypt.confirmLabel">确认密码</label>
           <div class="pdf-encrypt-input-wrap">
-            <input type="password" class="pdf-encrypt-input" id="pdfEncryptConfirmInput" data-i18n-placeholder="home.pdfEncrypt.confirmPlaceholder" placeholder="再次输入密码" />
+            <input type="password" class="pdf-encrypt-input" id="pdfEncryptConfirmInput" data-i18n-placeholder="home.pdfEncrypt.confirmPlaceholder" placeholder="再次输入密码" minlength="8" autocomplete="new-password" />
             <button class="pdf-encrypt-eye-btn" id="pdfEncryptEyeBtn2" type="button" aria-label="toggle password visibility">
               <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
@@ -1468,6 +1904,7 @@
     <div class="pdf-merge-overlay" id="pdfDecryptOverlay">
       <div class="ferrofluid-container" id="pdfDecryptFerrofluid"></div>
       <div class="audio-convert-drop-zone" id="pdfDecryptDropZone"><span class="drop-hint" data-i18n="home.pdfDecrypt.dropHint">松手即可上传</span></div>
+      <input id="pdfDecryptInput" type="file" accept=".pdf,application/pdf" hidden />
       <div class="audio-convert-header">
         <button class="settings-back" id="pdfDecryptBack" data-i18n-title="settings.back">
           <div class="svg-wrapper-1">
@@ -1596,7 +2033,7 @@
           <div class="audio-convert-hero-top">
             <div class="audio-convert-hero-label" data-i18n="home.pdfEnhance.heroLabel">PDF Enhancer</div>
             <h1 class="audio-convert-hero-title" data-i18n="home.pdfEnhance.title">PDF 文字增强</h1>
-            <p class="audio-convert-hero-subtitle" data-i18n="home.pdfEnhance.subtitle">提升模糊文字清晰度，去噪、锐化、增强对比，让扫描件更易读。</p>
+            <p class="audio-convert-hero-subtitle" data-i18n="home.pdfEnhance.subtitle">增强扫描件和图像型 PDF 的文字可读性，提供对比度与锐化处理。</p>
             <button class="audio-convert-cta" id="pdfEnhanceCta">
               <i data-lucide="upload"></i>
               <span data-i18n="home.pdfEnhance.cta">上传 PDF 文件</span>
@@ -1611,7 +2048,7 @@
             <button class="audio-convert-format-option" data-strength="medium" data-i18n="home.pdfEnhance.strengthMedium">中度</button>
             <button class="audio-convert-format-option" data-strength="strong" data-i18n="home.pdfEnhance.strengthStrong">强力</button>
           </div>
-          <div class="pdf-enhance-strength-hint" id="pdfEnhanceStrengthHint" data-i18n="home.pdfEnhance.strengthLightHint" style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center; line-height: 1.5;">轻度增强：适度锐化和对比度提升</div>
+          <div class="pdf-enhance-strength-hint" id="pdfEnhanceStrengthHint" data-i18n="home.pdfEnhance.strengthLightHint" style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center; line-height: 1.5;">轻度：自适应对比度 + 3x3 锐化，保留原始色彩</div>
         </div>
         <button class="audio-convert-process-btn" id="pdfEnhanceProcessBtn" data-i18n="home.pdfEnhance.processBtn" style="display:none;">开始增强</button>
         <div class="audio-convert-formats">
@@ -1619,15 +2056,15 @@
           <div class="pdf-merge-info-grid">
             <div class="pdf-merge-info-item">
               <i data-lucide="zap"></i>
-              <span data-i18n="home.pdfEnhance.info1">高 DPI 渲染每页，保留最大细节</span>
+              <span data-i18n="home.pdfEnhance.info1">仅适用于扫描件和图像型 PDF，输出会栅格化页面</span>
             </div>
             <div class="pdf-merge-info-item">
               <i data-lucide="contrast"></i>
-              <span data-i18n="home.pdfEnhance.info2">自适应对比度增强，文字更清晰</span>
+              <span data-i18n="home.pdfEnhance.info2">输出不保留原始可搜索文字、链接或表单</span>
             </div>
             <div class="pdf-merge-info-item">
               <i data-lucide="scissors"></i>
-              <span data-i18n="home.pdfEnhance.info3">边缘锐化滤波，强化文字轮廓</span>
+              <span data-i18n="home.pdfEnhance.info3">自适应对比度与锐化处理，强化文字轮廓</span>
             </div>
             <div class="pdf-merge-info-item">
               <i data-lucide="shield"></i>
@@ -2075,6 +2512,13 @@
             <div class="audio-convert-hero-label" data-i18n="home.aiTable.heroLabel">AI Table</div>
             <h1 class="audio-convert-hero-title" data-i18n="home.aiTable.title">AI 表格生成</h1>
             <p class="audio-convert-hero-subtitle" data-i18n="home.aiTable.subtitle">对话式描述需求，AI 自动生成数据表与可视化图表，一键导出 Excel、PDF、PNG、CSV。</p>
+            <div class="ai-table-hero-actions">
+              <button class="ai-table-help-btn" id="aiTableHelpBtn" type="button">
+                <i data-lucide="circle-help"></i>
+                <span data-i18n="home.aiTable.help">使用说明</span>
+              </button>
+              <span class="ai-table-hero-tip" data-i18n="home.aiTable.heroTip">桌面可直接编辑，Agent 可按编号精修</span>
+            </div>
           </div>
         </div>
 
@@ -2091,7 +2535,7 @@
               <textarea class="ai-doc-chat-input" id="aiTableChatInput" data-i18n-placeholder="home.aiTable.inputPlaceholder" placeholder="描述你的表格需求..." rows="2"></textarea>
               <button class="ai-doc-chat-send" id="aiTableChatSend" data-i18n-aria-label="home.aiTable.send" aria-label="发送">
                 <i data-lucide="send"></i>
-                <span data-i18n="home.aiDoc.send">发送</span>
+                <span data-i18n="home.aiTable.send">发送</span>
               </button>
             </div>
           </div>
@@ -2103,15 +2547,35 @@
                 <i data-lucide="table" class="ai-polish-empty-icon"></i>
               </div>
               <p data-i18n="home.aiTable.canvasEmptyHint">AI 生成表格后预览将显示在此处</p>
+              <div class="ai-table-empty-guide">
+                <div class="ai-table-empty-guide-item">
+                  <i data-lucide="mouse-pointer-click"></i>
+                  <span data-i18n="home.aiTable.emptyGuideEdit">生成后可直接编辑标题与单元格</span>
+                </div>
+                <div class="ai-table-empty-guide-item">
+                  <i data-lucide="arrow-up-down"></i>
+                  <span data-i18n="home.aiTable.emptyGuideSort">点击列头可快速排序</span>
+                </div>
+                <div class="ai-table-empty-guide-item">
+                  <i data-lucide="download"></i>
+                  <span data-i18n="home.aiTable.emptyGuideExport">支持 CSV / Excel / PNG / PDF 导出</span>
+                </div>
+              </div>
             </div>
             <div class="ai-table-preview-scroll" id="aiTablePreviewScroll" style="display:none;">
               <!-- Table + charts rendered here -->
             </div>
             <div class="ai-doc-canvas-toolbar" id="aiTableCanvasToolbar" style="display:none;">
-              <button class="ai-doc-pill-btn" id="aiTableResetBtn">
-                <i data-lucide="rotate-ccw"></i>
-                <span data-i18n="home.aiTable.reset">重新开始</span>
-              </button>
+              <div class="ai-table-edit-actions">
+                <button class="ai-doc-pill-btn ai-table-undo-btn" id="aiTableUndoBtn" disabled>
+                  <i data-lucide="undo-2"></i>
+                  <span data-i18n="home.aiTable.undo">撤销上一步</span>
+                </button>
+                <button class="ai-doc-pill-btn" id="aiTableResetBtn">
+                  <i data-lucide="rotate-ccw"></i>
+                  <span data-i18n="home.aiTable.reset">重新开始</span>
+                </button>
+              </div>
               <div class="ai-table-export-group">
                 <button class="ai-doc-pill-btn ai-table-export-btn" data-fmt="csv"><i data-lucide="file-text"></i><span>CSV</span></button>
                 <button class="ai-doc-pill-btn ai-table-export-btn" data-fmt="xlsx"><i data-lucide="sheet"></i><span>Excel</span></button>
@@ -2142,6 +2606,10 @@
           <button class="audio-clip-success-btn audio-clip-success-btn-primary" id="aiTableSuccessOk" data-i18n="home.aiTable.ok">确定</button>
         </div>
       </div>
+    </div>
+    <div class="audio-convert-process-mask" id="aiTableMask">
+      <div class="tk-mascot-lg" aria-hidden="true"></div>
+      <div class="audio-convert-process-text" id="aiTableMaskText" data-i18n="home.aiTable.thinking">AI 正在思考...</div>
     </div>
 
     <!-- ===== Color Extractor Page ===== -->
@@ -2176,8 +2644,8 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
             </div>
             <p class="color-extractor-upload-text" data-i18n="home.colorExtractor.uploadHint">拖拽图片到此处或点击上传</p>
-            <p class="color-extractor-upload-formats">JPG / PNG / WEBP / BMP</p>
-            <input type="file" id="colorExtractorFileInput" accept="image/*" style="display:none;">
+            <p class="color-extractor-upload-formats">JPG / PNG / WEBP</p>
+            <input type="file" id="colorExtractorFileInput" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" style="display:none;">
           </div>
           <!-- Uploaded image preview -->
           <div class="color-extractor-image-preview" id="colorExtractorImagePreview" style="display:none;">
@@ -3113,7 +3581,10 @@
                 </div>
               </div>
               <div class="password-gen-history-section">
-                <div class="password-gen-history-title" data-i18n="home.passwordGen.history">生成历史</div>
+                <div class="password-gen-history-heading">
+                  <div class="password-gen-history-title" data-i18n="home.passwordGen.history">生成历史</div>
+                  <button class="password-gen-clear-btn" id="passwordGenClearBtn" type="button" data-i18n="home.passwordGen.clearSensitive">清除敏感内容</button>
+                </div>
                 <div class="password-gen-history-list" id="passwordGenHistoryList"></div>
               </div>
             </div>
@@ -3138,11 +3609,62 @@
           </div>
           <span data-i18n="settings.back">返回</span>
         </button>
-        <div style="flex:1"></div>
+        <div class="ai-doc-edit-toolbar" role="toolbar" aria-label="Document editing tools">
+          <div class="ai-doc-edit-tool-group">
+            <button class="ai-doc-edit-icon-btn" id="aiDocUndoBtn" type="button" data-i18n-title="home.aiDoc.undo" disabled>
+              <i data-lucide="undo-2"></i>
+            </button>
+            <button class="ai-doc-edit-icon-btn" id="aiDocRedoBtn" type="button" data-i18n-title="home.aiDoc.redo" disabled>
+              <i data-lucide="redo-2"></i>
+            </button>
+          </div>
+          <div class="ai-doc-edit-tool-divider"></div>
+          <div class="ai-doc-edit-selection-status" id="aiDocSelectionStatus" data-i18n="home.aiDoc.noLayerSelected">未选择图层</div>
+          <div class="ai-doc-edit-tool-divider"></div>
+          <div class="ai-doc-edit-style-group" aria-label="文档样式">
+            <label class="ai-doc-style-number" title="字号"><span>A</span><input id="aiDocFontSizeInput" type="number" min="6" max="96" step="1" value="14" disabled></label>
+            <button class="ai-doc-edit-icon-btn" id="aiDocBoldBtn" type="button" title="加粗" disabled><i data-lucide="bold"></i></button>
+            <div class="ai-doc-style-align-group" role="group" aria-label="文字对齐">
+              <button class="ai-doc-edit-icon-btn" id="aiDocAlignLeftBtn" type="button" title="左对齐" disabled><i data-lucide="align-left"></i></button>
+              <button class="ai-doc-edit-icon-btn" id="aiDocAlignCenterBtn" type="button" title="居中" disabled><i data-lucide="align-center"></i></button>
+              <button class="ai-doc-edit-icon-btn" id="aiDocAlignRightBtn" type="button" title="右对齐" disabled><i data-lucide="align-right"></i></button>
+            </div>
+            <label class="ai-doc-color-control ai-doc-color-control-text" title="文字颜色"><span>A</span><input id="aiDocTextColorInput" type="color" value="#242424" disabled></label>
+            <label class="ai-doc-color-control ai-doc-color-control-background" title="背景颜色"><span></span><input id="aiDocBackgroundColorInput" type="color" value="#ffffff" disabled></label>
+            <label class="ai-doc-color-control ai-doc-color-control-border" title="边框颜色"><span></span><input id="aiDocBorderColorInput" type="color" value="#d8d8d6" disabled></label>
+            <button class="ai-doc-edit-icon-btn" id="aiDocMoreStyleBtn" type="button" title="更多样式" disabled><i data-lucide="sliders-horizontal"></i></button>
+          </div>
+          <div class="ai-doc-edit-tool-divider ai-doc-style-divider"></div>
+          <div class="ai-doc-global-style-group" aria-label="全文样式">
+            <select id="aiDocGlobalAlignSelect" title="全文文字对齐">
+              <option value="">全文对齐</option><option value="left">全文左对齐</option><option value="center">全文居中</option><option value="right">全文右对齐</option>
+            </select>
+            <button class="ai-doc-global-style-apply" id="aiDocApplyGlobalStyleBtn" type="button" title="应用到全部文字">应用</button>
+          </div>
+          <div class="ai-doc-edit-tool-group">
+            <button class="ai-doc-edit-icon-btn" id="aiDocMoveUpBtn" type="button" data-i18n-title="home.aiDoc.moveLayerUp" disabled>
+              <i data-lucide="arrow-up"></i>
+            </button>
+            <button class="ai-doc-edit-icon-btn" id="aiDocMoveDownBtn" type="button" data-i18n-title="home.aiDoc.moveLayerDown" disabled>
+              <i data-lucide="arrow-down"></i>
+            </button>
+            <button class="ai-doc-edit-icon-btn ai-doc-edit-delete-btn" id="aiDocDeleteBtn" type="button" data-i18n-title="home.aiDoc.deleteLayer" disabled>
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+        </div>
+        <div class="ai-doc-edit-header-spacer"></div>
         <button class="ai-doc-pill-btn ai-doc-edit-export-btn" id="aiDocEditExportBtn">
           <i data-lucide="download"></i>
           <span data-i18n="home.aiDoc.export">导出 PDF</span>
         </button>
+      </div>
+      <div class="ai-doc-style-inspector" id="aiDocStyleInspector" aria-hidden="true">
+        <div class="ai-doc-style-inspector-title">细节样式 <button id="aiDocStyleInspectorClose" type="button" title="关闭"><i data-lucide="x"></i></button></div>
+        <label>行距 <output id="aiDocLineHeightValue">1.58</output><input id="aiDocLineHeightInput" type="range" min="1" max="3" step="0.05" value="1.58" disabled></label>
+        <label>内边距 <output id="aiDocPaddingValue">0</output><input id="aiDocPaddingInput" type="range" min="0" max="80" step="1" value="0" disabled></label>
+        <label>边框粗细 <output id="aiDocBorderWidthValue">0</output><input id="aiDocBorderWidthInput" type="range" min="0" max="12" step="1" value="0" disabled></label>
+        <label>透明度 <output id="aiDocOpacityValue">100%</output><input id="aiDocOpacityInput" type="range" min="0.05" max="1" step="0.05" value="1" disabled></label>
       </div>
       <div class="ai-doc-edit-scroll" id="aiDocEditScroll">
         <!-- Full A4 pages rendered here for editing -->
@@ -3345,135 +3867,102 @@
               <i data-lucide="settings"></i>
             </div>
           </div>
-          <div class="version-text" id="sidebarVersion">v1.0</div>
+          <div class="version-text" id="sidebarVersion">v1.2.7</div>
         </div>
       </div>
       <div class="divider"></div>
       <div class="main">
         <div class="main-header">
-          <button class="ctrl-btn" data-i18n-title="common.minimize" title="最小化" data-action="minimize">
+          <div class="main-header-drag-region" aria-hidden="true"></div>
+          <button class="ctrl-btn" type="button" data-i18n-title="common.minimize" title="最小化" data-action="minimize">
             <i data-lucide="minus"></i>
           </button>
-          <button class="ctrl-btn" data-i18n-title="common.maximize" title="最大化" data-action="maximize">
+          <button class="ctrl-btn" type="button" data-i18n-title="common.maximize" title="最大化" data-action="maximize">
             <i data-lucide="square"></i>
           </button>
-          <button class="ctrl-btn close" data-i18n-title="common.close" title="关闭" data-action="close">
+          <button class="ctrl-btn close" type="button" data-i18n-title="common.close" title="关闭" data-action="close">
             <i data-lucide="x"></i>
           </button>
         </div>
         <div class="main-content">
           <div class="content-section active" data-category="home">
             <div class="home-grid">
-              <div class="home-card welcome" id="changelogCard">
-                <div class="changelog-body">
-                  <div class="changelog-current">
-                    <div class="current-header">
-                      <span class="current-version" id="currentVersion"></span>
-                      <span class="current-date" id="currentDate">2026-06-21</span>
-                    </div>
-                    <div class="current-title" id="currentTitle"></div>
-                    <ul class="current-list" id="currentList"></ul>
-                  </div>
-                  <div class="changelog-timeline" id="changelogTimeline"></div>
+              <header class="home-masthead">
+                <div class="home-brand-copy">
+                  <p class="home-kicker" data-i18n="home.posterKicker">TOOLKNIT / DESKTOP 1.2</p>
+                  <h1>ToolKnit</h1>
+                  <p class="home-tagline" data-i18n="home.posterDesc">为本地文件工作准备的处理台</p>
                 </div>
-              </div>
-              <div class="home-card personal-panel" id="personalPanel">
-                <h3 data-i18n="home.personalPanel">个人面板</h3>
-                <div class="auto-login-mask" id="autoLoginMask">
-                  <div class="auto-login-spider"></div>
+              </header>
+
+              <aside class="home-actions" aria-label="ToolKnit links">
+                <button class="home-action home-action-web" type="button" data-home-link="website">
+                  <i data-lucide="globe-2"></i>
+                  <span>
+                    <strong data-i18n="home.webVersion">网页端版本</strong>
+                    <small>toolknit.com</small>
+                  </span>
+                  <i class="home-action-arrow" data-lucide="arrow-up-right"></i>
+                </button>
+                <button class="home-action home-action-support" type="button" id="homeSupportAuthor" aria-haspopup="dialog" aria-controls="donationOverlay">
+                  <i data-lucide="heart-handshake"></i>
+                  <span>
+                    <strong data-i18n="home.supportAuthor">支持作者</strong>
+                    <small data-i18n="home.supportAuthorDesc">让 ToolKnit 持续免费更新</small>
+                  </span>
+                  <i class="home-action-arrow" data-lucide="qr-code"></i>
+                </button>
+              </aside>
+
+              <section class="home-module home-module-recent" aria-labelledby="recentHeading">
+                <div class="home-module-heading">
+                  <span class="home-module-index">01</span>
+                  <h2 id="recentHeading" data-i18n="home.recentlyUsed">最近使用</h2>
                 </div>
-                <div class="panel-content guest-view">
-                  <div class="panel-inner">
-                    <div class="avatar outline">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    </div>
-                    <div class="info">
-                      <div class="info-name" data-i18n="home.guest">访客</div>
-                      <div class="info-meta" data-i18n="user.notLoggedIn">ID: 未登录</div>
-                    </div>
-                  </div>
-                </div>
-                <div class="panel-footer guest-view">
-                  <button class="login-btn" data-i18n="home.clickToLogin">点击登录</button>
-                </div>
-                <div class="panel-content logged-in-view">
-                  <div class="panel-inner">
-                    <div class="avatar filled">
-                      <img src="https://pic1.imgdb.cn/item/6a379247886895810ae20063.webp" alt="avatar" onerror="this.style.display='none';this.parentElement.classList.add('avatar-fallback')">
-                      <svg class="avatar-fallback-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;width:28px;height:28px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    </div>
-                    <div class="info">
-                      <div class="info-name">ToolKnit User</div>
-                      <div class="info-meta">Hello, ToolKnit!</div>
-                      <div class="info-meta">ID: 123456</div>
-                    </div>
-                  </div>
-                </div>
-                <div class="panel-actions">
-                  <button class="panel-action-btn" id="btnApiKey" data-i18n="home.apiKey">设置密钥</button>
-                  <button class="panel-action-btn" id="btnLogout" data-i18n="home.logout">退出登录</button>
-                </div>
-              </div>
-              <div class="home-card stats">
-                <h3 data-i18n="home.stats">数据统计</h3>
-                <div class="stats-content">
-                  <div class="stats-bars">
-                    <div class="bar-row">
-                      <div class="bar-info">
-                        <span class="bar-name" data-i18n="home.totalUsage">总使用次数</span>
-                        <span class="bar-value" id="barTotalUsage">0</span>
-                      </div>
-                      <div class="bar-track">
-                        <div class="bar-fill bar-total" id="barTotal"></div>
-                      </div>
-                    </div>
-                    <div class="bar-row">
-                      <div class="bar-info">
-                        <span class="bar-name" data-i18n="home.myUsage">我的使用次数</span>
-                        <span class="bar-value" id="barMyUsage">0</span>
-                      </div>
-                      <div class="bar-track">
-                        <div class="bar-fill bar-mine" id="barMine"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="home-card recently">
-                <h3 data-i18n="home.recentlyUsed">最近使用</h3>
                 <div class="recently-content" id="recentlyContent">
                   <div class="placeholder-box" data-i18n="home.empty">暂无内容</div>
                 </div>
-              </div>
-              <div class="home-card recommended" id="recommendedCard">
-                <h3 data-i18n="home.recommended">推荐工具</h3>
+              </section>
+
+              <section class="home-module home-module-recommended" aria-labelledby="recommendedHeading">
+                <div class="home-module-heading">
+                  <span class="home-module-index">02</span>
+                  <h2 id="recommendedHeading" data-i18n="home.recommended">推荐工具</h2>
+                </div>
                 <div class="recommended-content" id="recommendedContent">
                   <div class="placeholder-box" data-i18n="home.empty">暂无内容</div>
                 </div>
-              </div>
-              <div class="home-card new-tools" id="favoritesCard">
-                <h3 data-i18n="home.newTools">我的收藏</h3>
+              </section>
+
+              <section class="home-module home-module-favorites" aria-labelledby="favoritesHeading">
+                <div class="home-module-heading">
+                  <span class="home-module-index">03</span>
+                  <h2 id="favoritesHeading" data-i18n="home.newTools">我的收藏</h2>
+                </div>
                 <div class="favorites-content" id="favoritesContent">
                   <div class="placeholder-box" data-i18n="home.empty">暂无内容</div>
                 </div>
-              </div>
-              <div class="home-card about-us">
-                <h3 data-i18n="home.aboutUs">关于我们</h3>
-                <div class="about-us-links">
-                  <a class="about-link" href="#" data-link="website">
-                    <img src="/assets/toolknit-icon.png" alt="ToolKnit">
-                    <span data-i18n="home.aboutUsWebsite">ToolKnit网页版</span>
-                  </a>
-                  <a class="about-link" href="#" data-link="github">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405 1.02 0 2.04.135 3 .405 2.28-1.545 3.285-1.23 3.285-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"></path></svg>
-                    <span data-i18n="home.aboutUsGithub">GitHub</span>
-                  </a>
-                  <a class="about-link donate-link" href="#" data-link="donate">
-                    <svg class="donate-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                    <span data-i18n="home.aboutUsDonate">捐赠</span>
-                  </a>
+              </section>
+
+              <button class="home-github" type="button" data-home-link="github" aria-label="GitHub">
+                <div class="home-github-topline">
+                  <span class="home-github-label"><i data-lucide="github"></i> GitHub</span>
+                  <i class="home-github-arrow" data-lucide="arrow-up-right"></i>
                 </div>
-              </div>
+                <div class="home-github-chart" aria-hidden="true">
+                  <div class="home-github-summary">
+                    <span class="home-github-quote">不以私藏缚代码，愿将利器赠人间</span>
+                    <span class="home-github-stat">当前 STAR <strong id="githubStarCount">--</strong></span>
+                    <span class="home-github-stat">已获捐赠 <strong id="githubDonationTotal">23.88</strong> 元</span>
+                  </div>
+                  <svg viewBox="0 0 280 76" preserveAspectRatio="none">
+                    <polyline id="githubActivityLine" points="0,62 248,62 280,8"></polyline>
+                  </svg>
+                </div>
+                <div class="home-github-footer">
+                  <span id="githubActivityStatus">正在同步 Star 与贡献名单</span>
+                </div>
+              </button>
             </div>
           </div>
           <div class="content-section" data-category="pdf">
@@ -3482,7 +3971,7 @@
                 <div class="tools-hero-text">
                   <span class="tools-eyebrow" data-i18n="home.toolNames.pdfEyebrow">Document Studio</span>
                   <h2 data-i18n="nav.pdfTools">PDF工具</h2>
-                  <p data-i18n="home.pdfCategoryDesc">PDF 旋转、合并、拆分、压缩等工具入口。</p>
+                  <p data-i18n="home.pdfCategoryDesc">合并、拆分、旋转、加密、解密、压缩与扫描件文字增强。</p>
                 </div>
               </div>
               <div class="audio-search tools-search">
@@ -3511,14 +4000,14 @@
                   <div class="audio-list-icon"><i data-lucide="scissors"></i></div>
                   <div class="audio-list-info">
                     <div class="audio-list-title" data-i18n="home.toolNames.pdfSplit">PDF 文件拆分</div>
-                    <div class="audio-list-desc" data-i18n="home.toolNames.pdfSplitDesc">按页码范围提取或拆分 PDF</div>
+                    <div class="audio-list-desc" data-i18n="home.toolNames.pdfSplitDesc">选择页面并拆分为独立 PDF</div>
                   </div>
                   <div class="audio-list-right">
                     <div class="audio-list-tags">
                       <span class="audio-tag" data-i18n="home.toolNames.pdfCategoryTag">PDF工具</span>
                       <span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span>
                     </div>
-                    <div class="audio-list-meta" data-i18n="home.toolNames.pdfSplitMeta">页码选择 / 范围提取 / 纯本地处理</div>
+                    <div class="audio-list-meta" data-i18n="home.toolNames.pdfSplitMeta">页面选择 / 批量导出 / 纯本地处理</div>
                   </div>
                 </div>
                 <div class="audio-list-item" data-tool="pdf-rotate" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.pdfRotate">
@@ -3600,7 +4089,7 @@
               <div class="tools-hero-text">
                 <span class="tools-eyebrow" data-i18n="home.toolNames.imageEyebrow">Pixel Lab</span>
                 <h2 data-i18n="nav.imageTools">图像工具</h2>
-                <p data-i18n="home.imageCategoryDesc">图片格式转换、压缩、裁剪、调整尺寸等工具入口。</p>
+                <p data-i18n="home.imageCategoryDesc">格式转换、压缩、长图拼接与图标生成，全部本地处理。</p>
               </div>
               <div class="audio-search tools-search">
                 <input type="text" class="tools-search-input" data-i18n-placeholder="home.searchPlaceholder" placeholder="搜索工具...">
@@ -3614,7 +4103,7 @@
                   <div class="audio-list-icon"><i data-lucide="arrow-left-right"></i></div>
                   <div class="audio-list-info">
                     <div class="audio-list-title" data-i18n="home.toolNames.imgConvert">图片格式转换</div>
-                    <div class="audio-list-desc" data-i18n="home.toolNames.imgConvertDesc">JPG / PNG / WebP / BMP / GIF 互转</div>
+                    <div class="audio-list-desc" data-i18n="home.toolNames.imgConvertDesc">JPG / PNG / WebP / BMP / GIF / SVG 互转</div>
                   </div>
                   <div class="audio-list-right">
                     <div class="audio-list-tags">
@@ -3638,6 +4127,7 @@
                     <div class="audio-list-meta" data-i18n="home.toolNames.imgCompressMeta">JPG / PNG / WebP / BMP / GIF</div>
                   </div>
                 </div>
+                <div class="audio-list-item" data-tool="image-stitch" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.imageStitch"><div class="audio-list-icon"><i data-lucide="panels-top-left"></i></div><div class="audio-list-info"><div class="audio-list-title" data-i18n="home.toolNames.imageStitch">长图拼接</div><div class="audio-list-desc" data-i18n="home.toolNames.imageStitchDesc">纵向 / 横向 / 无缝拼接 / PNG / JPG</div></div><div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.imageCategoryTag">图像工具</span><span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span></div><div class="audio-list-meta" data-i18n="home.toolNames.imageStitchMeta">排序队列 / 参考尺寸 / 间距 / 背景色</div></div></div>
                 <div class="audio-list-item" data-tool="icon-gen" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.iconGen">
                   <div class="audio-list-icon"><i data-lucide="image-plus"></i></div>
                   <div class="audio-list-info">
@@ -3662,7 +4152,7 @@
                 <div class="tools-hero-text">
                   <span class="tools-eyebrow" data-i18n="home.toolNames.audioEyebrow">Sound Studio</span>
                   <h2 data-i18n="nav.audioTools">音频工具</h2>
-                  <p data-i18n="home.audioCategoryDesc">音频格式转换、剪辑、合并、音量调整等工具入口。</p>
+                  <p data-i18n="home.audioCategoryDesc">音频格式转换、节拍检测、可视化剪辑与音频提取。</p>
                 </div>
               </div>
               <div class="audio-search" id="audioSearchWrap">
@@ -3741,7 +4231,7 @@
               <div class="tools-hero-text">
                 <span class="tools-eyebrow" data-i18n="home.toolNames.videoEyebrow">Frame Studio</span>
                 <h2 data-i18n="nav.videoTools">视频工具</h2>
-                <p data-i18n="home.videoCategoryDesc">视频格式转换、压缩、裁剪、合并等工具入口。</p>
+                <p data-i18n="home.videoCategoryDesc">视频格式转换、高清单帧图与最长 30 秒 GIF。</p>
               </div>
               <div class="audio-search tools-search">
                 <input type="text" class="tools-search-input" data-i18n-placeholder="home.searchPlaceholder" placeholder="搜索工具...">
@@ -3765,6 +4255,12 @@
                     <div class="audio-list-meta" data-i18n="home.toolNames.videoConvertMeta">8种格式互转 / 批量处理</div>
                   </div>
                 </div>
+                <div class="audio-list-item" data-tool="video-frame" role="button" tabindex="0">
+                  <div class="audio-list-icon"><i data-lucide="image"></i></div><div class="audio-list-info"><div class="audio-list-title">视频高清单帧图</div><div class="audio-list-desc">逐帧定位 / PNG 无损 / 原始分辨率</div></div><div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag">视频工具</span><span class="tool-badge badge-new">新</span></div><div class="audio-list-meta">精准时间轴 / 单帧微调</div></div>
+                </div>
+                <div class="audio-list-item" data-tool="video-gif" role="button" tabindex="0">
+                  <div class="audio-list-icon"><i data-lucide="film"></i></div><div class="audio-list-info"><div class="audio-list-title">视频截取 GIF</div><div class="audio-list-desc">起止帧选择 / 最长 30 秒 / 逐帧预览</div></div><div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag">视频工具</span><span class="tool-badge badge-new">新</span></div><div class="audio-list-meta">调色板优化 / 循环 GIF / 本地导出</div></div>
+                </div>
               </div>
             </div>
           </div>
@@ -3774,7 +4270,7 @@
               <div class="tools-hero-text">
                 <span class="tools-eyebrow" data-i18n="home.toolNames.textEyebrow">Text Terminal</span>
                 <h2 data-i18n="nav.textTools">文本工具</h2>
-                <p data-i18n="home.textCategoryDesc">文本编码、格式化、对比、统计等工具入口。</p>
+                <p data-i18n="home.textCategoryDesc">音视频转文字、文本统计与文本格式化。</p>
               </div>
               <div class="audio-search tools-search">
                 <input type="text" class="tools-search-input" data-i18n-placeholder="home.searchPlaceholder" placeholder="搜索工具...">
@@ -3784,6 +4280,20 @@
                 <button class="audio-clear-btn tools-clear-btn" data-i18n="home.clearSearch" style="display:none;">清除搜索结果</button>
               </div>
               <div class="audio-list">
+                <div class="audio-list-item" data-tool="transcription" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.transcription">
+                  <div class="audio-list-icon"><i data-lucide="captions"></i></div>
+                  <div class="audio-list-info">
+                    <div class="audio-list-title" data-i18n="home.toolNames.transcription">音视频提取文字</div>
+                    <div class="audio-list-desc" data-i18n="home.toolNames.transcriptionDesc">离线中英文识别，导出 TXT 与 SRT</div>
+                  </div>
+                  <div class="audio-list-right">
+                    <div class="audio-list-tags">
+                      <span class="audio-tag" data-i18n="home.toolNames.textCategoryTag">文本工具</span>
+                      <span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span>
+                    </div>
+                    <div class="audio-list-meta" data-i18n="home.toolNames.transcriptionMeta">本地转写 / 可选 AI 润色 / TXT / SRT</div>
+                  </div>
+                </div>
                 <div class="audio-list-item" data-tool="text-stats" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.textStats">
                   <div class="audio-list-icon"><i data-lucide="bar-chart-3"></i></div>
                   <div class="audio-list-info">
@@ -3821,7 +4331,7 @@
               <div class="tools-hero-text">
                 <span class="tools-eyebrow" data-i18n="home.toolNames.calcEyebrow">Math Hub</span>
                 <h2 data-i18n="nav.calculator">计算器工具</h2>
-                <p data-i18n="home.calculatorCategoryDesc">科学计算、单位换算、汇率计算等工具入口。</p>
+                <p data-i18n="home.calculatorCategoryDesc">体脂率、时间戳、房贷、利息与密码生成。</p>
               </div>
               <div class="audio-search tools-search">
                 <input type="text" class="tools-search-input" data-i18n-placeholder="home.searchPlaceholder" placeholder="搜索工具...">
@@ -3910,7 +4420,7 @@
               <div class="tools-hero-text">
                 <span class="tools-eyebrow" data-i18n="home.toolNames.creativeEyebrow">Design Studio</span>
                 <h2 data-i18n="nav.creative">创意工具</h2>
-                <p data-i18n="home.creativeCategoryDesc">颜色生成、图标制作、设计辅助等工具入口。</p>
+                <p data-i18n="home.creativeCategoryDesc">从图片提取主色，并进行中英文打字测试。</p>
               </div>
               <div class="audio-search tools-search">
                 <input type="text" class="tools-search-input" data-i18n-placeholder="home.searchPlaceholder" placeholder="搜索工具...">
@@ -3957,7 +4467,7 @@
               <div class="tools-hero-text">
                 <span class="tools-eyebrow" data-i18n="home.toolNames.aiEyebrow">AI Forge</span>
                 <h2 data-i18n="nav.aiTools">AI工具</h2>
-                <p data-i18n="home.aiCategoryDesc">AI 辅助写作、图像生成、智能处理等工具入口。</p>
+                <p data-i18n="home.aiCategoryDesc">AI 润色、翻译、可编辑 PDF 文档和可编辑数据表。</p>
               </div>
               <div class="audio-search tools-search">
                 <input type="text" class="tools-search-input" data-i18n-placeholder="home.searchPlaceholder" placeholder="搜索工具...">
@@ -4029,8 +4539,6 @@
         </div>
       </div>
     </div>
-
-    <div class="global-tooltip" id="donateTooltip" data-i18n="home.donateTooltip">ToolKnit 由董子航（Zihang Dong）独立开发。开发路程漫长，如果你想支持他，可以请他喝杯咖啡！</div>
 
     <script type="module" src="./src/help-data.js"></script>
     <script type="module" src="./src/main.js"></script>
@@ -4164,6 +4672,7 @@
         <div class="audio-convert-process-bar-fill" id="iconGenProcessBarFill"></div>
       </div>
       <div class="audio-convert-process-text" id="iconGenProcessText" data-i18n="home.iconGen.processing">正在生成...</div>
+      <button class="audio-convert-cancel-btn" id="iconGenCancelBtn" data-i18n="home.iconGen.cancel">取消</button>
     </div>
 
     <div class="audio-convert-success-overlay" id="iconGenSuccessOverlay">
@@ -4283,129 +4792,57 @@
       </div>
     </div>
 
-    <!-- AI Login Required Overlay -->
-    <div class="ffmpeg-overlay" id="aiLoginOverlay">
-      <div class="ffmpeg-overlay-bg" id="aiLoginOverlayBg"></div>
+    <!-- AI Key Required Overlay -->
+    <div class="ffmpeg-overlay" id="aiKeyRequiredOverlay">
+      <div class="ffmpeg-overlay-bg" id="aiKeyRequiredOverlayBg"></div>
       <div class="ffmpeg-overlay-content">
         <div class="tk-mascot-lg" aria-hidden="true"></div>
-        <h2 class="ffmpeg-overlay-title" data-i18n="home.aiLogin.title">需要登录</h2>
-        <p class="ffmpeg-overlay-desc" data-i18n="home.aiLogin.desc">AI 功能需要登录后使用，请在设置页面配置 AI 平台密钥</p>
+        <h2 class="ffmpeg-overlay-title" data-i18n="home.aiKeyRequired.title">需要配置 AI 密钥</h2>
+        <p class="ffmpeg-overlay-desc" data-i18n="home.aiKeyRequired.desc">请先在设置中配置 AI 平台密钥。密钥仅保存在本地。</p>
         <div class="ffmpeg-overlay-actions">
-          <button class="ffmpeg-overlay-btn ffmpeg-overlay-cancel" id="aiLoginCancel" data-i18n="home.aiLogin.cancel">取消</button>
-          <button class="ffmpeg-overlay-btn ffmpeg-overlay-confirm" id="aiLoginGoSettings" data-i18n="home.aiLogin.goSettings">去设置</button>
+          <button class="ffmpeg-overlay-btn ffmpeg-overlay-cancel" id="aiKeyRequiredCancel" data-i18n="home.aiKeyRequired.cancel">取消</button>
+          <button class="ffmpeg-overlay-btn ffmpeg-overlay-confirm" id="aiKeyRequiredGoSettings" data-i18n="home.aiKeyRequired.goSettings">去设置</button>
         </div>
       </div>
     </div>
-
-    <!-- Logout Confirm Dialog -->
-    <div class="audio-convert-success-overlay" id="logoutConfirmOverlay">
-      <div class="audio-convert-success-dialog">
-        <div class="audio-convert-success-icon" style="background: linear-gradient(135deg, #3a3a3e, #1c1c1e);">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-        </div>
-        <h3 class="audio-convert-success-title" id="logoutConfirmTitle" data-i18n="home.logoutConfirmTitle">确认退出</h3>
-        <div class="audio-convert-success-meta" id="logoutConfirmMsg" data-i18n="home.logoutConfirmMsg">退出后需要重新登录，确认退出吗？</div>
-        <div class="audio-convert-success-actions">
-          <button class="audio-convert-success-btn audio-convert-success-btn-secondary" id="logoutCancelBtn" data-i18n="home.cancel">取消</button>
-          <button class="audio-convert-success-btn audio-convert-success-btn-primary" id="logoutConfirmBtn" data-i18n="home.logout" style="background: linear-gradient(135deg, #3a3a3e, #1c1c1e);">退出登录</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Auth Loading Overlay -->
-    <div class="auth-loading-overlay" id="authLoadingOverlay">
-      <div class="auth-loading-circle" id="authLoadingCircle"></div>
-      <div class="auth-loading-dots" id="authLoadingDots">
-        <span></span><span></span><span></span>
-      </div>
-    </div>
-
-    <!-- Auth Overlay -->
-    <div class="auth-overlay" id="authOverlay">
-      <div class="auth-circle" id="authCircle"></div>
-      <div class="auth-content">
-        <button class="auth-close" id="authClose">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    <div class="donation-overlay" id="donationOverlay" role="dialog" aria-modal="true" aria-labelledby="donationTitle" aria-hidden="true">
+      <button class="donation-overlay-bg" type="button" data-donation-close aria-label="关闭支持作者弹层"></button>
+      <section class="donation-dialog">
+        <button class="donation-close" type="button" data-donation-close aria-label="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
         </button>
-        <div class="auth-card">
-          <div class="auth-hero">
-            <div class="auth-hero-logo"></div>
-            <div class="auth-hero-label" id="authHeroLabel">ToolKnit Account</div>
-            <div class="auth-hero-title" id="authHeroTitle" data-i18n="auth.loginTitle">欢迎回来</div>
-            <div class="auth-hero-subtitle" id="authHeroSubtitle" data-i18n="auth.loginSubtitle">登录以解锁全部功能</div>
-          </div>
-          <div class="auth-form-wrap">
-            <!-- Login Form -->
-            <div class="auth-form-inner visible" id="loginForm">
-              <div class="auth-form">
-                <div class="auth-field">
-                  <label data-i18n="auth.email">邮箱</label>
-                  <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
-                </div>
-                <div class="auth-field">
-                  <label data-i18n="auth.password">密码</label>
-                  <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
-                </div>
-                <div class="auth-submit-wrap">
-                  <button class="auth-submit" id="loginSubmit" data-i18n="auth.loginBtn">登录</button>
-                  <div class="auth-submit-spider" id="loginSpider"></div>
-                </div>
-                <div class="auth-error" id="loginError"></div>
-              </div>
-              <div class="auth-switch">
-                <span data-i18n="auth.noAccount">没有账户？</span>
-                <a id="switchToRegister" data-i18n="auth.registerHere">注册</a>
-              </div>
-            </div>
-            <!-- Register Form -->
-            <div class="auth-form-inner" id="registerForm">
-              <!-- Step 1: Basic Info -->
-              <div class="auth-form" id="registerStep1">
-                <div class="auth-field">
-                  <label data-i18n="auth.username">用户名</label>
-                  <input type="text" id="registerUsername" data-i18n-placeholder="auth.usernamePlaceholder" placeholder="你的昵称" autocomplete="username">
-                </div>
-                <div class="auth-field">
-                  <label data-i18n="auth.email">邮箱</label>
-                  <input type="email" id="registerEmail" placeholder="you@example.com" autocomplete="email">
-                </div>
-                <div class="auth-field">
-                  <label data-i18n="auth.password">密码</label>
-                  <input type="password" id="registerPassword" data-i18n-placeholder="auth.passwordPlaceholder" placeholder="至少 6 位" autocomplete="new-password">
-                </div>
-                <div class="auth-submit-wrap">
-                  <button class="auth-submit" id="registerNext" data-i18n="auth.nextBtn">下一步</button>
-                  <div class="auth-submit-spider" id="registerSpider"></div>
-                </div>
-                <div class="auth-error" id="registerError"></div>
-              </div>
-              <!-- Step 2: Avatar Upload -->
-              <div class="auth-form" id="registerStep2" style="display:none;">
-                <div class="auth-avatar-title" data-i18n="auth.avatarTitle">请上传你的头像</div>
-                <div class="auth-avatar-upload" id="registerAvatarZone">
-                  <div class="auth-avatar-preview" id="registerAvatarPreview">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;color:#bbb;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                  </div>
-                  <div class="auth-avatar-hint" data-i18n="auth.avatarHint">点击上传头像（可选）</div>
-                  <input type="file" id="registerAvatarFile" accept="image/png,image/jpeg,image/webp" style="display:none;">
-                </div>
-                <div class="auth-submit-wrap">
-                  <button class="auth-submit disabled-avatar" id="registerSubmit" data-i18n="auth.registerBtn">提交注册</button>
-                  <div class="auth-submit-spider" id="registerSpider2"></div>
-                </div>
-                <div class="auth-error" id="registerError2"></div>
-                <div class="auth-back-wrap">
-                  <a id="registerBack" data-i18n="auth.backBtn">返回上一步</a>
-                </div>
-              </div>
-              <div class="auth-switch auth-switch-register">
-                <span data-i18n="auth.haveAccount">已有账户？</span>
-                <a id="switchToLogin" data-i18n="auth.loginHere">登录</a>
-              </div>
-            </div>
+        <div class="donation-hero">
+          <span class="donation-kicker">SUPPORT OPEN SOURCE</span>
+          <h2 id="donationTitle">支持 ToolKnit 持续免费更新</h2>
+          <p>你的每一份支持，都会用于功能开发、模型与依赖测试、文档维护、服务器与开源发布成本。我们会继续把好用的本地文件处理利器，认真打磨后交给更多人。</p>
+          <div class="donation-purpose">
+            <span>功能迭代</span>
+            <span>兼容测试</span>
+            <span>文档教程</span>
+            <span>开源维护</span>
           </div>
         </div>
-      </div>
+        <div class="donation-qr-grid">
+          <article class="donation-qr-card donation-qr-wechat">
+            <div class="donation-qr-image-wrap">
+              <img src="assets/donate/wechat-qr.jpg" alt="微信收款码">
+            </div>
+            <div>
+              <h3>微信支持</h3>
+              <p>扫码后可备注想要的新功能，我会优先整理进 Roadmap。</p>
+            </div>
+          </article>
+          <article class="donation-qr-card donation-qr-alipay">
+            <div class="donation-qr-image-wrap">
+              <img src="assets/donate/alipay-qr.png" alt="支付宝收款码">
+            </div>
+            <div>
+              <h3>支付宝支持</h3>
+              <p>小额支持也很珍贵，足够让我多熬一杯咖啡继续修细节。</p>
+            </div>
+          </article>
+        </div>
+      </section>
     </div>
     <div class="toast" id="favToast"><span id="favToastText"></span></div>
   </body>

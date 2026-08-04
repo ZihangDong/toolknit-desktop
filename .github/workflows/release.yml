@@ -20,21 +20,10 @@ jobs:
           node-version: 20
 
       - name: Setup Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install dependencies
         run: cd toolknit-desktop && npm ci
-
-      - name: Download ffmpeg
-        shell: pwsh
-        run: |
-          $release = Invoke-RestMethod https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest
-          $version = $release.tag_name.TrimStart('v')
-          $url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/v$version/ffmpeg-master-latest-win64-gpl.zip"
-          Invoke-WebRequest $url -OutFile ffmpeg.zip
-          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg-temp -Force
-          New-Item -ItemType Directory -Path toolknit-desktop/src-tauri/resources/ffmpeg -Force | Out-Null
-          Copy-Item ffmpeg-temp/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe toolknit-desktop/src-tauri/resources/ffmpeg/ffmpeg.exe -Force
 
       - name: Build Tauri
         run: cd toolknit-desktop && npm run tauri build

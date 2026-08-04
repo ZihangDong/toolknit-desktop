@@ -1,0 +1,62 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Build and test
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: toolknit-desktop
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: toolknit-desktop/package-lock.json
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Validate help, CLI, and dependency contracts
+        run: |
+          npm run test:help
+          npm run test:cli-agent
+          npm run test:dependencies
+
+      - name: Validate AI document and table project contracts
+        run: |
+          npm run test:ai-doc
+          npm run test:ai-table
+
+      - name: Run native tests
+        working-directory: toolknit-desktop/src-tauri
+        run: cargo test --locked

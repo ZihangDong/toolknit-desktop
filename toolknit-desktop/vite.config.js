@@ -6,7 +6,9 @@ export default defineConfig(async () => ({
     port: 1420,
     strictPort: true,
     watch: {
-      ignored: ["**/src-tauri/**"],
+      // CLI staging replaces bundled binaries and fonts. Watching those output
+      // directories can crash chokidar with EBUSY on Windows while Tauri is running.
+      ignored: ["**/src-tauri/**", "**/cli/vendor/**", "**/cli/resources/**", "**/cli/*.tgz"],
     },
   },
   build: {

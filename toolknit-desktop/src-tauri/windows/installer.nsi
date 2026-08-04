@@ -413,8 +413,8 @@ Function .onInit
   ${EndIf}
 
   !if "${DISPLAYLANGUAGESELECTOR}" == "true"
-    ; Force English as default language in the selector dialog
-    StrCpy $LANGUAGE ${LANG_ENGLISH}
+    ; Simplified Chinese is the default in the selector dialog.
+    StrCpy $LANGUAGE ${LANG_SIMPCHINESE}
     !insertmacro MUI_LANGDLL_DISPLAY
   !endif
 

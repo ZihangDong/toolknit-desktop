@@ -72,8 +72,8 @@ If ToolKnit helps you, supporting the author keeps testing, mirrors, documentati
     <th width="40%">What support helps with</th>
   </tr>
   <tr>
-    <td align="center"><img src="assets/alipay-qr.png" alt="Support ToolKnit with WeChat Pay" width="230" /></td>
-    <td align="center"><img src="assets/wechat-qr.jpg" alt="Support ToolKnit with Alipay" width="230" /></td>
+    <td align="center"><img src="assets/wechat-qr.jpg" alt="Support ToolKnit with WeChat Pay" width="230" /></td>
+    <td align="center"><img src="assets/alipay-qr.png" alt="Support ToolKnit with Alipay" width="230" /></td>
     <td valign="top">
       <p>
         <img src="https://img.shields.io/badge/Feature%20requests-priority%20review-111827" alt="Feature requests priority review" />

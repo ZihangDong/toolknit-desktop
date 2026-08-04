@@ -1,0 +1,67 @@
+{
+  "name": "@toolknit/cli",
+  "version": "1.2.7",
+  "license": "Apache-2.0",
+  "description": "Local-first file processing CLI and MCP server for ToolKnit",
+  "type": "module",
+  "homepage": "https://github.com/ZihangDong/toolknit-desktop#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZihangDong/toolknit-desktop.git",
+    "directory": "cli"
+  },
+  "bugs": {
+    "url": "https://github.com/ZihangDong/toolknit-desktop/issues"
+  },
+  "funding": {
+    "type": "custom",
+    "url": "https://github.com/ZihangDong/toolknit-desktop#支持作者"
+  },
+  "keywords": [
+    "toolknit",
+    "cli",
+    "mcp",
+    "agent",
+    "pdf",
+    "ai-document",
+    "ai-table",
+    "ffmpeg",
+    "local-first",
+    "file-processing"
+  ],
+  "bin": {
+    "toolknit": "toolknit.mjs"
+  },
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "scripts": {
+    "prepack": "node ../scripts/stage-cli-resources.cjs"
+  },
+  "files": [
+    "README.md",
+    "toolknit.mjs",
+    "LICENSE",
+    "npm-shrinkwrap.json",
+    "lib",
+    "guides",
+    "resources/fonts",
+    "vendor/qpdf",
+    "vendor/whisper",
+    "LICENSES"
+  ],
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.1",
+    "chart.js": "^4.5.1",
+    "exceljs": "^4.4.0",
+    "fontkit": "^2.0.4",
+    "pdf-lib": "^1.17.1",
+    "pdf-lib-plus-encrypt": "^1.1.0",
+    "pdfjs-dist": "^6.0.227"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "11.1.1"
+    }
+  }
+}

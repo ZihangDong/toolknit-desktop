@@ -1,28 +1,21 @@
-## 描述
+## Summary
 
-简要描述这个 PR 做了什么。
+Explain the user-visible change and why it is needed.
 
-## 改动类型
+## Validation
 
-- [ ] Bug 修复
-- [ ] 新功能
-- [ ] 文档更新
-- [ ] 代码重构
-- [ ] 性能优化
-- [ ] 其他(请说明)
+- [ ] `npm run build`
+- [ ] Relevant `npm run test:*` checks
+- [ ] `cargo test --locked` when native code changed
+- [ ] Help, CLI/MCP guides, and translations updated when needed
 
-## 测试
+## Safety checklist
 
-- [ ] 我已经在本地测试过这些改动
-- [ ] `npm run tauri build` 能成功构建
+- [ ] No API key, token, password, private file, or personal path is included
+- [ ] Output handling does not overwrite source files or bypass path validation
+- [ ] Desktop, CLI, and MCP behavior remain aligned where applicable
+- [ ] This pull request is focused and does not include unrelated formatting changes
 
-## 检查清单
+## Related issue
 
-- [ ] 代码风格一致
-- [ ] 没有提交敏感信息
-- [ ] 没有提交大文件(模型、ffmpeg.exe、构建产物等)
-- [ ] README 已同步更新(如需要)
-
-## 相关 Issue
-
-Fixes #(issue 编号)
+Fixes #

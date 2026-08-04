@@ -1,0 +1,72 @@
+name: Bug report
+description: Report a reproducible problem in ToolKnit Desktop, CLI, or MCP.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve ToolKnit. Do not include API keys, passwords, private file paths, or original sensitive files.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      options:
+        - Desktop application
+        - CLI
+        - IDE Agent / MCP
+        - Runtime or dependency download
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: ToolKnit version
+      placeholder: "For example: 1.2.7"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Windows and environment
+      placeholder: "For example: Windows 11 23H2, Node 22.14.0"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Use a minimal, sanitized example and list every step.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Click ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and sanitized logs
+      description: Remove keys, passwords, personal paths, and original document contents before pasting logs.
+    validations:
+      required: true
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshots or screen recording
+      description: Optional. Redact personal data before uploading.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and removed sensitive information.
+          required: true

@@ -72,8 +72,8 @@ ToolKnit Desktop 是 ToolKnit 网页端的开源桌面配套版本。它面向�
     <th width="40%">支持会带来什么</th>
   </tr>
   <tr>
-    <td align="center"><img src="assets/alipay-qr.png" alt="微信支付支持 ToolKnit" width="230" /></td>
-    <td align="center"><img src="assets/wechat-qr.jpg" alt="支付宝支持 ToolKnit" width="230" /></td>
+    <td align="center"><img src="assets/wechat-qr.jpg" alt="微信支付支持 ToolKnit" width="230" /></td>
+    <td align="center"><img src="assets/alipay-qr.png" alt="支付宝支持 ToolKnit" width="230" /></td>
     <td valign="top">
       <p>
         <img src="https://img.shields.io/badge/功能建议-优先评估-111827" alt="功能建议优先评估" />

@@ -1,0 +1,51 @@
+name: Feature request
+description: Propose a focused improvement to ToolKnit.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Explain the user problem first. A feature request is easier to evaluate when it includes a concrete workflow and stays within ToolKnit's local-first scope.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Who has this problem, and what is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe inputs, outputs, defaults, errors, and any preview/editing need.
+    validations:
+      required: true
+  - type: dropdown
+    id: delivery
+    attributes:
+      label: Relevant interface
+      multiple: true
+      options:
+        - Desktop application
+        - CLI
+        - IDE Agent / MCP
+        - Documentation
+        - New local runtime or model
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not include private files or credentials.
+          required: true

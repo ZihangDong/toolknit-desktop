@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "toolknit-desktop",
-  "version": "1.0.0",
+  "version": "1.2.7",
   "identifier": "com.toolknit.desktop",
   "build": {
     "frontendDist": "../dist",
@@ -14,25 +14,26 @@
       {
         "label": "main",
         "title": "ToolKnit Desktop",
-        "width": 1100,
-        "height": 800,
-        "minWidth": 1100,
-        "minHeight": 800,
-        "maxWidth": 1100,
-        "maxHeight": 800,
+        "width": 1160,
+        "height": 780,
+        "minWidth": 1160,
+        "minHeight": 780,
+        "maxWidth": 1160,
+        "maxHeight": 780,
         "resizable": false,
         "fullscreen": false,
         "decorations": false,
         "shadow": false,
         "devtools": false,
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection",
         "dragDropEnabled": true
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: blob: data: https://pic1.imgdb.cn; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://api.deepseek.com https://api.openai.com https://dashscope.aliyuncs.com https://api.moonshot.cn; font-src 'self' data:",
+      "csp": "default-src 'self'; img-src 'self' asset: blob: data: http://127.0.0.1:*; media-src 'self' asset: blob: data: http://127.0.0.1:*; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; font-src 'self' data:",
       "assetProtocol": {
         "enable": true,
-        "scope": ["$DOCUMENT/*", "$DOWNLOAD/*", "$APPDATA/*"]
+        "scope": ["**"]
       }
     }
   },
@@ -42,7 +43,33 @@
     "icon": [
       "icons/icon.ico"
     ],
-    "resources": ["resources/ffmpeg/ffmpeg.exe"],
+    "resources": [
+      "resources/qpdf/qpdf.exe",
+      "resources/qpdf/qpdf30.dll",
+      "resources/qpdf/concrt140.dll",
+      "resources/qpdf/msvcp140.dll",
+      "resources/qpdf/msvcp140_1.dll",
+      "resources/qpdf/msvcp140_2.dll",
+      "resources/qpdf/msvcp140_atomic_wait.dll",
+      "resources/qpdf/msvcp140_codecvt_ids.dll",
+      "resources/qpdf/vcruntime140.dll",
+      "resources/qpdf/vcruntime140_1.dll",
+      "resources/qpdf/NOTICE.txt",
+      "resources/qpdf/LICENSE.html",
+      "resources/whisper/Release/whisper-cli.exe",
+      "resources/whisper/Release/whisper.dll",
+      "resources/whisper/Release/ggml.dll",
+      "resources/whisper/Release/ggml-base.dll",
+      "resources/whisper/Release/ggml-cpu-alderlake.dll",
+      "resources/whisper/Release/ggml-cpu-cannonlake.dll",
+      "resources/whisper/Release/ggml-cpu-cascadelake.dll",
+      "resources/whisper/Release/ggml-cpu-haswell.dll",
+      "resources/whisper/Release/ggml-cpu-icelake.dll",
+      "resources/whisper/Release/ggml-cpu-sandybridge.dll",
+      "resources/whisper/Release/ggml-cpu-skylakex.dll",
+      "resources/whisper/Release/ggml-cpu-sse42.dll",
+      "resources/whisper/Release/ggml-cpu-x64.dll"
+    ],
     "windows": {
       "nsis": {
         "installMode": "both",
