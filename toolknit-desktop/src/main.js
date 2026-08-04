@@ -14428,7 +14428,7 @@
           await aiTableChartRenderPromise;
           await loadAiDocFontBytes();
           const pdfLib = await import('pdf-lib-plus-encrypt');
-          const { PDFDocument, StandardFonts, rgb } = pdfLib;
+          const { PDFDocument, StandardFonts, rgb } = pdfLib.PDFDocument ? pdfLib : pdfLib.default;
           const pdfDoc = await PDFDocument.create();
           // Embed Chinese-capable font so CJK characters don't crash WinAnsi encoder
           let font;

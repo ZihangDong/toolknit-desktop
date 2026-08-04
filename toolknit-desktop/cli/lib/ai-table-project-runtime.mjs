@@ -779,7 +779,7 @@ async function buildXlsxBuffer(data) {
 
 async function buildPdfBytesFromPreview(previewCanvas) {
   const pdfLib = await import('pdf-lib-plus-encrypt');
-  const { PDFDocument } = pdfLib;
+  const { PDFDocument } = pdfLib.PDFDocument ? pdfLib : pdfLib.default;
   const { createCanvas } = await import('@napi-rs/canvas');
   const pdfDoc = await PDFDocument.create();
   const pageW = 595.28;
