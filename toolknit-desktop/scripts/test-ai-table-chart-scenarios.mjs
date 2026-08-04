@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import ExcelJS from 'exceljs';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
-import { PDFDocument } from 'pdf-lib-plus-encrypt';
+import pdfLibPlusEncrypt from 'pdf-lib-plus-encrypt';
 import {
   editAiTableProject,
   generateAiTableProject,
@@ -13,6 +13,8 @@ import {
   inspectAiTableProjectFile,
   renderAiTableProject
 } from '../cli/lib/ai-table-project-runtime.mjs';
+
+const { PDFDocument } = pdfLibPlusEncrypt;
 
 const env = {
   DEEPSEEK_API_KEY: 'toolknit-chart-scenario-test',

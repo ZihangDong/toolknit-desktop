@@ -19,6 +19,8 @@
 
 <h1 align="center">ToolKnit Desktop</h1>
 
+<p align="center"><em>人生何处不青山 · there is always another green mountain ahead</em></p>
+
 <p align="center">
   <strong>Local-first multi-tool desktop app · Open-source desktop edition v1.2</strong><br />
   A Windows app for PDFs, images, audio/video, text, AI documents, AI tables, CLI workflows, and IDE Agent automation. Files stay local by default.
@@ -129,6 +131,31 @@ If ToolKnit helps you, supporting the author keeps testing, mirrors, documentati
         <li>Custom output root, per-tool output folders, custom backgrounds, and default background fallback.</li>
         <li>Most core file tools expose CLI contracts and MCP tools for IDE Agents.</li>
         <li>AI documents and AI tables now use inspectable, numbered, editable, undoable, re-renderable project workflows.</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+### AI Document Generation: 1.0 vs 1.2
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>AI Document 1.0</h3>
+      <img src="assets/readme/ai-doc-v1.0.png" alt="AI Document 1.0 comparison image" width="100%" />
+      <ul>
+        <li>Focused on one-shot PDF generation.</li>
+        <li>Good for quick drafts, but follow-up edits required re-prompting.</li>
+        <li>No stable component IDs, making precise Agent edits difficult.</li>
+      </ul>
+    </td>
+    <td width="50%" valign="top">
+      <h3>AI Document 1.2 (project workflow)</h3>
+      <img src="assets/readme/ai-doc-v1.2.png" alt="AI Document 1.2 comparison image" width="100%" />
+      <ul>
+        <li>Exports PDF, previews, numbered component maps, and an editable project.</li>
+        <li>Text, image, and table components receive stable IDs for precise Agent edits.</li>
+        <li>Supports an inspect, dry-run, commit, undo, and render loop.</li>
       </ul>
     </td>
   </tr>

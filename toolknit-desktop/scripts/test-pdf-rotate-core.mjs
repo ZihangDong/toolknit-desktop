@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { PDFDocument, degrees } from 'pdf-lib';
-import { PDFDocument as EncryptedPDFDocument } from 'pdf-lib-plus-encrypt';
+import pdfLibPlusEncrypt from 'pdf-lib-plus-encrypt';
 import {
   PDF_ROTATE_LIMITS,
   assertPdfRotateInput,
@@ -10,6 +10,8 @@ import {
   normalizePdfRotation,
   rotatePdfPages
 } from '../src/pdf-rotate-core.js';
+
+const { PDFDocument: EncryptedPDFDocument } = pdfLibPlusEncrypt;
 
 async function createPdf(pageSpecs) {
   const document = await PDFDocument.create();

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { PDFDocument } from 'pdf-lib-plus-encrypt';
+import pdfLibPlusEncrypt from 'pdf-lib-plus-encrypt';
 import {
   PDF_ENCRYPT_LIMITS,
   assertPdfEncryptInput,
@@ -10,6 +10,8 @@ import {
   encryptPdf,
   normalizePdfEncryptPermissions
 } from '../src/pdf-encrypt-core.js';
+
+const { PDFDocument } = pdfLibPlusEncrypt;
 
 const sourceDocument = await PDFDocument.create();
 sourceDocument.addPage([612, 792]);

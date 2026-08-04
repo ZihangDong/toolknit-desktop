@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { PDFDocument, StandardFonts } from 'pdf-lib-plus-encrypt';
+import pdfLibPlusEncrypt from 'pdf-lib-plus-encrypt';
 import { encryptPdf } from '../src/pdf-encrypt-core.js';
 import {
   PDF_DECRYPT_LIMITS,
@@ -14,6 +14,8 @@ import {
   assertPdfDecryptSelection,
   getPdfDecryptErrorCode
 } from '../src/pdf-decrypt-core.js';
+
+const { PDFDocument, StandardFonts } = pdfLibPlusEncrypt;
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const qpdfPath = join(projectRoot, 'src-tauri', 'resources', 'qpdf', 'qpdf.exe');

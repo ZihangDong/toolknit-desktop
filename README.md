@@ -19,6 +19,8 @@
 
 <h1 align="center">ToolKnit Desktop</h1>
 
+<p align="center"><em>人生何处不青山</em></p>
+
 <p align="center">
   <strong>多功能本地工具箱 · 桌面端开源版 v1.2</strong><br />
   一个 Windows 应用，整合 PDF、图片、音视频、文本、AI 文档、AI 表格与 CLI / IDE Agent 工作流。默认本地处理，文件不上传。
@@ -129,6 +131,31 @@ ToolKnit Desktop 是 ToolKnit 网页端的开源桌面配套版本。它面向�
         <li>统一输出根目录、工具二级目录、自定义背景和默认动态背景回退。</li>
         <li>大部分核心文件工具支持 CLI，并提供 MCP 能力给 IDE Agent 调用。</li>
         <li>AI 文档和 AI 表格升级为可检查、可编号、可编辑、可撤销、可重新渲染的工程工作流。</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+### AI 文档生成：1.0 vs 1.2
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>AI 文档 1.0</h3>
+      <img src="assets/readme/ai-doc-v1.0.png" alt="AI 文档生成 1.0 对比图" width="100%" />
+      <ul>
+        <li>更偏向一次性生成 PDF。</li>
+        <li>适合快速出稿，但二次调整要重新描述。</li>
+        <li>没有稳定控件编号，Agent 很难按“第几个元素”精确修改。</li>
+      </ul>
+    </td>
+    <td width="50%" valign="top">
+      <h3>AI 文档 1.2（工程化工作流）</h3>
+      <img src="assets/readme/ai-doc-v1.2.png" alt="AI 文档生成 1.2 对比图" width="100%" />
+      <ul>
+        <li>输出 PDF、预览图、控件编号图和可编辑工程。</li>
+        <li>文字、图像、表格等组件都有稳定编号，可让 Agent 精准修改。</li>
+        <li>支持 inspect、dry-run、commit、undo、render 的可控闭环。</li>
       </ul>
     </td>
   </tr>
