@@ -1,4 +1,6 @@
-import { PDFDocument } from 'pdf-lib-plus-encrypt';
+import pdfLibPlusEncrypt from 'pdf-lib-plus-encrypt';
+
+const { PDFDocument } = pdfLibPlusEncrypt;
 
 export const PDF_ENCRYPT_LIMITS = Object.freeze({
   maxInputBytes: 150 * 1024 * 1024,
