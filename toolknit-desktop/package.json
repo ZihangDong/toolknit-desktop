@@ -65,7 +65,7 @@
     "pdf-lib-plus-encrypt": "^1.1.0",
     "pdfjs-dist": "^6.0.227",
     "realtime-bpm-analyzer": "^5.0.15",
-    "three": "^0.185.0"
+    "three": "^0.185.1"
   },
   "overrides": {
     "exceljs": {
