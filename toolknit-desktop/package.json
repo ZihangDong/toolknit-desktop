@@ -63,7 +63,7 @@
     "ogl": "^1.0.11",
     "pdf-lib": "^1.17.1",
     "pdf-lib-plus-encrypt": "^1.1.0",
-    "pdfjs-dist": "^6.0.227",
+    "pdfjs-dist": "^6.2.108",
     "realtime-bpm-analyzer": "^5.0.15",
     "three": "^0.185.0"
   },
