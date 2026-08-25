@@ -3,8 +3,9 @@ import { defineConfig } from "vite";
 export default defineConfig(async () => ({
   clearScreen: false,
   server: {
-    port: 1420,
-    strictPort: true,
+    host: '127.0.0.1',
+    port: 3000,
+    strictPort: false,
     watch: {
       // CLI staging replaces bundled binaries and fonts. Watching those output
       // directories can crash chokidar with EBUSY on Windows while Tauri is running.

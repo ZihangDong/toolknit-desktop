@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ToolKnit Desktop</title>
+  <title data-i18n="app.title">ToolKnit 桌面版</title>
   <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body>
-  <!-- 自定义标题栏（Tauri decorations=false） -->
+  <!-- 标题栏 -->
   <header class="titlebar" data-tauri-drag-region>
-    <span class="titlebar-text">ToolKnit</span>
+    <span class="titlebar-text" data-i18n="app.title">ToolKnit 桌面版</span>
     <div class="titlebar-controls">
       <button class="tb-btn" data-action="minimize" title="最小化">─</button>
       <button class="tb-btn" data-action="maximize" title="最大化">□</button>
@@ -18,14 +18,11 @@
   </header>
 
   <div class="app-body">
-    <!-- 侧栏 -->
     <nav class="sidebar" id="sidebar"></nav>
-    <!-- 内容区 -->
     <main class="content" id="content"></main>
   </div>
 
-  <!-- 状态栏 -->
-  <footer class="statusbar" id="statusbar">ToolKnit Desktop 2.0</footer>
+  <footer class="statusbar" id="statusbar"></footer>
 
   <script type="module" src="./src/main.js"></script>
 </body>
