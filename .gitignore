@@ -1,5 +1,6 @@
 # 依赖
 node_modules/
+.vite/
 
 # 构建产物
 target/
@@ -76,3 +77,16 @@ toolknit-desktop/cli/*.tgz
 
 # GitHub 只识别根目录 .github；子应用目录里的副本不提交
 toolknit-desktop/.github/
+
+# 旧 UI 模块（easyui 分支已删除）
+toolknit-desktop/src/pdf-editor-ui.js
+toolknit-desktop/src/pdf-editor-core.js
+toolknit-desktop/src/pdf-editor-geometry.js
+toolknit-desktop/src/pdf-to-image-ui.js
+toolknit-desktop/src/pdf-to-image-core.js
+toolknit-desktop/src/pdf-enhance-engine.js
+toolknit-desktop/src/pdf-enhance-core.js
+toolknit-desktop/src/pdf-lib-fontkit.js
+
+# Vite 缓存
+toolknit-desktop/.vite/

@@ -1,11 +1,13 @@
 # CHANGELOG — v2.0-easyui（Tkinter 极简 UI）
 
-> 基于 v1.0-original 存档，将 UI 从暗色奢华风格彻底重构为 Tkinter 极简风格。
+> Fork 自 [ZihangDong/toolknit-desktop](https://github.com/ZihangDong/toolknit-desktop)，将 UI 从暗色奢华风格彻底重构为 Tkinter 极简风格。
+> 原始项目作者：董子航 (Zihang Dong)
 
 ## 版本信息
 
 - **版本号**: v2.0-easyui
-- **基于**: v1.0-original (v2.0.0 代码)
+- **上游**: [ZihangDong/toolknit-desktop](https://github.com/ZihangDong/toolknit-desktop) v2.0.0
+- **基于**: v1.0-original 存档（main 分支 tag）
 - **分支**: easyui
 - **日期**: 2025-07-14
 
