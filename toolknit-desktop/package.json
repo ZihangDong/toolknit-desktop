@@ -111,7 +111,7 @@
     "pdfjs-dist": "^6.2.108",
     "realtime-bpm-analyzer": "^5.0.15",
     "sm-crypto": "^0.5.6",
-    "three": "^0.185.0"
+    "three": "^0.185.1"
   },
   "overrides": {
     "exceljs": {
