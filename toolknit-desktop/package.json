@@ -100,7 +100,7 @@
     "js-md2": "^0.2.2",
     "jszip": "^3.10.1",
     "katex": "^0.18.4",
-    "lucide": "^0.469.0",
+    "lucide": "^1.35.0",
     "markdown-it": "^15.0.0",
     "markdown-it-task-lists": "^2.1.1",
     "mermaid": "^11.17.0",
