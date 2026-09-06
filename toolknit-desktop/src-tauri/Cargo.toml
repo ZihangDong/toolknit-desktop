@@ -25,7 +25,7 @@ log = "0.4"
 tauri-plugin-dialog = "2.7.1"
 tokio = { version = "1", features = ["rt-multi-thread", "process", "io-util", "macros", "fs", "time"] }
 dirs = "5"
-opener = "0.7"
+opener = "0.8"
 url = "2"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp", "gif"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
