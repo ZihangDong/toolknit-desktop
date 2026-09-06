@@ -1,0 +1,248 @@
+/* ============================================================
+ * rubiks-cube.css —— 图论与魔方 · 样式
+ * 所有选择器限定在 #rubiksCubeOverlay 内，变量加 rb- 前缀，
+ * 避免与 ToolKnit 全局样式冲突
+ * ============================================================ */
+
+#rubiksCubeOverlay {
+  --rb-bg-0: #0a0f1e;
+  --rb-bg-1: #0f1830;
+  --rb-panel: rgba(255,255,255,0.035);
+  --rb-panel-2: rgba(255,255,255,0.06);
+  --rb-border: rgba(255,255,255,0.09);
+  --rb-text: #e8eef8;
+  --rb-muted: #8fa2c2;
+  --rb-accent: #5cd6ff;
+  --rb-ok: #3ecf6f;
+  --rb-sticker: #141a2c;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  color: var(--rb-text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+#rubiksCubeOverlay *, #rubiksCubeOverlay *::before, #rubiksCubeOverlay *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- overlay 主体布局（标准工具页：左 poster + 右 workspace） ---------- */
+#rubiksCubeOverlay .pdf-merge-v2-poster::after { content: 'CUBE'; }
+#rubiksCubeOverlay .rubiks-cube-workspace {
+  width: 100%;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 18px 22px 24px;
+}
+#rubiksCubeOverlay .rubiks-app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+#rubiksCubeOverlay .rubiks-header {
+  padding: 4px 2px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+#rubiksCubeOverlay .rubiks-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%; }
+
+#rubiksCubeOverlay .size-switch { display: flex; align-items: center; gap: 4px; }
+#rubiksCubeOverlay .size-switch .lbl { font-size: 12px; color: var(--rb-muted); margin-right: 2px; }
+#rubiksCubeOverlay .size-switch button {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--rb-border); background: var(--rb-panel);
+  color: var(--rb-text); font-family: "Orbitron", monospace; font-size: 13px;
+  cursor: pointer; transition: all .15s ease;
+}
+#rubiksCubeOverlay .size-switch button:hover { background: var(--rb-panel-2); }
+#rubiksCubeOverlay .size-switch button.active {
+  background: var(--rb-accent); border-color: var(--rb-accent); color: #06222e;
+  font-weight: 700; box-shadow: 0 0 14px rgba(92,214,255,.45);
+}
+#rubiksCubeOverlay .btn {
+  height: 30px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--rb-border); background: var(--rb-panel);
+  color: var(--rb-text); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .15s ease; font-family: inherit;
+}
+#rubiksCubeOverlay .btn:hover { background: var(--rb-panel-2); }
+#rubiksCubeOverlay .btn.primary { border-color: var(--rb-accent); color: var(--rb-accent); }
+#rubiksCubeOverlay .btn.primary:hover { background: rgba(92,214,255,.12); }
+#rubiksCubeOverlay .rubiks-stats { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--rb-muted); }
+#rubiksCubeOverlay .rubiks-stats b { color: var(--rb-text); font-family: "Orbitron", monospace; font-size: 13px; }
+#rubiksCubeOverlay #solvedBadge {
+  display: none; align-items: center; gap: 5px;
+  padding: 2px 9px; border-radius: 999px;
+  background: rgba(62,207,111,.14); border: 1px solid rgba(62,207,111,.5);
+  color: var(--rb-ok); font-size: 12px; font-weight: 600;
+}
+#rubiksCubeOverlay #solvedBadge.show { display: inline-flex; animation: rubiksPop .5s ease; }
+@keyframes rubiksPop { 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1)} }
+
+/* ---------- 面板 ---------- */
+#rubiksCubeOverlay .rubiks-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+}
+#rubiksCubeOverlay .panel {
+  position: relative;
+  background: var(--rb-panel);
+  border: 1px solid var(--rb-border);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#rubiksCubeOverlay .panel-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px 7px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+#rubiksCubeOverlay .panel-title { font-size: 13px; font-weight: 700; letter-spacing: .05em; color: var(--rb-text); }
+#rubiksCubeOverlay .panel-title::before {
+  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px;
+  background: var(--rb-accent); margin-right: 8px; vertical-align: 1px;
+  box-shadow: 0 0 8px rgba(92,214,255,.7);
+}
+#rubiksCubeOverlay .panel-hint { font-size: 11px; color: var(--rb-muted); margin-left: auto; }
+
+#rubiksCubeOverlay .net-panel { flex: 0 0 auto; }
+#rubiksCubeOverlay .net-stage { position: relative; padding: 10px 12px 12px; }
+#rubiksCubeOverlay .graph-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; opacity: .5;
+}
+#rubiksCubeOverlay .graph-bg circle { fill: none; stroke: rgba(140,180,255,.08); }
+#rubiksCubeOverlay .graph-bg .node { fill: rgba(120,200,255,.28); }
+#rubiksCubeOverlay .graph-bg .link { stroke: rgba(140,180,255,.10); fill: none; }
+#rubiksCubeOverlay #net {
+  position: relative;
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+}
+#rubiksCubeOverlay #net .cell { stroke: rgba(6,10,20,.9); stroke-width: 1.4; }
+#rubiksCubeOverlay #net .cell.hot {
+  stroke: var(--rb-accent); stroke-width: 2.6;
+  filter: drop-shadow(0 0 4px rgba(92,214,255,.9));
+}
+#rubiksCubeOverlay #net .face-label { font-size: 12px; font-weight: 700; fill: rgba(232,238,248,.55); }
+#rubiksCubeOverlay #net .face-label.hot { fill: var(--rb-accent); }
+
+#rubiksCubeOverlay .cube-panel { flex: 0 0 auto; }
+#rubiksCubeOverlay .cube-stage {
+  flex: 1;
+  position: relative;
+  min-height: 380px;
+  touch-action: none;
+  user-select: none;
+}
+#rubiksCubeOverlay #cubeCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#rubiksCubeOverlay .cube-hint {
+  position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
+  font-size: 11px; color: var(--rb-muted); background: rgba(10,15,30,.6);
+  padding: 3px 10px; border-radius: 999px; pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ---------- 控制面板 ---------- */
+#rubiksCubeOverlay .rubiks-footer {
+  padding: 10px 2px 14px;
+  border-top: 1px solid var(--rb-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#rubiksCubeOverlay .ctl-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#rubiksCubeOverlay .ctl-label { font-size: 11px; color: var(--rb-muted); width: 30px; flex: none; }
+#rubiksCubeOverlay .chips { display: flex; gap: 5px; flex-wrap: wrap; }
+#rubiksCubeOverlay .chip {
+  min-width: 34px; height: 32px; padding: 0 9px;
+  border-radius: 8px; border: 1px solid var(--rb-border); background: var(--rb-panel);
+  color: var(--rb-text); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .15s ease; font-family: inherit;
+}
+#rubiksCubeOverlay .chip:hover { background: var(--rb-panel-2); }
+#rubiksCubeOverlay .chip.active { background: var(--rb-accent); border-color: var(--rb-accent); color: #06222e; }
+#rubiksCubeOverlay .chip.face-U.active { background:#f5f5f5; border-color:#f5f5f5; color:#141a2c; }
+#rubiksCubeOverlay .chip.face-D.active { background:#ffd500; border-color:#ffd500; color:#2a2505; }
+#rubiksCubeOverlay .chip.face-F.active { background:#009b48; border-color:#009b48; color:#ffffff; }
+#rubiksCubeOverlay .chip.face-B.active { background:#0051ba; border-color:#0051ba; color:#ffffff; }
+#rubiksCubeOverlay .chip.face-R.active { background:#c41e3a; border-color:#c41e3a; color:#ffffff; }
+#rubiksCubeOverlay .chip.face-L.active { background:#ff5800; border-color:#ff5800; color:#2a1505; }
+#rubiksCubeOverlay .rotate-group { display: flex; align-items: center; gap: 8px; }
+#rubiksCubeOverlay .rotate-btn {
+  height: 34px; padding: 0 16px; border-radius: 9px;
+  border: 1px solid var(--rb-accent); background: rgba(92,214,255,.08);
+  color: var(--rb-accent); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .15s ease; font-family: inherit;
+}
+#rubiksCubeOverlay .rotate-btn:hover { background: rgba(92,214,255,.18); }
+#rubiksCubeOverlay .rotate-btn:active { transform: translateY(1px); }
+#rubiksCubeOverlay .sel-info { font-size: 12px; color: var(--rb-muted); margin-left: auto; }
+#rubiksCubeOverlay .sel-info b { color: var(--rb-accent); font-weight: 600; }
+#rubiksCubeOverlay .key-hint { border-top: 1px solid rgba(255,255,255,.06); padding-top: 8px; margin-top: 2px; }
+#rubiksCubeOverlay .key-hint .key-text { font-size: 11px; color: var(--rb-muted); letter-spacing: .02em; }
+#rubiksCubeOverlay .key-hint .key-text b { color: var(--rb-accent); font-weight: 500; }
+
+/* ---------- 公式面板（overlay 内 modal） ---------- */
+#rubiksCubeOverlay .modal-mask {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(4,8,18,.74); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+#rubiksCubeOverlay .modal-mask[hidden] { display: none; }
+#rubiksCubeOverlay .modal {
+  width: min(700px, 100%);
+  max-height: min(86vh, 760px);
+  display: flex; flex-direction: column;
+  background: #0b1226; border: 1px solid var(--rb-border);
+  border-radius: 16px; box-shadow: 0 24px 80px rgba(0,0,0,.55); overflow: hidden;
+}
+#rubiksCubeOverlay .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 20px 12px; border-bottom: 1px solid var(--rb-border); }
+#rubiksCubeOverlay .modal-title { font-size: 18px; font-weight: 700; letter-spacing: .04em; color: var(--rb-accent); font-family: "Orbitron", monospace; }
+#rubiksCubeOverlay .modal-sub { font-size: 11px; color: var(--rb-muted); margin-top: 5px; line-height: 1.7; }
+#rubiksCubeOverlay .modal-sub b { color: #9fe8ff; font-weight: 600; }
+#rubiksCubeOverlay .modal-close { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--rb-border); background: var(--rb-panel); color: var(--rb-text); font-size: 20px; line-height: 1; cursor: pointer; flex: none; }
+#rubiksCubeOverlay .modal-close:hover { background: var(--rb-panel-2); }
+#rubiksCubeOverlay .modal-tabs { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--rb-border); flex-wrap: wrap; }
+#rubiksCubeOverlay .modal-tabs .tab { height: 30px; padding: 0 13px; border-radius: 8px; border: 1px solid var(--rb-border); background: transparent; color: var(--rb-muted); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+#rubiksCubeOverlay .modal-tabs .tab:hover { color: var(--rb-text); background: var(--rb-panel-2); }
+#rubiksCubeOverlay .modal-tabs .tab.active { background: var(--rb-accent); border-color: var(--rb-accent); color: #06222e; }
+#rubiksCubeOverlay .modal-body { padding: 14px 18px 22px; overflow-y: auto; }
+#rubiksCubeOverlay .tab-pane { display: none; }
+#rubiksCubeOverlay .tab-pane.active { display: block; }
+#rubiksCubeOverlay .sec-label { font-size: 12px; color: var(--rb-accent); font-weight: 700; margin: 14px 0 8px; letter-spacing: .06em; }
+#rubiksCubeOverlay .sec-label:first-child { margin-top: 0; }
+#rubiksCubeOverlay .fc { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--rb-border); border-radius: 10px; background: var(--rb-panel); margin-bottom: 8px; flex-wrap: wrap; }
+#rubiksCubeOverlay .fc-name { font-size: 13px; font-weight: 600; min-width: 104px; color: var(--rb-text); }
+#rubiksCubeOverlay .fc-note { font-size: 11px; color: var(--rb-muted); }
+#rubiksCubeOverlay .fc-note-only { font-size: 12px; color: var(--rb-muted); line-height: 1.8; }
+#rubiksCubeOverlay .fc-note-only b { color: #9fe8ff; font-weight: 600; }
+#rubiksCubeOverlay .fc-alg { margin-left: auto; font-family: "Orbitron", monospace; font-size: 13px; color: #9fe8ff; background: rgba(92,214,255,.07); border: 1px solid rgba(92,214,255,.25); border-radius: 8px; padding: 5px 10px; cursor: pointer; user-select: none; transition: all .15s; }
+#rubiksCubeOverlay .fc-alg:hover { background: rgba(92,214,255,.16); }
+#rubiksCubeOverlay .fc-alg .copy-tip { color: var(--rb-ok); font-weight: 700; margin-left: 6px; font-family: "Noto Sans SC", sans-serif; font-size: 11px; }
+#rubiksCubeOverlay .fc-vis { flex-basis: 100%; display: flex; gap: 12px; align-items: flex-start; margin-top: 2px; flex-wrap: wrap; }
+#rubiksCubeOverlay .fc-vis-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+#rubiksCubeOverlay .fc-vis-item label { font-size: 10px; color: var(--rb-muted); letter-spacing: .04em; }
+#rubiksCubeOverlay .fc-vis-item svg { border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,.4); }
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 760px) {
+  #rubiksCubeOverlay .rubiks-toolbar { width: 100%; justify-content: space-between; }
+  #rubiksCubeOverlay .panel-hint { display: none; }
+  #rubiksCubeOverlay .cube-stage { min-height: 300px; }
+  #rubiksCubeOverlay .fc-name { min-width: 80px; }
+  #rubiksCubeOverlay .fc-alg { margin-left: 0; }
+}

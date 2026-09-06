@@ -780,6 +780,11 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
     html: `<div class="help-doc"><h2>打字测试器</h2><p>选择中文或英文、难度和时长后开始输入，实时显示速度和准确率。</p><h3>使用方法</h3><ol class="help-steps"><li>设置语言、难度与测试时长</li><li>点击“开始测试”，再点击输入区域开始打字</li><li>结束后查看 WPM、准确率等结果；需要重测时点击“重新开始”</li></ol><div class="help-note"><p>这是桌面端的交互工具，不提供 CLI 或 IDE Agent 调用。</p></div></div>`
   },
 
+  'rubiks-cube': {
+    title: '图论与魔方',
+    html: `<div class="help-doc"><h2>图论与魔方</h2><p>上方二维展开图与下方三维魔方实时联动，支持 2–7 阶，内置层先法与 CFOP 复原公式速查。</p><h3>界面说明</h3><ol class="help-steps"><li><strong>二维展开图</strong>：六面平铺展示，点击色块可选中对应面</li><li><strong>三维魔方</strong>：可旋转视角、缩放，色块与展开图一一对应</li><li><strong>底部控件</strong>：面 / 轴 / 层选择 + 顺逆时针转动按钮</li></ol><h3>操控方式</h3><ol class="help-steps"><li><strong>鼠标</strong>：左键点击色块选中面，右键选中纵向层，拖拽色块转动该层，拖拽空白旋转视角</li><li><strong>键盘</strong>：W/S 上下、A/D 左右、Q/E 前后选择层位；R 切换横Y/纵X/面Z；Ctrl 逆时针、Space 顺时针；数字 1–7 直接选层</li><li><strong>按钮</strong>：顶部阶数切换、打乱、还原、复原公式面板</li></ol><h3>复原公式</h3><p>点击右上角"复原公式"打开速查面板，包含层先法七步、CFOP 的 F2L/OLL/PLL 以及桥式、ZZ 等其他方法，每条公式附 U/F 面情况示意图，点击公式可复制。</p><div class="help-note"><p>打乱步数与还原步数分开计数；公式面板中的情况图以黄色为顶面、蓝色为前面。这是桌面端交互工具，不提供 CLI 或 IDE Agent 调用。</p></div></div>`
+  },
+
   'ai-polish': {
     title: 'AI 文字润色',
     html: `<div class="help-doc">

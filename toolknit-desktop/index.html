@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="./src/pdf-page-number.css">
     <link rel="stylesheet" href="./src/pdf-crop.css">
     <link rel="stylesheet" href="./src/teleprompter.css">
+  <link rel="stylesheet" href="./src/rubiks-cube.css">
     <link rel="stylesheet" href="./src/tool-custom-select.css">
     <link rel="stylesheet" href="./src/tool-waveform-slider.css">
     <link rel="stylesheet" href="./src/bg-removal.css">
@@ -466,6 +467,7 @@
             <div class="help-nav-item" data-help-section="color-extractor" data-i18n="help.nav.colorExtractor">配色提取器</div>
             <div class="help-nav-item" data-help-section="color-space-compare" data-i18n="help.nav.colorSpaceCompare">颜色空间对比</div>
             <div class="help-nav-item" data-help-section="typing-test" data-i18n="help.nav.typingTest">打字测试器</div>
+            <div class="help-nav-item" data-help-section="rubiks-cube">图论与魔方</div>
           </div>
           <div class="help-nav-group">
             <div class="help-nav-group-title" data-i18n="help.group.cleanupTools">清理工具</div>
@@ -9734,6 +9736,19 @@
                     <div class="audio-list-meta" data-i18n="home.toolNames.typingTestMeta">中英文词库 / 难度分级 / 音效反馈</div>
                   </div>
                 </div>
+                <div class="audio-list-item" data-tool="rubiks-cube" role="button" tabindex="0" aria-label="图论与魔方">
+                  <div class="audio-list-icon"><i data-lucide="box"></i></div>
+                  <div class="audio-list-info">
+                    <div class="audio-list-title">图论与魔方</div>
+                    <div class="audio-list-desc">2D 展开图与 3D 魔方实时联动，支持 2–7 阶，内置复原公式速查</div>
+                  </div>
+                  <div class="audio-list-right">
+                    <div class="audio-list-tags">
+                      <span class="audio-tag">创意工具</span>
+                    </div>
+                    <div class="audio-list-meta">2D/3D 联动 · 2–7 阶 · 公式速查</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -10011,6 +10026,236 @@
 
     <script type="module" src="./src/help-data.js"></script>
     <script type="module" src="./src/main.js"></script>
+
+<!-- ===== 图论与魔方 · 创意工具 ===== -->
+<div class="pdf-merge-overlay pdf-merge-v2 rubiks-cube-v2" id="rubiksCubeOverlay">
+  <div class="plasma-bg pdf-merge-v2-bg" id="rubiksCubeBg"></div>
+  <header class="pdf-merge-v2-topbar rubiks-cube-topbar">
+    <div class="pdf-merge-v2-topbar-left">
+      <button class="settings-v2-back settings-back pdf-merge-v2-back" id="rubiksCubeBack" type="button" title="返回首页">
+        <i data-lucide="arrow-left"></i>
+        <span>返回首页</span>
+      </button>
+      <span class="pdf-merge-v2-top-tag">RUBIK LAB · TOOL PAGE 2.3</span>
+    </div>
+    <div class="home-v2-top-actions pdf-merge-v2-top-actions">
+      <button class="home-v2-nav-link" type="button" data-home-link="website" data-i18n-title="home.webVersion" data-i18n-aria-label="home.webVersion" title="网页版" aria-label="网页版">
+        <i data-lucide="globe-2"></i>
+        <span data-i18n="home.webVersion">网页版</span>
+      </button>
+      <button class="home-v2-support-top" type="button" data-open-support data-i18n-title="home.supportAuthor" data-i18n-aria-label="home.supportAuthor" title="支持作者" aria-label="支持作者">
+        <i data-lucide="heart"></i>
+        <span data-i18n="home.supportAuthor">支持作者</span>
+      </button>
+      <button class="home-v2-icon-button" id="rubiksCubeV2Settings" type="button" title="设置" aria-label="设置"><i data-lucide="settings"></i></button>
+      <div class="home-v2-window-controls" aria-label="窗口控制">
+        <button class="home-v2-window-button ctrl-btn" type="button" title="最小化" data-action="minimize"><i data-lucide="minus"></i></button>
+        <button class="home-v2-window-button ctrl-btn" type="button" title="放大" data-action="maximize"><i data-lucide="square"></i></button>
+        <button class="home-v2-window-button ctrl-btn" type="button" title="关闭" data-action="close"><i data-lucide="x"></i></button>
+      </div>
+    </div>
+  </header>
+  <div class="pdf-merge-v2-body rubiks-cube-body">
+    <aside class="pdf-merge-v2-poster rubiks-cube-poster" aria-label="图论与魔方说明">
+      <div class="pdf-merge-v2-poster-kicker">NxN CUBE LAB</div>
+      <h1 class="pdf-merge-v2-title">图论与魔方</h1>
+      <p class="pdf-merge-v2-subtitle">2D 展开图与 3D 魔方实时联动，支持 2–7 阶，内置复原公式速查。</p>
+      <div class="pdf-merge-v2-poster-note">
+        <span>CUBE WORKFLOW</span>
+        <strong>选择阶数与转动层，通过按钮、键盘或拖拽操控魔方，对照复原公式逐步还原。</strong>
+      </div>
+      <div class="pdf-merge-v2-steps">
+        <div class="pdf-merge-v2-step is-active"><span>01</span><div><strong>选择阶数</strong><p>2–7 阶自由切换。</p></div></div>
+        <div class="pdf-merge-v2-step"><span>02</span><div><strong>操控转动</strong><p>按钮 / 键盘 / 拖拽。</p></div></div>
+        <div class="pdf-merge-v2-step"><span>03</span><div><strong>对照还原</strong><p>层先法 / CFOP 公式。</p></div></div>
+      </div>
+    </aside>
+    <main class="pdf-merge-v2-workspace rubiks-cube-workspace">
+      <div class="rubiks-app">
+        <header class="rubiks-header">
+          <div class="rubiks-toolbar">
+            <div class="size-switch">
+              <span class="lbl">阶数</span>
+              <button data-size="2">2</button>
+              <button data-size="3" class="active">3</button>
+              <button data-size="4">4</button>
+              <button data-size="5">5</button>
+              <button data-size="6">6</button>
+              <button data-size="7">7</button>
+            </div>
+            <button class="btn primary" id="formulaBtn">复原公式</button>
+            <button class="btn primary" id="scrambleBtn">打乱</button>
+            <button class="btn" id="resetBtn">还原</button>
+            <div class="rubiks-stats">
+              <span>打乱 <b id="scrambleCount">0</b> 步</span>
+              <span>还原 <b id="moveCount">0</b> 步</span>
+              <span id="solvedBadge">已还原</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="rubiks-main">
+          <section class="panel net-panel">
+            <div class="panel-head">
+              <span class="panel-title">二维展开图</span>
+              <span class="panel-hint">点击色块选中对应面 · 与下方三维一一对应</span>
+            </div>
+            <div class="net-stage">
+              <svg class="graph-bg" id="graphBg" aria-hidden="true"></svg>
+              <svg id="net" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="魔方二维展开图"></svg>
+            </div>
+          </section>
+
+          <section class="panel cube-panel">
+            <div class="panel-head">
+              <span class="panel-title">三维魔方</span>
+              <span class="panel-hint">左键选面 · 右键选纵向层 · 色块拖拽转动该层 · 空白拖拽旋转视角 · 滚轮缩放</span>
+            </div>
+            <div class="cube-stage" id="cubeStage">
+              <div class="cube-hint">左键选面 · 右键选纵向层 · 拖拽色块转动 · 拖拽空白旋转视角</div>
+            </div>
+          </section>
+        </main>
+
+        <footer class="rubiks-footer">
+          <div class="ctl-row">
+            <span class="ctl-label">面</span>
+            <div class="chips" id="faceBtns">
+              <button class="chip face-U" data-face="U">U</button>
+              <button class="chip face-D" data-face="D">D</button>
+              <button class="chip face-L" data-face="L">L</button>
+              <button class="chip face-R" data-face="R">R</button>
+              <button class="chip face-F" data-face="F">F</button>
+              <button class="chip face-B" data-face="B">B</button>
+            </div>
+          </div>
+          <div class="ctl-row">
+            <span class="ctl-label">轴/层</span>
+            <div class="chips" id="axisBtns">
+              <button class="chip" data-axis="x">X</button>
+              <button class="chip active" data-axis="y">Y</button>
+              <button class="chip" data-axis="z">Z</button>
+            </div>
+            <div class="chips" id="layerBtns"></div>
+          </div>
+          <div class="ctl-row">
+            <span class="ctl-label">转动</span>
+            <div class="rotate-group">
+              <button class="rotate-btn" id="ccwBtn">逆时针</button>
+              <button class="rotate-btn" id="cwBtn">顺时针</button>
+            </div>
+            <span class="sel-info" id="selInfo">未选择 · 点击魔方或展开图选层</span>
+          </div>
+          <div class="ctl-row key-hint">
+            <span class="ctl-label">键盘</span>
+            <span class="key-text"><b>W</b>/<b>S</b> 上·下 &nbsp; <b>A</b>/<b>D</b> 左·右 &nbsp; <b>Q</b>/<b>E</b> 前·后 &nbsp; <b>R</b> 切向(横Y/纵X/面Z) &nbsp; <b>Ctrl</b> 逆时针&nbsp; <b>Space</b> 顺时针&nbsp; <b>1</b>-<b>7</b> 数字选层</span>
+          </div>
+        </footer>
+      </div>
+
+      <!-- 魔方复原公式面板（3 阶默认；2/4/5/高阶由核心按阶数替换） -->
+      <div class="modal-mask" id="formulaModal" hidden>
+        <div class="modal">
+          <div class="modal-head">
+            <div>
+              <div class="modal-title">魔方复原公式</div>
+              <div class="modal-sub">WCA 记号：R/L/U/D/F/B = 面向该面顺时针 · <b>'</b> 逆时针 · <b>2</b> 转180° · <b>M</b> 中层 · <b>f/r</b> 等小写字母转两层 · 点击公式可复制</div>
+            </div>
+            <button class="modal-close" id="formulaClose" aria-label="关闭">×</button>
+          </div>
+          <div class="modal-tabs" id="formulaTabs">
+            <button class="tab active" data-tab="basic">层先法 · 入门</button>
+            <button class="tab" data-tab="f2l">CFOP · F2L</button>
+            <button class="tab" data-tab="oll">CFOP · OLL</button>
+            <button class="tab" data-tab="pll">CFOP · PLL</button>
+            <button class="tab" data-tab="other">其他方法</button>
+          </div>
+          <div class="modal-body">
+
+            <div class="tab-pane active" id="pane-basic">
+              <div class="sec-label">1 · 底层十字</div>
+              <div class="fc"><span class="fc-name">底层十字</span><span class="fc-note">无固定公式：拼出白十字，并让棱块侧面与中心块对齐</span></div>
+              <div class="sec-label">2 · 底层角块</div>
+              <div class="fc"><span class="fc-name">右手插入</span><div class="fc-alg" data-alg="R U R' U'"><code>R U R' U'</code><span class="copy-tip"></span></div><span class="fc-note">白在侧面时重复至归位</span></div>
+              <div class="fc"><span class="fc-name">左手插入</span><div class="fc-alg" data-alg="L' U' L U"><code>L' U' L U</code><span class="copy-tip"></span></div><span class="fc-note">镜像情况</span></div>
+              <div class="sec-label">3 · 中层棱块</div>
+              <div class="fc"><span class="fc-name">往右归位</span><div class="fc-alg" data-alg="U R U' R' U' F' U F"><code>U R U' R' U' F' U F</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">往左归位</span><div class="fc-alg" data-alg="U' F' U F U R U' R'"><code>U' F' U F U R U' R'</code><span class="copy-tip"></span></div></div>
+              <div class="sec-label">4 · 顶层十字</div>
+              <div class="fc"><span class="fc-name">顶层十字</span><div class="fc-alg" data-alg="F R U R' U' F'"><code>F R U R' U' F'</code><span class="copy-tip"></span></div><span class="fc-note">重复：点左面 L 再一次出十字</span></div>
+              <div class="sec-label">5 · 顶面翻角</div>
+              <div class="fc"><span class="fc-name">正小鱼 Sune</span><div class="fc-alg" data-alg="R U R' U R U2 R'"><code>R U R' U R U2 R'</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">反小鱼</span><div class="fc-alg" data-alg="R U2 R' U' R U' R'"><code>R U2 R' U' R U' R'</code><span class="copy-tip"></span></div></div>
+              <div class="sec-label">6 · 顶层角块归位</div>
+              <div class="fc"><span class="fc-name">同面交换</span><div class="fc-alg" data-alg="R U R' U' R' F R2 U' R' U' R U R' F'"><code>R U R' U' R' F R2 U' R' U' R U R' F'</code><span class="copy-tip"></span></div><span class="fc-note">「头灯」一面放后</span></div>
+              <div class="fc"><span class="fc-name">对角交换</span><div class="fc-alg" data-alg="F R U' R' U' R U R' F' R U R' U' R' F R F'"><code>F R U' R' U' R U R' F' R U R' U' R' F R F'</code><span class="copy-tip"></span></div></div>
+              <div class="sec-label">7 · 顶层棱块归位</div>
+              <div class="fc"><span class="fc-name">三棱逆时针</span><div class="fc-alg" data-alg="R U' R U R U R U' R' U' R2"><code>R U' R U R U R U' R' U' R2</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">三棱顺时针</span><div class="fc-alg" data-alg="R2 U R U R' U' R' U' R' U R'"><code>R2 U R U R' U' R' U' R' U R'</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">对棱互换 H</span><div class="fc-alg" data-alg="M2 U M2 U2 M2 U M2"><code>M2 U M2 U2 M2 U M2</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">邻棱互换 Z</span><div class="fc-alg" data-alg="M2 U M2 U M' U2 M2 U2 M' U2"><code>M2 U M2 U M' U2 M2 U2 M' U2</code><span class="copy-tip"></span></div></div>
+            </div>
+
+            <div class="tab-pane" id="pane-f2l">
+              <div class="fc-note-only">F2L = 前两层：把「底层角块 + 中层棱块」配成一对后一次插入，共 41 种情况。入门先记下面几个高频公式，其余靠直觉推导即可（速拧稳定后逐条记忆）</div>
+              <div class="sec-label">核心手法</div>
+              <div class="fc"><span class="fc-name">基本插入</span><div class="fc-alg" data-alg="R U R'"><code>R U R'</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">反向插入</span><div class="fc-alg" data-alg="R U' R'"><code>R U' R'</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">配对前奏</span><div class="fc-alg" data-alg="y' R U R'"><code>y' R U R'</code><span class="copy-tip"></span></div><span class="fc-note">如 F U F'，把角棱移到一起</span></div>
+              <div class="sec-label">典型 Case</div>
+              <div class="fc"><span class="fc-name">已配对直接插入</span><div class="fc-alg" data-alg="R U R'"><code>R U R'</code><span class="copy-tip"></span></div><span class="fc-note">角在 URF、棱在 UR</span></div>
+              <div class="fc"><span class="fc-name">角在顶、白朝上</span><div class="fc-alg" data-alg="(R U2 R' U)2 y' R' U' R"><code>(R U2 R' U)2 y' R' U' R</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">角在顶、白朝侧</span><div class="fc-alg" data-alg="U R U' R' U' F' U F"><code>U R U' R' U' F' U F</code><span class="copy-tip"></span></div></div>
+            </div>
+
+            <div class="tab-pane" id="pane-oll">
+              <div class="fc-note-only">完整 OLL 有 57 种，先学 2-Look OLL（10 条）：先做顶面十字，再用 7 条公式翻好角块</div>
+              <div class="sec-label">A · 顶面十字（3）</div>
+              <div class="fc"><span class="fc-name">横线（一字）</span><div class="fc-alg" data-alg="F R U R' U' F'"><code>F R U R' U' F'</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">L 形（直角）</span><div class="fc-alg" data-alg="F U R U' R' F'"><code>F U R U' R' F'</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">点型</span><div class="fc-alg" data-alg="F R U R' U' F' f R U R' U' f'"><code>F R U R' U' F' f R U R' U' f'</code><span class="copy-tip"></span></div><span class="fc-note">分两步做：先横线再 L</span></div>
+              <div class="sec-label">B · 顶面翻角（7）</div>
+              <div class="fc"><span class="fc-name">正小鱼 Sune</span><div class="fc-alg" data-alg="R U R' U R U2 R'"><code>R U R' U R U2 R'</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">反小鱼</span><div class="fc-alg" data-alg="R U2 R' U' R U' R'"><code>R U2 R' U' R U' R'</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">双对称十字</span><div class="fc-alg" data-alg="R U2 R' U' R U R' U' R U' R'"><code>R U2 R' U' R U R' U' R U' R'</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">单对称十字</span><div class="fc-alg" data-alg="R U2 R2 U' R2 U' R2 U2 R"><code>R U2 R2 U' R2 U' R2 U2 R</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">同向由字</span><div class="fc-alg" data-alg="R2 D' R U2 R' D R U2 R"><code>R2 D' R U2 R' D R U2 R</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">对向由字</span><div class="fc-alg" data-alg="r U R' U' r' F R F'"><code>r U R' U' r' F R F'</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">梅花七</span><div class="fc-alg" data-alg="F' r U R' U' r' F R"><code>F' r U R' U' r' F R</code><span class="copy-tip"></span></div></div>
+            </div>
+
+            <div class="tab-pane" id="pane-pll">
+              <div class="fc-note-only">完整 PLL 有 21 种，先学 2-Look PLL（6 条）：先归位角块，再归位棱块</div>
+              <div class="sec-label">A · 顶层角块（2）</div>
+              <div class="fc"><span class="fc-name">同面交换 T</span><div class="fc-alg" data-alg="R U R' U' R' F R2 U' R' U' R U R' F'"><code>R U R' U' R' F R2 U' R' U' R U R' F'</code><span class="copy-tip"></span></div><span class="fc-note">「头灯」放后</span></div>
+              <div class="fc"><span class="fc-name">对角交换 Y</span><div class="fc-alg" data-alg="F R U' R' U' R U R' F' R U R' U' R' F R F'"><code>F R U' R' U' R U R' F' R U R' U' R' F R F'</code><span class="copy-tip"></span></div></div>
+              <div class="sec-label">B · 顶层棱块（4）</div>
+              <div class="fc"><span class="fc-name">三棱逆时针 Ua</span><div class="fc-alg" data-alg="R U' R U R U R U' R' U' R2"><code>R U' R U R U R U' R' U' R2</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">三棱顺时针 Ub</span><div class="fc-alg" data-alg="R2 U R U R' U' R' U' R' U R'"><code>R2 U R U R' U' R' U' R' U R'</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">对棱互换 H</span><div class="fc-alg" data-alg="M2 U M2 U2 M2 U M2"><code>M2 U M2 U2 M2 U M2</code><span class="copy-tip"></span></div></div>
+              <div class="fc"><span class="fc-name">邻棱互换 Z</span><div class="fc-alg" data-alg="M2 U M2 U M' U2 M2 U2 M' U2"><code>M2 U M2 U M' U2 M2 U2 M' U2</code><span class="copy-tip"></span></div></div>
+            </div>
+
+            <div class="tab-pane" id="pane-other">
+              <div class="fc-note-only">除 CFOP 外，常用的还有以下几种解法，思路不同、各有所长：</div>
+              <div class="sec-label">桥式 Roux</div>
+              <div class="fc-note-only">先搭左右两个「桥」（每桥 1×2×3 块），再以 CMLL 一次处理顶层角块，最后用 LSE（6 棱）收尾。公式量少、转动多在中层 M 层，适合单手与部分竞速选手</div>
+              <div class="sec-label">ZZ</div>
+              <div class="fc-note-only">先用 EOLine 一次性解决所有棱块朝向并搭好底面竖线，之后可整层转 R U L 完成前两层，顶层通常用 ZBLL。预判好、转动较少</div>
+              <div class="sec-label">角先法 / 8355</div>
+              <div class="fc-note-only">先从角块入手，再处理棱块；公式极少（8355 法仅 3 条核心公式），适合入门过渡，速度上限低于 CFOP</div>
+              <div class="sec-label">学习方法建议</div>
+              <div class="fc-note-only">零基础：先用「层先法」完整还原一次；想提速：改用 2-Look CFOP（本面板 OLL/PLL 标签即可覆盖）；稳定进 30 秒后再逐步背完 57 条 OLL 与 21 条 PLL</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+  <script type="module" src="./src/rubiks-cube-ui.js"></script>
 
     <div class="audio-convert-process-mask" id="audioConvertProcessMask">
       <div class="tk-mascot-lg" aria-hidden="true"></div>
