@@ -78,7 +78,7 @@
     "tauri": "tauri"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0",
+    "@tauri-apps/cli": "^2.11.4",
     "vite": "^8.2.0"
   },
   "dependencies": {
