@@ -2,16 +2,20 @@ import {
   COLOR_SPACE_SLIDER_CONFIG,
   fmtColorNumber,
   getSpaceValues,
+  hexCaretAfterSanitize,
   oklabInAdobeRgb,
   oklabInDisplayP3,
   oklabInRec2020,
   oklabInSrgbGamut,
+  parseHexColor,
   rgbToHex,
+  sanitizeHexText,
   spaceToDisplayRgb,
   spaceToXyz,
   xyzToAllSpaces,
   xyzToDisplayRgb,
 } from './color-space-compare-core.js';
+import { createColorWheels } from './color-space-compare-wheel.js';
 import {
   bindColorNumberInput,
   getColorSliderPresentation,
@@ -29,8 +33,8 @@ const INITIAL_RGB = Object.freeze({ r: 128, g: 128, b: 128 });
 const SPACE_META = Object.freeze([
   { id: 'oklch', label: 'OKLCH', icon: 'sparkles' },
   { id: 'oklab', label: 'OKLab', icon: 'orbit' },
-  { id: 'lab', label: 'CIELAB', icon: 'triangle' },
   { id: 'lch', label: 'CIELCH', icon: 'circle-dashed' },
+  { id: 'lab', label: 'CIELAB', icon: 'triangle' },
   { id: 'rgb', label: 'RGB', icon: 'panel-top' },
   { id: 'hsl', label: 'HSL', icon: 'diamond' },
   { id: 'hsv', label: 'HSV', icon: 'scan' },
@@ -40,8 +44,8 @@ const SPACE_META = Object.freeze([
 const CODE_FORMATS = Object.freeze([
   { id: 'oklch', label: 'OKLCH' },
   { id: 'oklab', label: 'OKLab' },
-  { id: 'lab', label: 'Lab D65' },
   { id: 'lch', label: 'LCh D65' },
+  { id: 'lab', label: 'Lab D65' },
   { id: 'cmyk', label: 'CMYK ≈' },
   { id: 'rgb', label: 'RGB' },
   { id: 'hsl', label: 'HSL' },
@@ -124,6 +128,9 @@ function createColorSpaceCompareController(root, notify) {
 
   const preview = root.querySelector('[data-role="preview"]');
   const hexValue = root.querySelector('[data-role="hex"]');
+  const hexRow = root.querySelector('[data-role="hex-row"]');
+  const hexInput = root.querySelector('[data-role="hex-input"]');
+  const wheelsRoot = root.querySelector('[data-role="wheels"]');
   const gamutBadge = root.querySelector('[data-role="gamut-badge"]');
   const gamutList = root.querySelector('[data-role="gamut-list"]');
   const previewStatus = root.querySelector('[data-role="preview-status"]');
@@ -131,12 +138,14 @@ function createColorSpaceCompareController(root, notify) {
   const slidersRoot = root.querySelector('[data-role="sliders"]');
   const controlsRoot = root.querySelector('.color-space-compare-controls');
 
-  if (!preview || !hexValue || !gamutBadge || !gamutList || !previewStatus || !codeList || !slidersRoot) {
+  if (!preview || !hexValue || !hexRow || !hexInput || !wheelsRoot
+    || !gamutBadge || !gamutList || !previewStatus || !codeList || !slidersRoot) {
     throw new Error('Color space compare markup is incomplete.');
   }
 
   const codeElements = new Map();
   const sliderElements = {};
+  let wheels = null;
   let displayRgb = { ...INITIAL_RGB };
   let canonicalState = { space: 'rgb', values: { ...INITIAL_RGB } };
   let lastPresentedAll = null;
@@ -287,6 +296,61 @@ function createColorSpaceCompareController(root, notify) {
     slidersRoot.replaceChildren(fragment);
   }
 
+  function buildWheels() {
+    wheels = createColorWheels(wheelsRoot, {
+      getValues: space => getEditableSpaceValues(space),
+      applyValues: (space, values) => updateAll(space, values),
+      getDisplayRgb: () => displayRgb,
+    });
+  }
+
+  function wireHexInput() {
+    const syncFromHex = (text) => {
+      const rgb = parseHexColor(text);
+      hexRow.classList.toggle('is-invalid', sanitizeHexText(text).length > 0 && !rgb);
+      if (rgb) updateAll('rgb', rgb);
+    };
+
+    hexInput.addEventListener('input', () => {
+      const raw = hexInput.value;
+      const cleaned = sanitizeHexText(raw);
+      if (cleaned !== raw) {
+        // Keep the caret on the same logical character once illegal
+        // characters have been stripped out from under it.
+        const caret = hexCaretAfterSanitize(raw, hexInput.selectionStart || 0);
+        hexInput.value = cleaned;
+        const position = Math.min(caret, cleaned.length);
+        try {
+          hexInput.setSelectionRange(position, position);
+        } catch {
+          // Selection APIs are unavailable for some input states.
+        }
+      }
+      syncFromHex(cleaned);
+    });
+
+    // Pasted values often start with "#", which maxlength would otherwise
+    // truncate before the colour could be parsed.
+    hexInput.addEventListener('paste', (event) => {
+      const text = event.clipboardData?.getData('text') ?? '';
+      if (!text) return;
+      event.preventDefault();
+      const cleaned = sanitizeHexText(text);
+      hexInput.value = cleaned;
+      syncFromHex(cleaned);
+    });
+
+    hexInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') hexInput.blur();
+    });
+
+    hexInput.addEventListener('blur', () => {
+      const parsed = parseHexColor(hexInput.value) ?? displayRgb;
+      hexInput.value = rgbToHex(parsed.r, parsed.g, parsed.b).slice(1);
+      hexRow.classList.remove('is-invalid');
+    });
+  }
+
   function wireSlider(elements) {
     const { meta, config, hit, input, increase, decrease } = elements;
     let dragging = false;
@@ -419,6 +483,10 @@ function createColorSpaceCompareController(root, notify) {
       const hex = rgbToHex(displayRgb.r, displayRgb.g, displayRgb.b);
       preview.style.backgroundColor = hex;
       hexValue.textContent = hex;
+      if (hexInput !== document.activeElement) {
+        hexInput.value = hex.slice(1);
+        hexRow.classList.remove('is-invalid');
+      }
 
       const codeValues = formatCodeValues(all, displayRgb);
       for (const [id, entry] of codeElements) entry.value.textContent = codeValues[id];
@@ -441,6 +509,7 @@ function createColorSpaceCompareController(root, notify) {
       }
 
       updateGamutInfo(all.oklab);
+      wheels?.sync();
       scheduleCanvasTracks(all);
     } finally {
       isUpdating = false;
@@ -560,6 +629,8 @@ function createColorSpaceCompareController(root, notify) {
       }
     }
 
+    wheels?.refreshLabels(key => t(`home.colorSpaceCompare.wheelRoles.${key}`));
+    hexInput.setAttribute('aria-label', t('home.colorSpaceCompare.hexInputLabel'));
     for (const entry of codeElements.values()) {
       entry.button.setAttribute('aria-label', t('home.colorSpaceCompare.copyValue', {
         format: entry.format.label,
@@ -591,7 +662,9 @@ function createColorSpaceCompareController(root, notify) {
     openDrawFrame = requestAnimationFrame(() => {
       openDrawFrame = requestAnimationFrame(() => {
         openDrawFrame = null;
-        if (isOpen && lastPresentedAll) scheduleCanvasTracks(lastPresentedAll);
+        if (!isOpen) return;
+        wheels?.relayout();
+        if (lastPresentedAll) scheduleCanvasTracks(lastPresentedAll);
       });
     });
   }
@@ -607,6 +680,7 @@ function createColorSpaceCompareController(root, notify) {
     for (const channels of Object.values(sliderElements)) {
       for (const slider of Object.values(channels)) slider.stopDrag?.();
     }
+    wheels?.destroy();
     resizeObserver?.disconnect();
     unsubscribeLanguage?.();
     unsubscribeLanguage = null;
@@ -619,11 +693,15 @@ function createColorSpaceCompareController(root, notify) {
   }
 
   function handleResize() {
-    if (isOpen && lastPresentedAll) scheduleCanvasTracks(lastPresentedAll);
+    if (!isOpen) return;
+    wheels?.sync();
+    if (lastPresentedAll) scheduleCanvasTracks(lastPresentedAll);
   }
 
   buildCodeCards();
   buildSliders();
+  buildWheels();
+  wireHexInput();
   createIcons({ icons, attrs: { 'stroke-width': 1.8 } });
   refreshLanguage();
   updateAll('rgb', INITIAL_RGB);
@@ -658,6 +736,13 @@ export function initColorSpaceCompareTool({
         <span class="tool-page-v2-rail-kicker">COLOR SCIENCE LAB</span>
         <h1 data-csc-i18n="home.toolNames.colorSpaceCompare">${t('home.toolNames.colorSpaceCompare')}</h1>
         <p data-csc-i18n="home.colorSpaceCompare.subtitle">${t('home.colorSpaceCompare.subtitle')}</p>
+        <section class="color-space-compare-wheel-panel">
+          <div class="color-space-compare-wheel-head">
+            <span class="color-space-compare-card-kicker" data-csc-i18n="home.colorSpaceCompare.wheelKicker">${t('home.colorSpaceCompare.wheelKicker')}</span>
+            <p class="color-space-compare-wheel-hint" data-csc-i18n="home.colorSpaceCompare.wheelHint">${t('home.colorSpaceCompare.wheelHint')}</p>
+          </div>
+          <div class="color-space-compare-wheels" data-role="wheels"></div>
+        </section>
         <section class="color-space-compare-preview-card">
           <span class="color-space-compare-card-kicker" data-csc-i18n="home.colorSpaceCompare.livePreview">${t('home.colorSpaceCompare.livePreview')}</span>
           <div class="color-space-compare-preview-row">
@@ -666,6 +751,12 @@ export function initColorSpaceCompareTool({
               <strong class="color-space-compare-hex" data-role="hex">#808080</strong>
               <div data-role="gamut-badge"></div>
             </div>
+          </div>
+          <div class="color-space-compare-hex-row" data-role="hex-row">
+            <span class="color-space-compare-hex-hash" aria-hidden="true">#</span>
+            <input class="color-space-compare-hex-input" data-role="hex-input" type="text" value="808080"
+                   maxlength="8" spellcheck="false" autocomplete="off" autocapitalize="off" />
+            <span class="color-space-compare-hex-tag" data-csc-i18n="home.colorSpaceCompare.hexTag">${t('home.colorSpaceCompare.hexTag')}</span>
           </div>
           <p class="color-space-compare-preview-status" data-role="preview-status"></p>
           <div class="color-space-compare-gamut-list" data-role="gamut-list"></div>

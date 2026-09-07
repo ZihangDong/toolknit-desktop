@@ -3,7 +3,16 @@ import {
   COLOR_SPACE_SLIDER_CONFIG,
   fmtColorNumber,
   getSpaceValues,
+  hslToWheelPoint,
+  hsvToWheelPoint,
+  hueToWheelPoint,
+  normalizeSliderValue,
+  parseHexColor,
+  sanitizeHexText,
   spaceToXyz,
+  wheelPointToHsl,
+  wheelPointToHsv,
+  wheelPointToHue,
   xyzToAllSpaces,
   xyzToDisplayRgb,
 } from '../src/color-space-compare-core.js';
@@ -337,5 +346,87 @@ assertSliderTakeover({ dirty: true, sliderKey: 'h' });
 assertSliderTakeover({ dirty: false, sliderKey: 'h' });
 assertSliderTakeover({ dirty: true, sliderKey: 's' });
 assertSliderTakeover({ dirty: false, sliderKey: 's' });
+
+// The colour wheels feed the same linked model as the sliders, so every pick
+// must normalise onto a valid slider step before it is committed.
+const wheelModule = await import('../src/color-space-compare-wheel.js');
+assert.equal(
+  typeof wheelModule.createColorWheels,
+  'function',
+  'The wheel factory must be importable without a DOM.'
+);
+assert.deepEqual(
+  wheelModule.COLOR_WHEEL_KINDS.map(kind => kind.id),
+  ['hsv', 'hsl'],
+  'Both HSV and HSL wheels are required.'
+);
+
+const hsvChannels = COLOR_SPACE_SLIDER_CONFIG.hsv.channels;
+const hslChannels = COLOR_SPACE_SLIDER_CONFIG.hsl.channels;
+const [hueChannel, saturationChannel] = hsvChannels;
+for (let step = 0; step < 720; step += 1) {
+  const angle = step * 0.5;
+  const dot = hueToWheelPoint(angle);
+  const hue = normalizeSliderValue(wheelPointToHue(dot.x, dot.y), hueChannel);
+  assert.ok(hue >= 0 && hue <= 360, `Wheel hue ${angle} must stay inside the slider range.`);
+  approx(Math.abs(hue / hueChannel.step - Math.round(hue / hueChannel.step)), 0, 1e-9,
+    `Wheel hue ${angle} must land on a slider step.`);
+}
+
+// Pointer positions between the inner shape and the hue ring, and beyond the
+// wheel entirely, must clamp into the editable channel range instead of
+// producing out-of-domain values.
+const strays = [
+  { kind: 'hsv', channels: hsvChannels, picked: wheelPointToHsv(0.9, 0.9) },
+  { kind: 'hsv', channels: hsvChannels, picked: wheelPointToHsv(-0.9, -0.9) },
+  { kind: 'hsl', channels: hslChannels, picked: wheelPointToHsl(5, 5) },
+  { kind: 'hsl', channels: hslChannels, picked: wheelPointToHsl(-5, -5) },
+];
+for (const stray of strays) {
+  for (const channel of stray.channels) {
+    const raw = channel.key === 'h' ? 0 : stray.picked[channel.key];
+    const value = normalizeSliderValue(raw, channel);
+    assert.ok(
+      value >= channel.min && value <= channel.max,
+      `Stray ${stray.kind} ${channel.key} pick must clamp into ${channel.min}..${channel.max}.`
+    );
+  }
+}
+
+function approxXyz(actual, expected, message) {
+  approx(actual.x, expected.x, 1e-9, `${message} x`);
+  approx(actual.y, expected.y, 1e-9, `${message} y`);
+  approx(actual.z, expected.z, 1e-9, `${message} z`);
+}
+
+// A wheel pick round-tripped through the shared conversion must reproduce the
+// color the wheel was showing.
+for (const rgb of [{ r: 30, g: 200, b: 120 }, { r: 240, g: 90, b: 20 }, { r: 12, g: 12, b: 240 }]) {
+  const hsv = getConvertedValues('rgb', rgb, 'hsv');
+  const hsl = getConvertedValues('rgb', rgb, 'hsl');
+  const hsvPoint = hsvToWheelPoint(hsv.s, hsv.v);
+  const hslPoint = hslToWheelPoint(hsl.s, hsl.l);
+  approxXyz(
+    spaceToXyz('hsv', { h: hsv.h, ...wheelPointToHsv(hsvPoint.x, hsvPoint.y) }),
+    spaceToXyz('rgb', rgb),
+    'HSV wheel pick must preserve the linked color'
+  );
+  approxXyz(
+    spaceToXyz('hsl', { h: hsl.h, ...wheelPointToHsl(hslPoint.x, hslPoint.y) }),
+    spaceToXyz('rgb', rgb),
+    'HSL wheel pick must preserve the linked color'
+  );
+}
+
+// Typing a HEX value must move the linked model exactly like the sliders do.
+for (const [text, expected] of [['#1A2B3C', { r: 26, g: 43, b: 60 }], ['abc', { r: 170, g: 187, b: 204 }]]) {
+  assert.deepEqual(parseHexColor(text), expected, `parseHexColor(${text})`);
+  const xyz = spaceToXyz('rgb', expected);
+  const presented = xyzToAllSpaces(xyz, xyzToDisplayRgb(xyz.x, xyz.y, xyz.z));
+  approxXyz(spaceToXyz('hsl', presented.hsl), xyz, `HEX ${text} must reach the shared model`);
+}
+assert.equal(parseHexColor('12'), null, 'Incomplete HEX input must not commit a color.');
+assert.equal(parseHexColor('#12345'), null, 'Five-digit HEX input must be rejected.');
+assert.equal(sanitizeHexText('#1a-2b 3c!!'), '1A2B3C', 'HEX entry must strip separators.');
 
 console.log('Color space compare runtime regression checks passed');

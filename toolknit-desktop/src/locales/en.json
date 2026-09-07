@@ -2017,6 +2017,14 @@
       "increase": "Increase {channel} by {step}",
       "decrease": "Decrease {channel} by {step}",
       "copyValue": "Copy {format} value",
+      "wheelKicker": "COLOR WHEEL",
+      "wheelHint": "Ring sets hue · inner shape sets saturation/lightness",
+      "wheelRoles": {
+        "hsv": "SV square",
+        "hsl": "SL triangle"
+      },
+      "hexInputLabel": "Enter a HEX color value",
+      "hexTag": "HEX",
       "spaces": {
         "oklch": "Perceptual cylindrical model",
         "oklab": "Perceptual Cartesian model",

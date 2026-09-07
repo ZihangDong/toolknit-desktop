@@ -73,8 +73,134 @@
   scrollbar-width: thin;
 }
 
+.color-space-compare-wheel-panel {
+  margin-top: 18px;
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, .13);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, .24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+}
+
+.color-space-compare-wheel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.color-space-compare-wheel-hint {
+  margin: 0;
+  color: rgba(255, 255, 255, .42);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.color-space-compare-wheels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 10px;
+  margin-top: 11px;
+}
+
+.color-space-compare-wheel {
+  min-width: 0;
+}
+
+.color-space-compare-wheel-top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.color-space-compare-wheel-name {
+  color: #fff;
+  font-family: var(--tk-font-display-en), sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .05em;
+}
+
+.color-space-compare-wheel-role {
+  overflow: hidden;
+  color: rgba(255, 255, 255, .4);
+  font-size: 8px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.color-space-compare-wheel-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.color-space-compare-wheel-canvas,
+.color-space-compare-wheel-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.color-space-compare-wheel-canvas {
+  display: block;
+}
+
+.color-space-compare-wheel-overlay {
+  z-index: 4;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.color-space-compare-wheel-overlay:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.color-space-compare-wheel-hue,
+.color-space-compare-wheel-handle {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.color-space-compare-wheel-hue {
+  z-index: 2;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+}
+
+.color-space-compare-wheel-handle {
+  z-index: 3;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #fff;
+  background: #808080;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .55);
+}
+
+.color-space-compare-wheel-handle.is-over-bright {
+  border-color: rgba(0, 0, 0, .58);
+}
+
+.color-space-compare-wheel-readout {
+  margin-top: 6px;
+  color: rgba(255, 255, 255, .6);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 9px;
+  text-align: center;
+}
+
 .color-space-compare-preview-card {
-  margin-top: 22px;
+  margin-top: 14px;
   padding: 14px;
   border: 1px solid rgba(255, 255, 255, .13);
   border-radius: 14px;
@@ -117,6 +243,61 @@
   color: #fff;
   font-size: 16px;
   letter-spacing: 0;
+}
+
+.color-space-compare-hex-row {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  margin-top: 9px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, .13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .045);
+}
+
+.color-space-compare-hex-row:focus-within {
+  border-color: #fff;
+  box-shadow: inset 0 0 0 1px #fff;
+}
+
+.color-space-compare-hex-row.is-invalid {
+  border-color: #ff6b6b;
+  box-shadow: inset 0 0 0 1px rgba(255, 107, 107, .55);
+}
+
+.color-space-compare-hex-hash {
+  color: rgba(255, 255, 255, .42);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.color-space-compare-hex-input {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.color-space-compare-hex-tag {
+  color: rgba(255, 255, 255, .42);
+  font-family: var(--tk-font-display-en), sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .06em;
 }
 
 .color-space-compare-gamut-badge {

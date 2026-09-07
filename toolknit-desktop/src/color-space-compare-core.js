@@ -574,3 +574,180 @@ export function normalizeSpaceValues(space, values) {
   }
   return normalized;
 }
+
+/* ------------------------------------------------------------------ *
+ * Color wheel geometry
+ *
+ * Every wheel coordinate is normalised so the wheel's outer radius is 1
+ * and the origin sits at the wheel centre, with y growing downwards to
+ * match screen coordinates. The hue ring is drawn outside the inner
+ * pick shape; `ringSplitRatio` decides which one a pointer press hits.
+ * ------------------------------------------------------------------ */
+
+export const COLOR_WHEEL_GEOMETRY = Object.freeze({
+  ringInnerRadius: 0.80,
+  ringSplitRatio: 0.78,
+  squareRadius: 0.72,
+  triangleRadius: 0.75,
+  hueDotRadius: 0.90,
+});
+
+// HSL triangle vertices on the unit circle (screen coordinates, y down).
+const TRIANGLE_WHITE = Object.freeze({ x: -0.5, y: -0.8660254037844386 });
+const TRIANGLE_BLACK = Object.freeze({ x: -0.5, y: 0.8660254037844386 });
+const TRIANGLE_PURE = Object.freeze({ x: 1, y: 0 });
+const TRIANGLE_ALTITUDE = 1.5;
+const TRIANGLE_DENOMINATOR =
+  (TRIANGLE_BLACK.y - TRIANGLE_PURE.y) * (TRIANGLE_WHITE.x - TRIANGLE_PURE.x)
+  + (TRIANGLE_PURE.x - TRIANGLE_BLACK.x) * (TRIANGLE_WHITE.y - TRIANGLE_PURE.y);
+
+export const COLOR_WHEEL_TRIANGLE = Object.freeze({
+  white: TRIANGLE_WHITE,
+  black: TRIANGLE_BLACK,
+  pure: TRIANGLE_PURE,
+  altitude: TRIANGLE_ALTITUDE,
+});
+
+function clampUnitTriangle({ bW, bK, bC }) {
+  let white = bW < 0 ? 0 : bW;
+  let black = bK < 0 ? 0 : bK;
+  let pure = bC < 0 ? 0 : bC;
+  const sum = white + black + pure;
+  if (sum > 0) {
+    white /= sum;
+    black /= sum;
+    pure /= sum;
+  } else {
+    white = 0;
+    black = 1;
+    pure = 0;
+  }
+  return { bW: white, bK: black, bC: pure };
+}
+
+/** Barycentric weights of the HSL triangle for a point on its unit circle. */
+export function wheelTriangleBarycentric(vertexX, vertexY) {
+  const bW = ((TRIANGLE_BLACK.y - TRIANGLE_PURE.y) * (vertexX - TRIANGLE_PURE.x)
+    + (TRIANGLE_PURE.x - TRIANGLE_BLACK.x) * (vertexY - TRIANGLE_PURE.y)) / TRIANGLE_DENOMINATOR;
+  const bK = ((TRIANGLE_PURE.y - TRIANGLE_WHITE.y) * (vertexX - TRIANGLE_PURE.x)
+    + (TRIANGLE_WHITE.x - TRIANGLE_PURE.x) * (vertexY - TRIANGLE_PURE.y)) / TRIANGLE_DENOMINATOR;
+  return { bW, bK, bC: 1 - bW - bK };
+}
+
+/** Map an HSV wheel pick to the square's normalised centre coordinates. */
+export function hsvToWheelPoint(s, v) {
+  const half = COLOR_WHEEL_GEOMETRY.squareRadius / Math.SQRT2;
+  return {
+    x: (s / 100 - 0.5) * 2 * half,
+    y: (0.5 - v / 100) * 2 * half,
+  };
+}
+
+/** Map a normalised wheel coordinate inside the SV square back to HSV. */
+export function wheelPointToHsv(x, y) {
+  const half = COLOR_WHEEL_GEOMETRY.squareRadius / Math.SQRT2;
+  const px = Math.max(-half, Math.min(half, x));
+  const py = Math.max(-half, Math.min(half, y));
+  return {
+    s: (px + half) / (2 * half) * 100,
+    v: (1 - (py + half) / (2 * half)) * 100,
+  };
+}
+
+/**
+ * Map a pixel offset inside the SV square to HSV given the square's pixel
+ * half-width. This is the rasterisation companion to wheelPointToHsv, which
+ * works on normalised unit-circle coordinates instead.
+ */
+export function wheelSquareToHsv(px, py, squareHalf) {
+  const cx = Math.max(-squareHalf, Math.min(squareHalf, px));
+  const cy = Math.max(-squareHalf, Math.min(squareHalf, py));
+  return {
+    s: (cx + squareHalf) / (2 * squareHalf) * 100,
+    v: (1 - (cy + squareHalf) / (2 * squareHalf)) * 100,
+  };
+}
+
+/** Map an HSL wheel pick to the triangle's normalised centre coordinates. */
+export function hslToWheelPoint(s, l) {
+  const L = l / 100;
+  const S = s / 100;
+  const bC = (1 - Math.abs(2 * L - 1)) * S;
+  const bW = L - bC / 2;
+  const bK = 1 - bW - bC;
+  return {
+    x: (bW * TRIANGLE_WHITE.x + bK * TRIANGLE_BLACK.x + bC * TRIANGLE_PURE.x)
+      * COLOR_WHEEL_GEOMETRY.triangleRadius,
+    y: (bW * TRIANGLE_WHITE.y + bK * TRIANGLE_BLACK.y + bC * TRIANGLE_PURE.y)
+      * COLOR_WHEEL_GEOMETRY.triangleRadius,
+  };
+}
+
+/** Map a normalised wheel coordinate inside the SL triangle back to HSL. */
+export function wheelPointToHsl(x, y) {
+  const clamped = clampUnitTriangle(
+    wheelTriangleBarycentric(x / COLOR_WHEEL_GEOMETRY.triangleRadius, y / COLOR_WHEEL_GEOMETRY.triangleRadius)
+  );
+  const L = clamped.bW + clamped.bC / 2;
+  let S = 0;
+  if (clamped.bC > 0) {
+    const denominator = L <= 0.5
+      ? 2 * clamped.bW + clamped.bC
+      : 2 - 2 * clamped.bW - clamped.bC;
+    S = denominator > 0 ? clamped.bC / denominator : 0;
+  }
+  return {
+    s: Math.max(0, Math.min(100, S * 100)),
+    l: Math.max(0, Math.min(100, L * 100)),
+  };
+}
+
+/** Hue in degrees for a normalised wheel coordinate (0° at 3 o'clock). */
+export function wheelPointToHue(x, y) {
+  let hue = Math.atan2(-y, x) * 180 / Math.PI;
+  if (hue < 0) hue += 360;
+  return hue;
+}
+
+/** Normalised wheel coordinate for a hue on the indicator ring. */
+export function hueToWheelPoint(hue) {
+  const radians = hue * Math.PI / 180;
+  return {
+    x: Math.cos(radians) * COLOR_WHEEL_GEOMETRY.hueDotRadius,
+    y: -Math.sin(radians) * COLOR_WHEEL_GEOMETRY.hueDotRadius,
+  };
+}
+
+/** True when a normalised wheel radius lands on the hue ring. */
+export function wheelRadiusIsRing(radius) {
+  return radius >= COLOR_WHEEL_GEOMETRY.ringSplitRatio;
+}
+
+/* ------------------------------------------------------------------ *
+ * HEX text handling
+ * ------------------------------------------------------------------ */
+
+/** Parse a 3- or 6-digit hex colour, tolerating a leading `#`. */
+export function parseHexColor(rawText) {
+  const text = String(rawText ?? '').trim().replace(/#/g, '');
+  if (!/^[0-9a-fA-F]{3}$/.test(text) && !/^[0-9a-fA-F]{6}$/.test(text)) return null;
+  const expanded = text.length === 3
+    ? text.split('').map(char => char + char).join('')
+    : text;
+  return {
+    r: parseInt(expanded.slice(0, 2), 16),
+    g: parseInt(expanded.slice(2, 4), 16),
+    b: parseInt(expanded.slice(4, 6), 16),
+  };
+}
+
+/** Keep only hex digits, upper-case them and cap the length at six. */
+export function sanitizeHexText(rawText) {
+  return String(rawText ?? '').replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 6);
+}
+
+/** Caret offset inside the sanitized text for a caret in the raw text. */
+export function hexCaretAfterSanitize(rawText, caret) {
+  const before = String(rawText ?? '').slice(0, Math.max(0, Math.trunc(caret) || 0));
+  return before.replace(/[^0-9a-fA-F]/g, '').length;
+}

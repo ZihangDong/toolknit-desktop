@@ -2017,6 +2017,14 @@
       "increase": "{channel} 增加 {step}",
       "decrease": "{channel} 减少 {step}",
       "copyValue": "复制 {format} 颜色值",
+      "wheelKicker": "COLOR WHEEL",
+      "wheelHint": "外环选色相 · 内部选饱和度/明度",
+      "wheelRoles": {
+        "hsv": "SV 方形",
+        "hsl": "SL 三角"
+      },
+      "hexInputLabel": "输入 HEX 颜色值",
+      "hexTag": "HEX",
       "spaces": {
         "oklch": "感知均匀柱坐标",
         "oklab": "感知均匀直角坐标",
