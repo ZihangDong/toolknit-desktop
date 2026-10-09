@@ -61,26 +61,13 @@
 
 <p><strong>赞助商</strong> &nbsp; <sub>作者精选 AI 中转站，助力高效开发与 AI 创作。感谢他们支持 ToolKnit 持续更新！</sub></p>
 
-<table width="100%" cellpadding="16" cellspacing="0">
-  <tr>
-    <td width="120" align="center" valign="middle">
-      <a href="https://www.mlai.online/register?aff=5Q2VVMD7YJVB"><img src="assets/readme/sponsors/maliang-ai.png" alt="马良 AI" width="96" height="96" /><br /><img src="assets/readme/sponsors/maliang-name.svg" alt="马良 AI" width="64" height="22" /></a>
-    </td>
-    <td valign="middle">
-      <p>感谢 <a href="https://www.mlai.online/register?aff=5Q2VVMD7YJVB"><img src="assets/readme/sponsors/maliang-name.svg" alt="马良 AI" width="64" height="22" /></a> 对本项目的支持！<a href="https://www.mlai.online/register?aff=5Q2VVMD7YJVB"><img src="assets/readme/sponsors/maliang-name.svg" alt="马良 AI" width="64" height="22" /></a> 是面向模型、数据与应用的智能中转平台，为 Claude、GPT、Grok、DeepSeek 等热门模型提供统一接入，可与 Claude Code、Codex、Cursor、OpenCode 等工具搭配使用。</p>
-      <p><a href="https://www.mlai.online/register?aff=5Q2VVMD7YJVB"><img src="assets/readme/sponsors/maliang-register.svg" alt="注册马良 AI，接入模型服务 →" width="240" height="24" /></a></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="120" align="center" valign="middle">
-      <a href="https://doufuapi.com/register?aff=TWKCBH9RGLN3"><img src="assets/readme/sponsors/doufu-api.jpg" alt="豆腐API" width="96" height="96" /><br /><strong>豆腐API</strong></a>
-    </td>
-    <td valign="middle">
-      <p>感谢 <a href="https://doufuapi.com/register?aff=TWKCBH9RGLN3"><strong>豆腐API</strong></a> 对本项目的支持！豆腐API 提供便捷的 AI API 接入服务，帮助开发者连接 Codex、Claude Code 等编程工具。新用户注册可领取体验额度，并提供接入指导，让 AI 帮你写代码、查问题、做项目。</p>
-      <p><a href="https://doufuapi.com/register?aff=TWKCBH9RGLN3"><strong>注册豆腐API，领取体验额度 →</strong></a></p>
-    </td>
-  </tr>
-</table>
+<p>
+  <a href="https://www.mlai.online/register?aff=5Q2VVMD7YJVB"><img src="assets/readme/sponsors/maliang-banner.svg" alt="马良 AI：作者精选中转站，统一接入热门模型和 AI 编程工具，可在 ToolKnit AI 设置中配置兼容 API，用于润色、翻译、文档生成与 AI 表格。点击注册马良 AI。" width="100%" /></a>
+</p>
+
+<p>
+  <a href="https://doufuapi.com/register?aff=TWKCBH9RGLN3"><img src="assets/readme/sponsors/doufu-banner.svg" alt="豆腐API：作者精选中转站，便捷接入 Codex、Claude Code，可在 ToolKnit AI 设置中配置兼容 API，用于润色、翻译、文档生成与 AI 表格。点击注册豆腐API，领取体验额度。" width="100%" /></a>
+</p>
 
 ## ToolKnit 3.0
 
