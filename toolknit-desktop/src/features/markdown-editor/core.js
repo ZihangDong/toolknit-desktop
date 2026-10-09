@@ -10,7 +10,7 @@ export const DEFAULT_MARKDOWN = `# ToolKnit Markdown 文档
 
 ## 从这里开始
 
-右侧输入 Markdown，左侧会实时呈现排版结果。你可以使用顶部工具栏插入常用语法，也可以打开 **语法帮助** 查看完整示例。
+编辑区输入 Markdown，预览区会实时呈现排版结果。你可以使用顶部工具栏插入常用语法，也可以打开 **语法帮助** 查看完整示例。
 
 ### 常用内容
 
@@ -79,10 +79,35 @@ function installMathRules(md, output = 'htmlAndMathml') {
 }
 
 export function createMarkdownRenderer(output = 'htmlAndMathml') {
-  const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false });
+  // Preserve document punctuation and engineering symbols exactly as typed.
+  const md = new MarkdownIt({ html: false, linkify: true, typographer: false, breaks: false });
   md.use(taskLists, { enabled: true, label: true, labelAfter: true });
+  // Permit bare line breaks for multiline GFM cells without enabling HTML.
+  md.inline.ruler.before('html_inline', 'table_line_break', (state, silent) => {
+    const match = /^<br\s*\/?\s*>/i.exec(state.src.slice(state.pos));
+    if (!match) return false;
+    if (!silent) state.push('hardbreak', 'br', 0);
+    state.pos += match[0].length;
+    return true;
+  });
+  md.renderer.rules.table_open = () => '<div class="md-table-scroll" tabindex="0"><table>\n';
+  md.renderer.rules.table_close = () => '</table></div>\n';
   installMathRules(md, output);
   return md;
+}
+
+/** Removes metadata comments from rendered output while keeping them in the source. */
+export function stripMarkdownMetadata(markdown = '') {
+  const source = String(markdown ?? '');
+  const protectedLines = new Set();
+  for (const token of headingParser.parse(source, {})) {
+    if (!['fence', 'code_block'].includes(token.type) || !token.map) continue;
+    for (let line = token.map[0]; line < token.map[1]; line++) protectedLines.add(line);
+  }
+  // Keep line numbers stable for the outline; only hide our own standalone metadata.
+  return source.split('\n').map((line, index) => !protectedLines.has(index)
+    && /^ {0,3}<!--\s*(?:source-page:\s*\d+|generated-by: ToolKnit local PDF text extraction)\s*-->\s*$/.test(line)
+    ? '' : line).join('\n');
 }
 
 const headingParser = new MarkdownIt({ html: false });
@@ -175,7 +200,7 @@ export function buildStandaloneMarkdownHtml({ title, renderedHtml, katexCss = ''
 main{width:min(900px,calc(100% - 40px));margin:40px auto;padding:56px 64px;background:#fff;border:1px solid var(--line);box-shadow:0 18px 50px rgba(18,38,32,.08)}
 h1,h2,h3,h4,h5,h6{line-height:1.35;margin:1.8em 0 .65em;scroll-margin-top:24px}h1{font-size:2.35rem;border-bottom:2px solid var(--ink);padding-bottom:.35em}h2{font-size:1.7rem;border-bottom:1px solid var(--line);padding-bottom:.25em}
 a{color:var(--accent)}blockquote{margin:1.4em 0;padding:.25em 1.2em;border-left:4px solid var(--accent);color:var(--muted);background:#f5f8f6}code{padding:.15em .35em;background:#eef3f0;border-radius:4px}pre{overflow:auto;padding:20px;background:#17201d;color:#f2f6f4;border-radius:6px}pre code{padding:0;background:none;color:inherit}
-table{width:100%;border-collapse:collapse;margin:1.5em 0}th,td{padding:10px 12px;border:1px solid var(--line);text-align:left}th{background:#f3f6f4}img,svg{max-width:100%;height:auto}hr{border:0;border-top:1px solid var(--line);margin:2.2em 0}.mermaid{text-align:center}
+main{overflow-wrap:anywhere}p,li{line-height:1.8}.md-table-scroll{max-width:100%;overflow:auto;margin:1.5em 0}table{min-width:100%;border-collapse:collapse;font-size:14px;line-height:1.65}th,td{min-width:90px;max-width:420px;padding:12px 16px;border:1px solid var(--line);text-align:left;vertical-align:top;overflow-wrap:break-word}th{background:#f1f3f5;font-weight:650}tbody tr:nth-child(even){background:#fafbfc}img,svg{max-width:100%;height:auto}hr{border:0;border-top:1px solid var(--line);margin:2.2em 0}.mermaid{text-align:center}
 ${katexCss}
 @media(max-width:680px){main{width:100%;margin:0;padding:30px 22px;border:0}h1{font-size:1.9rem}}
 @media print{body{background:#fff}main{width:auto;margin:0;padding:0;border:0;box-shadow:none}}

@@ -30,7 +30,7 @@ function outputParentFolder(outputPath) {
   return parent && parent !== normalized ? parent : normalized;
 }
 
-/** Shared output-root persistence and safe folder opening. */
+/** Shared output-root persistence and safe output reveal/open behavior. */
 export function createOutputRuntime({
   isTauri = false,
   tauriCorePromise,

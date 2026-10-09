@@ -81,7 +81,7 @@ export function imageBatchPageTemplate(mode) {
     <header class="pdf-merge-v2-topbar ${config.className}-topbar">
       <div class="pdf-merge-v2-topbar-left ${config.className}-topbar-left">
         <button class="settings-v2-back settings-back pdf-merge-v2-back" id="${root}Back" type="button" data-i18n-title="settings.back" title="返回首页"><i data-lucide="arrow-left"></i><span data-i18n="settings.back">返回首页</span></button>
-        <span class="pdf-merge-v2-top-tag ${config.className}-top-tag">IMAGE TOOLS · TOOL PAGE 3.0</span>
+        <span class="pdf-merge-v2-top-tag ${config.className}-top-tag">IMAGE TOOLS · TOOL PAGE 3.1</span>
       </div>
       <div class="home-v2-top-actions pdf-merge-v2-top-actions">
         <button class="home-v2-nav-link" type="button" data-home-link="website"><i data-lucide="globe-2"></i><span>网页版本</span></button>

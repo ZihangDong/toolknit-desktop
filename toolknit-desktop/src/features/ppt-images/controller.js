@@ -588,7 +588,10 @@ export function createPptImagesController({
         anchor.href = url;
         anchor.download = `${baseName}_ppt_images.zip`;
         anchor.click();
-        lastOutputPath = result.output_dir;
+        lastOutputPath = result.outputs?.[0]?.output_path
+          || result.outputs?.[0]?.outputPath
+          || result.output_path
+          || result.output_dir;
         showSuccess(result.output_dir, outputs.length);
       }
       guard.assertCurrent(operation);

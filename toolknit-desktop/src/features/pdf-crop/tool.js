@@ -319,10 +319,10 @@ export function initPdfCropTool({
 
   async function openOutputFolder() {
     const result = view.getLastResult();
-    if (!isTauri || !result?.outputDir) return;
+    if (!isTauri || (!result?.outputPath && !result?.outputDir)) return;
     try {
       const invoke = await getInvoke();
-      await invoke('open_path', { path: result.outputDir });
+      await invoke('open_path', { path: result.outputPath || result.outputDir });
     } catch (error) {
       console.error('[PDF Crop] open output folder failed:', error);
       showToast(t('home.pdfCrop.openFolderFailed'));

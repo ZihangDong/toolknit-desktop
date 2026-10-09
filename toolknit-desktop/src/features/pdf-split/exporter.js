@@ -28,7 +28,7 @@ export function createPdfSplitExporter({
   let revision = 0;
   let activeId = 0;
   let saving = false;
-  let lastSavedFolder = '';
+  let lastSavedPath = '';
   let activeJob = null;
   const successModal = createModalSession({ root: successOverlay, background: workspace,
     initialFocus: successOk, onClose: () => successModal.close() });
@@ -86,11 +86,11 @@ export function createPdfSplitExporter({
     return `${directory}/${fileName}`;
   }
 
-  function showSuccess(folder, type, pageCount, owner, id) {
+  function showSuccess(outputPath, type, pageCount, owner, id) {
     if (!current(owner, id)) return;
-    lastSavedFolder = folder;
+    lastSavedPath = outputPath;
     if (successCount) successCount.textContent = String(type === 'zip' ? pageCount : 1);
-    if (successPath) successPath.textContent = displayFilesystemPath(folder);
+    if (successPath) successPath.textContent = displayFilesystemPath(outputPath);
     if (successMeta) {
       successMeta.textContent = t(type === 'zip' ? 'home.pdfSplit.exportZipMeta' : 'home.pdfSplit.exportPdfMeta', { count: pageCount });
     }
@@ -129,11 +129,11 @@ export function createPdfSplitExporter({
       try { output = await job.promise; }
       finally { release(); if (activeJob === job) activeJob = null; }
       assertCurrent(owner, id);
-      await saveBytes(output, directory, owner, id);
+      const outputPath = await saveBytes(output, directory, owner, id);
       assertCurrent(owner, id);
       processModal.close();
       onBeforeSuccess(type);
-      showSuccess(directory, type, output.pageCount, owner, id);
+      showSuccess(outputPath, type, output.pageCount, owner, id);
     } catch (error) {
       report(error, owner, id);
     } finally {
@@ -155,10 +155,10 @@ export function createPdfSplitExporter({
     onAcknowledge();
   });
   lifecycle.event(successOpenFolder, 'click', async () => {
-    if (!isTauri || !lastSavedFolder) return;
+    if (!isTauri || !lastSavedPath) return;
     try {
       const { invoke } = await tauriCorePromise;
-      await invoke('open_path', { path: lastSavedFolder });
+      await invoke('open_path', { path: lastSavedPath });
     } catch (error) {
       console.error('[PDF Split] Open folder error:', error);
     }
@@ -182,7 +182,7 @@ export function createPdfSplitExporter({
     successModal.close({ restore: false });
     setModalInteractivity(successOverlay, false);
     for (const url of objectUrls.keys()) revokeObjectUrl(url);
-    lastSavedFolder = '';
+    lastSavedPath = '';
   }
 
   return {
@@ -199,7 +199,7 @@ export function createPdfSplitExporter({
       session?.dispose();
       session = createLifecycleScope();
       successOverlay?.classList.remove('visible');
-      lastSavedFolder = '';
+      lastSavedPath = '';
       if (!saving) preview.setSaving(false);
     },
     get busy() { return saving; }

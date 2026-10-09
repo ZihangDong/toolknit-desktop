@@ -469,7 +469,7 @@ export function createIconGeneratorController({
     openingFolder = true;
     updateSuccessContent();
     try {
-      const opened = await openOutputFolder(outputParentFolder(outputPath));
+      const opened = await openOutputFolder(outputPath);
       if (isCurrentResult() && opened !== false) closeSuccess();
     } catch {
       if (isCurrentResult()) showError(t('common.openFolderFailed'));

@@ -2,37 +2,37 @@
 
 const TOOL_SHELLS = Object.freeze({
   overview: Object.freeze({
-    prefix: 'hardwareOverview', tag: 'SYSTEM · TOOL PAGE 3.0', body: 'hardware-overview-body', hero: 'hardware-overview-hero', content: 'hardware-overview-content',
+    prefix: 'hardwareOverview', tag: 'SYSTEM · TOOL PAGE 3.1', body: 'hardware-overview-body', hero: 'hardware-overview-hero', content: 'hardware-overview-content',
     page: 'hardwareOverviewPage', label: 'System Overview', title: '整机概览', subtitle: '本地读取系统与核心硬件信息，不上传任何数据。',
     aria: '整机概览说明', note: '整机状态、本机安全能力与核心硬件信息只读展示。'
   }),
   cpuMemory: Object.freeze({
-    prefix: 'hardwareCpuMemory', tag: 'CPU / MEMORY · TOOL PAGE 3.0', body: 'hardware-cpu-memory-body', hero: 'hardware-cpu-memory-hero', content: 'hardware-cpu-memory-content',
+    prefix: 'hardwareCpuMemory', tag: 'CPU / MEMORY · TOOL PAGE 3.1', body: 'hardware-cpu-memory-body', hero: 'hardware-cpu-memory-hero', content: 'hardware-cpu-memory-content',
     page: 'cpuMemoryPage', label: 'System Monitor', title: 'CPU 与内存', subtitle: '本地读取处理器规格、内存拓扑与当前资源占用。',
     aria: 'CPU 与内存说明', note: '核心、线程、频率、缓存与内存拓扑只读读取。'
   }),
   gpuDisplay: Object.freeze({
-    prefix: 'hardwareGpuDisplay', tag: 'GPU / DISPLAY · TOOL PAGE 3.0', body: 'hardware-gpu-display-body', hero: 'hardware-gpu-display-hero', content: 'hardware-gpu-display-content',
+    prefix: 'hardwareGpuDisplay', tag: 'GPU / DISPLAY · TOOL PAGE 3.1', body: 'hardware-gpu-display-body', hero: 'hardware-gpu-display-hero', content: 'hardware-gpu-display-content',
     page: 'gpuDisplayPage', label: 'Graphics & Displays', title: '显卡与显示器', subtitle: '本地读取图形适配器、驱动、显存与已连接显示器信息。',
     aria: '显卡与显示器说明', note: '显卡、驱动、显存与显示器状态本机读取。'
   }),
   mainboard: Object.freeze({
-    prefix: 'hardwareMainboard', tag: 'BOARD · TOOL PAGE 3.0', body: 'hardware-mainboard-body', hero: 'hardware-mainboard-hero', content: 'hardware-mainboard-content',
+    prefix: 'hardwareMainboard', tag: 'BOARD · TOOL PAGE 3.1', body: 'hardware-mainboard-body', hero: 'hardware-mainboard-hero', content: 'hardware-mainboard-content',
     page: 'mainboardPage', label: 'Mainboard & Firmware', title: '主板与固件', subtitle: '本地读取主板、BIOS/UEFI、启动安全能力与 PCI 设备信息。',
     aria: '主板与固件说明', note: '固件、安全启动、TPM 与 PCI 设备只做只读展示。'
   }),
   storage: Object.freeze({
-    prefix: 'hardwareStorage', tag: 'STORAGE · TOOL PAGE 3.0', body: 'hardware-storage-body', hero: 'hardware-storage-hero', content: 'hardware-storage-content',
+    prefix: 'hardwareStorage', tag: 'STORAGE · TOOL PAGE 3.1', body: 'hardware-storage-body', hero: 'hardware-storage-hero', content: 'hardware-storage-content',
     page: 'storagePage', label: 'Storage & Health', title: '磁盘与健康', subtitle: '本地读取物理磁盘、卷空间与系统实际提供的可靠性计数器。',
     aria: '磁盘与健康说明', note: '磁盘容量、分区与可靠性字段只读取系统暴露信息。'
   }),
   networkDevices: Object.freeze({
-    prefix: 'hardwareNetworkDevices', tag: 'DEVICES · TOOL PAGE 3.0', body: 'hardware-network-devices-body', hero: 'hardware-network-devices-hero', content: 'hardware-network-devices-content',
+    prefix: 'hardwareNetworkDevices', tag: 'DEVICES · TOOL PAGE 3.1', body: 'hardware-network-devices-body', hero: 'hardware-network-devices-hero', content: 'hardware-network-devices-content',
     page: 'networkDevicesPage', label: 'Network & Devices', title: '网络与设备', subtitle: '本地读取网卡、蓝牙、音频、USB 与摄像头设备状态，不显示网络地址。',
     aria: '网络与设备说明', note: '设备清单按类别整理，不显示 IP、MAC 等网络标识。'
   }),
   powerSensors: Object.freeze({
-    prefix: 'hardwarePowerSensors', tag: 'POWER · TOOL PAGE 3.0', body: 'hardware-power-sensors-body', hero: 'hardware-power-sensors-hero', content: 'hardware-power-sensors-content',
+    prefix: 'hardwarePowerSensors', tag: 'POWER · TOOL PAGE 3.1', body: 'hardware-power-sensors-body', hero: 'hardware-power-sensors-hero', content: 'hardware-power-sensors-content',
     page: 'powerSensorsPage', label: 'Power & Sensors', title: '电源与传感器', subtitle: '本地读取电源计划、电池状态与固件实际提供的温度、风扇传感器。',
     aria: '电源与传感器说明', note: '电池、温度、风扇数据取决于固件和驱动暴露能力。'
   })

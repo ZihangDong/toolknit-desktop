@@ -1,6 +1,6 @@
 {
   "name": "@toolknit/cli",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "license": "Apache-2.0",
   "description": "Local-first file processing CLI and MCP server for ToolKnit",
   "type": "module",

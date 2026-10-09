@@ -1,5 +1,7 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-10-08 V3.1 增量：新增 `pdf-to-scan` 普通 PDF 工具，当前开发源码为 69 个桌面工具、12 个分类；已发布 V3.0 的 68 项历史基线不回写。实现、公开契约和验证边界见文末“PDF 转扫描件”与 [开发说明](PDF_TO_SCAN.zh-CN.md)。下文历史数量保留各轮当时状态。
+
 > 2026-09-21 发布前复核：下文历史记录中的 `INTER-OFL.txt` 扫描阻塞和设置导航圆角差异已修复。
 > 安全扫描现在读取实际存在的 tracked/untracked 源码及 native 领域实现；中英文重复字典节点已合并。
 > 移出 3 个无引用静态文件（344,325 字节），生产构建剔除 AI 文档/表格演示数据，保留有消费者的字体、授权和兼容转发。
@@ -377,3 +379,24 @@ feature 不得导入 `main.js`，不得直接构造 Tauri API；所有 native �
 - 验证：主题和页面过渡行为测试、视频 frame/GIF core、视频契约（包含预览行为测试）、architecture、build、CLI/MCP 通过。完整 Rust 为 164 passed、3 ignored；后续保留探测校验的调整再次通过原生 preview 专项。使用已有 FFmpeg 显式运行了真实编码、取消和超时测试。
 - 浏览器：`test-video-frame-theme-browser.mjs` 与 `test-video-preview-browser.mjs` 通过。后者在 Edge 中使用真实 65 秒 MP4 和可控 IPC 夹具验证首次播放、30/60 秒边界、暂停、双主题展开、Escape、1100/720/390 宽度、关闭和重开；主题变更时确认黑色遮罩已覆盖。原生后端与浏览器分别验证，群友的 Windows/WebView2 环境尚需桌面复测。
 - 发布门禁限制：`test:release` 在 `test:security-release` 扫描已删除的历史字体 `public/assets/fonts/INTER-OFL.txt` 时 ENOENT，未通过完整发布门禁。保留已知 crypto externalization、大 chunk 与 Windows linker 提示。本轮不打包、不提交、不推送或发布；浏览器证据位于忽略目录 `tmp/video-preview-regression/`。
+
+### 2026-09-23 增量：PDF 表格还原与 Markdown 工作区
+
+- `features/pdf-text-extract/table-grid.js` 负责从 PDF.js 6 绘图指令读取直线与细填充边框，按网格组织多行文本、空格和合并单元格；`core.js` 优先使用网格，再保守识别局部对齐的无框表格。纵向合并标签在对应行重复，横向合并内容只保留在首列，不伪造值。相邻页边缘、列边界一致的续表沿用前页表头，每页仍保留来源标记。未增加 OCR 或网络请求。
+- PDF controller 在既有逐页任务中读取 operator list，保留 revision、取消和页面清理路径。绘图读取失败仍可提取文字；支持的表格边界不是对任意 PDF 的精确排版承诺。原始反馈只有截图，本轮使用合成五列课程表验证，用户原 PDF 尚未实测。
+- Markdown controller 复用 `createModalSession`、注入的输出目录和打开文件夹接口，MD/HTML 成功后显示格式、文件名及实际位置。浏览器回退本地下载并准确标注浏览器下载位置；关闭或重开后迟到结果不得弹出。新增 `data-md-expand`、`data-md-expand-icon`、`data-md-export-success`、`data-md-success-*` 及 `mdExportSuccessTitle`，保留旧导出、导入、storage、事件和原生命令契约；新增文案同步中英文。
+- 工作区展开采用网格宽度、透明度和位移动画，隐藏侧栏同步 inert/aria，Escape 优先收起。合并 feature 内重复 CSS 和白天覆盖，工具动作常驻第二行，悬停仅轻微放大文字/图标；保持文档预览为白纸表面。窄窗口覆盖历史 shell 的强制 flex，表格独立横向滚动，导出和视图按钮始终可达。
+- Markdown 渲染仅允许无属性的 `<br>`，仍禁用任意原始 HTML；PDF 字面符号转义，来源元数据只在独立行隐藏且保留代码块与目录行号。MD 导出保留源文，HTML 保留既有清洗和 CSP。
+- 新增真实 PDF.js 表格夹具和两组浏览器回归：`test-markdown-workspace-browser.mjs` 验证真实 PDF 导入、双主题、展开/悬停、下载弹框、焦点/Escape、低高度/窄窗口与重开；`test-markdown-export-browser.mjs` 用受控 native IPC 验证实际路径传递、语言切换、失败和迟到结果。Windows 文件选择器、资源管理器和安装包需桌面复测。浏览器截图与日志仅在忽略目录 `tmp/markdown-workspace/`。
+- 验证完成：PDF/Markdown focused、architecture、build、diff 检查通过，完整发布门禁 95 项脚本通过（安全检查 1249 项）；完整 Rust 164 passed、3 ignored。三组浏览器脚本通过，包括原有 PDF 空/错/部分失败和重开回归，无新增未捕获页面错误。单独 CLI 检查最初与发布检查同时 staging 导致临时资源读取失败，结束 staging 后单独重跑 CLI/MCP 通过；后续这些命令应串行运行。保留既有大 chunk、crypto externalization 和 Windows linker 提示。未改版本、打安装包、提交、推送或发布。
+
+### 2026-10-08 增量：PDF 转扫描件
+
+- 新业务归属 `src/features/pdf-to-scan/`：`tool.js` 负责懒加载和依赖注入，`template.js` / `pdf-to-scan.css` 复用 PDF 工作台及双主题，`controller.js` 管理文件、密码、状态、预览、进度和弹框。`core.js` 承担无平台依赖的页码、DPI、尺寸、像素效果和输出名规则；`processor.js` 逐页 PDF.js 渲染、JPEG 编码和发布；`scan-worker.js` / `worker-client.js` / `writer.js` 承担 Worker 像素处理、pdf-lib 组装、超时和响应校验。没有向应用组合根追加业务。
+- 首页入口与 lazy spec 同为 `pdf-to-scan`，overlay 为 `pdfScanOverlay`，initializer 为 `initPdfScanTool`；新增 feature-local DOM ID、`data-scan-*` 动作及中英文 `home.pdfScan` / `help.nav.pdfScan` 文案，并接入中英文帮助中心。核心和工具契约测试维护入口、模板、参数、输出和生命周期；不新增或变更 storage、事件、Tauri command、CLI/MCP 参数。
+- `shared/pdf-workbench.js` 只增加可选 `transformPreview = null` 钩子，用临时画布处理当前页效果并检查 revision；未传钩子的既有工具保持原行为。共享组件不反向导入 feature，PDF 文档、渲染、画布、Worker、临时密码和任务均由会话 owner 管理；关闭/销毁、取消、解析失败和迟到结果沿同一清理边界处理。
+- Native 输出复用 `begin_pdf_enhance_write`、`append_pdf_enhance_chunk`、`finalize_pdf_enhance_write`、`discard_pdf_enhance_write`，沿用路径校验、分块临时写入、qpdf 验证、唯一名称和原子发布。结果路径交给既有输出运行时；不复制文件夹打开逻辑。最终发布不能取消，关闭可留下有效保存结果，但不会向新会话写入旧状态。
+- 文件处理限制为 64 MB / 100 页、单页 1600 万像素 / 单边 8192 像素、100 MB 输出、60 秒解析和 10 分钟转换。输出保留页面可见宽高与方向，但不保留原文字层、链接、表单、数字签名验证能力；图像可被 OCR 识别，原稿模式也存在 JPEG 压缩，不作为脱敏或无损转换承诺。重依赖和工具 CSS 仍按需加载；像素处理和 PDF 组装放在 Worker 内。
+- 数量以本轮脚本为准：69 个桌面工具 / 12 个分类（PDF 14）；1445 个 HTML ID / 0 重复；137 个 Tauri command 实现 / 136 个唯一名称；167 个 Rust 测试；46 项 MCP 能力；111 个前端 invoke 名称 / 41 个事件名称。README 区分当前开发工具数与已发布 V3.0 的 68 项；版本契约继续验证历史发布说明，不把新工具改写成 V3.0 已发布能力。package/Tauri/CLI 仍为 3.0.0。
+- 验证：新核心/工具契约、帮助中心、版本、architecture、build、维护状态统计与严格集成审计通过；完整发布门禁 98 项 npm 脚本通过、安全 1264 项通过；发布套件结束后单独 CLI/MCP 回归通过，完整 Rust 164 passed、3 ignored。浏览器用真实合成 PDF 实际下载输出，检查 qpdf 有效、每页一张可解码 JPEG、文字层为空、DPI/尺寸/旋转/顺序/选择及灰度/暖色像素；覆盖双主题、双语、1401x920 / 1280x520 / 720x820 / 390x740、弹框 Tab/Escape、损坏/空/加密/超限输入、密码重试/取消、转换取消、重置、关闭重开，以及中英文帮助入口。
+- 共享回归：已有 PDF、PPT、Markdown、硬件页面冒烟通过，已有 PDF 工作台双主题与 Markdown 工作区浏览器专项通过；无新增 page/ARIA 错误。测试样本、截图和下载文件只写忽略目录 `tmp/pdf-to-scan/`。原生文件选择器、安装包、实际输出目录权限和资源管理器尚未执行本轮桌面实测；保留已有大 chunk、crypto externalization、Windows linker 提示。未改版本、打包安装器、提交、推送或发布；V3.1 记录同步根目录 `changelog.md`。

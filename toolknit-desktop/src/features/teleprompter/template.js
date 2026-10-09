@@ -7,7 +7,7 @@ export function teleprompterTemplate() {
           <i data-lucide="arrow-left"></i>
           <span data-tele-text="backTitle">返回</span>
         </button>
-        <span class="pdf-merge-v2-top-tag">TELEPROMPTER · TOOL PAGE 3.0</span>
+        <span class="pdf-merge-v2-top-tag">TELEPROMPTER · TOOL PAGE 3.1</span>
       </div>
       <div class="home-v2-top-actions pdf-merge-v2-top-actions teleprompter-top-actions">
         <button class="home-v2-nav-link" type="button" data-tele-action="website" data-tele-title="website">

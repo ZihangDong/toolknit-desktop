@@ -2,7 +2,7 @@
 
 <img src="assets/readme/hero-v2.webp" alt="ToolKnit Desktop — ToolKnit spider web hero" width="100%" />
 
-<h1>ToolKnit Desktop 3.0</h1>
+<h1>ToolKnit Desktop 3.1</h1>
 
 <p><strong>Local file workbench · Desktop, web, and AI Agent workflows</strong></p>
 
@@ -18,7 +18,7 @@
 
 <p>
   <a href="README.md"><img src="https://img.shields.io/badge/Language-Simplified%20Chinese-475569?style=for-the-badge&labelColor=334155" alt="Simplified Chinese README" /></a>
-  <img src="https://img.shields.io/badge/Version-3.0.0-0f766e?style=for-the-badge&labelColor=115e59" alt="ToolKnit Desktop 3.0.0" />
+  <img src="https://img.shields.io/badge/Version-3.1.0%20Preview-0f766e?style=for-the-badge&labelColor=115e59" alt="ToolKnit Desktop 3.1.0 preview" />
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-2563eb?style=for-the-badge&logo=windows&logoColor=white" alt="Windows 10/11" />
   <img src="https://img.shields.io/badge/Local--first-Files%20stay%20local-0f766e?style=for-the-badge" alt="Local-first" />
   <img src="https://img.shields.io/badge/Tauri-2.x-475569?style=for-the-badge" alt="Tauri 2.x" />
@@ -36,7 +36,7 @@
 
 <p align="center">
   <a href="#whats-new-in-30">What's new</a> ·
-  <a href="#complete-tool-catalog">68 tools</a> ·
+  <a href="#complete-tool-catalog">69 tools</a> ·
   <a href="#local-first-privacy-boundaries">Privacy</a> ·
   <a href="#run-from-source">Run from source</a> ·
   <a href="#cli--mcp--agent">CLI / MCP</a>
@@ -59,15 +59,15 @@
   </tr>
 </table>
 
-## ToolKnit 3.0
+## ToolKnit 3.1 Preview
 
-ToolKnit Desktop 3.0 is a local file workbench for Windows. It brings everyday file processing, image and Markdown creation, developer tools, AI content production, professional document workflows, and IDE Agent automation into one product system.
+ToolKnit Desktop 3.1 preview is a local file workbench for Windows. It brings everyday file processing, image and Markdown creation, developer tools, AI content production, professional document workflows, and IDE Agent automation into one product system. V3.1 is not released; V3.0 remains the latest public release.
 
 The desktop app provides a visual workbench. Automation-ready capabilities are also available through the CLI and MCP Agents, while the web app offers access without installation. Each interface has its own documented feature catalog.
 
 <table width="100%" cellpadding="14" cellspacing="0">
   <tr>
-    <td align="center"><h3>68</h3><strong>Desktop tools</strong></td>
+    <td align="center"><h3>69</h3><strong>Desktop tools</strong></td>
     <td align="center"><h3>12</h3><strong>Categories</strong></td>
     <td align="center"><h3>46</h3><strong>MCP capabilities</strong></td>
     <td align="center"><h3>3</h3><strong>Ways to work</strong></td>
@@ -182,13 +182,15 @@ The 2.1 series adds 11 desktop tools and delivers a broader upgrade across custo
 
 ## Complete tool catalog
 
-The 12 desktop categories below contain all 68 tools. Names correspond to in-app entries; CLI and MCP capabilities use the same input/output contracts as each tool becomes ready.
+The 12 desktop categories below contain all 69 tools in the current source, including PDF to Scanned PDF under V3.1 development. Released V3.0 contains 68 tools. Names correspond to in-app entries; CLI and MCP capabilities use the same input/output contracts as each tool becomes ready.
 
 <table width="100%" border="0" cellpadding="0" cellspacing="0">
-  <tr><td align="left" style="border:0;"><img src="https://img.shields.io/badge/PDF-Document%20Studio-ed1c24?style=for-the-badge&logo=adobeacrobatreader&logoColor=white" alt="PDF Document Studio" /></td><td align="right" style="border:0;"><h3 align="right">PDF tools · 13</h3></td></tr>
+  <tr><td align="left" style="border:0;"><img src="https://img.shields.io/badge/PDF-Document%20Studio-ed1c24?style=for-the-badge&logo=adobeacrobatreader&logoColor=white" alt="PDF Document Studio" /></td><td align="right" style="border:0;"><h3 align="right">PDF tools · 14</h3></td></tr>
 </table>
 
-`PDF Merge` · `PDF Split` · `Add PDF Page Numbers` · `Crop PDF` · `PDF to Image` · `PDF Text to Markdown` · `PDF Editor` · `PDF Page Rotate` · `PDF Encrypt` · `PDF Decrypt` · `PDF Compress` · `PDF Enhance` · `Excel to PDF`
+`PDF Merge` · `PDF Split` · `Add PDF Page Numbers` · `Crop PDF` · `PDF to Image` · `PDF to Scanned PDF` · `PDF Text to Markdown` · `PDF Editor` · `PDF Page Rotate` · `PDF Encrypt` · `PDF Decrypt` · `PDF Compress` · `PDF Enhance` · `Excel to PDF`
+
+PDF to Scanned PDF rasterizes pages locally, with faithful, grayscale and natural effects, page selection and 150/200/300 DPI. Page dimensions and visible orientation are retained. Selectable text, links, forms and original digital signatures are not retained; OCR remains possible.
 
 Supports drag sorting, page-by-page preview, selected-page export, page numbering, lossless cropping, rotation, text replacement, text and image insertion, append merge, password protection, scanned-document enhancement, multiple compression levels, and local workbook rendering. PDFs, workbooks, passwords, and exported results are processed locally by default.
 

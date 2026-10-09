@@ -9,7 +9,7 @@ export function audioExtractTemplate() {
         <button class="settings-v2-back settings-back pdf-merge-v2-back" type="button" data-audio-extract-action="back" data-audio-extract-title="back">
           <i data-lucide="arrow-left"></i><span data-audio-extract-text="back">返回首页</span>
         </button>
-        <span class="pdf-merge-v2-top-tag">AUDIO EXTRACTOR · TOOL PAGE 3.0</span>
+        <span class="pdf-merge-v2-top-tag">AUDIO EXTRACTOR · TOOL PAGE 3.1</span>
       </div>
       <div class="home-v2-top-actions pdf-merge-v2-top-actions">
         <button class="home-v2-nav-link" type="button" data-audio-extract-action="website" data-audio-extract-title="website"><i data-lucide="globe-2"></i><span data-audio-extract-text="website">网页版本</span></button>

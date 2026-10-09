@@ -677,7 +677,7 @@
       const versionUpdateStatus = document.getElementById('versionUpdateStatus');
       const checkVersionUpdateBtn = document.getElementById('checkVersionUpdateBtn');
       const openReleasePageBtn = document.getElementById('openReleasePageBtn');
-      const APP_VERSION_FALLBACK = '3.0.0';
+      const APP_VERSION_FALLBACK = '3.1.0';
       let updatePreviewController = null;
       const updateRuntime = createUpdateRuntime({
         isTauri,

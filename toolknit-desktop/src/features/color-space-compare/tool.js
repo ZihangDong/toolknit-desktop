@@ -7,7 +7,7 @@ import './color-space-compare-light.css';
 function renderColorSpaceCompareMarkup() {
   return `<div class="tool-page-v2-shell tool-page-v2-light color-space-compare-shell">
     ${toolTopbarMarkup({
-      tag: 'CREATIVE TOOLS · TOOL PAGE 3.0',
+      tag: 'CREATIVE TOOLS · TOOL PAGE 3.1',
       title: t('home.toolNames.colorSpaceCompare'),
       closeAttr: 'data-csc-close',
     })}

@@ -39,7 +39,7 @@ assert.match(featureStyles, /#iconGenFiles \.audio-convert-file-name\s*\{[^}]*te
 assert.match(featureStyles, /html\[data-theme="light"\] \.icon-gen-v2 \.audio-convert-file-size/);
 assert.doesNotMatch(controller, /openFolder\.style\.display/);
 assert.match(controller, /openFolder\.disabled = !canOpenFolder \|\| openingFolder/);
-assert.match(controller, /await openOutputFolder\(outputParentFolder\(outputPath\)\)/);
+assert.match(controller, /await openOutputFolder\(outputPath\)/);
 assert.match(controller, /isCurrentResult\(\) && opened !== false/);
 assert.match(controller, /if \(isCurrentResult\(\)\) showError\(t\('common.openFolderFailed'\)\)/);
 for (const lang of ['zh', 'en']) {

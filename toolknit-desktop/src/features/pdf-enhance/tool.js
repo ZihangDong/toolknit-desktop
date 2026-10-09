@@ -395,7 +395,7 @@ export function initPdfEnhanceTool({
     if (!isTauri || !lastResult?.path) return;
     try {
       const { invoke } = await tauriCorePromise;
-      await invoke('open_path', { path: outputFolder(lastResult.path) });
+      await invoke('open_path', { path: lastResult.path });
     } catch (error) {
       console.error('[PDF Enhance] open folder failed:', error);
     }

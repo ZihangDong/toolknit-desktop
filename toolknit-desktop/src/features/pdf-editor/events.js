@@ -63,6 +63,7 @@ export function createPdfEditorEvents({
   zoom,
   exporter,
   getLastOutputFolder = () => '',
+  getLastSuccess = () => null,
   getInvoke = async () => async () => {},
   t = key => key,
   getEditMode = () => false,
@@ -165,11 +166,11 @@ export function createPdfEditorEvents({
   add(processCancel, 'click', () => { void cancelActiveOperation(); });
   add(successOk, 'click', () => closeSuccess());
   add(successOpenFolder, 'click', async () => {
-    const outputFolder = getLastOutputFolder();
-    if (!isTauri || !outputFolder) return;
+    const outputTarget = getLastSuccess()?.outputPath || getLastOutputFolder();
+    if (!isTauri || !outputTarget) return;
     try {
       const invoke = await getInvoke();
-      await invoke('open_path', { path: outputFolder });
+      await invoke('open_path', { path: outputTarget });
     } catch (_) {
       showToast(t('home.pdfEditor.openFolderFailed'));
     }

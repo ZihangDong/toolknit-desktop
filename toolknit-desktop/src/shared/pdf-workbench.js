@@ -4,7 +4,7 @@ import { onLangChange, t } from '../i18n.js';
 import '../styles/components/pdf-workbench.css';
 
 // Document ownership and export actions belong to the feature. This view owns only its canvases and listeners.
-export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels, stageId, ids = {}, getRotation = () => 0, sortable = false, onReorder = () => {}, onChange = () => {}, refreshIcons = () => {} }) {
+export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels, stageId, ids = {}, getRotation = () => 0, transformPreview = null, sortable = false, onReorder = () => {}, onChange = () => {}, refreshIcons = () => {} }) {
   const scope = createLifecycleScope();
   root.classList.add('pdf-workbench', 'pdf-merge-v2', 'pdf-editor-v2');
   root.setAttribute('data-tool-page-chrome', '');
@@ -126,6 +126,10 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
       await task.promise;
       if (mainTask === task) mainTask = null;
       if (version !== previewRevision || owner !== generation) return;
+      if (transformPreview) {
+        await transformPreview(temporary, entry, () => version === previewRevision && owner === generation);
+        if (version !== previewRevision || owner !== generation) return;
+      }
       canvas.width = temporary.width; canvas.height = temporary.height;
       canvas.style.width = `${base.width * scale}px`; canvas.style.height = `${base.height * scale}px`;
       canvas.getContext('2d').drawImage(temporary, 0, 0);

@@ -7,7 +7,7 @@ export function pptDraftPageTemplate() {
             <i data-lucide="arrow-left"></i>
             <span data-i18n="settings.back">返回首页</span>
           </button>
-          <span class="pdf-merge-v2-top-tag">PPT DRAFT AI · TOOL PAGE 3.0</span>
+          <span class="pdf-merge-v2-top-tag">PPT DRAFT AI · TOOL PAGE 3.1</span>
         </div>
         <div class="home-v2-top-actions pdf-merge-v2-top-actions">
           <button class="home-v2-nav-link" type="button" data-home-link="website">
@@ -271,7 +271,7 @@ export function pptDraftPortalTemplate() {
             <i data-lucide="arrow-left"></i>
             <span data-i18n="settings.back">返回</span>
           </button>
-           <span class="ppt-draft-editor-top-tag pdf-merge-v2-top-tag">PPT DRAFT AI · TOOL PAGE 3.0</span>
+           <span class="ppt-draft-editor-top-tag pdf-merge-v2-top-tag">PPT DRAFT AI · TOOL PAGE 3.1</span>
           <span class="ppt-draft-editor-deck-title" id="pptDraftEditorDeckTitle"></span>
         </div>
          <div class="home-v2-top-actions pdf-merge-v2-top-actions">

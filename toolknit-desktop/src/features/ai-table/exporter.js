@@ -400,8 +400,7 @@ export function createAiTableExporter({
     if (!isTauri || !lastExportPath) return;
     try {
       const { invoke } = await tauriCorePromise;
-      const folder = lastExportPath.replace(/[/\\][^/\\]+$/, '').replace(/\//g, '\\');
-      await invoke('open_path', { path: folder });
+      await invoke('open_path', { path: lastExportPath });
     } catch (error) {
       console.error('[AI Table] Open folder error:', error);
     }

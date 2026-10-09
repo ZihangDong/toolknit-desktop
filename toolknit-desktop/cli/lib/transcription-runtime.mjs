@@ -110,7 +110,7 @@ export async function installTranscriptionModel({ model_id, source = 'auto' }, o
       let start = 0;
       try { start = (await stat(partial)).size; } catch {}
       if (start > model.bytes) { await rm(partial, { force: true }); start = 0; }
-      const headers = { 'User-Agent': 'ToolKnit/3.0.0 offline-model-manager' };
+      const headers = { 'User-Agent': 'ToolKnit/3.1.0 offline-model-manager' };
       if (start > 0) headers.Range = `bytes=${start}-`;
       const response = await fetch(sourceUrl(model, candidate), { headers, redirect: 'follow', signal: options.signal });
       if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);

@@ -1,9 +1,7 @@
 #[tauri::command]
 pub(crate) fn reveal_in_folder(path: String) -> Result<(), String> {
-    // Legacy frontend builds used this command name for output actions. Keep
-    // the command available for compatibility, but enforce the current rule that
-    // an "open folder" action opens a directory only and never selects or opens
-    // the output file itself.
+    // Keep the legacy command name, but make its intended behavior explicit:
+    // select an existing file, or open an existing directory.
     open_path(path)
 }
 
@@ -35,26 +33,45 @@ fn resolve_open_folder(path: &str) -> Result<std::path::PathBuf, String> {
 #[tauri::command]
 pub(crate) fn open_path(path: String) -> Result<(), String> {
     let target = resolve_open_folder(&path)?;
+    let requested = std::path::PathBuf::from(path);
+    let canonical_requested = requested
+        .canonicalize()
+        .map_err(|_| "Path does not exist".to_string())?;
+    let is_file = canonical_requested.is_file();
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-        std::process::Command::new("explorer")
-            .arg(&target)
+        let mut command = std::process::Command::new("explorer");
+        if is_file {
+            command.arg(format!("/select,{}", canonical_requested.display()));
+        } else {
+            command.arg(&target);
+        }
+        command
             .creation_flags(0x08000000)
             .spawn()
             .map_err(|e| e.to_string())?;
     }
     #[cfg(target_os = "macos")]
     {
-        std::process::Command::new("open")
-            .arg(&target)
+        let mut command = std::process::Command::new("open");
+        if is_file {
+            command.arg("-R").arg(&canonical_requested);
+        } else {
+            command.arg(&target);
+        }
+        command
             .spawn()
             .map_err(|e| e.to_string())?;
     }
     #[cfg(target_os = "linux")]
     {
         std::process::Command::new("xdg-open")
-            .arg(&target)
+            .arg(if is_file {
+                canonical_requested.parent().unwrap_or(&target)
+            } else {
+                &target
+            })
             .spawn()
             .map_err(|e| e.to_string())?;
     }
@@ -110,7 +127,7 @@ mod external_open_security_tests {
     }
 
     #[test]
-    fn open_folder_resolution_requires_an_existing_absolute_path() {
+    fn open_path_resolution_requires_an_existing_absolute_path() {
         let root = std::env::temp_dir().join(format!(
             "toolknit-open-folder-test-{}-{}",
             std::process::id(),
@@ -125,6 +142,7 @@ mod external_open_security_tests {
 
         assert_eq!(resolve_open_folder(root.to_str().unwrap()).unwrap(), root.canonicalize().unwrap());
         assert_eq!(resolve_open_folder(file.to_str().unwrap()).unwrap(), root.canonicalize().unwrap());
+        assert!(file.canonicalize().unwrap().is_file());
         assert!(resolve_open_folder("relative-output").is_err());
         assert!(resolve_open_folder(root.join("missing").to_str().unwrap()).is_err());
 

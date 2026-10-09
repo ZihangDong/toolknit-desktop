@@ -1717,6 +1717,7 @@ export function initPdfEditorTool({
     zoom,
     exporter,
     getLastOutputFolder: () => pdfEditorView?.getLastOutputFolder(),
+    getLastSuccess: () => pdfEditorView?.getLastSuccess(),
     getInvoke,
     t,
     getEditMode: () => editMode,

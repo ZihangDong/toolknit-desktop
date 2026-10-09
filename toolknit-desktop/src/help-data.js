@@ -2,6 +2,10 @@ import { getLang } from './i18n.js';
 import { HELP_CONTENT_EN } from './help-data-en.js';
 
 export const HELP_CONTENT = {
+  'pdf-to-scan': {
+    title: 'PDF 转扫描件',
+    html: `<div class="help-doc"><h2>PDF 转扫描件</h2><p>在本机把 PDF 页面转换成图片，再组成新的扫描 PDF。不需要 AI 或 API Key，原文件不修改。</p><h3>选择与预览</h3><ol class="help-steps"><li>选择或拖入一个 PDF；加密文件可在临时密码弹框中解锁</li><li>勾选页面或应用页码范围，例如 1-3, 5；始终按原稿顺序导出</li><li>选择保真、灰度或自然扫描，可切换原稿和扫描效果预览，展开预览可隐藏缩略图栏</li><li>选择 150、200 或 300 DPI；自然模式可调整噪点、纸色和轻微倾斜</li><li>导出后在结果弹框查看文件信息，桌面端可打开所在文件夹并选中结果</li></ol><h3>限制与内容变化</h3><p>单文件最多 64 MB、100 页；每页最多 1600 万像素且单边不超过 8192 像素，输出最多 100 MB。超限时降低 DPI、减少页面或先拆分。</p><p>转换会移除可选择文字、交互链接、表单和原有数字签名；签名的视觉图案不代表签名仍有效。图片仍可被 OCR 识别，转换不等于脱敏或防复制。保真模式也经过图像化和 JPEG 压缩。</p><p>页面保留可见尺寸和方向。桌面输出使用设置中的目录，在 PDF_Scan 子目录生成唯一名称文件；浏览器版使用本地下载。处理中可取消，最后的原子保存阶段不能撤销；此时关闭工具也可能完成保存。</p></div>`
+  },
   'clipboard-history': {
     title: '剪贴板历史',
     html: `<div class="help-doc"><h2>剪贴板历史</h2><p>在 Windows 桌面版主动开启监控后，记录后续复制的文字、图片和文件路径。已有系统剪贴板内容和 Win+V 历史不会自动导入。</p><h3>记录与回查</h3><p>按日期浏览时间线，搜索内容或来源应用，按类型、日期及收藏筛选。详情显示记录时间（含毫秒和采集时区）、来源、大小和内容；来源未知时不会猜测。文件仅保存路径，重新复制不会执行剪切移动。</p><h3>后台与隐私</h3><p>返回首页、切换工具或关闭到托盘后继续记录；暂停或完全退出后停止。下次启动默认关闭，可在记录设置中选择恢复仍在运行的监控。正文、图片和路径在本机加密保存，不上传。</p><p>默认保留 7 天、2000 条、256 MB。收藏不自动删除，收藏占满容量时暂停新增。清空历史默认保留收藏，不清空系统当前剪贴板，不删除源文件。</p><p>遵循应用提供的禁止记录标记，支持按进程名排除应用。并非所有密码或敏感内容都会带标记，复制敏感信息前请暂停。极快更新、剪贴板占用及特殊格式可能读取失败；状态区展示跳过和失败计数。网页预览不提供系统监控。</p></div>`
@@ -10,11 +14,12 @@ export const HELP_CONTENT = {
     title: '功能概览',
     html: `<div class="help-doc">
       <h2>ToolKnit 功能概览</h2>
-      <p>ToolKnit 3.0 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前提供 12 个分类、68 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 46 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
+      <p>ToolKnit 3.1 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前测试版本提供 12 个分类、69 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 46 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
+      <p>V3.0 正式版包含 68 个桌面工具；PDF 转扫描件为 V3.1 开发中的新增功能。</p>
 
       <h3>工具分类一览</h3>
       <div class="help-tool-grid">
-        <div class="help-tool-card"><div class="help-tool-card-name">PDF 工具</div><div class="help-tool-card-desc">编辑、合并、拆分、添加页码、转图像、本地文本转 Markdown、AI PDF 转 Markdown、旋转、加密、解密、压缩、文字增强与 Excel 转 PDF</div></div>
+        <div class="help-tool-card"><div class="help-tool-card-name">PDF 工具</div><div class="help-tool-card-desc">编辑、合并、拆分、添加页码、转图像、转扫描件、本地文本转 Markdown、AI PDF 转 Markdown、旋转、加密、解密、压缩、文字增强与 Excel 转 PDF</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">PPT 工具</div><div class="help-tool-card-desc">转 PDF / 图像、素材与文字提取、压缩、AI 大纲和黑白极简草稿</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">图像工具</div><div class="help-tool-card-desc">格式转换、图片压缩、长图拼接、图标生成器、图像与屏幕取色</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">音频工具</div><div class="help-tool-card-desc">格式转换、BPM 测速、剪辑、从视频提取音频</div></div>
@@ -1290,7 +1295,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
   'developer-tools': {
     title: '开发者工具',
-    html: `<div class="help-doc"><h2>3.0 开发者工具</h2><p>这里集中介绍本次新增的本地工具。它们默认在需要时加载，关闭页面后会释放 Worker、Canvas 和临时任务。</p><h3>Markdown 文档编辑器</h3><p>支持 GFM、任务列表、Mermaid、数学公式、目录跳转、草稿恢复，以及 Markdown 和离线 HTML 导出。导出本地图片时会自动整理 assets 目录。</p><h3>智能颜色替换</h3><p>使用吸管选择源色和目标色，可调节感知阈值、边缘柔化、亮度保持和八连通智能保护。预览使用降采样 Worker，导出由 Rust 按原始分辨率完成。</p><h3>Hash &amp; Crypto</h3><p>覆盖常用 Hash、HMAC、国密、AES 文件加密、RSA 和 SM2。旧算法仅用于兼容，敏感输入不会写入历史或本地存储。</p></div>`
+    html: `<div class="help-doc"><h2>3.1 开发者工具</h2><p>这里集中介绍本次新增的本地工具。它们默认在需要时加载，关闭页面后会释放 Worker、Canvas 和临时任务。</p><h3>Markdown 文档编辑器</h3><p>支持 GFM、任务列表、Mermaid、数学公式、目录跳转、草稿恢复，以及 Markdown 和离线 HTML 导出。导出本地图片时会自动整理 assets 目录。</p><h3>智能颜色替换</h3><p>使用吸管选择源色和目标色，可调节感知阈值、边缘柔化、亮度保持和八连通智能保护。预览使用降采样 Worker，导出由 Rust 按原始分辨率完成。</p><h3>Hash &amp; Crypto</h3><p>覆盖常用 Hash、HMAC、国密、AES 文件加密、RSA 和 SM2。旧算法仅用于兼容，敏感输入不会写入历史或本地存储。</p></div>`
   },
   'hardware-tools': {
     title: '硬件工具总览',

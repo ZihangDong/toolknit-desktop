@@ -57,7 +57,7 @@ assert.doesNotMatch(preview, /\.innerHTML\s*=|\.addEventListener\(/);
 assert.match(exporter, /write_unique_file_bytes/);
 assert.match(exporter, /URL\.revokeObjectURL/);
 assert.match(exporter, /assertCurrent\(owner, id\)/);
-assert.match(exporter, /outputParent\(lastOutputPath\)/);
+assert.match(exporter, /invoke\('open_path', \{ path: lastOutputPath \}\)/);
 assert.match(exporter, /createModalSession/);
 assert.match(exporter, /processModal/);
 assert.match(exporter, /setProgress\?\./);

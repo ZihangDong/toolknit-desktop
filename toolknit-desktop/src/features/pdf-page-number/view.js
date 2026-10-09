@@ -81,7 +81,7 @@ export function createPdfPageNumberView({
       successCount.textContent = text('home.pdfPageNumber.outputCountValue', { count: lastResult.count });
     }
     if (successPath) {
-      successPath.textContent = displayFilesystemPath(lastResult.outputDir || '~/Downloads');
+      successPath.textContent = displayFilesystemPath(lastResult.outputPath || lastResult.outputDir || '~/Downloads');
     }
     if (successOpenFolder) successOpenFolder.style.display = isTauri ? '' : 'none';
   }

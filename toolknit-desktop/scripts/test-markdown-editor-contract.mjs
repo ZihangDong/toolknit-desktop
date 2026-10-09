@@ -47,6 +47,17 @@ assert.doesNotMatch(controller, /from ['"]@tauri-apps\//);
 assert.doesNotMatch(controller, /\.addEventListener\(/);
 assert.match(template, /data-lucide="save"/);
 assert.doesNotMatch(template, /data-lucide="cloud-check"/);
+assert.match(template, /data-md-export="md"/);
+assert.match(template, /data-md-export="html"/);
+assert.match(template, /data-lucide="file-down"/);
+assert.match(template, /data-lucide="file-code-2"/);
+assert.match(template, /data-md-expand aria-pressed="false"/);
+assert.match(template, /id="mdExportSuccessTitle"/);
+assert.match(template, /data-md-export-success aria-hidden="true" inert/);
+assert.match(controller, /createModalSession\(\{ root: successOverlay, background: shell/);
+assert.match(controller, /showExportResult\(\{ format, path: result\.markdown_path, directory: result\.directory/);
+assert.match(controller, /getOutputDir\('Markdown'\)/);
+assert.match(controller, /setModalInteractivity\(overlay, false\)/);
 assert.match(template, /tool-page-v2-shell tool-page-v2-light md-tool-shell/, 'Markdown must opt into the shared daytime shell');
 assert.match(previewSecurity, /template\.content\.querySelectorAll\(['"]img['"]\)/);
 assert.match(previewSecurity, /template\.content\.querySelectorAll\(['"]a['"]\)/);
@@ -56,6 +67,7 @@ assert.match(previewSecurity, /!\['http:', 'https:'\]\.includes\(parsed\.protoco
 assert.match(compatibilityUi, /from ['"]\.\/features\/markdown-editor\/tool\.js['"]/);
 assert.match(compatibilityCore, /from ['"]\.\/features\/markdown-editor\/core\.js['"]/);
 assert.match(featureStyles, /\.md-workbench\s*\{/);
+assert.match(featureStyles, /\.md-export-group\s*\{/);
 const previewBackgrounds = [...featureStyles.matchAll(/^\.md-preview-pane[ \t]*\{([^\r\n}]*)\}/gm)]
   .map(match => /\bbackground:\s*([^;]+);/.exec(match[1])?.[1]).filter(Boolean);
 assert.ok(previewBackgrounds.length > 0);

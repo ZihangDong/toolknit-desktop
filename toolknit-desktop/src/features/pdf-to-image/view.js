@@ -35,6 +35,7 @@ export function createPdfToImageView({
   let successReturnFocus = null;
   let lastSuccess = null;
   let lastOutputFolder = '';
+  let lastOutputPath = '';
   let disposed = false;
 
   function focusedElement() {
@@ -199,6 +200,11 @@ export function createPdfToImageView({
 
   function showSuccess(result, mode, limitedCount, returnFocus) {
     lastOutputFolder = result.outputDir || '';
+    lastOutputPath = result.outputPath
+      || result.output_path
+      || result.outputs?.[0]?.outputPath
+      || result.outputs?.[0]?.output_path
+      || '';
     lastSuccess = { result, mode, limitedCount };
     successReturnFocus = returnFocus || focusedElement();
     renderSuccess();
@@ -225,6 +231,7 @@ export function createPdfToImageView({
     successReturnFocus = null;
     lastSuccess = null;
     lastOutputFolder = '';
+    lastOutputPath = '';
     syncInteractiveLayers();
   }
 
@@ -241,6 +248,7 @@ export function createPdfToImageView({
     dispose,
     focusedElement,
     getLastOutputFolder: () => lastOutputFolder,
+    getLastOutputPath: () => lastOutputPath,
     hasSuccess: () => Boolean(lastSuccess),
     hideProcess,
     refresh,

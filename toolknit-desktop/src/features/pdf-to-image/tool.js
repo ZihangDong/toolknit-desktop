@@ -724,11 +724,12 @@ export function initPdfToImageTool({
   listen(processCancel, 'click', () => { void cancelActiveOperation(); });
   listen(successOk, 'click', () => closeSuccess());
   listen(successOpenFolder, 'click', async () => {
+    const outputPath = view.getLastOutputPath?.();
     const outputFolder = view.getLastOutputFolder();
-    if (!isTauri || !outputFolder) return;
+    if (!isTauri || (!outputPath && !outputFolder)) return;
     try {
       const invoke = await getInvoke();
-      await invoke('open_path', { path: outputFolder });
+      await invoke('open_path', { path: outputPath || outputFolder });
       closeSuccess();
     } catch (_) {
       showToast(t('home.pdfToImageTool.openFolderFailed'));

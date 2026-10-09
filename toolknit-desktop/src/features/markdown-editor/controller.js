@@ -13,6 +13,8 @@ import { defaultKeymap, history, historyKeymap, redo, undo } from '@codemirror/c
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { bracketMatching, defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
+import { createModalSession, setModalInteractivity } from '../../app/modal-runtime.js';
+import { applyTranslations, onLangChange, t } from '../../i18n.js';
 import { loadTauriDialog, tauriCorePromise } from '../../platform/tauri-runtime.js';
 import { bindToolPageChrome, mountToolPageBackground } from '../../shared/tool-page-shell.js';
 import {
@@ -24,7 +26,8 @@ import {
   extractMarkdownHeadings,
   extractMarkdownHeadingsFromTokens,
   rewriteMarkdownImages,
-  sanitizeExportBaseName
+  sanitizeExportBaseName,
+  stripMarkdownMetadata
 } from './core.js';
 import {
   markdownPreviewAssetUrl,
@@ -76,7 +79,10 @@ function imageMetadata(path) {
 export function createMarkdownEditorController({
   overlay,
   notify = message => window.showToast?.(message),
-  isTauri = Boolean(window.__TAURI_INTERNALS__)
+  isTauri = false,
+  getOutputDir = async () => '',
+  openOutputFolder = async () => false,
+  displayFilesystemPath = value => String(value || '')
 } = {}) {
   if (!overlay) throw new Error('markdown-editor:missing-overlay');
 
@@ -92,6 +98,14 @@ export function createMarkdownEditorController({
   const count = overlay.querySelector('[data-md-count]');
   const renderer = createMarkdownRenderer();
   const exportRenderer = createMarkdownRenderer('mathml');
+  const tr = (key, values) => t(`home.markdownEditor.${key}`, values);
+  const sidebar = overlay.querySelector('.md-outline-panel');
+  const expandButton = overlay.querySelector('[data-md-expand]');
+  const successOverlay = overlay.querySelector('[data-md-export-success]');
+  const successOk = overlay.querySelector('[data-md-success-ok]');
+  const successModal = createModalSession({ root: successOverlay, background: shell, initialFocus: successOk,
+    onClose: () => successModal.close() });
+  let lastExport = null;
   let assets = readStoredAssets();
   let editor = null;
   let session = null;
@@ -152,7 +166,7 @@ export function createMarkdownEditorController({
   }
 
   function sourceForRender(text) {
-    let result = text;
+    let result = stripMarkdownMetadata(text);
     for (const asset of assets) {
       if (asset.previewDataUrl) result = result.split(asset.token).join(asset.previewDataUrl);
     }
@@ -160,7 +174,7 @@ export function createMarkdownEditorController({
   }
 
   function sourceForLivePreview(text) {
-    let result = text;
+    let result = stripMarkdownMetadata(text);
     for (const asset of assets) {
       if (asset.previewDataUrl) {
         result = result.split(asset.token).join(markdownPreviewAssetUrl(asset.id));
@@ -456,21 +470,63 @@ export function createMarkdownEditorController({
     return isOpenSession(owner) ? host.innerHTML : null;
   }
 
-  async function outputRoot() {
-    return (await invoke('get_output_root')) || (await invoke('get_default_output_root'));
+  function renderExportResult() {
+    if (!lastExport) return;
+    const { format, path, directory, assetCount } = lastExport;
+    overlay.querySelector('[data-md-success-format]').textContent = format === 'md' ? 'Markdown (.md)' : 'HTML (.html)';
+    overlay.querySelector('[data-md-success-file]').textContent = path.split(/[\\/]/).pop();
+    const location = overlay.querySelector('[data-md-success-path]');
+    location.textContent = isTauri ? displayFilesystemPath(directory) : tr('browserLocation');
+    location.title = location.textContent;
+    overlay.querySelector('[data-md-success-meta]').textContent = isTauri
+      ? tr('exportSummary', { count: 1 + assetCount }) : tr('browserSummary');
+    overlay.querySelector('[data-md-success-open-folder]').hidden = !isTauri;
+  }
+
+  function showExportResult(result) {
+    lastExport = result;
+    renderExportResult();
+    successModal.open();
+  }
+
+  function downloadFile(text, name, mime, owner) {
+    const url = URL.createObjectURL(new Blob([text], { type: mime }));
+    const link = document.createElement('a');
+    link.href = url; link.download = name; link.click();
+    const release = owner.use(() => URL.revokeObjectURL(url));
+    owner.timeout(release, 1000);
+  }
+
+  function setExpanded(expanded) {
+    if (expanded && sidebar.contains(document.activeElement)) expandButton.focus();
+    shell.classList.toggle('is-expanded', expanded);
+    sidebar.inert = expanded;
+    sidebar.setAttribute('aria-hidden', String(expanded));
+    expandButton.setAttribute('aria-pressed', String(expanded));
+    const label = tr(expanded ? 'collapse' : 'expand');
+    expandButton.title = label;
+    expandButton.setAttribute('aria-label', label);
+    expandButton.querySelector('[data-md-expand-icon="expand"]').toggleAttribute('hidden', expanded);
+    expandButton.querySelector('[data-md-expand-icon="collapse"]').toggleAttribute('hidden', !expanded);
+    editor?.requestMeasure();
   }
 
   async function exportDocument(format) {
     const owner = session;
-    if (exporting || !editor || !isOpenSession(owner)) return;
+    if (exporting || !editor || !isOpenSession(owner) || !['md', 'html'].includes(format)) return;
     exporting = true;
     overlay.querySelectorAll('[data-md-export]').forEach(button => { button.disabled = true; });
     try {
       const firstHeading = extractMarkdownHeadings(currentText())[0]?.text || 'toolknit-document';
       const baseName = sanitizeExportBaseName(firstHeading);
-      const root = await outputRoot();
+      const root = isTauri ? await getOutputDir('') : '';
       if (!isOpenSession(owner)) return;
       if (format === 'md') {
+        if (!isTauri) {
+          downloadFile(currentText(), `${baseName}.md`, 'text/markdown;charset=utf-8', owner);
+          showExportResult({ format, path: `${baseName}.md`, directory: '', assetCount: 0 });
+          return;
+        }
         const exportAssets = [];
         for (const asset of activeAssets()) {
           const bytes = await invoke('read_file_bytes_limited', {
@@ -491,21 +547,28 @@ export function createMarkdownEditorController({
           assets: exportAssets
         });
         if (isOpenSession(owner)) {
-          notify(`Markdown 已导出：${result.directory || result.output_directory || ''}`);
+          showExportResult({ format, path: result.markdown_path, directory: result.directory, assetCount: result.asset_count || 0 });
         }
       } else {
         const renderedHtml = await renderedForExport(owner);
         if (!isOpenSession(owner) || renderedHtml === null) return;
         const html = buildStandaloneMarkdownHtml({ title: firstHeading, renderedHtml });
+        if (!isTauri) {
+          downloadFile(html, `${baseName}.html`, 'text/html;charset=utf-8', owner);
+          showExportResult({ format, path: `${baseName}.html`, directory: '', assetCount: 0 });
+          return;
+        }
+        const directory = await getOutputDir('Markdown');
+        if (!isOpenSession(owner)) return;
         const path = await invoke('write_unique_file_bytes', {
-          directory: `${root}\\Markdown`,
+          directory,
           fileName: `${baseName}.html`,
           bytes: Array.from(encoder.encode(html))
         });
-        if (isOpenSession(owner)) notify(`HTML 已导出：${path}`);
+        if (isOpenSession(owner)) showExportResult({ format, path, directory, assetCount: 0 });
       }
     } catch (error) {
-      if (isOpenSession(owner)) notify(`导出失败：${String(error?.message || error)}`);
+      if (isOpenSession(owner)) notify(tr('exportFailed'));
     } finally {
       if (isOpenSession(owner)) {
         exporting = false;
@@ -559,6 +622,12 @@ export function createMarkdownEditorController({
   }
 
   function handleClick(event) {
+    if (event.target.closest('[data-md-success-ok]')) { successModal.close(); return; }
+    if (event.target.closest('[data-md-success-open-folder]')) {
+      if (lastExport?.path || lastExport?.directory) void openOutputFolder(lastExport.path || lastExport.directory);
+      return;
+    }
+    if (event.target.closest('[data-md-expand]')) { setExpanded(!shell.classList.contains('is-expanded')); return; }
     const previewLink = event.target.closest('[data-md-preview] a[href]');
     if (previewLink) {
       event.preventDefault();
@@ -631,7 +700,11 @@ export function createMarkdownEditorController({
       highlightTimers.clear();
     });
     overlay.classList.add('visible');
-    overlay.setAttribute('aria-hidden', 'false');
+    shell.classList.add('visible');
+    setModalInteractivity(overlay, true);
+    setModalInteractivity(shell, true);
+    applyTranslations(overlay);
+    setExpanded(false);
     workspace.dataset.view = currentView;
     buildEditor(owner);
     editor?.requestMeasure();
@@ -641,6 +714,8 @@ export function createMarkdownEditorController({
     if (!session) return;
     const owner = session;
     session = null;
+    successModal.close({ restore: false });
+    lastExport = null;
     renderRevision += 1;
     hydrateRevision += 1;
     exporting = false;
@@ -662,9 +737,11 @@ export function createMarkdownEditorController({
     }));
     preview.replaceChildren();
     outline.replaceChildren();
+    setExpanded(false);
     overlay.querySelectorAll('[data-md-export]').forEach(button => { button.disabled = false; });
+    setModalInteractivity(overlay, false);
     overlay.classList.remove('visible');
-    overlay.setAttribute('aria-hidden', 'true');
+    shell.classList.remove('visible');
     showHelp(false, false);
   }
 
@@ -677,12 +754,27 @@ export function createMarkdownEditorController({
   }
 
   lifecycle.use(bindToolPageChrome(shell, close));
+  lifecycle.use(() => successModal.dispose());
+  lifecycle.use(onLangChange(() => {
+    if (!session) return;
+    applyTranslations(overlay);
+    setExpanded(shell.classList.contains('is-expanded'));
+    renderExportResult();
+  }));
   lifecycle.event(overlay, 'click', handleClick);
   lifecycle.event(overlay, 'keydown', event => {
     if (event.key === 'Escape' && !helpPage.hidden) {
       event.preventDefault();
+      event.stopPropagation();
       showHelp(false);
+    } else if (event.key === 'Escape' && shell.classList.contains('is-expanded')) {
+      event.preventDefault();
+      event.stopPropagation();
+      setExpanded(false);
     }
+  });
+  lifecycle.event(shell, 'transitionend', event => {
+    if (event.propertyName === 'grid-template-columns') editor?.requestMeasure();
   });
   lifecycle.event(outline, 'pointerover', event => {
     const button = event.target.closest('[data-md-line]');

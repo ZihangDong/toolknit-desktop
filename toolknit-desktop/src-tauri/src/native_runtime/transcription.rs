@@ -502,7 +502,7 @@ pub(super) async fn download_transcription_model(
 
     let partial = target.with_extension("bin.part");
     let client = reqwest::Client::builder()
-        .user_agent("ToolKnit/3.0.0 offline-model-manager")
+        .user_agent("ToolKnit/3.1.0 offline-model-manager")
         .build()
         .map_err(|error| format!("Cannot initialize model download: {}", error))?;
     let requested_source = source

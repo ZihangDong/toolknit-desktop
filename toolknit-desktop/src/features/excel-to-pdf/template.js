@@ -9,7 +9,7 @@ export function excelToPdfTemplate() {
         <button class="settings-v2-back settings-back pdf-merge-v2-back" type="button" data-excel-action="back" data-excel-title="back">
           <i data-lucide="arrow-left"></i><span data-excel-text="back">返回首页</span>
         </button>
-        <span class="pdf-merge-v2-top-tag">SPREADSHEET · TOOL PAGE 3.0</span>
+        <span class="pdf-merge-v2-top-tag">SPREADSHEET · TOOL PAGE 3.1</span>
       </div>
       <div class="home-v2-top-actions pdf-merge-v2-top-actions">
         <button class="home-v2-nav-link" type="button" data-excel-action="website" data-excel-title="website">

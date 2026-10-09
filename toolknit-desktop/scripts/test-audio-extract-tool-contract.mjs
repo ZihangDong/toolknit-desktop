@@ -33,7 +33,7 @@ assert.match(controller, /createLifecycleScope\(/);
 assert.match(controller, /isCurrent\(/);
 assert.match(controller, /cancel_convert/);
 assert.match(controller, /audio-extract-progress/);
-assert.match(controller, /outputParent\(state\.outputPath\)/);
+assert.match(controller, /openOutputFolder\(state\.outputPath\)/);
 assert.doesNotMatch(controller, /copy\(\{\s*probe:/);
 assert.match(template, /data-audio-extract-action="back"/);
 assert.match(template, /audio-extract-feature tool-page-v2-shell/);

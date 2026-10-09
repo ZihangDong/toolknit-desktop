@@ -158,7 +158,7 @@ export function createPdfRotateExporter({
     if (!isTauri || !lastSavedPath) return;
     try {
       const { invoke } = await tauriCorePromise;
-      await invoke('open_path', { path: outputParent(lastSavedPath) });
+      await invoke('open_path', { path: lastSavedPath });
     } catch (error) {
       console.error('[PDF Rotate] Open folder error:', error);
     }

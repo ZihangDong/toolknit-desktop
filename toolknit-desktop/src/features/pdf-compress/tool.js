@@ -565,7 +565,7 @@ export function initPdfCompressTool({
 
   async function openSavedFolder() {
     if (!isTauri) return;
-    const target = outputDirectory || outputParentFolder(lastSavedPath);
+    const target = lastSavedPath || outputDirectory || outputParentFolder(lastSavedPath);
     if (!target) return;
     try {
       const { invoke } = await tauriCorePromise;

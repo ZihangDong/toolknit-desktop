@@ -223,8 +223,9 @@ export function createExcelToPdfController({
   }
 
   function showSuccess(result) {
-    lastOutputDir = String(result?.outputDir || '');
     const outputs = Array.isArray(result?.outputs) ? result.outputs : [];
+    const firstOutputPath = String(outputs[0]?.output_path || outputs[0]?.outputPath || '');
+    lastOutputDir = firstOutputPath || String(result?.outputDir || '');
     const pageCount = outputs.reduce((sum, item) => sum + (Number(item?.pageCount) || 0), 0);
     const succeeded = Number(result?.successCount) || outputs.length;
     const failed = Number(result?.failCount) || 0;

@@ -1,6 +1,7 @@
 import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
 import { applyTranslations, onLangChange, t } from '../../i18n.js';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
+import { extractPdfRules } from './table-grid.js';
 import { loadTauriDialog, loadTauriWebview, tauriCorePromise } from '../../platform/tauri-runtime.js';
 import { bindToolPageChrome, moveFocusOutOfHiddenRegion } from '../../shared/tool-page-shell.js';
 import { destroyPdfDocument, pdfjsDocumentOptions } from '../../shared/pdfjs-options.js';
@@ -415,6 +416,7 @@ export function createPdfTextMarkdownController({
     setProgress(0, pdfDocument.numPages, 0);
     renderControls();
     try {
+      const { OPS } = await import('pdfjs-dist/legacy/build/pdf.mjs');
       for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
         assertCurrent(active, owner, requestRevision);
         let page = null;
@@ -422,10 +424,17 @@ export function createPdfTextMarkdownController({
           page = await pdfDocument.getPage(pageNumber);
           const viewport = page.getViewport?.({ scale: 1 }) || {};
           const content = await page.getTextContent();
+          assertCurrent(active, owner, requestRevision);
+          let rules = [];
+          try { rules = extractPdfRules(await page.getOperatorList(), OPS); } catch (_) {
+            // Text extraction remains available when a page has unsupported drawing operators.
+          }
+          assertCurrent(active, owner, requestRevision);
           const pageResult = reconstructPdfPage(content?.items || [], {
             pageNumber,
             pageWidth: viewport.width,
-            pageHeight: viewport.height
+            pageHeight: viewport.height,
+            rules
           });
           pages.push(pageResult);
           chars += pageResult.chars;

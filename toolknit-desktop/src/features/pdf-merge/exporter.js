@@ -168,7 +168,7 @@ export function createPdfMergeExporter({
     if (!isTauri || !lastOutputPath) return;
     try {
       const { invoke } = await tauriCorePromise;
-      await invoke('open_path', { path: outputParent(lastOutputPath) });
+      await invoke('open_path', { path: lastOutputPath });
     } catch (error) {
       console.error('[PDF Merge] Open folder error:', error);
     }

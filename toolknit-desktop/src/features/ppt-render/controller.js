@@ -341,7 +341,7 @@ export function createPptRenderController({
   }
 
   function showSuccess(result) {
-    lastOutputPath = result?.outputDir || '';
+    lastOutputPath = result?.outputPath || result?.output_path || result?.outputDir || '';
     if (successMeta) successMeta.textContent = result?.warnings?.length
       ? `${text('successMeta')} ${text('successWarning')}`
       : text('successMeta');

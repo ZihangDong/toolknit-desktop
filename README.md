@@ -2,7 +2,7 @@
 
 <img src="assets/readme/hero-v2.webp" alt="ToolKnit Desktop — ToolKnit spider web hero" width="100%" />
 
-<h1>ToolKnit Desktop 3.0</h1>
+<h1>ToolKnit Desktop 3.1</h1>
 
 <p><strong>本地文件工作台 · 桌面端、网页端与 AI Agent 工作流</strong></p>
 
@@ -18,7 +18,7 @@
 
 <p>
   <a href="README_EN.md"><img src="https://img.shields.io/badge/Language-English-475569?style=for-the-badge&labelColor=334155" alt="English README" /></a>
-  <img src="https://img.shields.io/badge/Version-3.0.0-0f766e?style=for-the-badge&labelColor=115e59" alt="ToolKnit Desktop 3.0.0" />
+  <img src="https://img.shields.io/badge/Version-3.1.0%20Preview-0f766e?style=for-the-badge&labelColor=115e59" alt="ToolKnit Desktop 3.1.0 preview" />
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-2563eb?style=for-the-badge&logo=windows&logoColor=white" alt="Windows 10/11" />
   <img src="https://img.shields.io/badge/Local--first-文件留在本机-0f766e?style=for-the-badge" alt="Local first" />
   <img src="https://img.shields.io/badge/Tauri-2.x-475569?style=for-the-badge" alt="Tauri 2.x" />
@@ -35,8 +35,8 @@
 </div>
 
 <p align="center">
-  <a href="#v30-核心更新">3.0 更新</a> ·
-  <a href="#完整功能目录">68 项工具</a> ·
+  <a href="#v30-核心更新">3.0 正式版</a> ·
+  <a href="#完整功能目录">69 项工具</a> ·
   <a href="#本地优先与隐私边界">隐私边界</a> ·
   <a href="#从源码运行">源码运行</a> ·
   <a href="#cli--mcp--agent">CLI / MCP</a>
@@ -59,15 +59,15 @@
   </tr>
 </table>
 
-## ToolKnit 3.0
+## ToolKnit 3.1 Preview
 
-ToolKnit Desktop 3.0 是一套面向 Windows 的本地文件工作台。它把常用文件处理、图像与 Markdown 创作、开发者工具、AI 内容生产、专业文档工作流和 IDE Agent 自动化放在同一个产品体系里。
+ToolKnit Desktop 3.1 测试版是一套面向 Windows 的本地文件工作台。它把常用文件处理、图像与 Markdown 创作、开发者工具、AI 内容生产、专业文档工作流和 IDE Agent 自动化放在同一个产品体系里。V3.1 尚未正式发布，正式发布版仍为 V3.0。
 
 桌面端提供可视化工作台，其中适合自动化的能力还可以通过 CLI 批处理、MCP Agent 调用。网页端提供免安装入口，各端功能范围以对应目录为准。
 
 <table width="100%" cellpadding="14" cellspacing="0">
   <tr>
-    <td align="center"><h3>68</h3><strong>桌面工具</strong></td>
+    <td align="center"><h3>69</h3><strong>桌面工具</strong></td>
     <td align="center"><h3>12</h3><strong>功能分类</strong></td>
     <td align="center"><h3>46</h3><strong>MCP 能力</strong></td>
     <td align="center"><h3>3</h3><strong>工作方式</strong></td>
@@ -182,13 +182,15 @@ ToolKnit 继续遵循本地优先原则：重型编辑器和算法模块按需�
 
 ## 完整功能目录
 
-下面按桌面端的 12 个分类列出全部 68 项工具。名称对应应用内入口，支持的 CLI / MCP 能力会在相应工具成熟后提供同一套输入输出契约。
+下面按桌面端的 12 个分类列出当前源码中的全部 69 项工具，包含 V3.1 开发中的 PDF 转扫描件；已发布 V3.0 为 68 项。名称对应应用内入口，支持的 CLI / MCP 能力会在相应工具成熟后提供同一套输入输出契约。
 
 <table width="100%" border="0" cellpadding="0" cellspacing="0">
-  <tr><td align="left" style="border:0;"><img src="https://img.shields.io/badge/PDF-Document%20Studio-ed1c24?style=for-the-badge&logo=adobeacrobatreader&logoColor=white" alt="PDF Document Studio" /></td><td align="right" style="border:0;"><h3 align="right">PDF 文档工具 · 13 项</h3></td></tr>
+  <tr><td align="left" style="border:0;"><img src="https://img.shields.io/badge/PDF-Document%20Studio-ed1c24?style=for-the-badge&logo=adobeacrobatreader&logoColor=white" alt="PDF Document Studio" /></td><td align="right" style="border:0;"><h3 align="right">PDF 文档工具 · 14 项</h3></td></tr>
 </table>
 
-`PDF 文件合并` · `PDF 文件拆分` · `PDF 加页码` · `PDF 裁剪` · `PDF 转图像` · `PDF 文本提取 / Markdown` · `PDF 编辑器` · `PDF 页面旋转` · `PDF 文件加密` · `PDF 文件解密` · `PDF 文件压缩` · `PDF 文字增强` · `Excel 转 PDF`
+`PDF 文件合并` · `PDF 文件拆分` · `PDF 加页码` · `PDF 裁剪` · `PDF 转图像` · `PDF 转扫描件` · `PDF 文本提取 / Markdown` · `PDF 编辑器` · `PDF 页面旋转` · `PDF 文件加密` · `PDF 文件解密` · `PDF 文件压缩` · `PDF 文字增强` · `Excel 转 PDF`
+
+PDF 转扫描件在本机逐页生成纯图像 PDF，提供原稿、灰度和自然扫描效果、页码选择与 150/200/300 DPI。保留页面尺寸及方向；输出不保留可选文字、链接、表单或原数字签名，也不阻止 OCR。详见[处理边界](toolknit-desktop/docs/PDF_TO_SCAN.zh-CN.md)。
 
 支持拖拽排序、逐页预览、选页导出、页码写入、无损裁剪、页面旋转、文字替换、文本与图像插入、追加合并、密码保护、扫描件增强、多等级压缩和工作簿本地渲染。PDF、工作簿、密码和导出结果默认只在本机处理。
 

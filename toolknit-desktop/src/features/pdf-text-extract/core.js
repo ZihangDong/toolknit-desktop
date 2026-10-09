@@ -1,8 +1,8 @@
+import { detectRuledTables } from './table-grid.js';
+
 const HAN_PATTERN = /\p{Script=Han}/u;
 const LIST_PATTERN = /^(?:([\u2022\u2023\u25e6\u25aa\u25cf\u25cb\u25a0\u25a1\u2043]|[-*+])\s+|(\d{1,3}[.)]\s+)|((?:-\s*)?\[[ xX]\]\s+))/;
-const ORDERED_LIST_PATTERN = /^\d{1,3}[.)]\s+/;
 const HEADING_PREFIX_PATTERN = /^(#{1,6})\s+(.+)$/;
-const TABLE_SEPARATOR_PATTERN = /^\s*:?-{2,}:?(?:\s*\|\s*:?-{2,}:?)+\s*$/;
 
 export const PDF_TEXT_LIMITS = Object.freeze({
   maxDocumentBytes: 150 * 1024 * 1024,
@@ -65,8 +65,7 @@ function itemGeometry(item, index) {
   const fontSize = Math.max(1, numberOr(item?.height, 0) || Math.hypot(b, d) || 10);
   const width = Math.max(0, numberOr(item?.width, 0));
   const x = hasTransform ? numberOr(transform[4]) : 0;
-  // PDF.js text coordinates use a bottom-left origin. Sorting by descending
-  // baseline gives the visual top-to-bottom order for normal and rotated pages.
+  // PDF.js uses a bottom-left origin; descending baselines order horizontal text.
   const baseline = hasTransform ? numberOr(transform[5]) : -index * fontSize * 1.6;
   const text = String(item?.str ?? '');
   return {
@@ -104,6 +103,78 @@ function clusterRows(items, tolerance) {
   return rows
     .sort((a, b) => b.baseline - a.baseline)
     .map(row => ({ ...row, items: row.items.sort((a, b) => a.x - b.x || a.index - b.index) }));
+}
+
+function splitRowSegments(row, baseSize) {
+  const segments = [];
+  for (const item of row.items) {
+    const last = segments.at(-1);
+    if (!last || item.x - last.right > Math.max(12, baseSize * 1.6)) {
+      segments.push({ x: item.x, right: item.right, items: [item] });
+    } else {
+      last.items.push(item);
+      last.right = Math.max(last.right, item.right);
+    }
+  }
+  return segments;
+}
+
+function tableCellsForRow(row, boundaries) {
+  const groups = Array.from({ length: boundaries.length + 1 }, () => []);
+  for (const item of row.items) {
+    let column = 0;
+    while (column < boundaries.length && item.x >= boundaries[column]) column += 1;
+    groups[column].push(item);
+  }
+  return groups.map(group => {
+    let text = '', right = 0;
+    for (const item of group) {
+      text = joinText(text, item.text, text ? item.x - right : 0);
+      right = Math.max(right, item.right);
+    }
+    return cleanText(text);
+  });
+}
+
+// Unruled tables need repeated local column alignment. Never infer a grid
+// from all x positions on a page: that turns multi-column prose into tables.
+function detectTableRegions(rows, baseSize) {
+  const regions = [];
+  for (let start = 0; start < rows.length - 1; start++) {
+    const seed = splitRowSegments(rows[start], baseSize);
+    if (seed.length < 3 || seed.length > 16) continue;
+    const boundaries = seed.slice(1).map((cell, i) => (seed[i].right + cell.x) / 2);
+    const logical = [], physical = new Map();
+    let strong = 0, last = start - 1;
+    for (let i = start; i < rows.length; i++) {
+      const row = rows[i];
+      if (i > start && rows[i - 1].baseline - row.baseline > baseSize * 4) break;
+      if (row.items.some(item => item.x < seed[0].x - baseSize
+        || boundaries.some(boundary => item.x < boundary - baseSize && item.right > boundary + baseSize))) break;
+      const cells = tableCellsForRow(row, boundaries);
+      const occupied = cells.filter(Boolean).length;
+      const isStrong = occupied >= Math.max(3, seed.length - 1);
+      if (isStrong) {
+        strong++;
+        logical.push({ cells, rowIndex: i });
+        physical.set(i, { cells, tableId: regions.length });
+      } else {
+        // A continuation must belong to an existing interior cell, with tight
+        // leading; isolated captions and footers terminate the candidate.
+        if (!logical.length || cells[0] || cells.at(-1)
+          || rows[i - 1].baseline - row.baseline > baseSize * 1.6) break;
+        cells.forEach((cell, c) => {
+          if (cell) logical.at(-1).cells[c] += (logical.at(-1).cells[c] ? '\n' : '') + cell;
+        });
+        physical.set(i, { skip: true, tableId: regions.length });
+      }
+      last = i;
+    }
+    if (strong < 2) continue;
+    regions.push({ id: regions.length, rows: logical, physicalRows: physical, anchors: seed.map(cell => cell.x) });
+    start = last;
+  }
+  return regions;
 }
 
 function findColumnBoundaries(items, pageWidth, baseSize) {
@@ -190,7 +261,8 @@ function buildLine(items, column, baseSize) {
 export function reconstructPdfPage(items = [], {
   pageNumber = 1,
   pageWidth = 0,
-  pageHeight = 0
+  pageHeight = 0,
+  rules = []
 } = {}) {
   const normalized = normalizePdfTextItems(items);
   if (!normalized.length) {
@@ -207,19 +279,59 @@ export function reconstructPdfPage(items = [], {
     };
   }
   const baseSize = Math.max(1, median(normalized.map(item => item.fontSize)) || 10);
-  const boundaries = findColumnBoundaries(normalized, numberOr(pageWidth), baseSize);
-  const columnItems = new Map();
-  for (const item of normalized) {
-    const column = columnForItem(item, boundaries, baseSize);
-    const list = columnItems.get(column) || [];
-    list.push(item);
-    columnItems.set(column, list);
+  const ruledTables = detectRuledTables(normalized, rules);
+  if (ruledTables.length) {
+    const consumed = new Set(ruledTables.flatMap(table => [...table.consumed]));
+    const lines = clusterRows(normalized.filter(item => !consumed.has(item)), Math.max(2, baseSize * .45))
+      .map(row => buildLine(row.items, 0, baseSize));
+    ruledTables.forEach((table, tableId) => table.rows.forEach((cells, rowIndex) => lines.push({
+      cells, text: cells.join(' '), isTableRow: true, tableId, column: 0,
+      baseline: table.top - rowIndex * .001, fontSize: baseSize, bold: false
+    })));
+    lines.sort((a,b) => b.baseline-a.baseline);
+    const text = normalized.map(item => item.text).join(' ');
+    return { pageNumber, pageWidth, pageHeight, lines, text, chars: text.length,
+      hasText: true, columns: 1, tables: ruledTables.map(({consumed, ...table}) => table),
+      warnings: ruledTables.some(table => table.merged) ? ['merged-cells-flattened'] : [] };
   }
-  const columns = [...columnItems.keys()].sort((a, b) => a - b);
-  const lines = [];
-  for (const column of columns) {
-    const rows = clusterRows(columnItems.get(column), Math.max(2, baseSize * 0.58));
-    for (const row of rows) lines.push(buildLine(row.items, column, baseSize));
+  const rowGroups = clusterRows(normalized, Math.max(2, baseSize * 0.58));
+  const tableRegions = detectTableRegions(rowGroups, baseSize);
+  const tableRows = new Map();
+  tableRegions.forEach(region => region.physicalRows.forEach((value, rowIndex) => {
+    tableRows.set(rowIndex, value);
+  }));
+  let lines = [];
+  let columns = [];
+  if (tableRegions.length) {
+    // A page containing a table is read row-first. This prevents a table's
+    // left and right cells from being separated into newspaper columns.
+    for (const [rowIndex, row] of rowGroups.entries()) {
+      const tableRow = tableRows.get(rowIndex);
+      if (tableRow?.skip) continue;
+      const line = buildLine(row.items, 0, baseSize);
+      if (tableRow) {
+        line.cells = tableRow.cells;
+        line.text = tableRow.cells.filter(Boolean).join(' ');
+        line.isTableRow = true;
+        line.tableId = tableRow.tableId;
+      }
+      lines.push(line);
+    }
+    columns = [0];
+  } else {
+    const boundaries = findColumnBoundaries(normalized, numberOr(pageWidth), baseSize);
+    const columnItems = new Map();
+    for (const item of normalized) {
+      const column = columnForItem(item, boundaries, baseSize);
+      const list = columnItems.get(column) || [];
+      list.push(item);
+      columnItems.set(column, list);
+    }
+    columns = [...columnItems.keys()].sort((a, b) => a - b);
+    for (const column of columns) {
+      const rows = clusterRows(columnItems.get(column), Math.max(2, baseSize * 0.58));
+      for (const row of rows) lines.push(buildLine(row.items, column, baseSize));
+    }
   }
   const text = lines.map(line => line.text).filter(Boolean).join('\n');
   return {
@@ -227,6 +339,11 @@ export function reconstructPdfPage(items = [], {
     pageWidth: numberOr(pageWidth),
     pageHeight: numberOr(pageHeight),
     lines,
+    tables: tableRegions.map(region => ({
+      id: region.id,
+      rows: region.rows.map(row => row.cells.map(cell => cell || '')),
+      columns: region.anchors.length
+    })),
     text,
     chars: text.length,
     hasText: Boolean(text),
@@ -236,16 +353,37 @@ export function reconstructPdfPage(items = [], {
 }
 
 function escapeTableCell(value) {
-  return String(value || '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').trim() || ' ';
+  return String(value || '').split(/\r?\n/).map(escapeMarkdownText).join('<br>').trim() || ' ';
+}
+
+function escapeMarkdownText(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\\/g, '\\\\')
+    .replace(/([`*_~\[\]{}|$])/g, '\\$1')
+    .replace(/^(\s*)([#>])/g, '$1\\$2');
+}
+
+function paragraphHasBreak(previous, next, baseSize) {
+  if (!previous || !next || previous.column !== next.column) return true;
+  const gap = Math.abs(numberOr(previous.baseline) - numberOr(next.baseline));
+  const lineSize = Math.max(1, numberOr(previous.fontSize, baseSize), numberOr(next.fontSize, baseSize));
+  return gap > Math.max(18, lineSize * 1.8);
+}
+
+function formatParagraph(lines) {
+  return lines.map(line => escapeMarkdownText(line.text)).filter(Boolean).join('  \n');
 }
 
 function listText(text) {
   const value = String(text || '').trim();
   if (/^(?:[\u2022\u2023\u25e6\u25aa\u25cf\u25cb\u25a0\u25a1\u2043]|[-*+])\s+/.test(value)) {
-    return `- ${value.replace(/^(?:[\u2022\u2023\u25e6\u25aa\u25cf\u25cb\u25a0\u25a1\u2043]|[-*+])\s+/, '')}`;
+    return `- ${escapeMarkdownText(value.replace(/^(?:[\u2022\u2023\u25e6\u25aa\u25cf\u25cb\u25a0\u25a1\u2043]|[-*+])\s+/, ''))}`;
   }
-  if (ORDERED_LIST_PATTERN.test(value)) return value.replace(/^(\d{1,3})[.)]\s+/, '$1. ');
-  if (/^(?:-\s*)?\[[ xX]\]\s+/.test(value)) return value.replace(/^(?:-\s*)?\[([ xX])\]\s+/, (_, checked) => `- [${checked.toLowerCase()}] `);
+  const ordered = /^(\d{1,3})[.)]\s+(.+)$/.exec(value);
+  if (ordered) return `${ordered[1]}. ${escapeMarkdownText(ordered[2])}`;
+  const task = /^(?:-\s*)?\[([ xX])\]\s+(.+)$/.exec(value);
+  if (task) return `- [${task[1].toLowerCase()}] ${escapeMarkdownText(task[2])}`;
   return '';
 }
 
@@ -278,7 +416,7 @@ function renderTable(lines) {
   ].join('\n');
 }
 
-function renderBlocks(page) {
+function renderBlocks(page, continuedHeaders = new Map()) {
   const lines = page.lines || [];
   if (!lines.length) return [];
   const baseSize = median(lines.map(line => line.fontSize)) || 10;
@@ -286,9 +424,26 @@ function renderBlocks(page) {
   let index = 0;
   while (index < lines.length) {
     const line = lines[index];
+    if (line.isTableRow) {
+      const tableLines = [line];
+      let cursor = index + 1;
+      while (cursor < lines.length
+        && lines[cursor].isTableRow
+        && lines[cursor].tableId === line.tableId) {
+        tableLines.push(lines[cursor]);
+        cursor += 1;
+      }
+      if (tableLines.length >= 2) {
+        const header = continuedHeaders.get(line.tableId);
+        if (header) tableLines.unshift({ cells: header });
+        blocks.push(renderTable(tableLines));
+        index = cursor;
+        continue;
+      }
+    }
     const heading = headingText(line, baseSize);
     if (heading) {
-      blocks.push(`${'#'.repeat(heading.level)} ${heading.text}`);
+      blocks.push(`${'#'.repeat(heading.level)} ${escapeMarkdownText(heading.text)}`);
       index += 1;
       continue;
     }
@@ -318,15 +473,16 @@ function renderBlocks(page) {
         continue;
       }
     }
-    const paragraph = [line.text];
+    const paragraph = [line];
     let cursor = index + 1;
     while (cursor < lines.length) {
       const next = lines[cursor];
       if (headingText(next, baseSize) || listText(next.text) || looksLikeTableLine(next)) break;
-      paragraph.push(next.text);
+      if (paragraphHasBreak(paragraph.at(-1), next, baseSize)) break;
+      paragraph.push(next);
       cursor += 1;
     }
-    blocks.push(paragraph.reduce((result, value) => joinText(result, value, 2), '').trim());
+    blocks.push(formatParagraph(paragraph));
     index = cursor;
   }
   return blocks.filter(Boolean);
@@ -340,23 +496,44 @@ function titleFromName(name) {
 export function convertPdfPagesToMarkdown(pages = [], { sourceName = '', includeTitle = true } = {}) {
   const normalizedPages = Array.isArray(pages) ? pages : [];
   const blocks = [];
-  if (includeTitle) blocks.push(`# ${titleFromName(sourceName)}`);
+  if (includeTitle) blocks.push(`# ${escapeMarkdownText(titleFromName(sourceName))}`);
   blocks.push('<!-- generated-by: ToolKnit local PDF text extraction -->');
   const warnings = [];
   let chars = 0;
   let pagesWithText = 0;
   const emptyPages = [];
   const failedPages = [];
+  let previousTable = null;
   for (const page of normalizedPages) {
     const pageNumber = Number(page?.pageNumber) || normalizedPages.indexOf(page) + 1;
     blocks.push(`<!-- source-page: ${pageNumber} -->`);
+    for (const code of page?.warnings || []) {
+      if (code !== 'no-text-layer') warnings.push({ pageNumber, code });
+    }
     if (page?.error) {
+      previousTable = null;
       failedPages.push(pageNumber);
       warnings.push({ pageNumber, code: page.error.code || 'page-read-failed' });
       blocks.push(`> Page ${pageNumber} could not be extracted.`);
       continue;
     }
-    const pageBlocks = renderBlocks(page);
+    const continuedHeaders = new Map();
+    const firstTable = page?.tables?.[0];
+    // Carry headers only across adjacent page edges with the same ruled grid.
+    // Each page stays a separate table so source-page markers remain useful.
+    const sameGrid = previousTable && firstTable?.xs
+      && previousTable.pageNumber + 1 === pageNumber
+      && firstTable.top >= page.pageHeight * .75
+      && previousTable.bottom <= previousTable.pageHeight * .2
+      && firstTable.xs.length === previousTable.xs.length
+      && firstTable.xs.every((x, i) => Math.abs(x-previousTable.xs[i]) <= 3);
+    if (sameGrid && firstTable.rows[0].some((cell, i) => cell.trim() !== previousTable.header[i]?.trim())) {
+      continuedHeaders.set(0, previousTable.header);
+    }
+    const lastTable = page?.tables?.at(-1);
+    previousTable = lastTable?.xs ? { ...lastTable, pageNumber, pageHeight: page.pageHeight,
+      header: continuedHeaders.get(page.tables.length - 1) || lastTable.rows[0] } : null;
+    const pageBlocks = renderBlocks(page, continuedHeaders);
     if (!page?.hasText || !pageBlocks.length) {
       emptyPages.push(pageNumber);
       warnings.push({ pageNumber, code: 'no-text-layer' });

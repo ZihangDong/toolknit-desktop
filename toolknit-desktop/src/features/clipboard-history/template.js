@@ -4,7 +4,7 @@ const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
 const command = (id, name, key, extra = '') => `<button id="clipboard${id}" type="button" class="clipboard-button" ${extra} data-i18n-title="home.clipboardHistory.${key}" data-i18n-aria-label="home.clipboardHistory.${key}">${icon(name)}<span ${text(key)}></span></button>`;
 
 export default `<div id="clipboardHistoryOverlay" class="pdf-merge-overlay pdf-merge-v2 hardware-v2 tool-page-v2-light clipboard-history" role="dialog" aria-modal="true" aria-hidden="true" inert data-tool-page-chrome data-i18n-aria-label="home.clipboardHistory.title">
-${toolTopbarMarkup({ tag: 'CLIPBOARD · TOOL PAGE 3.0', title: 'CLIPBOARD', closeAttr: 'data-clipboard-close' })}
+${toolTopbarMarkup({ tag: 'CLIPBOARD · TOOL PAGE 3.1', title: 'CLIPBOARD', closeAttr: 'data-clipboard-close' })}
 <div class="hardware-v2-body clipboard-body">
   <aside class="clipboard-sidebar">
     <span class="pdf-merge-v2-section-kicker">LOCAL HISTORY</span>

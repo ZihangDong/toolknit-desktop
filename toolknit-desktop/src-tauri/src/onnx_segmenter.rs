@@ -697,7 +697,7 @@ pub async fn download_matting_model(
 
     let partial = target.with_extension("onnx.part");
     let client = reqwest::Client::builder()
-        .user_agent("ToolKnit/3.0.0 matting-model-manager")
+        .user_agent("ToolKnit/3.1.0 matting-model-manager")
         .build()
         .map_err(|error| format!("matting:download-init-failed:{error}"))?;
     let requested = source.unwrap_or_else(|| "auto".to_string());

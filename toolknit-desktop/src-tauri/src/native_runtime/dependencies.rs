@@ -474,7 +474,7 @@ pub(super) async fn download_ffmpeg_runtime(
         .to_ascii_lowercase();
     let candidates = ffmpeg_download_candidates(&requested)?;
     let client = reqwest::Client::builder()
-        .user_agent("ToolKnit/3.0.0 ffmpeg-runtime-manager")
+        .user_agent("ToolKnit/3.1.0 ffmpeg-runtime-manager")
         .connect_timeout(std::time::Duration::from_secs(12))
         .build()
         .map_err(|error| format!("Cannot initialize FFmpeg download: {}", error))?;
@@ -953,7 +953,7 @@ pub(super) async fn download_libreoffice_runtime(
         .to_ascii_lowercase();
     let candidates = libreoffice_download_candidates(&requested)?;
     let client = reqwest::Client::builder()
-        .user_agent("ToolKnit/3.0.0 libreoffice-runtime-manager")
+        .user_agent("ToolKnit/3.1.0 libreoffice-runtime-manager")
         .connect_timeout(std::time::Duration::from_secs(15))
         .build()
         .map_err(|error| format!("Cannot initialize PPT runtime download: {}", error))?;

@@ -6,7 +6,8 @@ import {
   createMarkdownRenderer,
   extractMarkdownHeadings,
   rewriteMarkdownImages,
-  sanitizeExportBaseName
+  sanitizeExportBaseName,
+  stripMarkdownMetadata
 } from '../src/features/markdown-editor/core.js';
 import { markdownPreviewAssetUrl } from '../src/features/markdown-editor/preview-security.js';
 
@@ -30,6 +31,18 @@ assert.match(renderedMath, /x\+y/);
 assert.deepEqual(applyMarkdownAction('hello', 0, 5, 'bold'), { text: '**hello**', start: 2, end: 7 });
 assert.equal(rewriteMarkdownImages('![](blob:a)', [{ source: 'blob:a', fileName: 'image.png' }]), '![](assets/image.png)');
 assert.equal(sanitizeExportBaseName(' a<>b. '), 'a--b');
+assert.equal(stripMarkdownMetadata('# Title\n\n<!-- source-page: 1 -->\n\nBody'), '# Title\n\n\n\nBody');
+const codeComment = '```html\n<!-- source-page: 1 -->\n<!-- user comment -->\n```';
+assert.equal(stripMarkdownMetadata(codeComment), codeComment);
+assert.equal(stripMarkdownMetadata('Text <!-- user comment -->'), 'Text <!-- user comment -->');
+const tableHtml = createMarkdownRenderer().render('| A | B |\n| --- | --- |\n| first<br>second | a\\|b |');
+assert.match(tableHtml, /first<br>\nsecond/);
+assert.match(tableHtml, /md-table-scroll/);
+assert.match(tableHtml, /a\|b/);
+const safeHtml = createMarkdownRenderer().render('<br onmouseover="alert(1)"> &lt;br&gt; `$x$` \\$5');
+assert.doesNotMatch(safeHtml, /<br onmouseover|<math/);
+assert.match(safeHtml, /&lt;br&gt;/);
+assert.match(createMarkdownRenderer().render('≥ 1800mm × 2\n\n`a_b`'), /≥ 1800mm × 2/);
 const html = buildStandaloneMarkdownHtml({ title: '<Title>', renderedHtml: '<h1>ok</h1>' });
 assert.match(html, /&lt;Title&gt;/);
 assert.match(html, /<main><h1>ok<\/h1><\/main>/);

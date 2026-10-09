@@ -127,10 +127,11 @@ export function createPdfPageNumberExporter({
     }
     assertOperation(active);
     setProgress(97, text('home.pdfPageNumber.writingOutput'));
-    await writeOutput(outputBytes, outputDir, fileName, mimeType);
+    const outputPath = await writeOutput(outputBytes, outputDir, fileName, mimeType);
     assertOperation(active);
     return {
       outputDir,
+      outputPath,
       count: mode === 'zip' ? pages.length : 1,
       mode
     };

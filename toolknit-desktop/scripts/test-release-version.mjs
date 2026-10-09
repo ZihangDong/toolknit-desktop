@@ -143,7 +143,18 @@ assert.match(zhHelpSource, new RegExp(`${desktopToolCount} 个桌面工具`), 'C
 assert.match(enHelpSource, new RegExp(`${desktopToolCount} desktop tools`), 'English help overview must match the desktop catalog');
 assert.match(repositoryReadme, /<h3>46<\/h3><strong>MCP 能力<\/strong>/, 'Repository README must state the 46-capability MCP contract');
 assert.match(releaseNotes, new RegExp(`^# ToolKnit Desktop ${escapeRegExp(fullVersion)}\\s*$`, 'm'), 'Release notes heading must match package.json version');
-assert.match(releaseNotes, new RegExp(`${desktopToolCount} 项工具`), 'Release notes must match the current desktop catalog');
+// Published notes retain their release catalog while the next version is developed.
+const releasedToolCount = Number(captureExactlyOnce(releaseNotes,
+  /^- \d+ 个分类、(\d+) 项工具/m, 'Published desktop catalog'));
+const publishedSeriesVersion = captureExactlyOnce(releaseNotes,
+  /^## (V\d+\.\d+) 正式版记录/m, 'Published release series');
+assert.ok(releasedToolCount > 0 && releasedToolCount <= desktopToolCount,
+  'Published catalog must be valid and no larger than the current catalog');
+if (releasedToolCount !== desktopToolCount) {
+  assert.match(repositoryReadme, new RegExp(`已发布 ${escapeRegExp(publishedSeriesVersion)} 为 ${releasedToolCount} 项`),
+    'README must distinguish the published catalog from development additions');
+  assert.match(repositoryReadme, /V\d+\.\d+ 开发中/, 'Additional tools must be documented as development work');
+}
 assert.match(releaseNotes, /46 项已发布能力/, 'Release notes must state the 46-capability CLI and MCP contract');
 
 const manifestVersions = new Map([

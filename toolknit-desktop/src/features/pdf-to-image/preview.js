@@ -12,7 +12,7 @@ export function createPdfToImagePreview({ pageStrip, workspace, pageStage, isLoc
   const actions = workspace.querySelector('[data-to-image-actions]');
   const ids = { '[data-wb-label]':'pdfToImagePagesLabel', '[data-wb-source]':'pdfToImageWorkbenchHint', '[data-wb-source-page]':'pdfToImageWorkbenchStatus' };
   view = createPdfWorkbench({ root: workspace, pageStrip, back: workspace.querySelector('#pdfToImageWorkspaceClose'),
-    actions, tag: 'PDF TO IMAGE · TOOL PAGE 3.0', stageId: 'pdfToImagePageStage',
+    actions, tag: 'PDF TO IMAGE · TOOL PAGE 3.1', stageId: 'pdfToImagePageStage',
     labels: { back:'home.pdfToImageTool.backToHome', sourcePage:'home.pdfToImageTool.sourcePage', selectedCount:'home.pdfToImageTool.selectedCount' },
     ids, onChange: onSelectionChange, refreshIcons });
   // The workbench keeps the feature variant so the existing PDF-to-image

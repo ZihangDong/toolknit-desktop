@@ -3,8 +3,8 @@ import en from './locales/en.json' with { type: 'json' };
 import { getLang, onLangChange } from './i18n.js';
 
 const PREVIEW_VERSIONS = Object.freeze({
-  current: '3.0.0',
-  latest: '3.0.0'
+  current: '3.1.0',
+  latest: '3.1.0'
 });
 
 const PREVIEW_LINKS = Object.freeze({
@@ -19,14 +19,14 @@ const COPY = Object.freeze({
     available: 'UPDATE AVAILABLE',
     titleLead: '新版本已经',
     titleAccent: '织好了',
-    intro: 'ToolKnit 3.0 已经准备好，把更多麻烦留给工具，把更多时间还给你。',
+    intro: 'ToolKnit 3.1 测试版，持续打磨本地文件工作流。',
     mission: '我们做工具，不是为了堆数量，而是希望那些原本需要上传、等待和反复切换的事情，都能在你的电脑里安静地完成。',
     currentLabel: '当前版本',
     latestLabel: '最新版本',
     updateNow: '现在去更新',
     updateLater: '我还不想更新',
     previewNotice: '这是更新页面预览。正式接入更新服务后，这里会开始安全下载。',
-    releaseKicker: 'WHAT\'S NEW · 3.0',
+    releaseKicker: 'WHAT\'S NEW · 3.1',
     releaseTitle: '更新不该被错过，\n也不该打断你。',
     releaseDescription: '新版本的变化会在这里被认真讲清楚。你可以先看、再决定，更新始终由你掌控。',
     highlightsLabel: '本次更新预览',
@@ -51,14 +51,14 @@ const COPY = Object.freeze({
     available: 'UPDATE AVAILABLE',
     titleLead: 'A new version is',
     titleAccent: 'ready to unfold',
-    intro: 'ToolKnit 3.0 is ready to take more busywork off your hands and give you more time back.',
+    intro: 'ToolKnit 3.1 preview: continued improvements to local file workflows.',
     mission: 'We do not build tools just to raise the count. We build them so tasks that once meant uploading, waiting, and switching apps can finish quietly on your own computer.',
     currentLabel: 'Current',
     latestLabel: 'Latest',
     updateNow: 'Update now',
     updateLater: 'Not right now',
     previewNotice: 'This is a UI preview. Secure downloading will be connected to this action later.',
-    releaseKicker: 'WHAT\'S NEW · 3.0',
+    releaseKicker: 'WHAT\'S NEW · 3.1',
     releaseTitle: 'Updates should be noticed,\nnot interrupt your day.',
     releaseDescription: 'Every meaningful change will be explained here. Read first, decide second, and stay in control of when you update.',
     highlightsLabel: 'Release preview',

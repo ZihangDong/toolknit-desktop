@@ -93,7 +93,7 @@ export function createPdfMergePreview({
     pageStrip: workspace.querySelector('#pdfMergePageStrip'),
     back: workspaceClose,
     actions,
-    tag: 'PDF MERGER · TOOL PAGE 3.0',
+    tag: 'PDF MERGER · TOOL PAGE 3.1',
     labels: {
       back: 'home.pdfMerge.backToHome',
       sourcePage: 'home.pdfMerge.sourcePage',

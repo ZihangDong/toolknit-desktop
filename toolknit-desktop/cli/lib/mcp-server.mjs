@@ -1,7 +1,7 @@
 import { errorPayload, ToolKnitError } from './errors.mjs';
 import { executeTool, listTools } from './tool-registry.mjs';
 
-const SERVER_INFO = Object.freeze({ name: 'toolknit', version: '3.0.0' });
+const SERVER_INFO = Object.freeze({ name: 'toolknit', version: '3.1.0' });
 const SUPPORTED_PROTOCOLS = new Set(['2024-11-05', '2025-03-26', '2025-06-18']);
 const MAX_MCP_MESSAGE_BYTES = 8 * 1024 * 1024;
 const MAX_ACTIVE_TOOL_CALLS = 4;

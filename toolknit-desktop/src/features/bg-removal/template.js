@@ -6,7 +6,7 @@ export function bgRemovalTemplate() {
         <button class="settings-v2-back settings-back pdf-merge-v2-back" type="button" data-bgr-action="back" data-bgr-title="backTitle" title="返回">
           <i data-lucide="arrow-left"></i><span data-bgr-text="backTitle">返回</span>
         </button>
-        <span class="pdf-merge-v2-top-tag">BACKGROUND REMOVAL · TOOL PAGE 3.0</span>
+        <span class="pdf-merge-v2-top-tag">BACKGROUND REMOVAL · TOOL PAGE 3.1</span>
       </div>
       <div class="home-v2-top-actions pdf-merge-v2-top-actions">
         <button class="home-v2-nav-link" type="button" data-bgr-action="website" data-bgr-title="website">

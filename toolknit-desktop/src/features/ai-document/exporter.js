@@ -160,8 +160,7 @@ export function createAiDocumentExporter({
     if (!isTauri || !lastExportPath) return;
     try {
       const { invoke } = await tauriCorePromise;
-      const folder = lastExportPath.replace(/[/\\][^/\\]+$/, '').replace(/\//g, '\\');
-      await invoke('open_path', { path: folder });
+      await invoke('open_path', { path: lastExportPath });
     } catch (error) {
       console.error('[AI Doc] Open folder error:', error);
     }

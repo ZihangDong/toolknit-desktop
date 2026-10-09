@@ -43,7 +43,7 @@ export function createPdfRotatePreview({ overlay, workspace, workspaceClose, wor
     workspaceClose.disabled = isSaving();
   }
   view = createPdfWorkbench({ root: workspace, pageStrip, back: workspaceClose, actions,
-    stageId: 'pdfRotatePageStage', tag: 'PDF ROTATOR · TOOL PAGE 3.0',
+    stageId: 'pdfRotatePageStage', tag: 'PDF ROTATOR · TOOL PAGE 3.1',
     labels: { back: 'home.pdfSplit.backToHome', sourcePage: 'home.pdfSplit.sourcePage', selectedCount: 'home.pdfSplit.selectedCount' },
     getRotation: page => page.rotation, onChange: updateControls, refreshIcons });
 

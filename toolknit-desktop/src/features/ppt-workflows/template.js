@@ -39,7 +39,7 @@ export function pptTextPageTemplate() {
   return `<div class="plasma-bg pdf-merge-v2-bg" id="pptTextPlasmaBg"></div>
     <div class="audio-convert-drop-zone pdf-merge-v2-drop-zone" id="pptTextDropZone"><span class="drop-hint" data-i18n="home.pptTextPage.dropHint">松手即可上传 PPTX</span></div>
     <input id="pptTextFileInput" type="file" accept="${PPTX_ACCEPT}" hidden>
-    ${topbar('pptText', 'PPT TEXT AI · TOOL PAGE 3.0')}
+    ${topbar('pptText', 'PPT TEXT AI · TOOL PAGE 3.1')}
     <div class="pdf-merge-v2-body" id="pptTextBody">
       <aside class="pdf-merge-v2-poster" aria-label="PPT AI 文本提取说明">
         <div class="pdf-merge-v2-poster-kicker" data-i18n="home.pptTextPage.heroLabel">PPT Text Intelligence</div>
@@ -86,7 +86,7 @@ export function pptCompressPageTemplate() {
   return `<div class="plasma-bg pdf-merge-v2-bg" id="pptCompressPlasmaBg"></div>
     <div class="audio-convert-drop-zone pdf-merge-v2-drop-zone" id="pptCompressDropZone"><span class="drop-hint" data-i18n="home.pptCompressPage.dropHint">松手即可上传 PPTX</span></div>
     <input id="pptCompressFileInput" type="file" accept="${PPTX_ACCEPT}" hidden>
-    ${topbar('pptCompress', 'PPT COMPRESSOR · TOOL PAGE 3.0')}
+    ${topbar('pptCompress', 'PPT COMPRESSOR · TOOL PAGE 3.1')}
     <div class="pdf-merge-v2-body" id="pptCompressBody">
       <aside class="pdf-merge-v2-poster" aria-label="PPT 压缩说明">
         <div class="pdf-merge-v2-poster-kicker" data-i18n="home.pptCompressPage.heroLabel">PPT Optimizer</div><h1 class="pdf-merge-v2-title" id="pptCompressTitle" data-i18n="home.pptCompressPage.title">PPT 压缩</h1><p class="pdf-merge-v2-subtitle" data-i18n="home.pptCompressPage.subtitle">本地安全压缩 PPTX：可选择无损清理，也可以压缩大图素材来明显降低体积，源文件不会被修改。</p>
@@ -121,7 +121,7 @@ export function pptOutlinePageTemplate() {
     presetCard('short-video-demo', '<i data-lucide="clapperboard"></i>', 'shortVideoDemo', '短视频演示', 'shortVideoDemo', '爆点脚本 / 分镜展示')
   ].join('');
   return `<div class="plasma-bg pdf-merge-v2-bg" id="pptOutlinePlasmaBg"></div>
-    ${topbar('pptOutline', 'PPT OUTLINE AI · TOOL PAGE 3.0')}
+    ${topbar('pptOutline', 'PPT OUTLINE AI · TOOL PAGE 3.1')}
     <div class="pdf-merge-v2-body" id="pptOutlineBody">
       <aside class="pdf-merge-v2-poster" aria-label="AI 生成 PPT 大纲说明"><div class="pdf-merge-v2-poster-kicker" data-i18n="home.pptOutlinePage.heroLabel">PPT Strategist</div><h1 class="pdf-merge-v2-title" id="pptOutlineTitle" data-i18n="home.pptOutlinePage.title">AI 生成 PPT 大纲</h1><p class="pdf-merge-v2-subtitle" data-i18n="home.pptOutlinePage.subtitle">输入主题、资料、受众和演示目标，生成可继续进入 PPTX 草稿阶段的结构化大纲。</p><div class="pdf-merge-v2-poster-note"><span>AI POWERED</span><strong>只发送你输入的文字，不读取或上传 PPTX 文件。</strong></div><div class="pdf-merge-v2-steps" aria-label="大纲生成流程"><div class="pdf-merge-v2-step is-active"><span>01</span><div><strong>选择预设或填写参数</strong><p>选择类型预设，或填写主题、受众与目标。</p></div></div><div class="pdf-merge-v2-step"><span>02</span><div><strong>生成大纲</strong><p>AI 规划标题、叙事结构与页面列表。</p></div></div><div class="pdf-merge-v2-step"><span>03</span><div><strong>预览结果</strong><p>查看事实库、质量检查与逐页建议。</p></div></div><div class="pdf-merge-v2-step"><span>04</span><div><strong>导出 / 生成草稿</strong><p>导出 MD，或继续进入 PPTX 草稿阶段。</p></div></div></div></aside>
       <main class="pdf-merge-v2-workspace ppt-outline-v2-workspace" id="pptOutlineScrollArea"><section class="ppt-outline-grid" aria-label="AI 生成 PPT 大纲工作区"><div class="ppt-outline-compose"><div class="ppt-ai-preset-panel" id="pptOutlinePresetPanel"><div class="ppt-ai-preset-title"><span data-i18n="home.pptOutlinePage.quickPresets">快速开始预设</span><em data-i18n="home.pptOutlinePage.quickPresetsHint">点一下填好参数，再改主题即可生成</em></div><div class="ppt-ai-preset-grid" id="pptOutlinePresetGrid" aria-label="PPT outline quick presets">${presets}</div></div>

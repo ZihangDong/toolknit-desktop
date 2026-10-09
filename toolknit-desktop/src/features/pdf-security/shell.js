@@ -353,7 +353,7 @@ export function createPdfSecurityShell({
     if (!isTauri || !savedPath) return;
     try {
       const { invoke } = await tauriCorePromise;
-      await invoke('open_path', { path: outputFolder(savedPath) });
+      await invoke('open_path', { path: savedPath });
     } catch (error) {
       console.error(`[PDF ${isEncrypt ? 'Encrypt' : 'Decrypt'}] open folder failed:`, error);
     }

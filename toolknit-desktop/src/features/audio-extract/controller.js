@@ -328,7 +328,7 @@ export function createAudioExtractController({
       choose: () => { void chooseFile(); },
       remove: resetState,
       start: () => { void startExtraction(); },
-      'open-folder': () => { if (state.outputPath) void openOutputFolder(outputParent(state.outputPath)); },
+      'open-folder': () => { if (state.outputPath) void openOutputFolder(state.outputPath); },
       'success-ok': () => { success?.classList.remove('visible'); resetState(); },
       website: () => openExternalUrl('https://toolknit.com'),
       support: openSupport,

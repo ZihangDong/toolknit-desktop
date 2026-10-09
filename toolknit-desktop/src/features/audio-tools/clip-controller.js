@@ -544,7 +544,7 @@ export function createAudioClipController({
     bind(audioClipResetBtn, 'click', () => { stopPlayback(); clipState.currentTime = 0; clipState.selStart = 0; clipState.selEnd = clipState.duration; clipState.hasSelection = true; setActiveHandle('start'); updatePlayhead(); updateSelectionOverlay(); });
     bind(audioClipExportBtn, 'click', () => { void exportClip(); });
     bind(audioClipSuccessOk, 'click', () => audioClipSuccessOverlay?.classList.remove('visible'));
-    bind(audioClipSuccessOpenFolder, 'click', () => { if (clipState.outputPath) void openOutputFolder(outputParentFolder(clipState.outputPath)); });
+    bind(audioClipSuccessOpenFolder, 'click', () => { if (clipState.outputPath) void openOutputFolder(clipState.outputPath); });
     bind(byId('audioClipV2Settings'), 'click', openSettings);
     overlay.querySelectorAll('[data-home-link="website"]').forEach(node => bind(node, 'click', () => openExternalUrl('https://toolknit.com')));
     overlay.querySelectorAll('[data-open-support]').forEach(node => bind(node, 'click', openSupport));

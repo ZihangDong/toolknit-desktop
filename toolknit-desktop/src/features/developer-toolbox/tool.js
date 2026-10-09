@@ -29,7 +29,7 @@ export function initDeveloperToolbox({ overlay, notify = message => window.showT
   if (!overlay) throw new Error('developer-toolbox:missing-overlay');
   const lifecycle = createLifecycleScope();
   overlay.innerHTML = `<div class="tool-page-v2-shell developer-toolbox-shell">
-    ${toolTopbarMarkup({ tag: 'DEVELOPER TOOLS · TOOL PAGE 3.0', title: '开发者工具', closeAttr: 'data-dev-close' })}
+    ${toolTopbarMarkup({ tag: 'DEVELOPER TOOLS · TOOL PAGE 3.1', title: '开发者工具', closeAttr: 'data-dev-close' })}
     <main class="tool-page-v2-body developer-toolbox-main"><aside class="tool-page-v2-rail developer-toolbox-nav"><div class="tool-page-v2-rail-kicker">DEVELOPER TOOLS</div><h1>开发者<br>工具</h1><p>常用编码、数据和身份工具集中在一个本地工作台。</p><div class="tool-page-v2-rail-note"><span>LOCAL ONLY</span><strong>输入内容只存在当前会话，关闭页面后立即清除。</strong></div><div class="tool-page-v2-steps"><div class="is-active"><b>01</b><span><strong>选择工具</strong><small>从左侧导航切换处理模块。</small></span></div><div><b>02</b><span><strong>输入数据</strong><small>输入与选项变化后实时处理。</small></span></div><div><b>03</b><span><strong>复制结果</strong><small>结果不会写入历史记录。</small></span></div></div><div class="developer-toolbox-nav-index"><div class="developer-toolbox-nav-label">UTILITY INDEX</div><nav data-dev-nav></nav></div></aside><section class="developer-toolbox-workspace"><div class="developer-toolbox-heading"><div><span data-dev-eyebrow>JSON / DATA</span><h1 data-dev-title>JSON 格式化</h1><p data-dev-description>校验、格式化和压缩 JSON 文本。</p></div><span class="developer-toolbox-status" data-dev-status>就绪</span></div><div class="developer-toolbox-panel" data-dev-panel></div></section></main>
   </div>`;
   createIcons({ icons });

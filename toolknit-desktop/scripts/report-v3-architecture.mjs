@@ -178,7 +178,7 @@ const report = {
 
 if (process.argv.includes('--check')) {
   const failures = [];
-  if (report.desktopCatalog.count !== 68) failures.push(`expected 68 desktop tools, found ${report.desktopCatalog.count}`);
+  if (report.desktopCatalog.count !== 69) failures.push(`expected 69 desktop tools, found ${report.desktopCatalog.count}`);
   if (report.htmlContract.duplicateIds.length) failures.push(`duplicate HTML ids: ${report.htmlContract.duplicateIds.join(', ')}`);
   if (report.rust.commandAttributeCount !== 137) failures.push(`expected 137 Tauri command implementations, found ${report.rust.commandAttributeCount}`);
   if (report.rust.commandCount !== 136) failures.push(`expected 136 unique Tauri command names, found ${report.rust.commandCount}`);

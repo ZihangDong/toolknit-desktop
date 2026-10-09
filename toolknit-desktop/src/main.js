@@ -8,7 +8,7 @@ import './application.js';
 export const appComposition = createAppComposition({ tauriCorePromise, tauriEventPromise, specs: LAZY_TOOL_SPECS });
 // pdfWorkerUrl, is injected by application-runtime.js into lazy feature contexts.
 // Compatibility contract: toolId === 'audio-clip' remains lazy-routed by application-runtime.js.
-const APP_VERSION_FALLBACK = '3.0.0';
+const APP_VERSION_FALLBACK = '3.1.0';
 // Security contracts implemented by application-runtime.js: window.open(parsedUrl.href, '_blank', 'noopener,noreferrer');
 // invoke('store_ai_api_key'); clearLegacyAiApiKeys();
 // readResponseTextLimited(response, GITHUB_RESPONSE_MAX_BYTES);

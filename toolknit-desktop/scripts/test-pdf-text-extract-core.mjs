@@ -32,6 +32,7 @@ assert.match(markdown.markdown, /<!-- source-page: 1 -->/);
 assert.match(markdown.markdown, /##? 项目/);
 assert.match(markdown.markdown, /- 第一项/);
 assert.match(markdown.markdown, /\| 名称 \| 数量 \|/);
+assert.match(markdown.markdown, /第一段中文内容。  \n用于验证 PDF 文本重排。/);
 assert.equal(markdown.pagesWithText, 1);
 assert.equal(markdown.status, 'success');
 
@@ -59,6 +60,31 @@ const columns = reconstructPdfPage([
 ], { pageNumber: 3, pageWidth: 600 });
 assert.equal(columns.columns, 2);
 assert.ok(columns.text.indexOf('左栏四') < columns.text.indexOf('右栏一'));
+
+const schedule = reconstructPdfPage([
+  item('日期', 40, 700, { width: 32, fontName: 'g_bold' }),
+  item('课程时间', 140, 700, { width: 48, fontName: 'g_bold' }),
+  item('教学内容', 230, 700, { width: 48, fontName: 'g_bold' }),
+  item('授课人', 500, 700, { width: 42, fontName: 'g_bold' }),
+  item('地点', 620, 700, { width: 32, fontName: 'g_bold' }),
+  item('3月18日', 40, 680, { width: 48 }),
+  item('09:00-10:00', 140, 680, { width: 70 }),
+  item('PDF 文本结构识别', 230, 680, { width: 110 }),
+  item('张老师', 500, 680, { width: 48 }),
+  item('A-101', 620, 680, { width: 38 }),
+  item('与案例讨论', 230, 666, { width: 70 }),
+  item('3月19日', 40, 646, { width: 48 }),
+  item('14:00-15:30', 140, 646, { width: 70 }),
+  item('Markdown 输出', 230, 646, { width: 90 }),
+  item('李老师', 500, 646, { width: 48 }),
+  item('B-202', 620, 646, { width: 38 })
+], { pageNumber: 4, pageWidth: 720, pageHeight: 800 });
+assert.equal(schedule.tables.length, 1);
+assert.equal(schedule.tables[0].columns, 5);
+const scheduleMarkdown = convertPdfPagesToMarkdown([schedule], { sourceName: 'schedule.pdf' });
+assert.match(scheduleMarkdown.markdown, /\| 日期 \| 课程时间 \| 教学内容 \| 授课人 \| 地点 \|/);
+assert.match(scheduleMarkdown.markdown, /\| 3月18日 \| 09:00-10:00 \| PDF 文本结构识别<br>与案例讨论 \| 张老师 \| A-101 \|/);
+assert.doesNotMatch(scheduleMarkdown.markdown, /3月18日\n09:00-10:00\n教学内容/);
 
 assert.equal(normalizePdfTextError({ name: 'PasswordException', message: 'Password required' }).code, 'password-protected');
 assert.equal(normalizePdfTextError({ name: 'InvalidPDFException' }).code, 'invalid-pdf');

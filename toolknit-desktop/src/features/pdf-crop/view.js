@@ -66,7 +66,7 @@ export function createPdfCropView({
       successCount.textContent = text('home.pdfCrop.outputCountValue', { count: lastResult.outputCount });
     }
     if (successPath) {
-      successPath.textContent = displayFilesystemPath(lastResult.outputDir || '~/Downloads');
+      successPath.textContent = displayFilesystemPath(lastResult.outputPath || lastResult.outputDir || '~/Downloads');
     }
     if (successOpenFolder) successOpenFolder.style.display = isTauri ? '' : 'none';
   }
