@@ -59,6 +59,29 @@
   </tr>
 </table>
 
+<p><strong>赞助商</strong></p>
+
+<table width="100%" cellpadding="16" cellspacing="0">
+  <tr>
+    <td width="120" align="center" valign="middle">
+      <a href="https://www.mlai.online/register?aff=5Q2VVMD7YJVB"><img src="assets/readme/sponsors/maliang-ai.png" alt="马良 AI" width="96" height="96" /><br /><strong>马良 AI</strong></a>
+    </td>
+    <td valign="middle">
+      <p>感谢 <a href="https://www.mlai.online/register?aff=5Q2VVMD7YJVB"><strong>马良 AI</strong></a> 对本项目的支持！马良 AI 是面向模型、数据与应用的智能中转平台，为 Claude、GPT、Grok、DeepSeek 等热门模型提供统一接入，可与 Claude Code、Codex、Cursor、OpenCode 等工具搭配使用。</p>
+      <p><a href="https://www.mlai.online/register?aff=5Q2VVMD7YJVB"><strong>注册马良 AI，接入模型服务 →</strong></a></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="120" align="center" valign="middle">
+      <a href="https://doufuapi.com/register?aff=TWKCBH9RGLN3"><img src="assets/readme/sponsors/doufu-api.jpg" alt="DouFu API（豆腐）" width="96" height="96" /><br /><strong>DouFu API（豆腐）</strong></a>
+    </td>
+    <td valign="middle">
+      <p>感谢 <a href="https://doufuapi.com/register?aff=TWKCBH9RGLN3"><strong>DouFu API（豆腐）</strong></a> 对本项目的支持！DouFu API 提供便捷的 AI API 接入服务，帮助开发者连接 Codex、Claude Code 等编程工具。新用户注册可领取体验额度，并提供接入指导，让 AI 帮你写代码、查问题、做项目。</p>
+      <p><a href="https://doufuapi.com/register?aff=TWKCBH9RGLN3"><strong>注册豆腐 API，领取体验额度 →</strong></a></p>
+    </td>
+  </tr>
+</table>
+
 ## ToolKnit 3.0
 
 ToolKnit Desktop 3.0 是一套面向 Windows 的本地文件工作台。它把常用文件处理、图像与 Markdown 创作、开发者工具、AI 内容生产、专业文档工作流和 IDE Agent 自动化放在同一个产品体系里。
