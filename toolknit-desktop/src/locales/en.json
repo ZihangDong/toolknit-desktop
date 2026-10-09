@@ -1130,6 +1130,8 @@
       "shapeStroke": "Stroke",
       "shapeStrokeWidth": "Width",
       "resizeComponent": "Resize",
+      "lockAspectRatio": "Lock and restore original aspect ratio",
+      "unlockAspectRatio": "Unlock aspect ratio",
       "textComponent": "Text component",
       "insertPlaced": "Placed. It will be included when you export.",
       "insertImageFailed": "Could not read image: {error}",

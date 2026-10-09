@@ -148,6 +148,7 @@ assert.equal(state.selectedComponent.segment.text, 'source text');
 assert.deepEqual(zoomState, { viewMode: 'manual', zoomPercent: 125 });
 
 const uiSource = await readFile(new URL('../src/features/pdf-editor/controller.js', import.meta.url), 'utf8');
+const templateSource = await readFile(new URL('../src/features/pdf-editor/template.html', import.meta.url), 'utf8');
 const compatibilitySource = await readFile(new URL('../src/pdf-editor-ui.js', import.meta.url), 'utf8');
 const stateControllerSource = await readFile(
   new URL('../src/features/pdf-editor/state.js', import.meta.url),
@@ -263,6 +264,9 @@ assert.match(componentControlsSource, /function appendResizeHandles\(container, 
 assert.doesNotMatch(uiSource, /componentMenu\.hidden = !visible;/);
 assert.doesNotMatch(uiSource, /const xmlns = 'http:\/\/www\.w3\.org\/2000\/svg';/);
 assert.match(uiSource, /openEditModal\(object\.id, object, object, 'edit-inserted-text'\)/);
+assert.match(templateSource, /id="pdfEditorEditText"/);
+assert.match(componentRendererSource, /if \(editMode\) \{\s*openEditModal\(key, segmentData, segmentData\);/);
+assert.match(uiSource, /event\.key === 'Enter' \|\| event\.key === 'F2'/);
 assert.match(contentEditingSource, /modalMode === 'edit-inserted-text'/);
 assert.match(contentEditingSource, /setInsertedShapes\(insertedShapes\)/);
 assert.match(uiSource, /return pageOperations\?\.rotateSelected\(delta\)/);

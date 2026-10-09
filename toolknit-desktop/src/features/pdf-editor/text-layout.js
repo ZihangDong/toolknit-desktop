@@ -138,12 +138,13 @@ export function editedTextVisualBox(edit, segment) {
   const box = edit?.segment?.box || segment?.box || segment?.sourceBox || null;
   if (!box) return null;
   const fontSize = Math.max(1, Number(edit?.segment?.fontSize || segment?.fontSize) || 10);
-  const textWidth = (String(edit?.newText ?? '').length + 0.4) * fontSize * 0.58;
+  const textWidth = Number(edit?.segment?.visualTextWidth)
+    || estimateInsertedTextWidth(edit?.newText, fontSize);
   return {
     x: Number.isFinite(Number(box.x)) ? Number(box.x) : 0,
     y: Number.isFinite(Number(box.y)) ? Number(box.y) : 0,
-    width: Math.max(1, Number(box.width) || 1, textWidth),
-    height: Math.max(1, Number(box.height) || fontSize * 1.05)
+    width: Math.max(1, textWidth + fontSize * 0.15),
+    height: Math.max(1, Number(box.height) || 0, Number(edit?.segment?.visualTextHeight) || fontSize * 1.2)
   };
 }
 
@@ -151,9 +152,9 @@ export function insertedTextVisualBox(object) {
   const fontSize = Math.max(1, Number(object?.fontSize) || 16);
   const width = Math.max(
     1,
-    Number(object?.width) || estimateInsertedTextWidth(object?.text, fontSize)
+    Number(object?.visualTextWidth) || Number(object?.width) || estimateInsertedTextWidth(object?.text, fontSize)
   );
-  const height = Math.max(1, Number(object?.height) || fontSize * 1.15);
+  const height = Math.max(1, Number(object?.height) || fontSize * 1.15, Number(object?.visualTextHeight) || 0);
   return {
     x: Number(object?.x) || 0,
     y: (Number(object?.y) || 0) - height * 0.2,

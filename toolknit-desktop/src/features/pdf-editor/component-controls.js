@@ -20,6 +20,8 @@ function rgb01ToHex(color) {
 export function createPdfEditorComponentControls({
   componentMenu = null,
   componentEditBtn = null,
+  componentAspectBtn = null,
+  resolveComponentObject = () => null,
   shapePanel = null,
   shapeFillField = null,
   shapeFillInput = null,
@@ -114,6 +116,15 @@ export function createPdfEditorComponentControls({
     if (componentEditBtn) {
       componentEditBtn.hidden = visible
         && !['text', 'inserted-text'].includes(selectedComponent?.type);
+    }
+    if (componentAspectBtn) {
+      componentAspectBtn.hidden = !visible || selectedComponent?.type !== 'inserted-image';
+      const locked = resolveComponentObject(selectedComponent)?.aspectRatioLocked !== false;
+      const label = t(locked ? 'home.pdfEditor.unlockAspectRatio' : 'home.pdfEditor.lockAspectRatio');
+      componentAspectBtn.setAttribute('aria-pressed', String(locked));
+      componentAspectBtn.setAttribute('aria-label', label);
+      componentAspectBtn.title = label;
+      componentAspectBtn.classList.toggle('is-active', locked);
     }
     if (visible) requestFrame(positionComponentMenu);
     syncShapePanel();

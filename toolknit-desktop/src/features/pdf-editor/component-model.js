@@ -1,4 +1,4 @@
-import { insertedTextVisualBox } from './text-layout.js';
+import { editedTextVisualBox, insertedTextVisualBox } from './text-layout.js';
 
 function defaultClone(value) {
   return typeof structuredClone === 'function'
@@ -149,6 +149,8 @@ export function createPdfEditorComponentModel({
         baselineX: (Number(baseSegment.baselineX) || 0) + deltaX,
         baselineY: (Number(baseSegment.baselineY) || 0) + deltaY,
         fontSize: Math.max(1, (Number(baseSegment.fontSize) || 10) * scale),
+        visualTextWidth: baseSegment.visualTextWidth ? baseSegment.visualTextWidth * scale : undefined,
+        visualTextHeight: baseSegment.visualTextHeight ? baseSegment.visualTextHeight * scale : undefined,
         box: {
           x: (Number(baseBox.x) || 0) + deltaX,
           y: (Number(baseBox.y) || 0) + deltaY,
@@ -170,6 +172,8 @@ export function createPdfEditorComponentModel({
       object.x = (Number(baseObject.x) || 0) + deltaX;
       object.y = (Number(baseObject.y) || 0) + deltaY;
       object.fontSize = Math.max(6, (Number(baseObject.fontSize) || 16) * deltaScale);
+      if (baseObject.visualTextWidth) object.visualTextWidth = baseObject.visualTextWidth * deltaScale;
+      if (baseObject.visualTextHeight) object.visualTextHeight = baseObject.visualTextHeight * deltaScale;
       if (selected?.type === 'inserted-text' && selected.key === baseComponent.key) {
         setSelectedComponent({ ...selected, object: cloneState(object) });
       }
@@ -202,6 +206,8 @@ export function createPdfEditorComponentModel({
   function componentBox(component, object) {
     if (component?.type === 'text') {
       const segment = object || (getTextEdits() || new Map()).get(component.key)?.segment || component.segment;
+      const edit = (getTextEdits() || new Map()).get(component.key);
+      if (edit) return editedTextVisualBox({ ...edit, segment }, segment);
       const sourceBox = segment?.box || segment?.sourceBox;
       if (!sourceBox) return null;
       return {
@@ -219,6 +225,15 @@ export function createPdfEditorComponentModel({
       width: Math.max(1, Number(object.width) || 1),
       height: Math.max(1, Number(object.height) || 1)
     };
+  }
+
+  function componentSnapBox(component, object) {
+    const box = componentBox(component, object);
+    if (!box) return null;
+    const radians = (Number(object?.rotation) || 0) * Math.PI / 180;
+    const width = box.width * Math.abs(Math.cos(radians)) + box.height * Math.abs(Math.sin(radians));
+    const height = box.height * Math.abs(Math.cos(radians)) + box.width * Math.abs(Math.sin(radians));
+    return { x: box.x + (box.width - width) / 2, y: box.y + (box.height - height) / 2, width, height };
   }
 
   function collectSnapTargets(pageId, excludeType, excludeKey) {
@@ -240,24 +255,24 @@ export function createPdfEditorComponentModel({
           const key = `${pageId}:${lineIndex}:${segmentIndex}`;
           if (excludeType === 'text' && key === excludeKey) continue;
           const edit = (getTextEdits() || new Map()).get(key);
-          const box = componentBox({ type: 'text', key }, edit?.segment || segments[segmentIndex]);
+          const box = componentSnapBox({ type: 'text', key }, edit?.segment || segments[segmentIndex]);
           if (box) targets.push(box);
         }
       }
     }
     for (const object of getInsertedTexts() || []) {
       if (object.pageId !== pageId || (excludeType === 'inserted-text' && object.id === excludeKey)) continue;
-      const box = componentBox({ type: 'inserted-text' }, object);
+      const box = componentSnapBox({ type: 'inserted-text' }, object);
       if (box) targets.push(box);
     }
     for (const object of getInsertedImages() || []) {
       if (object.pageId !== pageId || (excludeType === 'inserted-image' && object.id === excludeKey)) continue;
-      const box = componentBox({ type: 'inserted-image' }, object);
+      const box = componentSnapBox({ type: 'inserted-image' }, object);
       if (box) targets.push(box);
     }
     for (const object of getInsertedShapes() || []) {
       if (object.pageId !== pageId || (excludeType === 'inserted-shape' && object.id === excludeKey)) continue;
-      const box = componentBox({ type: 'inserted-shape' }, object);
+      const box = componentSnapBox({ type: 'inserted-shape' }, object);
       if (box) targets.push(box);
     }
     return targets;
@@ -278,17 +293,15 @@ export function createPdfEditorComponentModel({
     return best;
   }
 
-  function snapComponentDrag(component, dx, dy, snapTargets = null) {
-    const textEdits = getTextEdits() || new Map();
+  function snapComponentDrag(component, dx, dy, snapTargets = null, options = {}) {
     const object = component.type === 'text'
-      ? (textEdits.get(component.key)?.segment || component.segment)
+      ? component.segment
       : (component.object || resolveComponentObject(component));
-    const box = componentBox(component, object);
+    const box = componentSnapBox(component, object);
     if (!object || !box) return { dx, dy };
     const pageId = component.pageId || object.pageId;
     const targets = snapTargets || collectSnapTargets(pageId, component.type, component.key);
-    if (!targets.length) return { dx, dy };
-    const threshold = 6;
+    const threshold = 5 / Math.max(0.05, Number(options.scale) || 1);
     const left = box.x + dx;
     const centerX = left + box.width / 2;
     const right = left + box.width;
@@ -301,10 +314,52 @@ export function createPdfEditorComponentModel({
       xTargets.push(target.x, target.x + target.width / 2, target.x + target.width);
       yTargets.push(target.y, target.y + target.height / 2, target.y + target.height);
     }
-    return {
-      dx: dx + snapAxisDelta([left, centerX, right], xTargets, threshold),
-      dy: dy + snapAxisDelta([top, centerY, bottom], yTargets, threshold)
+    if (options.pageBox) {
+      const page = options.pageBox;
+      xTargets.push(page.x, page.x + page.width / 2, page.x + page.width);
+      yTargets.push(page.y, page.y + page.height / 2, page.y + page.height);
+    }
+    const snap = (values, anchors, previous) => {
+      if (options.disabled) return null;
+      // Keep a captured anchor until the pointer leaves an 8px release band.
+      if (previous && anchors.includes(previous.target)
+        && Math.abs(previous.target - values[previous.index]) <= threshold * 1.6) return previous;
+      let best = null;
+      let distance = threshold;
+      values.forEach((value, index) => anchors.forEach(target => {
+        if (Math.abs(target - value) <= distance) {
+          distance = Math.abs(target - value);
+          best = { index, target };
+        }
+      }));
+      return best;
     };
+    const xs = [left, centerX, right];
+    const ys = [top, centerY, bottom];
+    const x = snap(xs, xTargets, options.previous?.x);
+    const y = snap(ys, yTargets, options.previous?.y);
+    return {
+      dx: dx + (x ? x.target - xs[x.index] : 0),
+      dy: dy + (y ? y.target - ys[y.index] : 0),
+      guides: { x, y }
+    };
+  }
+
+  function toggleImageAspectRatio() {
+    const component = getSelectedComponent();
+    if (component?.type !== 'inserted-image') return false;
+    const object = resolveComponentObject(component);
+    if (!object) return false;
+    object.originalAspectRatio ||= object.width / object.height;
+    object.aspectRatioLocked = object.aspectRatioLocked === false;
+    if (object.aspectRatioLocked) {
+      const height = object.width / object.originalAspectRatio;
+      object.y += (object.height - height) / 2;
+      object.height = height;
+    }
+    setSelectedComponent({ ...component, object: cloneState(object) });
+    onChanged({ component });
+    return true;
   }
 
   return {
@@ -327,6 +382,7 @@ export function createPdfEditorComponentModel({
     snapAxisDelta,
     snapComponentDrag,
     snapRotationToAxis,
+    toggleImageAspectRatio,
     updateComponentFromDelta
   };
 }

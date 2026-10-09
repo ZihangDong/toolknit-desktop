@@ -24,6 +24,13 @@ assert.deepEqual(resizePdfBoxFromHandle({ x: 0, y: 0, width: 5, height: 5 }, 'se
   x: 0, y: 0, width: 10, height: 10
 });
 const rotatedDelta = rotatePdfDeltaToLocal(10, 0, 90);
+for (const handle of ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']) {
+  const box = resizePdfBoxFromHandle(base, handle, 30, -20, { aspectRatio: 1.5 });
+  assert.ok(Math.abs(box.width / box.height - 1.5) < 1e-9, handle);
+}
+assert.deepEqual(resizePdfBoxFromHandle(base, 'e', 30, 0, { aspectRatio: 1.5 }), {
+  x: 100, y: 190, width: 150, height: 100
+});
 assert.ok(Math.abs(rotatedDelta.x) < 1e-9 && Math.abs(rotatedDelta.y + 10) < 1e-9);
 
 console.log('PDF editor geometry regression checks passed');

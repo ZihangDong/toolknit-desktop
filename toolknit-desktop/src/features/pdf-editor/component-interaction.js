@@ -13,6 +13,7 @@ import {
  */
 export function createPdfEditorComponentInteraction({
   documentRef = globalThis.document,
+  windowRef = globalThis.window,
   getComponentMode = () => false,
   getEditMode = () => false,
   getInsertMode = () => null,
@@ -51,6 +52,50 @@ export function createPdfEditorComponentInteraction({
   let pointerCleanup = null;
   let rotateTimer = null;
   let rotateState = null;
+  let moveFrame = 0;
+  let pendingMove = null;
+  const guideElements = [];
+
+  function clearGuides() {
+    guideElements.splice(0).forEach(element => element.remove());
+  }
+
+  function drawGuides(guides, viewport) {
+    clearGuides();
+    const box = viewport?.viewBox;
+    const layer = getTextLayer();
+    if (!box || !layer || !documentRef?.createElement) return;
+    for (const axis of ['x', 'y']) {
+      const anchor = guides?.[axis];
+      if (!anchor) continue;
+      const start = axis === 'x' ? [anchor.target, box[1]] : [box[0], anchor.target];
+      const end = axis === 'x' ? [anchor.target, box[3]] : [box[2], anchor.target];
+      const [x, y] = viewport.convertToViewportPoint(...start);
+      const [right, bottom] = viewport.convertToViewportPoint(...end);
+      const line = documentRef.createElement('div');
+      line.className = 'pdf-editor-snap-guide';
+      line.setAttribute('aria-hidden', 'true');
+      Object.assign(line.style, { left: `${x}px`, top: `${y}px`,
+        width: `${Math.hypot(right - x, bottom - y)}px`,
+        transform: `rotate(${Math.atan2(bottom - y, right - x)}rad)` });
+      layer.appendChild(line);
+      guideElements.push(line);
+    }
+  }
+
+  function flushPointerMove() {
+    if (moveFrame) windowRef?.cancelAnimationFrame(moveFrame);
+    moveFrame = 0;
+    const move = pendingMove;
+    pendingMove = null;
+    move?.();
+  }
+
+  function queuePointerMove(callback) {
+    pendingMove = callback;
+    if (!windowRef?.requestAnimationFrame) return flushPointerMove();
+    if (!moveFrame) moveFrame = windowRef.requestAnimationFrame(flushPointerMove);
+  }
 
   function stopComponentRotate() {
     if (rotateTimer) {
@@ -61,6 +106,10 @@ export function createPdfEditorComponentInteraction({
   }
 
   function stopComponentPointerSession() {
+    if (moveFrame) windowRef?.cancelAnimationFrame(moveFrame);
+    moveFrame = 0;
+    pendingMove = null;
+    clearGuides();
     if (pointerCleanup) {
       pointerCleanup();
       pointerCleanup = null;
@@ -85,7 +134,7 @@ export function createPdfEditorComponentInteraction({
 
   function applyComponentResize(component, baseObject, handle, localDx, localDy) {
     if (!component || !baseObject) return;
-    if (component.type === 'text') {
+    if (component.type === 'text' || component.type === 'inserted-text') {
       // The text control is the south-east handle. In PDF space a screen drag
       // downward produces a negative y delta, so subtract localDy.
       const factor = Math.max(0.5, 1 + ((localDx - localDy) / 80));
@@ -101,7 +150,9 @@ export function createPdfEditorComponentInteraction({
       handle,
       localDx,
       localDy,
-      { minWidth: isLine ? 2 : 10, minHeight: isLine ? 0.5 : 10 }
+      { minWidth: isLine ? 2 : 10, minHeight: isLine ? 0.5 : 10,
+        aspectRatio: component.type === 'inserted-image' && baseObject.aspectRatioLocked !== false
+          ? baseObject.originalAspectRatio : undefined }
     );
     object.x = resized.x;
     object.y = resized.y;
@@ -141,7 +192,8 @@ export function createPdfEditorComponentInteraction({
       element.style.transform = `rotate(${Number(segment.rotation) || 0}deg)`;
       if (edit) {
         element.classList.add('is-edited');
-        element.textContent = edit.newText || '';
+        const content = element.querySelector('.pdf-editor-text-content');
+        if (content && content.textContent !== (edit.newText || '')) content.textContent = edit.newText || '';
         element.style.width = Math.max(1, segmentRect.width) + 'px';
         ensureTextMask(
           element.parentElement,
@@ -250,7 +302,7 @@ export function createPdfEditorComponentInteraction({
     if (!cache) return;
     dragState = {
       mode: 'drag',
-      component: cloneState(component),
+      component: cloneState(getSelectedComponent() || component),
       pointerId: event.pointerId,
       startClientX: event.clientX,
       startClientY: event.clientY,
@@ -261,36 +313,49 @@ export function createPdfEditorComponentInteraction({
     const onMove = moveEvent => {
       if (!dragState || moveEvent.pointerId !== dragState.pointerId) return;
       moveEvent.preventDefault();
-      if (!dragState.started) {
-        const distance = Math.hypot(
-          moveEvent.clientX - dragState.startClientX,
-          moveEvent.clientY - dragState.startClientY
+      queuePointerMove(() => {
+        if (!dragState) return;
+        if (!dragState.started) {
+          const distance = Math.hypot(
+            moveEvent.clientX - dragState.startClientX,
+            moveEvent.clientY - dragState.startClientY
+          );
+          if (distance < 4) return;
+          dragState.started = true;
+        }
+        const bounds = getCanvasWrap()?.getBoundingClientRect();
+        const startCss = dragState.cache.cssViewport.convertToPdfPoint(
+          dragState.startClientX - (bounds?.left || 0),
+          dragState.startClientY - (bounds?.top || 0)
         );
-        if (distance < 4) return;
-        dragState.started = true;
-      }
-      const bounds = getCanvasWrap()?.getBoundingClientRect();
-      const startCss = dragState.cache.cssViewport.convertToPdfPoint(
-        dragState.startClientX - (bounds?.left || 0),
-        dragState.startClientY - (bounds?.top || 0)
-      );
-      const nextCss = dragState.cache.cssViewport.convertToPdfPoint(
-        moveEvent.clientX - (bounds?.left || 0),
-        moveEvent.clientY - (bounds?.top || 0)
-      );
-      const snapped = snapComponentDrag(
-        dragState.component,
-        nextCss[0] - startCss[0],
-        nextCss[1] - startCss[1],
-        dragState.snapTargets
-      );
-      updateComponentFromDelta(snapped.dx, snapped.dy, 1, dragState.component, { deferRender: true });
+        const nextCss = dragState.cache.cssViewport.convertToPdfPoint(
+          moveEvent.clientX - (bounds?.left || 0),
+          moveEvent.clientY - (bounds?.top || 0)
+        );
+        const snapped = snapComponentDrag(
+          dragState.component,
+          nextCss[0] - startCss[0],
+          nextCss[1] - startCss[1],
+          dragState.snapTargets,
+          { scale: dragState.cache.scale, previous: dragState.guides, disabled: moveEvent.altKey,
+            pageBox: dragState.cache.cssViewport.viewBox ? {
+              x: dragState.cache.cssViewport.viewBox[0], y: dragState.cache.cssViewport.viewBox[1],
+              width: dragState.cache.cssViewport.viewBox[2] - dragState.cache.cssViewport.viewBox[0],
+              height: dragState.cache.cssViewport.viewBox[3] - dragState.cache.cssViewport.viewBox[1]
+            } : null }
+        );
+        dragState.guides = snapped.guides;
+        updateComponentFromDelta(snapped.dx, snapped.dy, 1, dragState.component, { deferRender: true });
+        drawGuides(snapped.guides, dragState.cache.cssViewport);
+      });
     };
     const onUp = upEvent => {
       if (!dragState || upEvent.pointerId !== dragState.pointerId) return;
+      flushPointerMove();
       const moved = Boolean(dragState.started);
       pointerCleanup?.();
-      flushComponentVisualRefresh();
+      clearGuides();
+      if (moved) flushComponentVisualRefresh();
       dragState = null;
       if (moved) commitEditorHistory();
     };
@@ -362,6 +427,7 @@ export function createPdfEditorComponentInteraction({
   }
 
   return {
+    applyComponentResize,
     applyComponentDomVisual,
     beginComponentDrag,
     beginComponentResize,

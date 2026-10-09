@@ -24,6 +24,7 @@ export function createPdfEditorComponentRenderer({
   documentRef = globalThis.document,
   selectComponent = () => {},
   handleCanvasPlacement = () => {},
+  openEditModal = () => {},
   sameComponent = () => false,
   beginComponentDrag = () => {},
   beginComponentResize = () => {},
@@ -31,6 +32,53 @@ export function createPdfEditorComponentRenderer({
   buildShapeSvg = () => null,
   syncComponentMenu = () => {}
 } = {}) {
+  let lastRender = null;
+  let measureContext;
+
+  function measureText(object, text, fontSize) {
+    if (measureContext === undefined) measureContext = documentRef?.createElement('canvas')?.getContext?.('2d') || null;
+    if (!measureContext) return;
+    const family = documentRef.defaultView?.getComputedStyle(getTextLayer())
+      .getPropertyValue('--tk-font-pdf').trim() || '"Microsoft YaHei", Helvetica, Arial, sans-serif';
+    measureContext.font = `500 ${fontSize}px ${family}`;
+    const metrics = measureContext.measureText(String(text ?? ''));
+    object.visualTextWidth = metrics.width;
+    object.visualTextHeight = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)
+      || fontSize * 1.2;
+  }
+
+  function syncSelection() {
+    const layer = getTextLayer();
+    if (!layer || !lastRender) return;
+    const selected = getSelectedComponent();
+    const { pageId } = lastRender;
+    for (const element of layer.querySelectorAll('[data-segment-type]')) {
+      const type = element.dataset.segmentType;
+      const key = type === 'text' ? element.dataset.segmentKey : element.dataset.objectId;
+      const active = getComponentMode() && sameComponent(selected, { type, key, pageId });
+      element.classList.toggle('is-selected', Boolean(active));
+      element.querySelectorAll('.pdf-editor-component-handle').forEach(handle => handle.remove());
+      if (!active) continue;
+      if (type === 'text' || type === 'inserted-text') {
+        const button = documentRef.createElement('button');
+        button.type = 'button';
+        button.className = 'pdf-editor-component-handle';
+        button.dataset.handle = 'se';
+        button.setAttribute('aria-label', t('home.pdfEditor.resizeComponent'));
+        button.addEventListener('pointerdown', event => {
+          const current = getSelectedComponent();
+          if (current) beginComponentResize(event, current);
+        }, listenerOptions);
+        element.appendChild(button);
+      } else {
+        const object = (type === 'inserted-image' ? getInsertedImages() : getInsertedShapes())
+          .find(item => item.id === key);
+        if (object) appendResizeHandles(element, { type }, pageId, object);
+      }
+    }
+    syncComponentMenu();
+  }
+
   function syncTextLayerAccessibility() {
     const textLayer = getTextLayer();
     if (!textLayer) return;
@@ -83,6 +131,7 @@ export function createPdfEditorComponentRenderer({
   function render(lines, cssViewport, scale, pageId) {
     const textLayer = getTextLayer();
     if (!textLayer) return;
+    lastRender = { pageId };
     const editMode = Boolean(getEditMode());
     const componentMode = Boolean(getComponentMode());
     const insertMode = getInsertMode();
@@ -125,6 +174,7 @@ export function createPdfEditorComponentRenderer({
         const key = `${pageId}:${index}:${segmentIndex}`;
         const edit = textEdits.get(key);
         const segmentData = edit?.segment || segment;
+        if (edit) measureText(segmentData, edit.newText, segmentData.fontSize || line.fontSize);
         const visualBox = edit
           ? (editedTextVisualBox(edit, segmentData) || segmentData.box || line.box)
           : (segmentData.box || line.box);
@@ -155,25 +205,39 @@ export function createPdfEditorComponentRenderer({
         segmentElement.style.lineHeight = Math.max(1, segmentRect.height) + 'px';
         segmentElement.style.transformOrigin = '50% 50%';
         segmentElement.style.transform = `rotate(${Number(segmentData.rotation) || 0}deg)`;
+        const content = documentRef.createElement('span');
+        content.className = 'pdf-editor-text-content';
+        segmentElement.appendChild(content);
         if (edit) {
           segmentElement.classList.add('is-edited');
-          segmentElement.textContent = edit.newText || '';
+          content.textContent = edit.newText || '';
           segmentElement.style.width = Math.max(1, segmentRect.width) + 'px';
         } else {
-          segmentElement.textContent = segment.text;
+          content.textContent = segment.text;
         }
         segmentElement.addEventListener('click', event => {
           event.stopPropagation();
-          if (componentMode) {
-            selectComponent({ type: 'text', pageId, key, lineIndex: index, segmentIndex, segment: segmentData });
+          if (editMode) {
+            openEditModal(key, segmentData, segmentData);
+          } else if (componentMode) {
+            selectComponent({ type: 'text', pageId, key, lineIndex: index, segmentIndex,
+              segment: getTextEdits().get(key)?.segment || segment });
           } else if (insertMode) {
             handleCanvasPlacement(event);
           }
         }, listenerOptions);
+        segmentElement.addEventListener('dblclick', event => {
+          if (!getComponentMode() || getInsertMode() || event.target.closest('.pdf-editor-component-handle')) return;
+          event.preventDefault();
+          event.stopPropagation();
+          const live = getTextEdits().get(key)?.segment || segment;
+          openEditModal(key, live, live);
+        }, listenerOptions);
         segmentElement.addEventListener('pointerdown', event => {
           if (!componentMode || editMode || insertMode) return;
-          const component = { type: 'text', pageId, key, lineIndex: index, segmentIndex, segment: segmentData };
-          if (sameComponent(selectedComponent, component)) beginComponentDrag(event, component);
+          const component = { type: 'text', pageId, key, lineIndex: index, segmentIndex,
+            segment: getTextEdits().get(key)?.segment || segment };
+          beginComponentDrag(event, component);
         }, listenerOptions);
         if (isSelected) {
           const handle = documentRef.createElement('button');
@@ -194,6 +258,7 @@ export function createPdfEditorComponentRenderer({
     }
 
     for (const object of getInsertedTexts().filter(item => item.pageId === pageId)) {
+      measureText(object, object.text, object.fontSize);
       const visualBox = insertedTextVisualBox(object);
       const rect = rectToViewport(cssViewport, visualBox);
       const element = documentRef.createElement('div');
@@ -217,18 +282,26 @@ export function createPdfEditorComponentRenderer({
       element.style.transform = `rotate(${Number(object.rotation) || 0}deg)`;
       element.addEventListener('click', event => {
         event.stopPropagation();
-        if (componentMode) selectComponent({ type: 'inserted-text', pageId, key: object.id, object });
+        if (editMode) openEditModal(object.id, object, object, 'edit-inserted-text');
+        else if (componentMode) selectComponent({ type: 'inserted-text', pageId, key: object.id, object });
         else if (insertMode) handleCanvasPlacement(event);
+      }, listenerOptions);
+      element.addEventListener('dblclick', event => {
+        if (!getComponentMode() || getInsertMode() || event.target.closest('.pdf-editor-component-handle')) return;
+        event.preventDefault();
+        event.stopPropagation();
+        openEditModal(object.id, object, object, 'edit-inserted-text');
       }, listenerOptions);
       element.addEventListener('pointerdown', event => {
         if (!componentMode || editMode || insertMode) return;
         const component = { type: 'inserted-text', pageId, key: object.id, object };
-        if (sameComponent(selectedComponent, component)) beginComponentDrag(event, component);
+        beginComponentDrag(event, component);
       }, listenerOptions);
       if (isSelected) {
         const handle = documentRef.createElement('button');
         handle.type = 'button';
         handle.className = 'pdf-editor-component-handle';
+        handle.dataset.handle = 'se';
         handle.setAttribute('aria-label', t('home.pdfEditor.selectComponent'));
         handle.addEventListener('pointerdown', event => {
           beginComponentResize(event, { type: 'inserted-text', pageId, key: object.id, object });
@@ -269,7 +342,7 @@ export function createPdfEditorComponentRenderer({
       image.addEventListener('pointerdown', event => {
         if (!componentMode || editMode || insertMode) return;
         const component = { type: 'inserted-image', pageId, key: object.id, object };
-        if (sameComponent(selectedComponent, component)) beginComponentDrag(event, component);
+        beginComponentDrag(event, component);
       }, listenerOptions);
       if (isSelected) appendResizeHandles(wrapper, { type: 'inserted-image' }, pageId, object);
       wrapper.appendChild(image);
@@ -309,7 +382,7 @@ export function createPdfEditorComponentRenderer({
       wrapper.addEventListener('pointerdown', event => {
         if (!componentMode || editMode || insertMode) return;
         const component = { type: 'inserted-shape', pageId, key: object.id, object };
-        if (sameComponent(selectedComponent, component)) beginComponentDrag(event, component);
+        beginComponentDrag(event, component);
       }, listenerOptions);
       if (isSelected) appendResizeHandles(wrapper, { type: 'inserted-shape' }, pageId, object);
       textLayer.appendChild(wrapper);
@@ -321,6 +394,7 @@ export function createPdfEditorComponentRenderer({
     applyRelativeViewportRect,
     ensureTextMask,
     render,
+    syncSelection,
     syncTextLayerAccessibility
   };
 }

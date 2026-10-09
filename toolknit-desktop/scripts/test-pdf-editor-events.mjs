@@ -117,6 +117,8 @@ assert.deepEqual(calls.slice(0, 10), [
   'shape:strokeWidth:3',
   'open'
 ]);
+selectComponentBtn.trigger('click');
+assert.equal(componentMode, true, 'Clicking selection again must keep it active');
 
 fileInput.files = [{ name: 'input.pdf' }];
 fileInput.trigger('change');

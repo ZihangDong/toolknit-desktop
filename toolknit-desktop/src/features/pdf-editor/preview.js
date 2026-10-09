@@ -168,6 +168,13 @@ export function createPdfEditorPreview({
       syncStageVisibility();
 
       const cssViewport = loadedPage.getViewport({ scale, rotation: displayRotation });
+      // Measure replacements only after the local preview font is ready.
+      if (documentRef.fonts?.load) {
+        const family = windowRef?.getComputedStyle(getTextLayer())
+          .getPropertyValue('--tk-font-pdf').trim() || 'ToolKnitNotoSansSC';
+        await documentRef.fonts.load(`500 16px ${family}`).catch(() => {});
+        if (epoch !== Number(getMainEpoch()) || isDisposed() || !zoom.isCurrentRequest(zoomRequest)) return;
+      }
       const editable = pageSupportsContentEditing(page);
       const textLinesCache = getTextLinesCache() || new Map();
       if (editable) {

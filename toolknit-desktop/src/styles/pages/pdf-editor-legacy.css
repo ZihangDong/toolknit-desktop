@@ -853,10 +853,9 @@
   z-index: 2;
   display: block;
   color: #111111;
-  padding: 0 4px;
+  padding: 0;
   background: #ffffff;
   overflow: visible;
-  line-height: 1.04 !important;
 }
 
 .pdf-editor-text-segment.is-edited:empty {
@@ -884,7 +883,7 @@
 .pdf-editor-inserted-text {
   box-sizing: border-box;
   overflow: visible;
-  padding: 0 2px;
+  padding: 0;
   color: #111111;
   background: transparent;
   white-space: nowrap;
@@ -910,7 +909,7 @@
   box-sizing: border-box;
   display: block;
   position: relative;
-  object-fit: contain;
+  object-fit: fill;
   background: transparent;
 }
 
@@ -938,6 +937,21 @@
   backdrop-filter: blur(14px);
   transform-origin: center bottom;
   animation: pdfEditorComponentMenuIn 140ms ease-out both;
+}
+
+.pdf-editor-snap-guide {
+  position: absolute;
+  height: 1px;
+  background: #d02a80;
+  box-shadow: 0 0 0 0.5px #fff;
+  transform-origin: 0 0;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.pdf-editor-component-menu button[aria-pressed="true"] {
+  color: #72b4ff;
+  box-shadow: inset 0 0 0 1px currentColor;
 }
 
 .pdf-editor-component-menu[hidden] {

@@ -120,6 +120,8 @@ export function createPdfEditorContentEditing({
         y: pdfY - pendingInsert.height,
         width: pendingInsert.width,
         height: pendingInsert.height,
+        originalAspectRatio: pendingInsert.originalAspectRatio || pendingInsert.width / pendingInsert.height,
+        aspectRatioLocked: true,
         rotation: 0,
         bytes: pendingInsert.bytes,
         mimeType: pendingInsert.mimeType,
@@ -145,6 +147,8 @@ export function createPdfEditorContentEditing({
     }
     setPendingInsert(null);
     setInsertMode(null);
+    setComponentModeState(true);
+    syncComponentModeClass();
     updateControls();
     renderMainPreview();
     commitEditorHistory();
@@ -154,6 +158,7 @@ export function createPdfEditorContentEditing({
   }
 
   function setEditMode(enabled) {
+    if (getActiveOperation()) return;
     const page = getCurrentPage();
     if (enabled) {
       if (!hasDocument()) {
@@ -175,6 +180,8 @@ export function createPdfEditorContentEditing({
       closeEditModal();
     } else {
       setEditModeState(false);
+      setComponentModeState(true);
+      setSelectedComponent(null);
       closeEditModal();
       setInsertMode(null);
       clearPendingInsert();
@@ -184,8 +191,8 @@ export function createPdfEditorContentEditing({
       editTextBtn.setAttribute('aria-pressed', String(getEditMode()));
     }
     if (selectComponentBtn) {
-      selectComponentBtn.classList.toggle('is-active', getComponentMode());
-      selectComponentBtn.setAttribute('aria-pressed', String(getComponentMode()));
+      selectComponentBtn.classList.toggle('is-active', getComponentMode() && !getEditMode());
+      selectComponentBtn.setAttribute('aria-pressed', String(getComponentMode() && !getEditMode()));
     }
     syncEditModeClass();
     syncComponentModeClass();
@@ -194,7 +201,7 @@ export function createPdfEditorContentEditing({
   }
 
   function openEditModal(key, segment, fallbackSegment, mode = 'edit') {
-    if (!editModal || !editModalInput) return;
+    if (!editModal || !editModalInput || getActiveOperation()) return;
     setEditingLineKey(key);
     setModalMode(mode);
     const source = segment || fallbackSegment || { text: '' };
@@ -230,6 +237,8 @@ export function createPdfEditorContentEditing({
   function cancelInsertMode() {
     clearPendingInsert();
     setInsertMode(null);
+    setComponentModeState(true);
+    syncComponentModeClass();
     closeEditModal();
     updateControls();
     refreshCurrentTextLayer();
@@ -351,14 +360,17 @@ export function createPdfEditorContentEditing({
       const cache = getCurrentTextLayerCache();
       const pageWidth = cache?.cssViewport?.width ? cache.cssViewport.width / (cache.scale || 1) : 612;
       const width = Math.min(240, Math.max(64, pageWidth * 0.4));
-      const height = Math.max(40, width * (safeDimensions.height / Math.max(1, safeDimensions.width)));
+      const originalAspectRatio = safeDimensions.width / safeDimensions.height;
+      const height = width / originalAspectRatio;
       const previewUrl = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
-      setPendingInsert({ type: 'image', bytes, mimeType, width, height, previewUrl });
+      setPendingInsert({ type: 'image', bytes, mimeType, width, height, originalAspectRatio, previewUrl });
       setInsertMode('image');
       showToast(t('home.pdfEditor.insertImageHint'), 6000);
       updateControls();
     } catch (error) {
       setInsertMode(null);
+      setComponentModeState(true);
+      syncComponentModeClass();
       clearPendingInsert();
       showToast(t('home.pdfEditor.insertImageFailed', { error: String(error?.message || error) }));
       updateControls();

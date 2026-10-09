@@ -71,7 +71,7 @@
               </button>
             </div>
           </div>
-          <div class="pdf-editor-canvas-scroll" id="pdfEditorCanvasScroll">
+          <div class="pdf-editor-canvas-scroll" id="pdfEditorCanvasScroll" tabindex="-1">
             <div class="pdf-editor-canvas-stage" id="pdfEditorCanvasStage">
               <div class="pdf-editor-empty" id="pdfEditorEmpty">
                 <div class="pdf-editor-empty-icon"><i data-lucide="file-pen-line"></i></div>
@@ -87,6 +87,7 @@
                 <button type="button" id="pdfEditorComponentScaleUp" data-i18n-title="home.pdfEditor.zoomIn" title="放大" aria-label="放大"><i data-lucide="plus"></i></button>
                 <button type="button" id="pdfEditorComponentEdit" data-i18n-title="home.pdfEditor.editText" title="编辑文字" aria-label="编辑文字"><i data-lucide="type"></i></button>
                 <button type="button" id="pdfEditorComponentRotate" data-i18n-title="home.pdfEditor.rotateCw" title="按住旋转" aria-label="按住旋转"><i data-lucide="rotate-cw"></i></button>
+                <button type="button" id="pdfEditorComponentAspect" title="解锁宽高比" aria-label="解锁宽高比" aria-pressed="true" hidden><i data-lucide="ratio"></i></button>
                 <button type="button" id="pdfEditorComponentDelete" data-i18n-title="home.pdfEditor.delete" title="删除" aria-label="删除"><i data-lucide="trash-2"></i></button>
               </div>
               <div class="pdf-editor-shape-panel" id="pdfEditorShapePanel" role="group" aria-label="形状属性" hidden>
@@ -122,6 +123,10 @@
                 <span data-i18n="home.pdfEditor.append">追加文件</span>
               </button>
               <div class="pdf-editor-tool-section-label" data-i18n="home.pdfEditor.contentTools">内容编辑</div>
+              <button class="pdf-editor-tool pdf-editor-tool-edit" id="pdfEditorEditText" type="button" aria-pressed="false">
+                <i data-lucide="text-cursor-input"></i>
+                <span data-i18n="home.pdfEditor.editText">编辑文字</span>
+              </button>
               <div class="pdf-editor-tool-row">
                 <button class="pdf-editor-tool" id="pdfEditorInsertText" type="button" data-insert-mode="text">
                   <i data-lucide="text-cursor-input"></i>

@@ -76,6 +76,44 @@ try {
   for (const selector of ['.pdf-editor-sidebar', '.pdf-editor-preview', '.pdf-editor-tool-panel']) {
     assert.equal(await page.locator(selector).evaluate(n => getComputedStyle(n).backgroundColor), 'rgb(255, 255, 255)');
   }
+  await page.locator('#pdfEditorEditText').click();
+  await page.locator('.pdf-editor-text-segment').first().click();
+  await page.waitForSelector('#pdfEditorEditModal.visible');
+  assert.equal(await page.locator('#pdfEditorEditInput').inputValue(), 'Theme regression page 1');
+  await page.locator('#pdfEditorEditInput').fill('Edited source text');
+  await page.locator('#pdfEditorEditSave').click();
+  await page.waitForFunction(() => document.querySelector('.pdf-editor-text-segment.is-edited')?.textContent === 'Edited source text');
+  await page.locator('#pdfEditorEditText').click();
+  await page.locator('#pdfEditorSelectComponent').click();
+  await page.locator('.pdf-editor-text-segment').first().click();
+  await page.keyboard.press('F2');
+  await page.waitForSelector('#pdfEditorEditModal.visible');
+  assert.equal(await page.locator('#pdfEditorEditInput').inputValue(), 'Edited source text');
+  await page.locator('#pdfEditorEditCancel').click();
+  await page.locator('#pdfEditorSelectComponent').click();
+  await page.locator('#pdfEditorSelectComponent').click();
+  assert.equal(await page.locator('#pdfEditorSelectComponent').getAttribute('aria-pressed'), 'true');
+  await page.locator('.pdf-editor-text-segment').first().dblclick();
+  await page.waitForSelector('#pdfEditorEditModal.visible');
+  await page.locator('#pdfEditorEditInput').fill('中文文字编辑后的完整选择框 WWW');
+  await page.locator('#pdfEditorEditSave').click();
+  await page.waitForFunction(() => document.querySelector('.pdf-editor-text-segment.is-edited')
+    ?.textContent.includes('完整选择框'));
+  const editedBounds = await page.locator('.pdf-editor-text-segment.is-edited').evaluate(element => {
+    const range = document.createRange();
+    range.selectNodeContents(element.querySelector('.pdf-editor-text-content'));
+    const text = range.getBoundingClientRect();
+    const box = element.getBoundingClientRect();
+    return { fits: text.left >= box.left - 1 && text.right <= box.right + 1
+        && text.top >= box.top - 1 && text.bottom <= box.bottom + 1,
+      width: box.width, textWidth: text.width, height: box.height, textHeight: text.height };
+  });
+  assert.ok(editedBounds.fits, JSON.stringify(editedBounds));
+  await page.locator('.pdf-editor-text-segment.is-edited').dblclick();
+  await page.waitForSelector('#pdfEditorEditModal.visible');
+  await page.locator('#pdfEditorEditInput').fill('Edited source text');
+  await page.locator('#pdfEditorEditSave').click();
+  await page.locator('#pdfEditorSelectComponent').click();
   await page.locator('#pdfEditorInsertText').click();
   await page.waitForSelector('#pdfEditorEditModal.visible');
   await page.waitForTimeout(250);
@@ -85,6 +123,94 @@ try {
   await page.locator('#pdfEditorEditSave').click();
   await page.locator('.pdf-editor-main-canvas').click({ position: { x: 80, y: 110 } });
   await page.waitForSelector('.pdf-editor-inserted-text');
+  await page.locator('.pdf-editor-inserted-text').dblclick();
+  await page.waitForSelector('#pdfEditorEditModal.visible');
+  assert.equal(await page.locator('#pdfEditorEditInput').inputValue(), 'Editor theme regression');
+  await page.locator('#pdfEditorEditCancel').click();
+  const imageData = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 120;
+    canvas.height = 60;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#b52424';
+    ctx.fillRect(0, 0, 60, 60);
+    ctx.fillStyle = '#22734b';
+    ctx.fillRect(60, 0, 60, 60);
+    return canvas.toDataURL().split(',')[1];
+  });
+  const imageChooserEvent = page.waitForEvent('filechooser');
+  await page.locator('#pdfEditorInsertImage').click();
+  const imageChooser = await imageChooserEvent;
+  await imageChooser.setFiles({ name: 'ratio.png',
+    mimeType: 'image/png', buffer: Buffer.from(imageData, 'base64') });
+  await page.getByText('图像已准备好，请点击页面放置', { exact: true }).waitFor();
+  await page.locator('.pdf-editor-main-canvas').click({ position: { x: 140, y: 260 } });
+  await page.waitForSelector('.pdf-editor-inserted-image-wrap');
+  await page.locator('.pdf-editor-inserted-image-wrap img').click();
+  const ratioButton = page.locator('#pdfEditorComponentAspect');
+  assert.equal(await ratioButton.getAttribute('aria-pressed'), 'true');
+  await ratioButton.click();
+  const imageBox = () => page.locator('.pdf-editor-inserted-image-wrap').boundingBox();
+  const beforeStretch = await imageBox();
+  const imageResizeHandle = await page.locator('.pdf-editor-inserted-image-wrap [data-handle="e"]').boundingBox();
+  await page.mouse.move(imageResizeHandle.x + imageResizeHandle.width / 2, imageResizeHandle.y + imageResizeHandle.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(imageResizeHandle.x + imageResizeHandle.width / 2 + 50, imageResizeHandle.y + imageResizeHandle.height / 2, { steps: 8 });
+  await page.mouse.up();
+  const stretched = await imageBox();
+  assert.ok(stretched.width > beforeStretch.width + 40);
+  assert.ok(Math.abs(stretched.height - beforeStretch.height) < 1);
+  assert.equal(await page.locator('.pdf-editor-inserted-image').evaluate(n => getComputedStyle(n).objectFit), 'fill');
+  await ratioButton.click();
+  const restored = await imageBox();
+  assert.ok(Math.abs(restored.width / restored.height - 2) < 0.01);
+  await page.locator('#pdfEditorUndo').click();
+  await page.waitForSelector('.pdf-editor-inserted-image-wrap');
+  assert.equal(await ratioButton.getAttribute('aria-pressed'), 'false');
+  assert.ok(Math.abs((await imageBox()).height - stretched.height) < 1);
+  await page.locator('#pdfEditorRedo').click();
+  await page.waitForSelector('.pdf-editor-inserted-image-wrap');
+  assert.equal(await ratioButton.getAttribute('aria-pressed'), 'true');
+  await page.screenshot({ path: path.join(output, 'editor-image-ratio-light.png') });
+  await page.locator('#pdfEditorComponentDelete').click();
+  assert.equal(await page.locator('.pdf-editor-inserted-image-wrap').count(), 0,
+    'Deleting an image must remove its preview without another pointer gesture');
+  await page.locator('#pdfEditorUndo').click();
+  await page.waitForSelector('.pdf-editor-inserted-image-wrap');
+  await page.locator('.pdf-editor-inserted-image-wrap img').click();
+  await page.keyboard.press('Delete');
+  assert.equal(await page.locator('.pdf-editor-inserted-image-wrap').count(), 0,
+    'Keyboard deletion must remove the image preview immediately');
+  await page.locator('#pdfEditorUndo').click();
+  await page.waitForSelector('.pdf-editor-inserted-image-wrap');
+  await page.locator('#pdfEditorRedo').click();
+  await page.waitForSelector('.pdf-editor-inserted-image-wrap', { state: 'detached' });
+  assert.equal(await page.locator('.pdf-editor-inserted-image-wrap').count(), 0);
+  await page.locator('#pdfEditorUndo').click();
+  await page.waitForSelector('.pdf-editor-inserted-image-wrap');
+
+  // Drag near the page's center and check both the guide and actual placement.
+  await page.locator('.pdf-editor-inserted-text').scrollIntoViewIfNeeded();
+  const canvasBox = await page.locator('.pdf-editor-main-canvas').boundingBox();
+  const movingText = await page.locator('.pdf-editor-inserted-text').boundingBox();
+  const centerX = canvasBox.x + canvasBox.width / 2;
+  await page.mouse.move(movingText.x + movingText.width / 2, movingText.y + movingText.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(centerX + 3, movingText.y + movingText.height / 2 + 45, { steps: 10 });
+  await page.waitForSelector('.pdf-editor-snap-guide');
+  const snappedText = await page.locator('.pdf-editor-inserted-text').boundingBox();
+  assert.ok(Math.abs(snappedText.x + snappedText.width / 2 - centerX) < 1);
+  await page.screenshot({ path: path.join(output, 'editor-snap-light.png') });
+  await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: path.join(output, 'editor-snap-dark.png') });
+  await page.mouse.up();
+  assert.equal(await page.locator('.pdf-editor-snap-guide').count(), 0);
+  await page.locator('.pdf-editor-inserted-text').dblclick();
+  await page.waitForSelector('#pdfEditorEditModal.visible');
+  await page.locator('#pdfEditorEditCancel').click();
+  await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; });
+  report.checks.push('Persistent selection, native double-click, Chinese text bounds, free image resize, original ratio restore/undo/redo, page-center guides in both themes and cleanup');
   await page.locator('#pdfEditorInsertRect').click();
   await page.locator('.pdf-editor-main-canvas').click({ position: { x: 80, y: 190 } });
   await page.waitForSelector('.pdf-editor-inserted-shape');
@@ -105,7 +231,17 @@ try {
   await page.screenshot({ path: path.join(output, 'editor-dark.png') });
   await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; });
   assert.equal(await shapePaint(), paintBefore);
-  assert.equal(await page.locator('.pdf-editor-text-segment').first().evaluate(n => getComputedStyle(n).color), 'rgba(0, 0, 0, 0)');
+  assert.equal(await page.locator('.pdf-editor-text-segment.is-edited').first().evaluate(n => getComputedStyle(n).color), 'rgb(17, 17, 17)');
+  for (const selector of ['.pdf-editor-inserted-shape', '.pdf-editor-inserted-text']) {
+    if (selector === '.pdf-editor-inserted-text') await page.keyboard.press('Escape');
+    await page.locator(selector).click();
+    await page.locator('#pdfEditorComponentDelete').click();
+    assert.equal(await page.locator(selector).count(), 0,
+      `${selector} must disappear immediately after deletion`);
+    await page.locator('#pdfEditorUndo').click();
+    await page.waitForSelector(selector);
+  }
+  report.checks.push('Immediate image/text/shape deletion, keyboard deletion and image delete undo/redo');
   await page.locator('#pdfEditorUndo').click();
   await page.locator('#pdfEditorRedo').click();
   await page.locator('#pdfEditorRotateCw').click();

@@ -29,6 +29,7 @@ export function createPdfEditorEvents({
   componentScaleDownBtn,
   componentScaleUpBtn,
   componentEditBtn,
+  componentAspectBtn,
   componentRotateBtn,
   componentDeleteBtn,
   shapeFillInput,
@@ -82,6 +83,7 @@ export function createPdfEditorEvents({
   insertShape = () => {},
   setComponentMode = () => {},
   scaleSelectedComponent = () => {},
+  toggleImageAspectRatio = () => {},
   editSelectedComponent = () => {},
   beginComponentRotate = () => {},
   deleteSelected = () => {},
@@ -125,10 +127,11 @@ export function createPdfEditorEvents({
   add(insertRectBtn, 'click', () => insertShape('rect'));
   add(insertEllipseBtn, 'click', () => insertShape('ellipse'));
   add(insertLineBtn, 'click', () => insertShape('line'));
-  add(selectComponentBtn, 'click', () => setComponentMode(!getComponentMode()));
+  add(selectComponentBtn, 'click', () => setComponentMode(true));
   add(componentScaleDownBtn, 'click', () => scaleSelectedComponent(0.9));
   add(componentScaleUpBtn, 'click', () => scaleSelectedComponent(1.1));
   add(componentEditBtn, 'click', editSelectedComponent);
+  add(componentAspectBtn, 'click', toggleImageAspectRatio);
   add(componentRotateBtn, 'pointerdown', beginComponentRotate);
   add(componentDeleteBtn, 'click', deleteSelected);
   add(shapeFillInput, 'input', event => updateSelectedShapeProperty('fill', hexToRgb01(event.target.value)));

@@ -157,7 +157,11 @@ const CJK_TEXT_RE = /[\u2E80-\u2EFF\u3000-\u303F\u3040-\u30FF\u3400-\u4DBF\u4E00
  */
 export function estimateInsertedTextWidth(text, fontSize) {
   const size = Math.max(1, Number(fontSize) || 16);
-  return Math.max(1, String(text ?? '').length * size * 0.55);
+  return Math.max(1, Array.from(String(text ?? '')).reduce((width, char) => {
+    if (/[^\u0000-\u00ff]/u.test(char)) return width + size;
+    if (/[MW@%]/.test(char)) return width + size * 0.95;
+    return width + size * 0.55;
+  }, 0));
 }
 
 function normalizeTextColor(color) {

@@ -148,6 +148,7 @@ export function initPdfEditorTool({
   const componentScaleDownBtn = document.getElementById('pdfEditorComponentScaleDown');
   const componentScaleUpBtn = document.getElementById('pdfEditorComponentScaleUp');
   const componentEditBtn = document.getElementById('pdfEditorComponentEdit');
+  const componentAspectBtn = document.getElementById('pdfEditorComponentAspect');
   const componentRotateBtn = document.getElementById('pdfEditorComponentRotate');
   const componentDeleteBtn = document.getElementById('pdfEditorComponentDelete');
   const shapePanel = document.getElementById('pdfEditorShapePanel');
@@ -179,7 +180,7 @@ export function initPdfEditorTool({
   let canvasWrap = null;
   let textLayerEl = null;
   let editMode = false;
-  let componentMode = false;
+  let componentMode = true;
   let insertMode = null;
   let pendingInsert = null;
   let textLinesCache = new Map();
@@ -260,6 +261,8 @@ export function initPdfEditorTool({
       y: Number(object.y) || 0,
       width: Number(object.width) || 0,
       height: Number(object.height) || 0,
+      originalAspectRatio: Number(object.originalAspectRatio) || object.width / object.height,
+      aspectRatioLocked: object.aspectRatioLocked !== false,
       rotation: Number(object.rotation) || 0,
       mimeType: object.mimeType || '',
       previewUrl: ''
@@ -434,6 +437,18 @@ export function initPdfEditorTool({
         return;
       }
     }
+    if (!isTypingField && (event.key === 'Enter' || event.key === 'F2')
+      && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey
+      && ['text', 'inserted-text'].includes(selectedComponent?.type)
+      && !editModal?.classList.contains('visible')
+      && !processMask?.classList.contains('visible')
+      && !successOverlay?.classList.contains('visible')
+      && (event.key === 'F2' || active === canvasScroll || active === overlay)) {
+      event.preventDefault();
+      event.stopPropagation();
+      editSelectedComponent();
+      return;
+    }
     if (event.key !== 'Escape') return;
     event.preventDefault();
     event.stopPropagation();
@@ -445,8 +460,6 @@ export function initPdfEditorTool({
       handleEditModalCancel();
     } else if (selectedComponent) {
       clearSelectedComponent();
-    } else if (componentMode) {
-      setComponentMode(false);
     } else {
       closeOverlay();
     }
@@ -655,14 +668,14 @@ export function initPdfEditorTool({
     componentInteraction?.reset();
     closeEditModal();
     editMode = false;
-    componentMode = false;
+    componentMode = true;
     if (editTextBtn) {
       editTextBtn.classList.remove('is-active');
       editTextBtn.setAttribute('aria-pressed', 'false');
     }
     if (selectComponentBtn) {
-      selectComponentBtn.classList.remove('is-active');
-      selectComponentBtn.setAttribute('aria-pressed', 'false');
+      selectComponentBtn.classList.add('is-active');
+      selectComponentBtn.setAttribute('aria-pressed', 'true');
     }
     syncEditModeClass();
     syncComponentModeClass();
@@ -1073,16 +1086,17 @@ export function initPdfEditorTool({
 
   function setComponentMode(enabled) {
     const next = Boolean(enabled);
-    if (next === componentMode) return;
+    if (next === componentMode && !editMode) return;
     componentMode = next;
+    editMode = false;
     if (componentMode) {
-      editMode = false;
       insertMode = null;
       clearPendingInsert();
       closeEditModal();
     } else {
       selectedComponent = null;
       componentInteraction?.reset();
+      closeEditModal();
     }
     if (editTextBtn) {
       editTextBtn.classList.toggle('is-active', editMode);
@@ -1100,6 +1114,7 @@ export function initPdfEditorTool({
 
   function selectComponent(component) {
     if (!component) return;
+    restoreFocus(canvasScroll);
     const alreadySelected = sameComponent(selectedComponent, component);
     selectedComponent = cloneState(component);
     if (!componentMode) {
@@ -1109,16 +1124,16 @@ export function initPdfEditorTool({
     if (alreadySelected) return;
     syncComponentModeClass();
     updateControls();
-    refreshCurrentTextLayer();
+    componentRenderer.syncSelection();
   }
 
   function clearSelectedComponent() {
     if (!selectedComponent) return;
     selectedComponent = null;
-    stopComponentRotate();
+    componentInteraction?.reset();
     syncComponentModeClass();
     updateControls();
-    refreshCurrentTextLayer();
+    componentRenderer.syncSelection();
   }
 
   function editableComponentKey(component) {
@@ -1161,8 +1176,8 @@ export function initPdfEditorTool({
     return componentModel.snapAxisDelta(mine, targets, threshold);
   }
 
-  function snapComponentDrag(component, dx, dy, snapTargets = null) {
-    return componentModel.snapComponentDrag(component, dx, dy, snapTargets);
+  function snapComponentDrag(component, dx, dy, snapTargets = null, options = {}) {
+    return componentModel.snapComponentDrag(component, dx, dy, snapTargets, options);
   }
 
   function shapeStrokeCss(strokeWidth, scale) {
@@ -1320,6 +1335,8 @@ export function initPdfEditorTool({
   componentControls = createPdfEditorComponentControls({
     componentMenu,
     componentEditBtn,
+    componentAspectBtn,
+    resolveComponentObject,
     shapePanel,
     shapeFillField,
     shapeFillInput,
@@ -1473,6 +1490,7 @@ export function initPdfEditorTool({
     pageStateFor,
     refreshTile,
     renderMainPreview,
+    refreshCurrentTextLayer,
     updateControls,
     commitEditorHistory,
     showToast,
@@ -1511,6 +1529,7 @@ export function initPdfEditorTool({
     listenerOptions,
     selectComponent,
     handleCanvasPlacement,
+    openEditModal,
     sameComponent,
     beginComponentDrag,
     beginComponentResize,
@@ -1683,6 +1702,11 @@ export function initPdfEditorTool({
     componentScaleDownBtn,
     componentScaleUpBtn,
     componentEditBtn,
+    componentAspectBtn,
+    toggleImageAspectRatio: () => {
+      if (currentOperation()) return;
+      if (componentModel.toggleImageAspectRatio()) commitEditorHistory();
+    },
     componentRotateBtn,
     componentDeleteBtn,
     shapeFillInput,

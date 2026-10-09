@@ -140,9 +140,9 @@ assert.match(movedWideTextContent, /1 0 0 1 175\.88 290 cm/);
 assert.match(movedWideTextContent, /58\.24 20 l/);
 
 // Inserted-text rotation must use the same deterministic visual width as the
-// canvas fallback. Using embedded-font metrics here would move a 90-degree
-// component's pivot because the browser overlay cannot measure that font.
-assert.ok(Math.abs(estimateInsertedTextWidth('WWW', 16) - 26.4) < 1e-9);
+// canvas fallback when the caller does not supply measured visual bounds.
+assert.ok(Math.abs(estimateInsertedTextWidth('WWW', 16) - 45.6) < 1e-9);
+assert.equal(estimateInsertedTextWidth('\u4e2d\u6587', 16), 32);
 const insertedRotated = await assemblePdfWithTextEdits({
   sources: [{ name: 'insert-rotated.pdf', bytes: textSource }],
   pages: [{ sourceIndex: 0, pageIndex: 0, rotation: 0 }],
@@ -153,7 +153,7 @@ const insertedRotatedContent = pageContentText(insertedRotatedDocument);
 const insertedRotatedAnchor = rotatePdfTextAnchorAroundBox(
   100,
   200,
-  { x: 100, y: 200 - 16 * 1.15 * 0.2, width: 26.4, height: 16 * 1.15 },
+  { x: 100, y: 200 - 16 * 1.15 * 0.2, width: estimateInsertedTextWidth('WWW', 16), height: 16 * 1.15 },
   uiRotationToPdfAngle(90)
 );
 assert.match(

@@ -102,4 +102,52 @@ assert.equal(commits, 3);
 interaction.reset();
 assert.equal(documentRef.listeners.size, 0);
 
+// A click must preserve the DOM for native double-click delivery. RAF drag
+// updates coalesce, and pointerup publishes the final queued position.
+const frames = new Map();
+let frameId = 0;
+let queuedUpdates = 0;
+let queuedPosition;
+const batched = createPdfEditorComponentInteraction({
+  documentRef,
+  windowRef: {
+    requestAnimationFrame(callback) { frames.set(++frameId, callback); return frameId; },
+    cancelAnimationFrame(id) { frames.delete(id); }
+  },
+  getComponentMode: () => true,
+  hasDocument: () => true,
+  getSelectedComponent: () => selected,
+  getCurrentTextLayerCache: () => cache,
+  getCanvasWrap: () => canvasWrap,
+  cloneState: value => structuredClone(value),
+  selectComponent: component => { selected = structuredClone(component); },
+  updateComponentFromDelta(dx, dy) { queuedUpdates++; queuedPosition = [dx, dy]; },
+  flushComponentVisualRefresh() { flushes++; },
+  commitEditorHistory() { commits++; }
+});
+const start = { button: 0, pointerId: 4, clientX: 10, clientY: 20,
+  preventDefault() {}, stopPropagation() {} };
+const previousFlushes = flushes;
+const previousCommits = commits;
+batched.beginComponentDrag(start, selected);
+documentRef.listeners.get('pointerup')({ pointerId: 4 });
+assert.equal(flushes, previousFlushes);
+assert.equal(commits, previousCommits);
+batched.beginComponentDrag(start, selected);
+for (const clientX of [20, 30, 40]) {
+  documentRef.listeners.get('pointermove')({ pointerId: 4, clientX, clientY: 35, preventDefault() {} });
+}
+assert.equal(frames.size, 1);
+assert.equal(queuedUpdates, 0);
+documentRef.listeners.get('pointerup')({ pointerId: 4 });
+assert.equal(queuedUpdates, 1);
+assert.deepEqual(queuedPosition, [30, 15]);
+assert.equal(frames.size, 0);
+batched.beginComponentDrag(start, selected);
+documentRef.listeners.get('pointermove')({ pointerId: 4, clientX: 50, clientY: 40, preventDefault() {} });
+batched.reset();
+assert.equal(frames.size, 0);
+assert.equal(documentRef.listeners.size, 0);
+assert.equal(queuedUpdates, 1, 'reset discards pending moves');
+
 console.log('PDF editor component interaction lifecycle checks passed');

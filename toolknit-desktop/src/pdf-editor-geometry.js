@@ -33,6 +33,24 @@ export function resizePdfBoxFromHandle(baseBox, handle, deltaX = 0, deltaY = 0, 
     else top = bottom + minHeight;
   }
 
+  const ratio = finiteNumber(options.aspectRatio);
+  if (ratio > 0) {
+    const horizontal = /[ew]/.test(handle);
+    const vertical = /[ns]/.test(handle);
+    let width = right - left;
+    let height = top - bottom;
+    if (horizontal && (!vertical || Math.abs(dx) >= Math.abs(dy * ratio))) height = width / ratio;
+    else width = height * ratio;
+    width = Math.max(minWidth, minHeight * ratio, width);
+    height = width / ratio;
+    left = /w/.test(handle) ? source.x + source.width - width
+      : horizontal ? source.x : source.x + (source.width - width) / 2;
+    bottom = /s/.test(handle) ? source.y + source.height - height
+      : vertical ? source.y : source.y + (source.height - height) / 2;
+    right = left + width;
+    top = bottom + height;
+  }
+
   return {
     x: left,
     y: bottom,

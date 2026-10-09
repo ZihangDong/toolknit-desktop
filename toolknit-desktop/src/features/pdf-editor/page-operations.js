@@ -42,6 +42,7 @@ export function createPdfEditorPageOperations({
   pageStateFor = () => null,
   refreshTile = () => {},
   renderMainPreview = () => {},
+  refreshCurrentTextLayer = () => {},
   updateControls = () => {},
   commitEditorHistory = () => {},
   showToast = () => {},
@@ -302,6 +303,7 @@ export function createPdfEditorPageOperations({
         setInsertedShapes((getInsertedShapes() || []).filter(item => item.id !== selectedComponent.key));
       }
       clearSelectedComponent();
+      refreshCurrentTextLayer();
       commitEditorHistory();
       return;
     }

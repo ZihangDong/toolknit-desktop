@@ -56,22 +56,26 @@ assert.deepEqual(sourceTextBox({ baseSegment: { sourceBox: { x: 5, y: 6, width: 
 assert.deepEqual(sourceTextBox({}, baseSegment), baseSegment.box);
 assert.equal(sourceTextBox(null, null), null);
 
-assert.deepEqual(editedTextVisualBox({
+const replacementBox = editedTextVisualBox({
   newText: 'A much wider replacement',
   segment: { box: { x: 10, y: 20, width: 2, height: 12 }, fontSize: 12 }
-}, null), {
-  x: 10,
-  y: 20,
-  width: (String('A much wider replacement').length + 0.4) * 12 * 0.58,
-  height: 12
-});
+}, null);
+assert.equal(replacementBox.x, 10);
+assert.equal(replacementBox.y, 20);
+assert.ok(Math.abs(replacementBox.width - 160.2) < 1e-9);
+assert.ok(Math.abs(replacementBox.height - 14.4) < 1e-9);
 assert.equal(editedTextVisualBox({}, null), null);
+assert.equal(editedTextVisualBox({ newText: '中文', segment: {
+  box: { x: 0, y: 0, width: 10, height: 12 }, fontSize: 12,
+  visualTextWidth: 24, visualTextHeight: 18
+} }).height, 18, 'replacement box includes the actual font height');
 
 const insertedFallbackBox = insertedTextVisualBox({ x: 10, y: 20, text: 'WWW', fontSize: 16 });
 assert.equal(insertedFallbackBox.x, 10);
 assert.equal(insertedFallbackBox.y, 20 - (16 * 1.15) * 0.2);
-assert.ok(Math.abs(insertedFallbackBox.width - 26.4) < 1e-9);
+assert.ok(Math.abs(insertedFallbackBox.width - 45.6) < 1e-9);
 assert.equal(insertedFallbackBox.height, 16 * 1.15);
+assert.equal(insertedTextVisualBox({ fontSize: 16, height: 18, visualTextHeight: 24 }).height, 24);
 assert.deepEqual(insertedTextVisualBox({ x: 10, y: 20, text: 'ignored', fontSize: 16, width: 80, height: 30 }), {
   x: 10,
   y: 14,

@@ -44,6 +44,7 @@ for (const page of pages) {
 let activeOperation = null;
 let refreshCount = 0;
 let renderCount = 0;
+let contentRefreshCount = 0;
 let updateCount = 0;
 let commitCount = 0;
 let buildCount = 0;
@@ -95,6 +96,11 @@ const operations = createPdfEditorPageOperations({
   pageStateFor: id => pageTiles.get(id),
   refreshTile: () => { refreshCount += 1; },
   renderMainPreview: () => { renderCount += 1; },
+  refreshCurrentTextLayer: () => {
+    assert.equal(selectedComponent, null);
+    assert.equal(insertedImages.some(item => item.id === 'image-1'), false);
+    contentRefreshCount += 1;
+  },
   updateControls: () => { updateCount += 1; },
   commitEditorHistory: () => { commitCount += 1; },
   showToast: message => { notices.push(message); },
@@ -160,6 +166,7 @@ selectedComponent = { type: 'inserted-image', key: 'image-1' };
 operations.deleteSelected();
 assert.equal(insertedImages.some(item => item.id === 'image-1'), false);
 assert.equal(imageStore.has('image-1'), false, 'deleting an image must release its backing bytes');
+assert.equal(contentRefreshCount, 1, 'component deletion must refresh the content layer immediately');
 assert.equal(commitCount, 4);
 
 selectedComponent = null;

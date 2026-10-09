@@ -85,4 +85,60 @@ assert.equal(snap.dy, 23);
 const targets = model.collectSnapTargets('p1', 'inserted-image', 'img-1');
 assert.ok(targets.length >= 3, 'snap targets include text and inserted components');
 
+const frozen = { ...textComponent, segment: structuredClone(textEdits.get(textComponent.key).segment) };
+const anchors = [{ x: 140, y: 210, width: 50, height: 20 }];
+const beforeMove = model.snapComponentDrag(frozen, 27, 5, anchors);
+model.updateComponentFromDelta(beforeMove.dx, beforeMove.dy, 1, frozen);
+assert.deepEqual(model.snapComponentDrag(frozen, 27, 5, anchors), beforeMove,
+  'snapping uses the drag-start geometry, never live moved coordinates');
+
+const edgeComponent = { type: 'inserted-image', pageId: 'p1', key: 'probe',
+  object: { x: 20, y: 50, width: 30, height: 20 } };
+for (const scale of [0.5, 1, 2]) {
+  const options = { scale, pageBox: { x: 0, y: 0, width: 600, height: 800 } };
+  const captured = model.snapComponentDrag(edgeComponent, -20 + 4 / scale, 0, [], options);
+  assert.equal(captured.dx, -20);
+  assert.equal(captured.guides.x.target, 0);
+  const held = model.snapComponentDrag(edgeComponent, -20 + 7 / scale, 0, [],
+    { ...options, previous: captured.guides });
+  assert.equal(held.dx, -20, 'release threshold avoids flickering');
+  const released = model.snapComponentDrag(edgeComponent, -20 + 9 / scale, 0, [],
+    { ...options, previous: captured.guides });
+  assert.equal(released.guides.x, null);
+  for (const [delta, target] of [[265, 300], [550, 600]]) {
+    const snapped = model.snapComponentDrag(edgeComponent, delta + 3 / scale, 0, [], options);
+    assert.ok(Math.abs(snapped.dx - delta) < 1e-9);
+    assert.equal(snapped.guides.x.target, target);
+  }
+  const bypassed = model.snapComponentDrag(edgeComponent, -20 + 3 / scale, 0, [],
+    { ...options, disabled: true, previous: captured.guides });
+  assert.equal(bypassed.dx, -20 + 3 / scale);
+  assert.equal(bypassed.guides.x, null);
+}
+for (const [delta, target] of [[180, 200], [235, 270], [290, 340]]) {
+  const aligned = model.snapComponentDrag(edgeComponent, delta + 3, 0,
+    [{ x: 200, y: 100, width: 140, height: 60 }]);
+  assert.equal(aligned.dx, delta);
+  assert.equal(aligned.guides.x.target, target);
+}
+const rotatedComponent = { ...edgeComponent,
+  object: { x: 20, y: 50, width: 60, height: 20, rotation: 90 } };
+const rotatedSnap = model.snapComponentDrag(rotatedComponent, -37, 0, [],
+  { pageBox: { x: 0, y: 0, width: 600, height: 800 } });
+assert.ok(Math.abs(rotatedSnap.dx + 40) < 1e-9, 'rotated visual edge snaps to page edge');
+assert.equal(rotatedSnap.guides.x.target, 0);
+insertedImages.push({ id: 'other-page', pageId: 'p2', x: 9999, y: 0, width: 10, height: 10 });
+assert.ok(model.collectSnapTargets('p1', 'inserted-image', 'img-1').every(box => box.x !== 9999));
+insertedImages[0].originalAspectRatio = 2;
+insertedImages[0].aspectRatioLocked = true;
+selectedComponent = { type: 'inserted-image', pageId: 'p1', key: 'img-1' };
+assert.equal(model.toggleImageAspectRatio(), true);
+assert.equal(insertedImages[0].aspectRatioLocked, false);
+insertedImages[0].width = 120;
+insertedImages[0].height = 90;
+const centerY = insertedImages[0].y + 45;
+model.toggleImageAspectRatio();
+assert.equal(insertedImages[0].height, 60);
+assert.equal(insertedImages[0].y + 30, centerY);
+
 console.log('PDF editor component model regression checks passed');

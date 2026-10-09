@@ -1130,6 +1130,8 @@
       "shapeStroke": "描边",
       "shapeStrokeWidth": "粗细",
       "resizeComponent": "调整大小",
+      "lockAspectRatio": "锁定并恢复原始宽高比",
+      "unlockAspectRatio": "解锁宽高比",
       "textComponent": "文字组件",
       "insertPlaced": "已放置，导出时会写入 PDF",
       "insertImageFailed": "图像读取失败：{error}",
