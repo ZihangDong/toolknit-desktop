@@ -469,13 +469,22 @@ ToolKnit 的持续完善离不开每一位参与开发、设计、测试和反�
 
 <table cellpadding="12" cellspacing="0">
   <tr>
-    <td width="33%" align="center" valign="top"><a href="https://github.com/ZihangDong"><img src="https://avatars.githubusercontent.com/u/274734333?v=4&amp;s=160" width="88" height="88" alt="ZihangDong" /><br /><sub><strong>Zihang Dong</strong></sub></a><br /><sub>项目作者 · 产品设计、开发与维护</sub></td>
-    <td width="33%" align="center" valign="top"><a href="https://github.com/Joshua-Zion"><img src="https://avatars.githubusercontent.com/u/73597322?v=4&amp;s=160" width="88" height="88" alt="Joshua-Zion" /><br /><sub><strong>Joshua-Zion</strong></sub></a><br /><sub>颜色空间转换核心与交互增强 · <a href="https://github.com/ZihangDong/toolknit-desktop/pull/23">PR #23</a> / <a href="https://github.com/ZihangDong/toolknit-desktop/pull/67">PR #67</a></sub></td>
-    <td width="33%" align="center" valign="top"><a href="https://github.com/hqyx2025"><img src="https://avatars.githubusercontent.com/u/246831866?v=4&amp;s=160" width="88" height="88" alt="hqyx2025" /><br /><sub><strong>hqyx2025</strong></sub></a><br /><sub>项目查验测试与 Bug 测试</sub></td>
+    <td width="96" align="center" valign="middle"><a href="https://github.com/ZihangDong"><img src="https://wsrv.nl/?url=avatars.githubusercontent.com%2Fu%2F274734333%3Fv%3D4%26s%3D160&amp;w=160&amp;h=160&amp;fit=cover&amp;mask=circle&amp;output=png" width="72" height="72" alt="ZihangDong 圆形头像" /></a></td>
+    <td valign="middle"><a href="https://github.com/ZihangDong"><strong>Zihang Dong</strong></a><br />项目作者 · 产品设计、开发与维护</td>
+  </tr>
+  <tr>
+    <td width="96" align="center" valign="middle"><a href="https://github.com/Joshua-Zion"><img src="https://wsrv.nl/?url=avatars.githubusercontent.com%2Fu%2F73597322%3Fv%3D4%26s%3D160&amp;w=160&amp;h=160&amp;fit=cover&amp;mask=circle&amp;output=png" width="72" height="72" alt="Joshua-Zion 圆形头像" /></a></td>
+    <td valign="middle"><a href="https://github.com/Joshua-Zion"><strong>Joshua-Zion</strong></a><br />颜色空间转换核心与交互增强 · <a href="https://github.com/ZihangDong/toolknit-desktop/pull/23">PR #23</a> / <a href="https://github.com/ZihangDong/toolknit-desktop/pull/67">PR #67</a></td>
+  </tr>
+  <tr>
+    <td width="96" align="center" valign="middle"><a href="https://github.com/hqyx2025"><img src="https://wsrv.nl/?url=avatars.githubusercontent.com%2Fu%2F246831866%3Fv%3D4%26s%3D160&amp;w=160&amp;h=160&amp;fit=cover&amp;mask=circle&amp;output=png" width="72" height="72" alt="hqyx2025 圆形头像" /></a></td>
+    <td valign="middle"><a href="https://github.com/hqyx2025"><strong>hqyx2025</strong></a><br />项目查验测试与 Bug 测试</td>
   </tr>
 </table>
 
-<p align="center"><sub>特别感谢 <a href="https://atomgit.com/">AtomGit</a>：在国内托管 AIRI，帮助中国大陆用户更快访问项目与下载 Release。</sub></p>
+<h3><a href="https://atomgit.com/"><img src="https://cdn-static.gitcode.com/static/images/logo-favicon.png" width="36" height="36" alt="AtomGit Logo" align="absmiddle" /></a> 特别感谢 <a href="https://atomgit.com/">AtomGit</a></h3>
+
+<p>在国内托管 AIRI，帮助中国大陆用户更快访问项目与下载 Release。</p>
 
 ## 捐赠支持
 
