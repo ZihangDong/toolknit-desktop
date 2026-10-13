@@ -484,7 +484,9 @@ ToolKnit 的持续完善离不开每一位参与开发、设计、测试和反�
 
 <h3><a href="https://atomgit.com/"><img src="https://cdn-static.gitcode.com/static/images/logo-favicon.png" width="36" height="36" alt="AtomGit Logo" align="absmiddle" /></a> 特别感谢 <a href="https://atomgit.com/">AtomGit</a></h3>
 
-<p>在国内托管 AIRI，帮助中国大陆用户更快访问项目与下载 Release。</p>
+<p><strong>ToolKnit 推荐：让开源创意，更快被看见。</strong></p>
+
+<p><a href="https://atomgit.com/">AtomGit</a> 集代码托管、项目管理与开发协作于一体，连接开发者与开源项目。发现实用的开源工具，分享自己的作品，与更多开发者一起把好想法变成好项目。<a href="https://atomgit.com/"><strong>前往 AtomGit，探索更多开源可能。</strong></a></p>
 
 ## 捐赠支持
 
