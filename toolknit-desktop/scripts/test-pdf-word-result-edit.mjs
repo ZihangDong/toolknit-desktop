@@ -51,4 +51,19 @@ const existingEdit = { ...replacement, lines: [{ text: 'Other', x: 280, baseline
 const second = targets.find(target => target.text === 'Keep me');
 const reserved = availableTextRect({ ...short, container: { x: 40, y: 40, width: 350, height: 50 } }, original.pages[0], { [second.key]: existingEdit });
 assert(reserved.x + reserved.width < 280, 'previous edits reserve their current geometry');
+const inferredPage = structuredClone(original.pages[0]), narrowBlock = inferredPage.blocks[0];
+narrowBlock.rect.width = narrowBlock.lines[0].rect.width = narrowBlock.lines[0].items[0].rect.width = 24;
+narrowBlock.lines[0].items[0].text = '1234'; narrowBlock.lines[0].text = '1234';
+inferredPage.sources.find(source => source.id === 'a').text = '1234';
+const inferredTable = { id: 'inferred', type: 'table', aiInferred: true, borderless: true, rect: narrowBlock.rect,
+  sourceIds: narrowBlock.sourceIds, cells: [{ row: 0, col: 0, rowSpan: 1, colSpan: 1, rect: narrowBlock.rect, blocks: [narrowBlock] }] };
+inferredPage.blocks[0] = inferredTable;
+const inferredTarget = resultTargets(inferredPage).find(target => target.text === '1234');
+const inferredEdit = layoutEditedText(inferredTarget, '123456789012', measure, { page: inferredPage });
+assert.equal(inferredEdit.size, 12, 'AI semantic cell bounds are not a measured physical border');
+assert.equal(inferredEdit.lines.length, 1);
+assert(availableTextRect(inferredTarget, inferredPage).y + availableTextRect(inferredTarget, inferredPage).height < 110);
+inferredTable.aiInferred = false;
+assert.equal(resultTargets(inferredPage).find(target => target.text === '1234').container.width, 24,
+  'actual locally measured table borders remain strict editing boundaries');
 console.log('Result edits passed: immutable baseline, actual DOCX edits, automatic font sizing, soft wraps, free space and neighbouring content protection.');

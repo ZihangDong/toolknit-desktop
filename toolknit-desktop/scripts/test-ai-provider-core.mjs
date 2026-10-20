@@ -16,6 +16,22 @@ const request = {
   messages: [{ role: 'user', content: 'Hello' }]
 };
 
+const largeVision = [{ role: 'user', content: [{ type: 'image_url', image_url: {
+  url: 'data:image/png;base64,' + 'YWFh'.repeat(3 * 1024 * 1024 / 4)
+} }] }];
+for (const native of [false, true]) {
+  let dispatched = 0;
+  const transport = native ? { nativeRequestImpl: async () => { dispatched++; return { content: 'ok' }; } }
+    : { fetchImpl: async () => { dispatched++; return new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] })); } };
+  assert.equal(await requestAiCompletion({ ...request, messages: largeVision, ...transport }), 'ok');
+  assert.equal(dispatched, 1, 'valid image requests can exceed the response-size budget');
+  const nearLimit = structuredClone(largeVision);
+  nearLimit[0].content[0].image_url.url = 'data:image/png;base64,' + 'YWFh'.repeat((AI_PROVIDER_LIMITS.maxRequestBytes - 1024) / 4);
+  nearLimit.unshift({ role: 'system', content: 'x'.repeat(2048) });
+  await assert.rejects(requestAiCompletion({ ...request, messages: nearLimit, ...transport }), error => error.code === 'invalid_request');
+  assert.equal(dispatched, 1, 'the full serialized request budget includes its text envelope');
+}
+
 assert.deepEqual(
   normalizeAiProviderConfig({ url: 'https://api.example.test/v1/chat/completions', model: ' test-model ' }),
   { url: 'https://api.example.test/v1/chat/completions', model: 'test-model' }

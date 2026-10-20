@@ -69,6 +69,7 @@ export const PDF_TO_WORD_LIMITS = Object.freeze({
   aiSourceIds: 512,
   aiRequestBytes: 6 * MEBIBYTE,
   aiResponseBytes: 256 * 1024,
-  aiRequestMs: 30_000,
+  aiRequestMs: 45_000,
+  aiConcurrency: 2,
   aiTotalMs: 90_000
 });

@@ -3,6 +3,9 @@ import { planAiScopes, aiScopePayload, validateAiScope, applyAiScope } from '../
 import { createWordAiCache, runWordAi, wordInputDigest, boundedAiWork } from '../src/features/pdf-to-word/ai-runtime.js';
 import { LIMITS, wordError } from '../src/features/pdf-to-word/core/input.js';
 import { validateCoverage } from '../src/features/pdf-to-word/core/layout.js';
+import { aiBatchRequest, validateAiBatch, planAiBatches, compactAiBatch, layoutInstruction } from '../src/features/pdf-to-word/core/ai-batch.js';
+import { requestAiCompletion } from '../src/ai-provider-core.js';
+import { resultTargets, applyResultEdits } from '../src/features/pdf-to-word/core/result-edit.js';
 
 const rect = (x, y, width = 45, height = 10) => ({ x, y, width, height });
 const paragraph = (id, x, y) => ({ id: `${id}:paragraph`, type: 'paragraph', role: 'paragraph', sourceIds: [id], rect: rect(x, y),
@@ -22,6 +25,9 @@ const document = { schemaVersion: 1, pages: [page()] };
 const identity = request => Object.fromEntries(['schemaVersion', 'requestId', 'inputDigest', 'sourceDigest', 'page', 'scopeId'].map(key => [key, request[key]]));
 const response = request => ({ ...identity(request), groups: request.regions.map((region, i) => ({ id: `g${i}`, role: 'paragraph', sourceIds: [region.id] })),
   readingOrder: request.regions.map((_, i) => `g${i}`) });
+const batchResponse = request => request.schemaVersion === 2 ? response(request)
+  : { schemaVersion: 3, requestId: request.requestId, inputDigest: request.inputDigest, sourceDigest: request.sourceDigest, page: request.page,
+    scopes: request.scopes.map(scope => ({ scopeId: scope.scopeId, groups: response(scope).groups, readingOrder: response(scope).readingOrder })) };
 const digest = await wordInputDigest(new Uint8Array([1, 2, 3]));
 const scopes = planAiScopes(document, [1]);
 assert.equal(scopes.length, 3);
@@ -139,29 +145,47 @@ const image = 'data:image/png;base64,fixture';
 const cache = createWordAiCache(); let calls = 0, renders = 0;
 const options = { document, inputDigest: digest, expectedProvider: provider, cache,
   renderRegion: async () => { renders++; return image; },
-  requestAi: async messages => { calls++; return JSON.stringify(response(JSON.parse(messages[1].content[0].text))); } };
+  requestAi: async messages => { calls++; return JSON.stringify(batchResponse(JSON.parse(messages[1].content[0].text))); } };
 const run = extra => runWordAi({ ...options, operation: operation(), ...extra });
 const first = await run(); assert.equal(first.review.reviewed, 3); assert.equal(first.review.remaining, 0);
-assert.equal(calls, 3); assert.equal(renders, 3);
-const second = await run(); assert.equal(second.review.cached, 3); assert.equal(calls, 3); assert.equal(renders, 3);
-await run({ expectedProvider: { ...provider, model: 'other' } }); assert.equal(calls, 6);
-await run({ inputDigest: await wordInputDigest(new Uint8Array([4])) }); assert.equal(calls, 9);
-cache.clear(); await run(); assert.equal(calls, 12);
+const firstTargets = resultTargets(first.document.pages[0]);
+assert.equal(new Set(firstTargets.map(target => target.key)).size, firstTargets.length, 'same group ids from different scopes cannot alias edit targets');
+const oneDeleted = applyResultEdits(first.document, { [firstTargets[0].key]: { type: 'delete' } });
+assert.equal(validateCoverage(oneDeleted).editableCharacters, 4, 'deleting one AI result must leave other scopes intact');
+assert.equal(calls, 1); assert.equal(renders, 1);
+const layoutOnly = await run({ document: withMath, cache: createWordAiCache(), layoutOnly: true,
+  renderRegion: async () => image,
+  requestAi: async messages => {
+    const request = JSON.parse(messages[1].content[0].text);
+    assert.notEqual(request.kind, 'math', 'the workbench does not request unusable formula proposals');
+    return JSON.stringify(batchResponse(request));
+  } });
+assert.equal(layoutOnly.review.total, 3); assert.equal(layoutOnly.review.pendingMath, 0);
+assert.equal(layoutOnly.document.pages[0].blocks.at(-1).aiReview, undefined);
+assert.equal(layoutOnly.document.pages[0].blocks.at(-1).type, 'image');
+const second = await run(); assert.equal(second.review.cached, 3); assert.equal(calls, 1); assert.equal(renders, 1);
+await run({ expectedProvider: { ...provider, model: 'other' } }); assert.equal(calls, 2);
+await run({ inputDigest: await wordInputDigest(new Uint8Array([4])) }); assert.equal(calls, 3);
+cache.clear(); await run(); assert.equal(calls, 4);
 
 const partialCache = createWordAiCache(); let failedCalls = 0;
-await assert.rejects(run({ cache: partialCache, requestAi: async messages => {
+const twoPages = { schemaVersion: 1, pages: [page(1), page(2)] };
+await assert.rejects(run({ document: twoPages, cache: partialCache, requestAi: async messages => {
   failedCalls++; if (failedCalls === 2) throw wordError('network_error');
-  return JSON.stringify(response(JSON.parse(messages[1].content[0].text)));
+  return JSON.stringify(batchResponse(JSON.parse(messages[1].content[0].text)));
 } }), /network_error/);
-assert.equal(partialCache.size, 1);
-const retried = await run({ cache: partialCache }); assert.equal(retried.review.cached, 1); assert.equal(retried.requests, 2);
-const limited = await run({ cache: createWordAiCache(), limits: { ...LIMITS, aiRegions: 1 } });
-assert.equal(limited.requests, 1); assert.equal(limited.review.remaining, 2); assert.equal(limited.review.reason, 'budget');
+assert.equal(partialCache.size, 3);
+const retried = await run({ document: twoPages, cache: partialCache }); assert.equal(retried.review.cached, 3); assert.equal(retried.requests, 1);
+const limited = await run({ document: twoPages, cache: createWordAiCache(), limits: { ...LIMITS, aiRegions: 1 } });
+assert.equal(limited.requests, 1); assert.equal(limited.review.remaining, 3); assert.equal(limited.review.reason, 'budget');
 const clock = { value: 0 };
 const deadlineCache = createWordAiCache();
-await assert.rejects(run({ cache: deadlineCache, now: () => clock.value, limits: { ...LIMITS, aiTotalMs: 10 },
-  requestAi: async messages => { clock.value += 7; return JSON.stringify(response(JSON.parse(messages[1].content[0].text))); } }), /timeout/);
-assert.equal(deadlineCache.size, 1, 'late results never enter the cache');
+const timeLimited = await run({ document: twoPages, cache: deadlineCache, now: () => clock.value, limits: { ...LIMITS, aiTotalMs: 10 },
+  requestAi: async messages => { clock.value += 7; return JSON.stringify(batchResponse(JSON.parse(messages[1].content[0].text))); } });
+assert.equal(timeLimited.review.reason, 'budget'); assert.equal(timeLimited.review.remaining, 3);
+assert.equal(validateCoverage(timeLimited.document).characters, validateCoverage(twoPages).characters,
+  'a total-budget boundary keeps verified regions and the complete remaining local document');
+assert.equal(deadlineCache.size, 3, 'late results never enter the cache');
 assert.equal(validateCoverage(document).editableCharacters, 6, 'input document is never partially mutated');
 
 const waiting = [];
@@ -176,15 +200,108 @@ const pending = boundedAiWork(() => new Promise(() => {}), { signal: aborted.sig
 aborted.abort(); await assert.rejects(pending, /cancelled/); assert.equal(waiting.length, 0);
 const changedCache = createWordAiCache();
 await assert.rejects(run({ cache: changedCache, requestAi: async messages => {
-  changedCache.clear(); return JSON.stringify(response(JSON.parse(messages[1].content[0].text)));
+  changedCache.clear(); return JSON.stringify(batchResponse(JSON.parse(messages[1].content[0].text)));
 } }), /cancelled/); assert.equal(changedCache.size, 0);
 let currentProvider = provider;
 await assert.rejects(run({ cache: createWordAiCache(), getProvider: () => currentProvider, requestAi: async messages => {
-  currentProvider = { ...provider, model: 'changed-mid-request' }; return JSON.stringify(response(JSON.parse(messages[1].content[0].text)));
+  currentProvider = { ...provider, model: 'changed-mid-request' }; return JSON.stringify(batchResponse(JSON.parse(messages[1].content[0].text)));
 } }), /ai-config/);
 await assert.rejects(run({ cache: createWordAiCache(), limits: { ...LIMITS, aiRequestBytes: 10 } }), /ai-request-large/);
 const boundedCache = createWordAiCache();
 for (let i = 0; i < 12; i++) boundedCache.set(`k${i}`, { value: 'x'.repeat(250_000) }, boundedCache.revision);
-assert(boundedCache.size <= 8 && boundedCache.bytes <= 2 * 1024 * 1024); assert.equal(boundedCache.get('k0'), null);
+assert(boundedCache.size <= 32 && boundedCache.bytes <= 2 * 1024 * 1024); assert.equal(boundedCache.get('k0'), null);
 const detached = boundedCache.get('k11'); detached.value = 'mutated'; assert.notEqual(boundedCache.get('k11').value, 'mutated');
 console.log('PDF Word AI v2 passed: nested ownership, hidden evidence, hostile responses, formula review, scoped cache, deadlines, cancellation and late results.');
+
+const batchRequests = scopes.map(scope => ({ ...aiScopePayload(document.pages[0], scope), ...identity(request), scopeId: scope.id }));
+const batchRequest = aiBatchRequest(batchRequests), validBatch = batchResponse(batchRequest);
+assert.equal(validateAiBatch('```json\n' + JSON.stringify(validBatch) + '\n```', batchRequest, batchRequests).length, 3);
+assert.equal(validateAiBatch(JSON.stringify(response(request)), request, [request]).length, 1);
+const compact = compactAiBatch(batchRequest, batchRequests), compactReply = batchResponse(compact.request);
+assert(compact.request.scopes.every(scope => scope.regions.every(region => /^r\d+$/.test(region.id))));
+assert.deepEqual(compact.decode(JSON.stringify(compactReply)).map(value => value.groups[0].sourceIds[0]), batchRequests.map(value => value.regions[0].id));
+assert.deepEqual(compact.decode(JSON.stringify(compactReply)).map(value => value.scopeId), batchRequests.map(value => value.scopeId));
+const badAlias = structuredClone(compactReply); badAlias.scopes[0].groups[0].sourceIds[0] = 'r999';
+assert.throws(() => compact.decode(JSON.stringify(badAlias)), /ai-response/);
+const originalAlias = structuredClone(compactReply); originalAlias.scopes[0].groups[0].sourceIds[0] = batchRequests[0].regions[0].id;
+assert.throws(() => compact.decode(JSON.stringify(originalAlias)), /ai-response/);
+assert(!layoutInstruction(batchRequest).includes('radical'), 'layout prompts do not carry formula reconstruction instructions');
+assert(!JSON.stringify(batchRequest).includes('PRIVATE-REDACTED-SENTINEL'));
+for (const mutate of [value => value.scopes.pop(), value => { value.scopes[1] = value.scopes[0]; },
+  value => { value.requestId = 'stale'; }, value => { value.scopes[0].groups[0].sourceIds = [batchRequests[1].regions[0].id]; },
+  value => { value.scopes[0].text = 'rewritten'; }, value => { value.scopes[0].groups[0].rect = rect(0, 0); }]) {
+  const invalid = structuredClone(validBatch); mutate(invalid);
+  assert.throws(() => validateAiBatch(JSON.stringify(invalid), batchRequest, batchRequests), /ai-response/);
+}
+assert.throws(() => validateAiBatch('Explanation\n' + JSON.stringify(validBatch), batchRequest, batchRequests), /ai-response/);
+assert.throws(() => validateAiBatch(JSON.stringify(validBatch) + JSON.stringify(validBatch), batchRequest, batchRequests), /ai-response/);
+assert(planAiBatches(Array.from({ length: 7 }, (_, i) => ({ ...scopes[0], id: 's' + i, ids: Array(20).fill('id') })))
+  .every(batch => batch.count <= 64 && batch.scopes.length <= 4));
+assert.equal(planAiBatches(scopes, () => 25000).length, 3, 'batching must not overflow the shared text-message limit');
+const interleaved = [2, 1, 2, 3, 1].map((page, index) => ({ ...scopes[0], page, id: 's' + index }));
+const groupedPages = planAiBatches(interleaved);
+assert.deepEqual(groupedPages.map(batch => batch.page), [2, 1, 3]);
+assert.deepEqual(groupedPages.map(batch => batch.scopes.map(scope => scope.id)), [['s0', 's2'], ['s1', 's4'], ['s3']],
+  'page indexing preserves priority order and independent scope order');
+
+const atomicCache = createWordAiCache();
+await assert.rejects(run({ cache: atomicCache, requestAi: async messages => {
+  const value = batchResponse(JSON.parse(messages[1].content[0].text)); value.scopes[2].groups[0].sourceIds = ['unknown']; return JSON.stringify(value);
+} }), /ai-response/);
+assert.equal(atomicCache.size, 0, 'a rejected batch does not cache incomplete suggestions');
+
+const fractionalClock = { value: 0 }; let providerCalls = 0;
+const validImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADElEQVQImWNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=';
+await run({ document: twoPages, cache: createWordAiCache(), now: () => fractionalClock.value,
+  renderRegion: async () => validImage, limits: { ...LIMITS, aiTotalMs: 90000, aiRequestMs: 30000 },
+  requestAi: async (messages, signal, maxTokens, options) => {
+    assert(Number.isInteger(options.timeoutMs));
+    const result = await requestAiCompletion({ ...provider, apiKey: 'fixture', messages, signal, maxTokens, timeoutMs: options.timeoutMs,
+      nativeRequestImpl: async body => {
+        providerCalls++; assert(Number.isInteger(body.timeoutMs));
+        if (providerCalls === 2) assert.equal(body.timeoutMs, 29499, 'remaining performance.now budget is floored before native serialization');
+        return { content: JSON.stringify(batchResponse(JSON.parse(messages[1].content[0].text))) };
+      } });
+    fractionalClock.value += providerCalls === 1 ? 60500.5 : 1000;
+    return result;
+  } });
+assert.equal(providerCalls, 2);
+console.log('AI batching passed: compact prompts, strict per-scope ownership, fenced JSON, atomic caching and fractional-timeout native boundary.');
+
+const gridPage = page();
+gridPage.blocks = [paragraph('top-left', 10, 20), paragraph('top-right', 80, 20),
+  paragraph('bottom-left', 10, 60), paragraph('bottom-right', 80, 60)];
+gridPage.sources = gridPage.blocks.map(block => ({ id: block.sourceIds[0], text: block.lines[0].text, disposition: 'editable' }));
+const gridDocument = { schemaVersion: 1, pages: [gridPage] }, gridScope = planAiScopes(gridDocument)[0];
+const gridRequest = { ...aiScopePayload(gridPage, gridScope), requestId: 'grid', inputDigest: digest, sourceDigest: digest };
+const gridSuggestion = { ...identity(gridRequest), groups: [{ id: 'table', role: 'table',
+  cells: gridPage.blocks.map((block, index) => ({ row: Math.floor(index / 2), col: index % 2,
+    rowSpan: 1, colSpan: 1, sourceIds: [block.id] })) }], readingOrder: ['table'] };
+assert.equal(applyAiScope(gridDocument, gridScope, gridRequest, gridSuggestion).pages[0].blocks[0].rows, 2);
+assert.equal(applyAiScope(gridDocument, gridScope, gridRequest, gridSuggestion).pages[0].blocks[0].borderless, true);
+const leftTable = { ...identity(gridRequest), groups: [
+  { id: 'left', role: 'table', cells: [0, 2].map((index, row) => ({ row, col: 0, rowSpan: 1, colSpan: 1, sourceIds: [gridPage.blocks[index].id] })) },
+  ...[1, 3].map(index => ({ id: 'right' + index, role: 'paragraph', sourceIds: [gridPage.blocks[index].id] }))
+], readingOrder: ['left', 'right1', 'right3'] };
+const leftResult = applyAiScope(gridDocument, gridScope, gridRequest, leftTable).pages[0].blocks[0];
+assert.equal(leftResult.rect.x + leftResult.rect.width, 55, 'an inferred left-column table cannot stretch across the rest of its scope');
+const upsideDown = structuredClone(gridSuggestion);
+upsideDown.groups[0].cells.forEach(cell => { cell.row = 1 - cell.row; });
+assert.throws(() => applyAiScope(gridDocument, gridScope, gridRequest, upsideDown), /ai-response/,
+  'complete source coverage must not allow AI to invert invoice/table rows');
+
+const overlapPage = page();
+overlapPage.blocks = [paragraph('upper', 10, 20), { id: 'fixed', type: 'image', rect: rect(10, 25), sourceIds: [] }, paragraph('lower', 10, 60)];
+overlapPage.sources = overlapPage.blocks.filter(block => block.type === 'paragraph')
+  .map(block => ({ id: block.sourceIds[0], text: block.lines[0].text, disposition: 'editable' }));
+const overlapDocument = { schemaVersion: 1, pages: [overlapPage] }, overlapScope = planAiScopes(overlapDocument)[0];
+const overlapRequest = { ...aiScopePayload(overlapPage, overlapScope), requestId: 'overlap', inputDigest: digest, sourceDigest: digest };
+assert.equal(applyAiScope(overlapDocument, overlapScope, overlapRequest, response(overlapRequest)).quality.characters, 10,
+  'role-only changes retain pre-existing overlap without moving source text');
+const crossedPage = structuredClone(overlapPage);
+crossedPage.blocks = [crossedPage.blocks[0], crossedPage.blocks[2], { ...crossedPage.blocks[1], rect: rect(10, 40) }];
+const crossedDocument = { schemaVersion: 1, pages: [crossedPage] }, crossedScope = planAiScopes(crossedDocument)[0];
+const crossedRequest = { ...aiScopePayload(crossedPage, crossedScope), requestId: 'cross', inputDigest: digest, sourceDigest: digest };
+const crossing = { ...identity(crossedRequest), groups: [{ id: 'merged', role: 'paragraph', sourceIds: crossedScope.ids }], readingOrder: ['merged'] };
+assert.throws(() => applyAiScope(crossedDocument, crossedScope, crossedRequest, crossing), /ai-response/,
+  'new grouping cannot bridge through a fixed object even if every text source is present');

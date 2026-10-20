@@ -1,3 +1,4 @@
+const AI_PROVIDER_MAX_REQUEST_BYTES: usize = 8 * 1024 * 1024;
 const AI_PROVIDER_MAX_RESPONSE_BYTES: usize = 2 * 1024 * 1024;
 const AI_PROVIDER_MAX_MESSAGES: usize = 12;
 const AI_PROVIDER_MAX_MESSAGE_CHARS: usize = 50_000;
@@ -323,7 +324,7 @@ async fn request_impl(
     let body = request_body(&request, &endpoint);
     let encoded_body =
         serde_json::to_vec(&body).map_err(|_| "ai-provider:invalid_request".to_string())?;
-    if encoded_body.len() > AI_PROVIDER_MAX_RESPONSE_BYTES {
+    if encoded_body.len() > AI_PROVIDER_MAX_REQUEST_BYTES {
         return Err("ai-provider:invalid_request".to_string());
     }
 
@@ -457,6 +458,86 @@ mod tests {
             "maxTokens": 8192, "timeoutMs": 180000, "reasoningEffort":"low"
         }))
         .unwrap()
+    }
+
+    #[tokio::test]
+    async fn multimodal_request_budget_is_independent_of_response_budget() {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let address = listener.local_addr().unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let server = std::thread::spawn(move || {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+            let mut stream = loop {
+                match listener.accept() {
+                    Ok((stream, _)) => break stream,
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        assert!(
+                            std::time::Instant::now() < deadline,
+                            "request was not dispatched"
+                        );
+                        std::thread::sleep(std::time::Duration::from_millis(5));
+                    }
+                    Err(error) => panic!("loopback accept failed: {error}"),
+                }
+            };
+            stream
+                .set_read_timeout(Some(std::time::Duration::from_secs(10)))
+                .unwrap();
+            let mut bytes = Vec::new();
+            let mut chunk = [0u8; 16384];
+            loop {
+                let size = stream.read(&mut chunk).unwrap();
+                assert!(size > 0);
+                bytes.extend_from_slice(&chunk[..size]);
+                if let Some(end) = bytes.windows(4).position(|value| value == b"\r\n\r\n") {
+                    let header = String::from_utf8_lossy(&bytes[..end]);
+                    let length = header
+                        .lines()
+                        .find_map(|line| {
+                            let (name, value) = line.split_once(':')?;
+                            name.eq_ignore_ascii_case("content-length")
+                                .then(|| value.trim().parse::<usize>().unwrap())
+                        })
+                        .unwrap();
+                    assert!(
+                        length > AI_PROVIDER_MAX_RESPONSE_BYTES
+                            && length <= AI_PROVIDER_MAX_REQUEST_BYTES
+                    );
+                    if bytes.len() >= end + 4 + length {
+                        break;
+                    }
+                }
+            }
+            let body = r#"{"choices":[{"message":{"content":"ok"},"finish_reason":"stop"}]}"#;
+            write!(stream, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}", body.len(), body).unwrap();
+        });
+        let mut request = test_request();
+        request.url = format!("http://{address}/v1/chat/completions");
+        request.messages[0].content = serde_json::json!([{"type":"image_url","image_url":{
+            "url":format!("data:image/png;base64,{}", "YWFh".repeat(3 * 1024 * 1024 / 4))
+        }}]);
+        let result = request_impl(request).await;
+        server.join().unwrap();
+        assert_eq!(
+            result
+                .unwrap_or_else(|code| panic!("native request failed: {code}"))
+                .content,
+            "ok"
+        );
+
+        let mut oversized = test_request();
+        oversized.messages[0].content = serde_json::json!([{"type":"image_url","image_url":{
+            "url":format!("data:image/png;base64,{}", "YWFh".repeat((AI_PROVIDER_MAX_REQUEST_BYTES - 1024) / 4))
+        }}]);
+        oversized.messages.push(AiProviderNativeMessage {
+            role: "system".into(),
+            content: "x".repeat(2048).into(),
+        });
+        assert!(validate_native_request(&oversized).is_ok());
+        assert!(
+            matches!(request_impl(oversized).await, Err(code) if code == "ai-provider:invalid_request")
+        );
     }
 
     #[test]

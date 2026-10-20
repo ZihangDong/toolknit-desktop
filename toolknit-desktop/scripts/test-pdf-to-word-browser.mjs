@@ -36,20 +36,26 @@ const url = 'http://127.0.0.1:' + server.httpServer.address().port + '/';
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 const errors = [], checks = [];
 let aiCalls = 0, aiBehavior = 'valid';
+const pendingAi = [];
 const nodes = (node, name) => [...(node.name === name ? [node] : []), ...(node.elements || []).flatMap(child => nodes(child, name))];
 const wordText = xml => nodes(xml2js(xml, { captureSpacesBetweenElements: true }), 'w:t').flatMap(text => text.elements || []).map(text => text.text || '').join('');
 try {
   const context = await browser.newContext({ viewport: { width: 1400, height: 920 }, acceptDownloads: true });
   await context.route('**/*', route => {
     if (route.request().url().startsWith('https://pdf-word-test.invalid/')) {
-      aiCalls++; if (aiBehavior === 'fail') return route.fulfill({ status: 503, body: '{}' });
+      aiCalls++; if (aiBehavior === 'fail' || Number.isInteger(aiBehavior)) return route.fulfill({ status: aiBehavior === 'fail' ? 503 : aiBehavior, body: '{}' });
+      if (aiBehavior === 'pending') return new Promise(resolve => pendingAi.push(async () => {
+        try { await route.abort(); } catch {} finally { resolve(); }
+      }));
       const request = JSON.parse(route.request().postData()), input = JSON.parse(request.messages[1].content[0].text);
-      assert.equal(input.schemaVersion, 2); assert(!JSON.stringify(input).includes('HIDDEN-LAYER-TEXT'));
+      assert([2, 3].includes(input.schemaVersion)); assert(!JSON.stringify(input).includes('HIDDEN-LAYER-TEXT'));
       const png = Buffer.from(request.messages[1].content[1].image_url.url.split(',')[1], 'base64');
       assert(png.readUInt32BE(16) <= 1600 && png.readUInt32BE(20) <= 1600);
-      const response = { schemaVersion: 2, requestId: input.requestId, inputDigest: input.inputDigest, sourceDigest: input.sourceDigest, page: input.page, scopeId: input.scopeId,
-        groups: input.regions.map((region, i) => ({ id: 'g' + i, role: region.role, sourceIds: [region.id] })), readingOrder: input.regions.map((_, i) => 'g' + i) };
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ choices: [{ message: { content: JSON.stringify(response) }, finish_reason: 'stop' }] }) });
+      const scoped = scope => ({ scopeId: scope.scopeId, groups: scope.regions.map((region, i) => ({ id: 'g' + i, role: region.role, sourceIds: [region.id] })), readingOrder: scope.regions.map((_, i) => 'g' + i) });
+      const response = { schemaVersion: input.schemaVersion, requestId: input.requestId, inputDigest: input.inputDigest, sourceDigest: input.sourceDigest, page: input.page,
+        ...(input.schemaVersion === 3 ? { scopes: input.scopes.map(scoped) } : scoped(input)) };
+      const content = aiBehavior === 'fenced' ? '```json\n' + JSON.stringify(response) + '\n```' : JSON.stringify(response);
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ choices: [{ message: { content }, finish_reason: 'stop' }] }) });
     }
     return new URL(route.request().url()).origin === new URL(url).origin ? route.continue() : route.fulfill({ body: '{}', contentType: 'application/json' });
   });
@@ -87,8 +93,9 @@ try {
     await page.waitForSelector('#pdfWordSuccessOverlay.visible');
     const zip = await JSZip.loadAsync(await readFile(file));
     const xml = await zip.file('word/document.xml').async('string');
+    const notice = await page.locator('#pdfWordResultQuality').innerText();
     await page.locator('#pdfWordSuccessOk').click(); await idle();
-    return { zip, xml, text: wordText(xml) };
+    return { zip, xml, text: wordText(xml), notice };
   };
   const toggleStructure = async () => {
     const english = await page.evaluate(() => localStorage.getItem('toolknit-lang') === 'en');
@@ -233,11 +240,68 @@ try {
   await load(fixture); await page.locator('#pdfWordAi').click();
   const beforeAi = aiCalls; await convert('ai'); assert.equal(aiCalls - beforeAi, 3);
   await convert('ai-reuse'); assert.equal(aiCalls - beforeAi, 3);
+  await toggleStructure();
+  const aiKeys = await page.locator('.pdf-word-region').evaluateAll(nodes => nodes.map(node => node.dataset.key));
+  assert.equal(new Set(aiKeys).size, aiKeys.length, 'AI groups keep distinct editor targets');
+  await page.locator('.pdf-word-region[data-type="text"]').first().click();
+  await page.locator('#pdfWordEdit').click();
+  await page.locator('#pdfWordEditText').fill('AI result edited');
+  await page.locator('#pdfWordEditForm button[type="submit"]').click();
+  await page.waitForFunction(() => !document.querySelector('#pdfWordEditOverlay').classList.contains('visible'));
+  const editedAi = await convert('ai-edited');
+  assert(editedAi.text.includes('AI result edited') && editedAi.text.includes('Editable paragraph 3.8'));
+  assert.equal(aiCalls - beforeAi, 3, 'exporting edits must not rerun AI or overwrite the edit');
+  await page.locator('#pdfWordReset').click(); await page.locator('#pdfWordConfirmOk').click();
+  const resetAi = await convert('ai-reset'); assert(!resetAi.text.includes('AI result edited'));
+  assert.equal(aiCalls - beforeAi, 3);
   aiBehavior = 'fail'; await page.evaluate(() => localStorage.setItem('ai_custom_model', 'fixture-new'));
   await page.locator('#pdfWordExport').click();
   await page.waitForFunction(() => document.querySelector('#pdfWordStatus').classList.contains('is-error') && !document.querySelector('#pdfWordLocal').disabled);
   await page.locator('#pdfWordLocal').click(); await convert('local-recovery');
   checks.push('AI remains explicit and bounded, reuse avoids repeated calls, changed provider failure recovers locally');
+  for (const status of [401, 403, 404, 429]) {
+    aiBehavior = status;
+    await page.evaluate(status => localStorage.setItem('ai_custom_model', 'fixture-status-' + status), status);
+    await page.locator('#pdfWordAi').click(); await page.locator('#pdfWordExport').click();
+    await page.waitForFunction(() => document.querySelector('#pdfWordStatus').classList.contains('is-error') && !document.querySelector('#pdfWordPick').disabled);
+    assert((await page.locator('#pdfWordStatus').innerText()).includes(String(status)), 'show the actionable provider status');
+  }
+  aiBehavior = 'fenced';
+  await page.evaluate(() => localStorage.setItem('ai_custom_model', 'fixture-fenced'));
+  await convert('ai-fenced');
+  const aiMany = await PDFDocument.create();
+  for (let index = 0; index < 9; index++) aiMany.addPage((await aiMany.copyPages(pdf, [index % 3]))[0]);
+  await load({ name: 'ai-partial.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await aiMany.save()) });
+  const beforePartial = aiCalls;
+  const partial = await convert('ai-partial'); assert.equal(aiCalls - beforePartial, 8);
+  assert(partial.notice.includes('再次转换'), partial.notice);
+  await toggleStructure();
+  await page.locator('.pdf-word-region[data-type="text"]').first().click(); await page.locator('#pdfWordEdit').click();
+  await page.locator('#pdfWordEditText').fill('Partial edit');
+  await page.locator('#pdfWordEditForm button[type="submit"]').click();
+  await page.waitForFunction(() => !document.querySelector('#pdfWordEditOverlay').classList.contains('visible'));
+  const partialEdited = await convert('ai-partial-edited');
+  assert(partialEdited.text.includes('Partial edit')); assert.equal(aiCalls - beforePartial, 8);
+  assert(partialEdited.notice.includes('已保留你的编辑') && !partialEdited.notice.includes('再次转换'));
+  await page.locator('#pdfWordReset').click(); await page.locator('#pdfWordConfirmOk').click();
+  const completed = await convert('ai-partial-continue'); assert.equal(aiCalls - beforePartial, 9, 'continue requests only the remaining page');
+  assert(!completed.notice.includes('再次转换'));
+  checks.push('AI error status is visible; fenced JSON works; budget-limited export discloses local regions and resumes from cache');
+  await load(fixture); aiBehavior = 'pending';
+  await page.evaluate(() => localStorage.setItem('ai_custom_model', 'fixture-cancel'));
+  await page.locator('#pdfWordExport').click();
+  await page.waitForFunction(() => document.querySelector('#pdfWordProgressTitle').textContent.includes('AI'));
+  for (let attempt = 0; pendingAi.length < 2 && attempt < 100; attempt++) await new Promise(resolve => setTimeout(resolve, 10));
+  assert.equal(pendingAi.length, 2);
+  await page.locator('#pdfWordCancel').click(); await idle();
+  assert((await page.locator('#pdfWordStatus').innerText()).includes('取消'));
+  assert(await page.locator('#pdfWordSuccessOverlay').isHidden());
+  while (pendingAi.length) await pendingAi.shift()();
+  aiBehavior = 'valid'; const afterCancel = aiCalls;
+  const resumedAi = await convert('ai-cancel-retry'); assert(resumedAi.text.includes('Editable paragraph 3.8'));
+  assert.equal(aiCalls - afterCancel, 3);
+  checks.push('AI result editing/reset never overwrites edits or resends requests; cancelling two pending requests recovers without late output');
+  aiBehavior = 'valid'; await page.locator('#pdfWordLocal').click();
   await page.locator('#pdfWordRange').fill('999'); await page.locator('#pdfWordExport').click();
   await page.waitForFunction(() => document.querySelector('#pdfWordStatus').classList.contains('is-error'));
   await page.keyboard.press('Escape'); await page.waitForFunction(() => !document.querySelector('#pdfWordOverlay').classList.contains('visible'));

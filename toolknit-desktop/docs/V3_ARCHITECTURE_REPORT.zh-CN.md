@@ -1,5 +1,7 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-10-20 PDF图像AI修补：`core/ai-batch.js`持有同页有界分批、短编号可逆映射、v3批量信封与逐区域v2验证；`ai-runtime.js`持有整数超时、最多两路网络并发、原子应用、LRU响应缓存和独立会话进度。`processor.js`工作台仅请求布局分析，公式内部协议保留；Writer按原坐标输出AI推断的无框表格。共享JS/Rust传输分开8 MiB请求预算与2 MiB响应预算，无新增命令、事件、存储或依赖。真实网络、原生函数、Office输出与限制见[AI专项实验记录](PDF_WORD_AI_SOAK_2026-10-20.zh-CN.md)。
+
 > 2026-10-20 PDF编辑与A4修补：feature CSS固定文字优先的命中层级；core/page-plan.js负责A4缩放、安全内容带分页及拆分来源书签，docx-continuous.js复用该规划处理宽表格/图片。编辑入口沿用原DOM契约并同步状态文案，无新增原生命令、事件、存储或依赖。两个真实样本Office渲染及12组浏览器回归证据见[工作台维护记录](PDF_WORD_WORKBENCH.zh-CN.md)。
 
 > 2026-10-20 PDF 转 Word 工作台：新增结果编辑核心、结果预览、编辑会话和按需缩略图模块；复用PDF编辑器的共享历史，曲线动画和PDF裁剪渲染队列提取到shared并保留兼容入口。移除审核DOM与复选框门槛，一键转换支持编辑后重新导出；无新增Tauri、事件、storage或CLI/MCP契约。责任、容量边界和验证见[工作台维护记录](PDF_WORD_WORKBENCH.zh-CN.md)。

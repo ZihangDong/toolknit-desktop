@@ -37,7 +37,8 @@ export function resultTargets(page) {
   const walk = (blocks, container) => {
     for (const block of blocks) {
       if (block.type === 'columns') block.columns.forEach(column => walk(column.blocks, intersect(container, column.rect) || container));
-      else if (['table', 'option-grid'].includes(block.type)) block.cells.forEach(cell => walk(cell.blocks, intersect(container, cell.rect) || container));
+      else if (['table', 'option-grid'].includes(block.type)) block.cells.forEach(cell =>
+        walk(cell.blocks, block.aiInferred ? container : intersect(container, cell.rect) || container));
       else if (block.type === 'image') image(block);
       else if (textOnly(block)) text(block.id, block.lines, intersect(container, block.column || container) || container);
       else for (const line of block.lines || []) for (const group of groups(line)) {

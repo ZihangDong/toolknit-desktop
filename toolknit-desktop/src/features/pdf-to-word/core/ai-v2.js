@@ -130,7 +130,10 @@ export function validateAiScope(response, request) {
 }
 
 export function applyAiScope(document, scope, request, suggestion) {
-  const output = structuredClone(document), page = output.pages.find(page => page.number === scope.page);
+  // Only the selected page can change. Keep other pages immutable and shared
+  // across checkpoints instead of cloning the entire PDF for every AI region.
+  const output = { ...document, pages: document.pages.map(page => page.number === scope.page ? structuredClone(page) : page) };
+  const page = output.pages.find(page => page.number === scope.page);
   if (!page) fail();
   // Revalidate even cached proposals; math evidence proves provenance, not meaning.
   validateAiScope(JSON.stringify(suggestion), request);
@@ -147,7 +150,13 @@ export function applyAiScope(document, scope, request, suggestion) {
       width: right(scope.rect), sources: page.sources.filter(source => chosen.some(block => block.sourceIds.includes(source.id))), evidence: [] }] };
     const converted = applyAiStructure(fake, { ...request, schemaVersion: 1 }, { ...suggestion, schemaVersion: 1 }).pages[0].blocks;
     for (const block of converted) {
-      if (!contains(scope.rect, block.rect, 2) || blocks.some(fixed => !scope.ids.includes(fixed.id) && overlaps(block.rect, fixed.rect))) fail();
+      const unchanged = block.type === 'paragraph' && chosen.some(source =>
+        source.sourceIds.length === block.sourceIds.length && source.sourceIds.every((id, index) => id === block.sourceIds[index])
+        && contains(source.rect, block.rect, .01) && contains(block.rect, source.rect, .01));
+      // PDF text bounds can already overlap a neighbouring inline formula or
+      // paragraph. A role-only change keeps that geometry; regrouping cannot
+      // introduce a new crossing of an independently owned object.
+      if (!contains(scope.rect, block.rect, 2) || !unchanged && blocks.some(fixed => !scope.ids.includes(fixed.id) && overlaps(block.rect, fixed.rect))) fail();
     }
     blocks.splice(start, scope.ids.length, ...converted);
   }

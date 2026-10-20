@@ -42,7 +42,9 @@ export async function enhanceWordStructure({ pdf, operation, ...options }) {
   const canvas = canvasFactory(); let rendered = null, scale = 1;
   try {
     operation.optionalContentConfig = await pdf.getOptionalContentConfig({ intent: 'display' }); operation.check();
-    return await runWordAi({ ...options, operation, renderRegion: async (page, scope, signal) => {
+    // The workbench exports original formula images and has no formula-review UI.
+    // Unused math proposals must not spend requests or block ordinary layout.
+    return await runWordAi({ ...options, operation, layoutOnly: true, renderRegion: async (page, scope, signal) => {
       const check = () => { operation.check(); if (signal.aborted) throw wordError('cancelled'); };
       const abort = () => { try { operation.renderTask?.cancel(); } catch {} };
       signal.addEventListener('abort', abort, { once: true });

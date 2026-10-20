@@ -76,28 +76,33 @@ export function applyAiStructure(document, request, suggestion) {
     const members = ids => ids.map(id => { const block = originals.get(id); if (!block) throw wordError('ai-response'); return block; });
     const converted = new Map();
     for (const group of suggestion.groups) {
+      const id = `ai:${request.requestId}:${request.scopeId || 'page'}:${group.id}`;
       let block;
       if (group.role === 'columns') {
         const columns = group.columns.map(column => { const blocks = members(column.sourceIds); return { blocks, rect: union(blocks.map(block => block.rect)) }; });
         for (let i = 1; i < columns.length; i++) if (columns[i].rect.x < right(columns[i - 1].rect) - 2) throw wordError('ai-response');
-        block = { id: `ai:${request.requestId}:${group.id}`, type: 'columns', columns, rect: union(columns.map(column => column.rect)), sourceIds: columns.flatMap(column => column.blocks.flatMap(block => block.sourceIds)) };
+        block = { id, type: 'columns', columns, rect: union(columns.map(column => column.rect)), sourceIds: columns.flatMap(column => column.blocks.flatMap(block => block.sourceIds)) };
       } else if (group.role === 'table' || group.role === 'option-grid') {
         const cells = group.cells.map(cell => { const blocks = members(cell.sourceIds); return { ...cell, blocks, rect: union(blocks.map(block => block.rect)), sourceIds: blocks.flatMap(block => block.sourceIds) }; });
+        // Complete source coverage cannot prove that an amount still belongs to
+        // its original row. Disjoint model rows must agree with source geometry.
+        if (Math.min(...cells.map(cell => cell.row)) !== 0 || cells.some(upper => cells.some(lower =>
+          upper.row + upper.rowSpan <= lower.row && bottom(upper.rect) > lower.rect.y + 2))) throw wordError('ai-response');
         const rect = union(cells.map(cell => cell.rect));
         const count = Math.max(...cells.map(cell => cell.col + cell.colSpan)), rows = Math.max(...cells.map(cell => cell.row + cell.rowSpan));
         const xs = Array.from({ length: count }, (_, col) => Math.min(...cells.filter(cell => cell.col === col).map(cell => cell.rect.x)));
         if (xs.some(x => !Number.isFinite(x)) || xs.some((x, index) => index && x <= xs[index - 1])) throw wordError('ai-response');
-        const edge = Math.min(page.width, Math.max(right(rect) + 4, right(page.content)));
+        const edge = Math.min(page.width, right(rect));
         for (const cell of cells) {
           const boundary = xs[cell.col + cell.colSpan] ?? edge;
           if (right(cell.rect) > boundary + 2) throw wordError('ai-response');
           cell.rect = { ...cell.rect, x: xs[cell.col], width: boundary - xs[cell.col] };
         }
-        block = { id: `ai:${request.requestId}:${group.id}`, type: group.role, cells, rect: { ...rect, width: edge - rect.x }, rows,
+        block = { id, type: group.role, aiInferred: true, borderless: true, cells, rect: { ...rect, width: edge - rect.x }, rows,
           columnWidths: xs.map((x, index) => (xs[index + 1] ?? edge) - x), sourceIds: cells.flatMap(cell => cell.sourceIds) };
       } else {
         const blocks = members(group.sourceIds), lines = blocks.flatMap(block => block.lines);
-        block = { ...blocks[0], id: `ai:${request.requestId}:${group.id}`, role: group.role, lines, rect: union(blocks.map(block => block.rect)), sourceIds: blocks.flatMap(block => block.sourceIds) };
+        block = { ...blocks[0], id, role: group.role, lines, rect: union(blocks.map(block => block.rect)), sourceIds: blocks.flatMap(block => block.sourceIds) };
       }
       converted.set(group.id, block);
     }

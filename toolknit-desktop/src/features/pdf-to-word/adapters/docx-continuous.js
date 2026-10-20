@@ -14,6 +14,8 @@ const flattenColumns = blocks => blocks.flatMap(block => block.type === 'columns
 export function planContinuousSection(document) {
   if (requiresPackedLayout(document.pages)) return planPackedPages(document);
   for (const page of document.pages) for (const block of flattenColumns([...page.header, ...page.blocks, ...page.footer])) {
+    // AI identifies cell ownership, not measured Word row heights or borders.
+    if (block.type === 'table' && block.aiInferred) return planPackedPages(document);
     if (['image', 'table', 'option-grid'].includes(block.type) && block.rect.width > BODY_WIDTH) return planPackedPages(document);
     if (block.type === 'image' && block.rect.height > 769.9) return planPackedPages(document);
     for (const line of block.lines || []) for (const item of line.items) {

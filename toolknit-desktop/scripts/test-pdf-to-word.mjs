@@ -35,6 +35,7 @@ import './test-pdf-word-annotations.mjs';
 import './test-pdf-word-patterns.mjs';
 import './test-pdf-word-groups.mjs';
 import './test-pdf-word-ai.mjs';
+import './test-pdf-word-ai-scheduling.mjs';
 import './test-pdf-word-semantic-audit.mjs';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { PDFDocument, StandardFonts, rgb, degrees, pushGraphicsState, popGraphicsState, setTextRenderingMode, TextRenderingMode,
@@ -195,6 +196,18 @@ for (const [pageIndex, role] of [[0, 'columns'], [2, 'table']]) {
   const applied = applyAiStructure(base, proposalRequest, valid);
   assert(applied.pages[pageIndex].blocks.some(block => block.type === role));
   assert.equal(applied.quality.characters, document.quality.characters);
+  if (role === 'table') {
+    const tableDocument = { ...applied, pages: [applied.pages[pageIndex]] };
+    for (const continuous of [false, true]) {
+      const written = await createWordBytes(tableDocument, assets, { preserveGeometry: true, continuous,
+        measurementContext: createCanvas(1, 1).getContext('2d') });
+      const packageFile = await JSZip.loadAsync(written.bytes);
+      const xml = await packageFile.file('word/document.xml').async('string');
+      assert(!xml.includes('<w:tbl>'), 'AI-inferred cells must not invent a native grid or change original line positions');
+      assert(xml.includes('<w:framePr '), 'inferred table text remains positioned and editable');
+      if (continuous) assert.equal(written.quality.flowStrategy, 'packed-fragments');
+    }
+  }
   const bad = structuredClone(proposal);
   if (role === 'table') bad.groups.at(-1).cells[0].colSpan = 20;
   else bad.groups.at(-1).columns[0].sourceIds.push('fabricated');

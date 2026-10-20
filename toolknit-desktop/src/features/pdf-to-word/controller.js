@@ -105,14 +105,18 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
     if (/^pdf-to-word:/.test(String(error))) code = String(error).split('pdf-to-word:')[1].split(/[\s:]/)[0];
     if (!known.has(code)) code = 'failed';
     if (error?.name === 'InvalidPDFException' || error?.name === 'MissingPDFException') code = 'read';
-    if (error?.code === 'invalid_config') code = 'ai-config';
-    else if (['http_error', 'timeout', 'network_error', 'invalid_response', 'response_truncated'].includes(error?.code)) code = 'ai-request';
+    if (['invalid_config', 'provider_changed', 'ai-config'].includes(error?.code)) code = 'ai-config';
+    else if (error?.code === 'ai-timeout') code = 'ai-timeout';
+    else if (error?.code === 'http_error') code = ({ 401: 'ai-auth', 403: 'ai-forbidden', 404: 'ai-endpoint', 429: 'ai-rate' })[error.status] || 'ai-request';
+    else if (['invalid_response', 'empty_response', 'response_truncated', 'response_too_large'].includes(error?.code)) code = 'ai-response';
+    else if (error?.code === 'invalid_request') code = 'ai-parameters';
+    else if (['network_error', 'native_transport_unavailable'].includes(error?.code)) code = 'ai-request';
     setStatus('error.' + code, {}, true);
   }
-  function dropAnalysis() { analysis?.worker?.dispose(); analysis = null; aiReview = null; editor.clear(); }
+  function dropAnalysis() { analysis?.worker?.dispose(); analysis = null; aiReview = null; aiCache.clear(); editor.clear(); }
   function releaseDocument() {
     previewRevision++; try { previewTask?.cancel(); } catch {} previewTask = null;
-    strip?.dispose(); strip = null; dropAnalysis(); aiCache.clear(); inputDigest = '';
+    strip?.dispose(); strip = null; dropAnalysis(); inputDigest = '';
     const old = pdf; pdf = null; file = null; if (old) void destroyPdfDocument(old).catch(() => {});
     byId('Canvas').width = byId('Canvas').height = 0;
   }
@@ -224,7 +228,7 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
         const enhanced = await enhanceWordStructure({ document: prepared.document, pdf, requestAi, operation: op, inputDigest, cache: aiCache,
           getProvider: getAiPlatformConfig, selectedPages: [pageNumber], expectedProvider: getAiPlatformConfig?.(),
           onProgress: value => { if (current(op)) setProgress(value); } }); op.check();
-        editor.setBaseline(enhanced.document); prepared.ai = providerKey; aiReview = enhanced.review;
+        editor.setBaseline(enhanced.document); prepared.ai = enhanced.review.remaining ? null : providerKey; aiReview = enhanced.review;
       }
       setProgress({ key: 'assembling' });
       const output = await prepared.worker.request('finish', { document: editor.document(), editedAssets: editor.editedAssets(),
@@ -244,7 +248,8 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
   function renderResult() {
     if (!result) return;
     byId('ResultName').textContent = result.name;
-    byId('ResultQuality').textContent = result.quality.imageCharacters ? tr('imageNotice') : '';
+    byId('ResultQuality').textContent = [result.quality.imageCharacters ? tr('imageNotice') : '',
+      mode === 'ai' && aiReview?.remaining ? tr(editor.dirty ? 'aiPartialEdited' : 'aiPartial', { count: aiReview.remaining }) : ''].filter(Boolean).join(' ');
     byId('ResultPath').textContent = result.path ? displayFilesystemPath(result.path) : tr('browserDownload');
     byId('OpenFolder').hidden = byId('OpenFile').hidden = !result.path;
   }

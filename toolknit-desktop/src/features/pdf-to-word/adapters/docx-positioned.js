@@ -77,7 +77,7 @@ export function positionedPage(page, assets, { textRuns, runOptions, image, tabl
   const append = blocks => {
     for (const block of blocks) {
       if (block.type === 'columns') { block.columns.forEach(column => append(column.blocks)); continue; }
-      if (block.type === 'option-grid') { block.cells.forEach(cell => append(cell.blocks)); continue; }
+      if (block.type === 'option-grid' || block.type === 'table' && block.aiInferred) { block.cells.forEach(cell => append(cell.blocks)); continue; }
       if (block.type === 'paragraph') { block.lines.forEach(appendLine);
       } else if (block.type === 'image') {
         appendImage(block);
