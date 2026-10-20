@@ -2,6 +2,8 @@
 
 本文档面向希望从源码运行或构建 ToolKnit 桌面端的开发者。
 
+V3.2 分支包含单独授权的 PDF 转 Word 引擎。运行、测试或编译包含该引擎的源码，须事先联系 info@toolknit.com 取得书面授权，商业和非商业用途均适用。仅阅读源码及按应用条款使用官方安装包不因此增加授权手续。范围与完整条款见 [NOTICE](NOTICE) 和[引擎许可](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md)。以下为具备相应授权后的技术步骤，不构成额外许可。
+
 ## 环境要求
 
 - Windows 10/11

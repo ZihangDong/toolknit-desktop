@@ -22,6 +22,11 @@ pub(super) mod compress_write {
     include!("pdf/compress_write.rs");
 }
 pub(super) use compress_write::*;
+pub(super) mod docx_write {
+    use super::*;
+    include!("pdf/docx_write.rs");
+}
+pub(super) use docx_write::*;
 pub(super) mod audio_convert {
     use super::*;
     include!("pdf/audio_convert.rs");

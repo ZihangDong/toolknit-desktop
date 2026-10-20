@@ -2,11 +2,13 @@
 
 <img src="assets/readme/v3.1/01-hero.webp" alt="ToolKnit Desktop：小男孩和头顶的蜘蛛，把桌面上的事变简单" width="100%" />
 
-# ToolKnit Desktop 3.1
+# ToolKnit Desktop 3.2
+
+V3.2 开发中，尚未发布；当前正式版为 V3.1。安装包发布状态以下载页为准，npm 包计划在 V3.2 发布时同步。
 
 **把零散的桌面小事，收进一个工具箱。**
 
-71 项桌面工具 · 12 个分类 · 本地文件工作台 · CLI / MCP
+72 项桌面工具 · 12 个分类 · 本地文件工作台 · CLI / MCP
 
 <p align="center">
 <a href="https://toolknit.com/exe.html"><img src="assets/readme/v3.1/link-download-zh.svg" alt="下载 Windows 版" width="168" height="40" /></a>
@@ -32,7 +34,7 @@ ToolKnit 像一只不停织网的蜘蛛：一个需求牵出一根线，越来�
 
 ### 再用桌面端
 
-需要长期处理文件、找回复制内容或快速截图？[安装 Windows 桌面端](https://toolknit.com/exe.html)，把 **71 项工具**放到电脑里。
+需要长期处理文件、找回复制内容或快速截图？[安装 Windows 桌面端](https://toolknit.com/exe.html)，当前开发目录提供 **72 项工具**；PDF 转 Word 随 V3.2 测试，正式安装包以 Release 为准。
 首次使用先设置输出目录；常用工具可收藏，重型模型按需安装。打开**一键记录模式**，让开机自启、剪贴板实时监控和截图历史悬浮窗一起就位，再用 `Alt + Q` 开始截图。
 安装环境与详细步骤见[开始使用](#08--开始使用)。
 
@@ -89,7 +91,7 @@ ToolKnit 把 PDF、PPT、图片、音视频、文字、系统与开发者工具�
 | --- | --- |
 | 程序开机自启动 | 重启电脑后，工具继续在系统托盘待命 |
 | 剪贴板实时监控 | 记录开启之后复制的文字、图片与文件路径 |
-| 截图历史悬浮窗 | 用一个可拖动的小 Logo，找回最近确认的截图 |
+| 历史记录悬浮窗 | 用可拖动的小 Logo，按分类查看剪贴板文字、图片和文件记录 |
 
 这是你主动开启的组合模式。关闭时会恢复启用前的相关设置；也可以分别管理这些开关。
 它不会记录键盘输入、浏览行为或系统里的所有活动，完全退出程序后停止监控。
@@ -104,7 +106,7 @@ ToolKnit 把 PDF、PPT、图片、音视频、文字、系统与开发者工具�
 
 矩形、圆形、箭头、画笔、涂抹式马赛克与文字标注，配合撤销、恢复和按住查看原图。
 确认后可复制、保存 PNG / JPG，或在独立查看器中缩放、拖动、置顶。
-历史悬浮窗点击展开，旧截图也能重新打开。
+历史悬浮窗点击展开，可按内容和备注搜索记录，旧截图也能重新打开；常用语独立保存，方便重复复制。
 
 | 你想做的事 | 实际处理方式 |
 | --- | --- |
@@ -142,7 +144,7 @@ AI 校正失败会说明原因，需你确认才回退到 OCR。文本放不下�
 
 | 工作流 | 常用能力 |
 | --- | --- |
-| PDF | 合并、拆分、裁剪、页码、旋转、转图片、压缩、加解密、编辑、提取文本 / Markdown |
+| PDF | 合并、拆分、裁剪、页码、旋转、转图片、转 Word（V3.2）、压缩、加解密、编辑、提取文本 / Markdown |
 | PPT | 转 PDF / 图片、提取图片与文字、压缩，使用 AI 生成大纲或可编辑 PPTX 草稿 |
 | 清理 | 大文件分析、C 盘清理、按类型扫描重复文件 |
 
@@ -174,7 +176,7 @@ WPS / Microsoft Office 不等同于 LibreOffice，不能替代需要 `soffice` �
 **桌面端负责看得见的交互，CLI 负责批处理，Agent 负责串起任务。**
 
 适合自动化的能力通过 `@toolknit/cli` 和 **46 项 CLI / MCP 能力**提供。
-它们与桌面工具的范围不同：并非全部 71 项工具都能从命令行调用。
+它们与桌面工具的范围不同：并非全部 72 项工具都能从命令行调用。
 
 ```powershell
 npm install --global @toolknit/cli
@@ -241,20 +243,20 @@ Windows 10 **1803 / build 17134 及以上**或 Windows 11；需要 Microsoft Edg
 ## 完整工具目录
 
 <details>
-<summary><strong>展开 71 项桌面工具 / 12 个分类</strong></summary>
+<summary><strong>展开 72 项桌面工具 / 12 个分类</strong></summary>
 
 | 分类 | 数量 | 工具 |
 | --- | ---: | --- |
-| PDF | 14 | 文件合并、文件拆分、加页码、裁剪、转图像、转扫描件、文本提取 / Markdown、编辑器、页面旋转、加密、解密、压缩、文字增强、Excel 转 PDF |
+| PDF | 15 | 文件合并、文件拆分、加页码、裁剪、转图像、转 Word、转扫描件、文本提取 / Markdown、编辑器、页面旋转、加密、解密、压缩、文字增强、Excel 转 PDF |
 | PPT | 7 | 转 PDF、转图片、图片提取、AI 文本提取、压缩、AI 大纲、AI 草稿 / PPTX |
 | 图片 | 7 | 裁剪、智能颜色替换、背景移除、格式转换、压缩、长图拼接、图标生成器 |
 | 音频 | 4 | 格式转换、BPM 节拍测速、剪辑、音频提取 |
 | 视频 | 3 | 格式转换、高清单帧图、截取 GIF |
 | 文本 | 5 | Markdown 编辑器、音视频提取文字、提词器、文本统计、文本格式化 |
 | 计算 | 5 | 体脂率、时间戳、房贷、利息、密码生成器 |
-| 创意 | 3 | 配色提取、颜色空间对比、打字测试 |
+| 创意 | 4 | 配色提取、颜色空间对比、快速截图、打字测试 |
 | 清理 | 3 | AI 大文件清理、C 盘清理、重复文件清理 |
-| AI | 6 | PDF 转 Markdown、文字润色、智能翻译、文档生成、表格生成、快速截图 |
+| AI | 5 | PDF 转 Markdown、文字润色、智能翻译、文档生成、表格生成 |
 | 硬件 | 8 | 整机概览、CPU 与内存、显卡与显示器、主板与固件、磁盘与健康、网络与设备、电源与传感器、剪贴板历史 |
 | 开发者 | 6 | JSON 格式化、Base64、URL 编解码、UUID、JWT 查看、Hash & Crypto |
 
@@ -270,7 +272,7 @@ Windows 10 **1803 / build 17134 及以上**或 Windows 11；需要 Microsoft Edg
 
 如果 ToolKnit 帮你省下了时间，欢迎 Star 或[一次性捐赠支持](assets/readme/donation-support.webp)。
 [感谢支持者](assets/readme/supporters-thanks.webp)。捐赠用于开发、AI 测试与维护，不代表购买功能或承诺实现需求。
-定制工具与商业授权：微信 **wunanvip6**；联系邮箱：[2645149786@qq.com](mailto:2645149786@qq.com)。
+定制工具：微信 **wunanvip6**；代码授权申请（含商业授权）：[info@toolknit.com](mailto:info@toolknit.com)。
 
 ## 源码运行与构建
 
@@ -278,7 +280,9 @@ Windows 10 **1803 / build 17134 及以上**或 Windows 11；需要 Microsoft Edg
 
 ### 准备环境
 
-使用受支持的 Windows 10 / 11，安装 Node.js **22.12+**（推荐 24）、Rust stable **1.88+**、Visual Studio C++ Build Tools（含“使用 C++ 的桌面开发”和 Windows SDK），以及 Microsoft Edge WebView2 Runtime。
+本分支含单独授权的 PDF 转 Word 引擎。下述完整应用的源码运行、测试与构建须先取得该引擎的书面授权；仅阅读源码无需申请。普通用户使用官方安装包转换文件，按应用许可执行。详见[引擎许可](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md)。
+
+使用受支持的 Windows 10 / 11，安装 Node.js **22.13+**（推荐 24）、Rust stable **1.88+**、Visual Studio C++ Build Tools（含“使用 C++ 的桌面开发”和 Windows SDK），以及 Microsoft Edge WebView2 Runtime。
 首次安装 npm 与 Rust 依赖需要联网；使用已有锁文件安装依赖。
 
 ### 启动桌面端
@@ -328,7 +332,7 @@ FFmpeg、LibreOffice 与可选模型仍按需安装，源码不包含用户密�
 | --- | --- | --- |
 | 桌面与原生 | Tauri 2、Rust、Windows API、WebView2 | 桌面窗口、系统托盘、快捷键、截图、本地 OCR 与文件操作 |
 | 前端与构建 | 原生 JavaScript（ES Modules）、HTML / CSS、Vite 8、Lucide | 模块化工具页、按需加载、双主题与图标 |
-| PDF 与办公文件 | PDF.js、pdf-lib、ExcelJS、JSZip | PDF 预览与编辑、表格生成、文档归档处理 |
+| PDF 与办公文件 | PDF.js、pdf-lib、docx、ExcelJS、JSZip | PDF 预览与编辑、可编辑 Word、表格生成、文档归档处理 |
 | Markdown 与编辑 | CodeMirror 6、markdown-it、KaTeX、Mermaid、DOMPurify | 编辑、排版、公式与图表渲染、HTML 清理 |
 | 图像与音视频 | Canvas、Rust image / oxipng、FFmpeg | 图像处理与压缩、音视频转换；FFmpeg 按需安装 |
 | 本地模型与外部运行时 | ONNX Runtime、离线识别与中英翻译组件、LibreOffice | 抠图、转写、本地翻译与办公文件渲染，按功能安装 |
@@ -339,9 +343,13 @@ FFmpeg、LibreOffice 与可选模型仍按需安装，源码不包含用户密�
 
 ## 源码许可
 
-自 **2026-10-14** 起，新授权的作者代码及修改采用 [PolyForm Noncommercial 1.0.0](LICENSE)。
-非商业使用、修改与分发须遵守许可、保留必要声明；商业用途联系作者另行授权。版权仍归各自作者所有。
-这是源码可见的非商业许可，**不是 OSI 定义的开源许可**。
+本仓库按代码范围分别授权，详见 [NOTICE](NOTICE)：
+
+- **一般作者代码**：自 2026-10-14 起采用 [PolyForm Noncommercial 1.0.0](LICENSE)。非商业使用、修改与分发须遵守许可、保留必要声明；商业用途须另行授权。
+- **PDF 转 Word 自研引擎**：`toolknit-desktop/src/features/pdf-to-word/` 全目录及 `toolknit-desktop/src-tauri/src/native_runtime/pdf/docx_write.rs` 使用[源码阅览专属许可](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md)，不适用一般 PolyForm 授权。允许阅读源码；运行、编译、修改、集成、分发或提供服务等其他用途，**商业和非商业均须事先取得书面授权**。联系：[info@toolknit.com](mailto:info@toolknit.com)。
+- **官方应用使用**：普通用户使用作者分发的官方 ToolKnit 应用或测试版转换文件，按应用使用条款执行，不因引擎源码许可另行申请；不授予提取、复用引擎或自行编译修改版本的权利。
+
+版权仍归各自作者所有。这些属于源码可见许可，**不是 OSI 定义的开源许可**。一般思路的独立实现不因此被禁止，第三方权利与法定不可排除权利不受影响。
 
 此前已授予的 Apache-2.0 权利不撤销；此前按 Apache-2.0 发布的未改动代码及第三方贡献保留原授权。
 详见 [Apache-2.0](LICENSES/Apache-2.0.txt)、[NOTICE](NOTICE) 和版本历史。

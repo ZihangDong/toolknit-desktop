@@ -4,7 +4,7 @@ const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
 const command = (id, name, key, extra = '') => `<button id="clipboard${id}" type="button" class="clipboard-button" ${extra} data-i18n-title="home.clipboardHistory.${key}" data-i18n-aria-label="home.clipboardHistory.${key}">${icon(name)}<span ${text(key)}></span></button>`;
 
 export default `<div id="clipboardHistoryOverlay" class="pdf-merge-overlay pdf-merge-v2 hardware-v2 tool-page-v2-light clipboard-history" role="dialog" aria-modal="true" aria-hidden="true" inert data-tool-page-chrome data-i18n-aria-label="home.clipboardHistory.title">
-${toolTopbarMarkup({ tag: 'CLIPBOARD · TOOL PAGE 3.1', title: 'CLIPBOARD', closeAttr: 'data-clipboard-close' })}
+${toolTopbarMarkup({ tag: 'CLIPBOARD · TOOL PAGE 3.2', title: 'CLIPBOARD', closeAttr: 'data-clipboard-close' })}
 <div class="hardware-v2-body clipboard-body">
   <aside class="clipboard-sidebar">
     <span class="pdf-merge-v2-section-kicker">LOCAL HISTORY</span>
@@ -15,6 +15,7 @@ ${toolTopbarMarkup({ tag: 'CLIPBOARD · TOOL PAGE 3.1', title: 'CLIPBOARD', clos
     <dl class="clipboard-stats"><div><dt ${text('today')}></dt><dd id="clipboardToday">0</dd></div><div><dt ${text('total')}></dt><dd id="clipboardTotal">0</dd></div><div><dt ${text('storage')}></dt><dd id="clipboardStorage">0 B</dd></div></dl>
     <div id="clipboardHealth" class="clipboard-muted" aria-live="polite"></div>
     <div id="clipboardError" class="clipboard-error" role="alert" hidden></div>
+    ${command('Restart','archive-restore','restartHistory','hidden')}
     <fieldset class="clipboard-types"><legend ${text('recordTypes')}></legend>${[['Text','typeText'],['Images','typeImage'],['Files','typeFiles']].map(([id,key])=>`<label><input id="clipboard${id}" type="checkbox" checked><span ${text(key)}></span></label>`).join('')}</fieldset>
     ${command('Settings','sliders-horizontal','settings')}
     <div class="clipboard-privacy">${icon('shield-check')}<p ${text('privacy')}></p></div>

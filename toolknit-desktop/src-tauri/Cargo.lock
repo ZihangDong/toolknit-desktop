@@ -4765,7 +4765,7 @@ checksum = "756daf9b1013ebe47a8776667b466417e2d4c5679d441c26230efd9ef78692db"
 
 [[package]]
 name = "toolknit-desktop"
-version = "3.1.0"
+version = "3.2.0"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -4783,12 +4783,14 @@ dependencies = [
  "opener",
  "ort",
  "oxipng",
+ "quick-xml",
  "reqwest 0.12.28",
  "rusqlite",
  "serde",
  "serde_json",
  "sha1",
  "sha2",
+ "tao",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",

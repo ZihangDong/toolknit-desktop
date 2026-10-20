@@ -46,6 +46,12 @@ export const LAZY_TOOL_SPECS = Object.freeze({
     load: () => import('./pdf-to-scan/tool.js'),
     init: 'initPdfScanTool'
   }),
+  'pdf-to-word': Object.freeze({
+    overlayId: 'pdfWordOverlay',
+    markup: () => import('./pdf-to-word/template.js'),
+    load: () => import('./pdf-to-word/tool.js'),
+    init: 'initPdfWordTool'
+  }),
   'pdf-text-markdown': Object.freeze({
     overlayId: 'pdfTextExtractOverlay',
     markup: () => import('./pdf-text-extract/template.html?raw'),

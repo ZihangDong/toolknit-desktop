@@ -2,11 +2,15 @@ use super::*;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{HashMap, VecDeque},
-    sync::{Arc, Mutex, OnceLock},
+    collections::HashMap,
+    sync::{Arc, Mutex},
 };
 mod capture;
+mod feedback;
+mod history_actions;
+mod history_menu;
 mod ocr;
+mod window_visibility;
 
 const MAX_PIXELS: u64 = 32_000_000;
 const MAX_BYTES: usize = 32 * 1024 * 1024;
@@ -45,7 +49,6 @@ impl Default for Preferences {
 struct Shot {
     id: u64,
     png: Arc<Vec<u8>>,
-    thumbnail: Arc<OnceLock<Result<String, String>>>,
     width: u32,
     height: u32,
     time: u64,
@@ -63,16 +66,25 @@ pub(crate) struct ScreenshotState {
     starting: AtomicBool,
     sequence: AtomicU64,
     work: AtomicBool,
+    history_hidden: AtomicBool,
+    history_adjusting: AtomicBool,
+    history_reduced_motion: AtomicBool,
+    history_drag_revision: AtomicU64,
+    history_transition: tokio::sync::Mutex<()>,
+    menu_transition: tokio::sync::Mutex<()>,
+    feedback_pending: Mutex<Option<feedback::Pending>>,
+    feedback_revision: AtomicU64,
+    feedback_timer: Mutex<Option<tauri::async_runtime::JoinHandle<()>>>,
 }
 #[derive(Default)]
 struct Inner {
     session: Option<Session>,
-    history: VecDeque<Shot>,
     viewers: HashMap<String, Shot>,
     context: serde_json::Value,
     history_anchor: Option<Rect>,
     history_expanded: bool,
     history_bounds: Option<Rect>,
+    history_menu: Option<history_menu::MenuSession>,
     registered: Option<String>,
     shortcut_error: Option<String>,
 }
@@ -152,20 +164,6 @@ fn shot_json(shot: &Shot, full: bool) -> serde_json::Value {
     }
     value
 }
-fn shot_thumbnail(shot: &Shot) -> Result<&str, String> {
-    // Clones in history and viewers share one bounded preview; originals stay intact.
-    shot.thumbnail
-        .get_or_init(|| {
-            let thumbnail = decode(&shot.png)?.thumbnail(300, 180);
-            let mut bytes = std::io::Cursor::new(Vec::new());
-            thumbnail
-                .write_to(&mut bytes, image::ImageFormat::Png)
-                .map_err(|_| "screenshot:invalid-image".to_string())?;
-            Ok(format!("data:image/png;base64,{}", STANDARD.encode(bytes.into_inner())))
-        })
-        .as_deref()
-        .map_err(Clone::clone)
-}
 fn window_builder<'a>(
     app: &'a tauri::AppHandle,
     label: &str,
@@ -186,11 +184,6 @@ fn window_builder<'a>(
     .visible(false)
     .devtools(false)
     .data_directory(directory))
-}
-fn emit_history(app: &tauri::AppHandle) {
-    if let Some(w) = app.get_webview_window(HISTORY_LABEL) {
-        let _ = w.emit("screenshot-history-changed", ());
-    }
 }
 
 fn validate_shortcut(value: &str) -> Result<Shortcut, String> {
@@ -251,6 +244,8 @@ pub(crate) fn initialize(app: &tauri::AppHandle) {
     // The main renderer supplies theme/language context before restoring the shelf.
 }
 pub(crate) async fn begin(app: &tauri::AppHandle) -> Result<(), String> {
+    feedback::dismiss(app).await?;
+    history_menu::dismiss(app, false);
     let state = app.state::<ScreenshotState>();
     if state.starting.swap(true, Ordering::SeqCst) {
         return Ok(());
@@ -273,7 +268,7 @@ pub(crate) async fn begin(app: &tauri::AppHandle) -> Result<(), String> {
             {
                 if w.is_visible().unwrap_or(false) {
                     let minimized = w.is_minimized().map_err(|_| "screenshot:window-failed")?;
-                    w.hide().map_err(|_| "screenshot:window-failed")?;
+                    window_visibility::hide(&w).await?;
                     restore.labels.push(HiddenWindow { label, minimized });
                 }
             }
@@ -369,12 +364,14 @@ pub(crate) fn finish(app: &tauri::AppHandle) {
     let previous = lock(&state.inner).session.take();
     if let Some(session) = previous {
         for hidden in session.restore {
+            if hidden.label == HISTORY_LABEL && !history_actions::allowed(app) {
+                continue;
+            }
             if let Some(window) = app.get_webview_window(&hidden.label) {
                 let _ = show_without_activation(&window, hidden.minimized);
             }
         }
     }
-    emit_history(app);
 }
 struct RestoreWindows {
     app: tauri::AppHandle,
@@ -395,10 +392,15 @@ fn show_without_activation(window: &tauri::WebviewWindow, minimized: bool) -> Re
             },
         };
         let handle = window.hwnd().map_err(|_| "screenshot:window-failed")?.0 as isize;
+        let window_label = window.label().to_string();
+        let app_handle = window.app_handle().clone();
         window
             .run_on_main_thread(move || {
                 // Restore visibility without taking foreground focus or raising the main window.
                 unsafe {
+                    if window_label == HISTORY_LABEL && !history_actions::allowed(&app_handle) {
+                        return;
+                    }
                     if minimized {
                         let _ = ShowWindow(HWND(handle), SW_SHOWMINNOACTIVE);
                     } else {
@@ -431,6 +433,9 @@ fn show_without_activation(window: &tauri::WebviewWindow, minimized: bool) -> Re
 impl Drop for RestoreWindows {
     fn drop(&mut self) {
         for hidden in &self.labels {
+            if hidden.label == HISTORY_LABEL && !history_actions::allowed(&self.app) {
+                continue;
+            }
             if let Some(w) = self.app.get_webview_window(&hidden.label) {
                 let _ = show_without_activation(&w, hidden.minimized);
             }
@@ -444,7 +449,6 @@ pub(crate) fn open_clipboard_image(app: &tauri::AppHandle, png: Vec<u8>) -> Resu
     let shot = Shot {
         id: state.sequence.fetch_add(1, Ordering::SeqCst) + 1,
         png: Arc::new(png),
-        thumbnail: Arc::new(OnceLock::new()),
         width,
         height,
         time: std::time::SystemTime::now()
@@ -503,7 +507,18 @@ fn monitor_for(app: &tauri::AppHandle, x: f64, y: f64) -> Result<(Rect, f64), St
                 && x < m.position().x as f64 + m.size().width as f64
                 && y < m.position().y as f64 + m.size().height as f64
         })
-        .or_else(|| monitors.first())
+        .or_else(|| {
+            monitors.iter().min_by(|a, b| {
+                let distance = |m: &tauri::Monitor| {
+                    let left = m.position().x as f64;
+                    let top = m.position().y as f64;
+                    let dx = x - x.clamp(left, left + m.size().width as f64);
+                    let dy = y - y.clamp(top, top + m.size().height as f64);
+                    dx * dx + dy * dy
+                };
+                distance(a).total_cmp(&distance(b))
+            })
+        })
         .ok_or("screenshot:window-failed")?;
     let area = m.work_area();
     Ok((
@@ -601,6 +616,9 @@ async fn move_history_window(window: &tauri::WebviewWindow, bounds: Rect) -> Res
 }
 
 fn show_history(app: &tauri::AppHandle) -> Result<(), String> {
+    if !history_actions::allowed(app) {
+        return Ok(());
+    }
     let state = app.state::<ScreenshotState>();
     let w = if let Some(w) = app.get_webview_window(HISTORY_LABEL) {
         w
@@ -624,6 +642,19 @@ fn show_history(app: &tauri::AppHandle) -> Result<(), String> {
             bounds.x, bounds.y,
         )))
         .map_err(|_| "screenshot:window-failed")?;
+        let events = w.clone();
+        w.on_window_event(move |event| {
+            if matches!(event, tauri::WindowEvent::Moved(_)) {
+                history_actions::moved(&events);
+            }
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let app = events.app_handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    let _ = history_actions::visibility(&app, true).await;
+                });
+            }
+        });
         let mut inner = lock(&state.inner);
         inner.history_anchor = Some(bounds);
         inner.history_expanded = false;
@@ -635,16 +666,11 @@ fn show_history(app: &tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 pub(crate) fn closed(app: &tauri::AppHandle, label: &str) {
+    if label == history_menu::LABEL {
+        lock(&app.state::<ScreenshotState>().inner).history_menu = None;
+    }
     if label == CAPTURE_LABEL {
         finish(app);
-    }
-    if label == HISTORY_LABEL {
-        let mut p = preferences();
-        p.history = false;
-        let _ = store_preferences(&p);
-        if let Some(main) = app.get_webview_window("main") {
-            let _ = main.emit("screenshot-preferences-changed", ());
-        }
     }
     if label.starts_with("screenshot-viewer-") {
         lock(&app.state::<ScreenshotState>().inner)
@@ -664,12 +690,61 @@ pub(crate) async fn quick_screenshot(
         .ok_or("screenshot:invalid-request")?;
     let label = window.label();
     let state = app.state::<ScreenshotState>();
+    if label == history_menu::LABEL {
+        let token = request["token"].as_u64().unwrap_or(0);
+        match action {
+            "menu-boot" => return history_menu::boot(&app),
+            "menu-ready" => history_menu::ready(&app, &window, token).await?,
+            "menu-select" => {
+                history_menu::select(&app, token, request["selected"].as_str().unwrap_or(""))?
+            }
+            "menu-dismiss" => {
+                history_menu::dismiss_token(
+                    &app,
+                    token,
+                    request["focusParent"].as_bool().unwrap_or(false),
+                )?;
+            }
+            "metadata" => return Ok(serde_json::json!({"context":lock(&state.inner).context})),
+            _ => return Err("screenshot:forbidden".into()),
+        }
+        return Ok(serde_json::Value::Null);
+    }
+    if label == feedback::LABEL {
+        return match action {
+            "boot" => feedback::boot(&app),
+            "feedback-ready" => {
+                feedback::ready(
+                    &app,
+                    &window,
+                    request["revision"]
+                        .as_u64()
+                        .ok_or("screenshot:invalid-request")?,
+                )?;
+                Ok(serde_json::Value::Null)
+            }
+            _ => Err("screenshot:forbidden".into()),
+        };
+    }
     let viewer = lock(&state.inner).viewers.contains_key(label);
     if label != "main" && label != CAPTURE_LABEL && label != HISTORY_LABEL && !viewer {
         return Err("screenshot:forbidden".into());
     }
     let main = label == "main";
     match action {
+        "prepare-history-menu" if label == HISTORY_LABEL => {
+            history_menu::warm(&app).await?;
+            Ok(serde_json::Value::Null)
+        }
+        "feedback" if label == HISTORY_LABEL => {
+            feedback::show(
+                &app,
+                request["kind"]
+                    .as_str()
+                    .ok_or("screenshot:invalid-request")?,
+            )?;
+            Ok(serde_json::Value::Null)
+        }
         "preferences" if main => {
             let p = preferences();
             let inner = lock(&state.inner);
@@ -678,6 +753,9 @@ pub(crate) async fn quick_screenshot(
             )
         }
         "configure" if main => {
+            history_menu::dismiss(&app, false);
+            let _transition = state.history_transition.lock().await;
+            let old_hidden = state.history_hidden.load(Ordering::Acquire);
             let old = preferences();
             let mut p: Preferences = serde_json::from_value(request["preferences"].clone())
                 .map_err(|_| "screenshot:invalid-request")?;
@@ -692,25 +770,24 @@ pub(crate) async fn quick_screenshot(
                 let _ = register_shortcut(&app, old.shortcut.as_deref());
                 return Err(e);
             }
+            state.history_hidden.store(false, Ordering::Release);
             let updated = if p.history {
                 show_history(&app)
             } else if let Some(w) = app.get_webview_window(HISTORY_LABEL) {
-                w.hide().map_err(|_| "screenshot:window-failed".to_string())
+                window_visibility::hide(&w).await
             } else {
                 Ok(())
             };
             if let Err(e) = updated {
+                state.history_hidden.store(old_hidden, Ordering::Release);
                 let _ = store_preferences(&old);
                 let _ = register_shortcut(&app, old.shortcut.as_deref());
                 if !old.history {
                     if let Some(w) = app.get_webview_window(HISTORY_LABEL) {
-                        let _ = w.hide();
+                        let _ = window_visibility::hide(&w).await;
                     }
                 }
                 return Err(e);
-            }
-            if p.history {
-                emit_history(&app);
             }
             let _ = app.emit_to("main", "screenshot-preferences-changed", ());
             Ok(
@@ -748,21 +825,23 @@ pub(crate) async fn quick_screenshot(
             Ok(serde_json::Value::Null)
         }
         "metadata" => Ok(serde_json::json!({"context":lock(&state.inner).context})),
-        "navigate" if viewer => {
+        "navigate" if viewer || label == HISTORY_LABEL => {
             let target = request["target"]
                 .as_str()
                 .ok_or("screenshot:invalid-request")?;
             match target {
                 "website" => open_url("https://toolknit.com".into())?,
-                "settings" | "support" | "help" | "feedback" => {
+                "main" | "settings" | "support" | "help" | "feedback" | "clipboard-history" => {
                     let main_window = app
                         .get_webview_window("main")
                         .ok_or("screenshot:window-failed")?;
-                    main_window.show().map_err(|_| "screenshot:window-failed")?;
-                    let _ = main_window.set_focus();
-                    main_window
-                        .emit("screenshot-navigate", target)
-                        .map_err(|_| "screenshot:window-failed")?;
+                    history_menu::dismiss(&app, false);
+                    super::show_main_window(&app);
+                    if target != "main" {
+                        main_window
+                            .emit("screenshot-navigate", target)
+                            .map_err(|_| "screenshot:window-failed")?;
+                    }
                 }
                 _ => return Err("screenshot:forbidden".into()),
             }
@@ -784,25 +863,17 @@ pub(crate) async fn quick_screenshot(
             }
             Ok(result)
         }
-        "history" if label == HISTORY_LABEL || main => {
-            let list = lock(&state.inner)
-                .history
-                .iter()
-                .cloned()
-                .collect::<Vec<_>>();
-            tauri::async_runtime::spawn_blocking(move || {
-                let mut result = Vec::new();
-                for shot in list {
-                    let mut item = shot_json(&shot, false);
-                    item["image"] = shot_thumbnail(&shot)?.into();
-                    result.push(item);
-                }
-                Ok(result.into())
-            })
-            .await
-            .map_err(|_| "screenshot:invalid-image")?
-        }
         "expand" if label == HISTORY_LABEL => {
+            history_menu::dismiss(&app, false);
+            let _transition = state.history_transition.lock().await;
+            if !history_actions::allowed(&app) {
+                window_visibility::hide(&window).await?;
+                return Err("screenshot:expired".into());
+            }
+            state.history_reduced_motion.store(
+                request["reducedMotion"].as_bool().unwrap_or(false),
+                Ordering::Release,
+            );
             let position = window
                 .outer_position()
                 .map_err(|_| "screenshot:window-failed")?;
@@ -852,24 +923,19 @@ pub(crate) async fn quick_screenshot(
             }))
         }
         "hide-history" if label == HISTORY_LABEL => {
-            let mut p = preferences();
-            p.history = false;
-            store_preferences(&p)?;
-            window.hide().map_err(|_| "screenshot:window-failed")?;
-            if let Some(main) = app.get_webview_window("main") {
-                let _ = main.emit("screenshot-preferences-changed", ());
-            }
+            history_actions::visibility(&app, false).await?;
             Ok(serde_json::Value::Null)
         }
-        "viewer" if label == HISTORY_LABEL || main => {
-            let id = request["id"].as_u64().ok_or("screenshot:invalid-request")?;
-            let shot = lock(&state.inner)
-                .history
-                .iter()
-                .find(|s| s.id == id)
-                .cloned()
-                .ok_or("screenshot:expired")?;
-            open_viewer(&app, shot)?;
+        "close-history" if label == HISTORY_LABEL => {
+            history_actions::visibility(&app, true).await?;
+            Ok(serde_json::Value::Null)
+        }
+        "history-menu" if label == HISTORY_LABEL => {
+            history_menu::open(&app, &window, &request).await?;
+            Ok(serde_json::Value::Null)
+        }
+        "dismiss-history-menu" if label == HISTORY_LABEL => {
+            history_menu::dismiss(&app, false);
             Ok(serde_json::Value::Null)
         }
         "ready" if label == CAPTURE_LABEL => {
@@ -977,11 +1043,30 @@ pub(crate) async fn quick_screenshot(
                 .map_err(|_| "screenshot:copy-failed")??;
                 if action == "confirm" || action == "pin" {
                     require_session(&state, &request)?;
+                    if preferences().history {
+                        let history_app = app.clone();
+                        let history_png = bytes.clone();
+                        let result = tauri::async_runtime::spawn_blocking(move || {
+                            crate::clipboard_history::record_explicit_screenshot(
+                                &history_app,
+                                history_png,
+                                width,
+                                height,
+                            )
+                        })
+                        .await;
+                        if let Err(error) =
+                            result.unwrap_or_else(|_| Err("clipboard:worker-failed".into()))
+                        {
+                            let _ = app.emit_to(HISTORY_LABEL, "clipboard-history-changed", 0u64);
+                            let _ = app.emit_to("main", "screenshot-error", error);
+                        }
+                        require_session(&state, &request)?;
+                    }
                     let id = state.sequence.fetch_add(1, Ordering::SeqCst) + 1;
                     let shot = Shot {
                         id,
                         png: Arc::new(bytes),
-                        thumbnail: Arc::new(OnceLock::new()),
                         width,
                         height,
                         time: std::time::SystemTime::now()
@@ -991,16 +1076,6 @@ pub(crate) async fn quick_screenshot(
                     };
                     if action == "pin" {
                         open_viewer(&app, shot.clone())?;
-                    }
-                    if preferences().history {
-                        let mut inner = lock(&state.inner);
-                        inner.history.push_front(shot.clone());
-                        while inner.history.len() > 10
-                            || inner.history.iter().map(|s| s.png.len()).sum::<usize>()
-                                > HISTORY_BYTES
-                        {
-                            inner.history.pop_back();
-                        }
                     }
                     finish(&app);
                     if preferences().history {
@@ -1023,7 +1098,10 @@ pub(crate) async fn quick_screenshot(
         _ => Err("screenshot:forbidden".into()),
     }
 }
-pub(super) fn require_session(state: &ScreenshotState, request: &serde_json::Value) -> Result<(), String> {
+pub(super) fn require_session(
+    state: &ScreenshotState,
+    request: &serde_json::Value,
+) -> Result<(), String> {
     if lock(&state.inner).session.as_ref().map(|s| s.id) != request["session"].as_u64() {
         Err("screenshot:expired".into())
     } else {
@@ -1035,7 +1113,7 @@ pub(super) fn require_session(state: &ScreenshotState, request: &serde_json::Val
 mod tests {
     use super::*;
     #[test]
-    fn screenshot_thumbnail_is_shared_and_viewer_keeps_original() {
+    fn screenshot_viewer_keeps_original() {
         let mut bytes = std::io::Cursor::new(Vec::new());
         image::RgbImage::new(1200, 720)
             .write_to(&mut bytes, image::ImageFormat::Png)
@@ -1043,16 +1121,11 @@ mod tests {
         let shot = Shot {
             id: 1,
             png: Arc::new(bytes.into_inner()),
-            thumbnail: Arc::new(OnceLock::new()),
             width: 1200,
             height: 720,
             time: 0,
         };
         let clone = shot.clone();
-        let preview = shot_thumbnail(&shot).unwrap();
-        assert!(std::ptr::eq(preview, shot_thumbnail(&clone).unwrap()));
-        let preview_bytes = png_from_data(&serde_json::json!(preview)).unwrap();
-        assert_eq!(image_dimensions(&preview_bytes).unwrap(), (300, 180));
         let original = png_from_data(&shot_json(&clone, true)["image"]).unwrap();
         assert_eq!(original, *shot.png);
         assert_eq!(image_dimensions(&original).unwrap(), (1200, 720));

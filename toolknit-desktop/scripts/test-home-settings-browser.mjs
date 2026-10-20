@@ -34,6 +34,7 @@ const checkSupport = async (background, trigger, exit = 'escape') => {
 };
 try {
   await page.addInitScript(() => {
+    localStorage.setItem('toolknit_favorites', JSON.stringify([{tool:'quick-screenshot',name:'Quick Screenshot',category:'ai',ts:1}]));
     window.__copied = [];
     window.__links = [];
     Object.defineProperty(navigator, 'clipboard', { value: {
@@ -44,6 +45,10 @@ try {
   await page.goto(server.resolvedUrls.local[0]);
   await page.waitForFunction(() => !document.documentElement.dataset.tkStartup && document.querySelector('#homeCustomTools') && !document.querySelector('.app').inert);
   assert.equal(await page.locator('#homeToolGrid .tool-result-card').count(), 12);
+  assert.equal(await page.locator('.content-section[data-category="creative"] [data-tool]').count(), 4);
+  assert.equal(await page.locator('.content-section[data-category="ai"] [data-tool]').count(), 5);
+  assert.equal(await page.locator('.content-section[data-category="creative"] [data-tool="quick-screenshot"]').count(), 1);
+  assert.equal(await page.locator('#favoritesContent [data-tool="quick-screenshot"]').getAttribute('data-category'), 'creative', 'existing favorites follow the current category without changing their tool ID');
   for (const theme of ['light', 'dark']) {
     await page.locator('#homeV2Settings').click();
     await settle();
@@ -78,7 +83,7 @@ try {
       await settle();
       assert.equal(await page.locator('#settingsOverlay').evaluate(n => n.classList.contains('visible')), false);
       const nav = page.locator('#apiKeyOverlay .tk-tool-nav');
-      assert.match(await nav.locator('.tk-nav-tag').innerText(), /AI KEY SETTINGS.*3\.1/);
+      assert.match(await nav.locator('.tk-nav-tag').innerText(), /AI KEY SETTINGS.*3\.2/);
       for (const role of ['web', 'support', 'settings', 'minimize', 'maximize', 'close']) {
         assert.equal(await nav.locator(`.tk-nav-${role}`).isVisible(), true, `${role} visible`);
       }

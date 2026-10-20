@@ -2,11 +2,13 @@
 
 <img src="assets/readme/v3.1/01-hero.webp" alt="ToolKnit Desktop: a boy and his head-perched spider make everyday desktop work simpler" width="100%" />
 
-# ToolKnit Desktop 3.1
+# ToolKnit Desktop 3.2
+
+V3.2 is in development and has not been released. V3.1 is the current desktop release; npm publication is planned with V3.2. Check the download page for available installers.
 
 **One toolbox for the little tasks scattered across your desktop.**
 
-71 desktop tools · 12 categories · Local file workflows · CLI / MCP
+72 desktop tools · 12 categories · Local file workflows · CLI / MCP
 
 <p align="center">
 <a href="https://toolknit.com/exe.html"><img src="assets/readme/v3.1/link-download-en.svg" alt="Download for Windows" width="192" height="40" /></a>
@@ -32,8 +34,8 @@ Most need no account. Supported file tasks run locally in the browser; AI and on
 
 ### Then bring it to your desktop
 
-For recurring file tasks, clipboard history and quick captures, [install the Windows app](https://toolknit.com/exe.html) with **71 desktop tools**.
-Set your output folder first, favorite frequently used tools, and install heavy models only when needed. Enable **one-click recording mode** to combine startup, clipboard monitoring and floating screenshot history, then capture with `Alt + Q`.
+For recurring file tasks, clipboard history and quick captures, [install the Windows app](https://toolknit.com/exe.html). The development catalog contains **72 desktop tools**; PDF to Word is part of V3.2 testing. Check Releases for the current installer.
+Set your output folder first, favorite frequently used tools, and install heavy models only when needed. Enable **one-click recording mode** to combine startup, clipboard monitoring and floating history, then capture with `Alt + Q`.
 See [Get started](#08--get-started) for installation requirements and instructions.
 
 ### People weaving it together
@@ -89,7 +91,7 @@ Use the desktop app for local files, the web app for quick access, and CLI or Ag
 | --- | --- |
 | Start with Windows | Keeps ToolKnit ready in the system tray after a restart |
 | Live clipboard monitoring | Records newly copied text, images and file paths |
-| Floating screenshot history | A draggable Logo opens your recent confirmed screenshots |
+| Floating history | A draggable Logo opens shared clipboard images, text and file records with type filters |
 
 Recording mode is opt-in. Turning it off restores the relevant settings from before activation; the individual controls remain available.
 It does not log keystrokes, browsing or all system activity. Monitoring stops when the application fully exits.
@@ -104,7 +106,7 @@ It does not log keystrokes, browsing or all system activity. Monitoring stops wh
 
 Annotate with rectangles, circles, arrows, pen strokes, brush-style mosaic and text.
 Undo, redo, and hold to compare with the original. Copy or save PNG / JPG, then zoom, pan or pin the result in an independent viewer.
-Open the floating history panel to revisit earlier screenshots.
+Open floating history to search content and notes or revisit earlier screenshots. Saved phrases are kept separately for repeated copying.
 
 | Task | How it works |
 | --- | --- |
@@ -143,7 +145,7 @@ Clipboard content can be sensitive, so pause monitoring and clear records as nee
 
 | Workflow | Common tasks |
 | --- | --- |
-| PDF | Merge, split, crop, page numbers, rotate, export images, compress, encrypt, decrypt, edit and extract text / Markdown |
+| PDF | Merge, split, crop, page numbers, rotate, export images, export Word (V3.2), compress, encrypt, decrypt, edit and extract text / Markdown |
 | PPT | Export PDF / images, extract pictures and text, compress, generate AI outlines or editable PPTX drafts |
 | Cleanup | Analyze large files, clean C drive and scan duplicates by file type |
 
@@ -175,7 +177,7 @@ Existing usable runtimes are reused where supported. WPS / Microsoft Office is n
 **Desktop for visual interaction. CLI for batches. Agents for orchestration.**
 
 Suitable automated tasks are available through `@toolknit/cli` and **46 CLI / MCP capabilities**.
-Their scope differs from the desktop catalog; not all 71 desktop tools are callable from the CLI.
+Their scope differs from the desktop catalog; not all 72 desktop tools are callable from the CLI.
 
 ```powershell
 npm install --global @toolknit/cli
@@ -244,20 +246,20 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 ## Complete tool catalog
 
 <details>
-<summary><strong>Expand 71 desktop tools / 12 categories</strong></summary>
+<summary><strong>Expand 72 desktop tools / 12 categories</strong></summary>
 
 | Category | Count | Tools |
 | --- | ---: | --- |
-| PDF | 14 | Merge, split, page numbers, crop, export images, scanned-style PDF, text / Markdown extraction, editor, rotate, encrypt, decrypt, compress, text enhancement, Excel to PDF |
+| PDF | 15 | Merge, split, page numbers, crop, export images, export Word, scanned-style PDF, text / Markdown extraction, editor, rotate, encrypt, decrypt, compress, text enhancement, Excel to PDF |
 | PPT | 7 | Export PDF, export images, extract images, AI text extraction, compress, AI outline, AI draft / PPTX |
 | Image | 7 | Crop, smart color replacement, background removal, format conversion, compress, stitch, icon generator |
 | Audio | 4 | Format conversion, BPM measurement, trim, extract audio |
 | Video | 3 | Format conversion, full-resolution frame, GIF clipping |
 | Text | 5 | Markdown editor, media transcription, teleprompter, text statistics, text formatting |
 | Calculator | 5 | Body fat, timestamp, mortgage, interest, password generator |
-| Creative | 3 | Palette extraction, color-space comparison, typing test |
+| Creative | 4 | Palette extraction, color-space comparison, quick screenshot, typing test |
 | Cleanup | 3 | AI large-file cleanup, C drive cleanup, duplicate files |
-| AI | 6 | PDF to Markdown, text polishing, translation, document generation, spreadsheet generation, quick screenshot |
+| AI | 5 | PDF to Markdown, text polishing, translation, document generation, spreadsheet generation |
 | Hardware | 8 | System overview, CPU / memory, GPU / displays, motherboard / firmware, storage / health, network / devices, power / sensors, clipboard history |
 | Developer | 6 | JSON formatting, Base64, URL encoding / decoding, UUID, JWT viewer, Hash & Crypto |
 
@@ -273,7 +275,7 @@ Thanks to [AtomGit](https://atomgit.com/) for code hosting and developer collabo
 
 If ToolKnit saves you time, a Star or [one-time donation](assets/readme/donation-support.webp) helps support development, AI testing and maintenance.
 [Thank you to our supporters](assets/readme/supporters-thanks.webp). Donations do not purchase a feature or promise implementation.
-Custom tools and commercial licensing: WeChat **wunanvip6**; email [2645149786@qq.com](mailto:2645149786@qq.com).
+Custom tools: WeChat **wunanvip6**. Code licensing requests, including commercial licensing: [info@toolknit.com](mailto:info@toolknit.com).
 
 ## Run and build from source
 
@@ -281,7 +283,9 @@ Custom tools and commercial licensing: WeChat **wunanvip6**; email [2645149786@q
 
 ### Prerequisites
 
-Use a supported Windows 10 / 11 system with Node.js **22.12+** (24 recommended), Rust stable **1.88+**, Visual Studio C++ Build Tools (Desktop development with C++ and Windows SDK), and Microsoft Edge WebView2 Runtime.
+This branch includes a separately licensed PDF-to-Word Engine. Running, testing or building the complete application from source requires prior written Engine authorization. Reading the source does not. Ordinary use of official installers remains subject to the application's terms. See the [Engine license](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md).
+
+Use a supported Windows 10 / 11 system with Node.js **22.13+** (24 recommended), Rust stable **1.88+**, Visual Studio C++ Build Tools (Desktop development with C++ and Windows SDK), and Microsoft Edge WebView2 Runtime.
 Initial npm and Rust dependency installation requires a connection. Install using the existing lockfiles.
 
 ### Start the desktop app
@@ -331,7 +335,7 @@ Read more: [Build guide](BUILD.md) · [Contributing](CONTRIBUTING.md) · [Archit
 | --- | --- | --- |
 | Desktop and native | Tauri 2, Rust, Windows API, WebView2 | Windows, system tray, shortcuts, screenshots, local OCR and file operations |
 | Frontend and build | Vanilla JavaScript (ES Modules), HTML / CSS, Vite 8, Lucide | Modular tool pages, lazy loading, themes and icons |
-| PDF and office files | PDF.js, pdf-lib, ExcelJS, JSZip | PDF preview and editing, spreadsheets and document archives |
+| PDF and office files | PDF.js, pdf-lib, docx, ExcelJS, JSZip | PDF preview and editing, editable Word, spreadsheets and document archives |
 | Markdown and editing | CodeMirror 6, markdown-it, KaTeX, Mermaid, DOMPurify | Editing, typesetting, math, diagrams and HTML sanitization |
 | Images and media | Canvas, Rust image / oxipng, FFmpeg | Image processing and compression, media conversion; FFmpeg is installed on demand |
 | Local models and external runtimes | ONNX Runtime, offline recognition and Chinese / English translation components, LibreOffice | Background removal, transcription, local translation and office rendering, installed per feature |
@@ -342,9 +346,13 @@ Third-party components retain their own licenses. See `package-lock.json` and `s
 
 ## Source license
 
-From **2026-10-14**, newly licensed author code and modifications use [PolyForm Noncommercial 1.0.0](LICENSE).
-Noncommercial use, modification and redistribution must follow the license and preserve required notices; contact the author for commercial permission. Copyright remains with the respective authors.
-This is a source-available noncommercial license, **not an OSI-approved open-source license**.
+Licenses are scoped by component; see [NOTICE](NOTICE):
+
+- **General author-owned code**: from 2026-10-14, [PolyForm Noncommercial 1.0.0](LICENSE) permits compliant noncommercial use, modification and distribution with notices retained. Commercial use requires separate permission.
+- **PDF-to-Word Engine**: all of `toolknit-desktop/src/features/pdf-to-word/` and `toolknit-desktop/src-tauri/src/native_runtime/pdf/docx_write.rs` use a separate [proprietary source-viewing license](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md), not the general PolyForm grant. Reading is allowed; other execution, compilation, modification, integration, distribution and service use require **prior written authorization for BOTH commercial and noncommercial purposes**. Contact [info@toolknit.com](mailto:info@toolknit.com).
+- **Official application use**: ordinary conversion with an official ToolKnit application or test build remains subject to the application's usage terms and does not itself require separate Engine authorization. This does not authorize extraction, reuse, or building modified versions from Engine source.
+
+Copyright remains with the respective authors. These are source-available licenses, **not OSI-approved open-source licenses**. Independently implemented general ideas, third-party rights and non-waivable legal rights are unaffected.
 
 Previously granted Apache-2.0 rights are not revoked. Unmodified code previously released under Apache-2.0 and third-party contributions retain their original grants.
 See [Apache-2.0](LICENSES/Apache-2.0.txt), [NOTICE](NOTICE) and version history.

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "toolknit-desktop",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "identifier": "com.toolknit.desktop",
   "build": {
     "frontendDist": "../dist",
@@ -30,7 +30,7 @@
       }
     ],
     "security": {
-      "capabilities": ["default", "screenshot-windows"],
+      "capabilities": ["default", "screenshot-windows", "desktop-feedback"],
       "csp": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; img-src 'self' blob: data: http://127.0.0.1:*; media-src 'self' blob: data: http://127.0.0.1:*; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost https: http://localhost:* http://127.0.0.1:*; font-src 'self' data: asset: http://asset.localhost https://asset.localhost",
       "dangerousDisableAssetCspModification": ["style-src"],
       "assetProtocol": {
@@ -48,6 +48,7 @@
     "resources": [
       "../LICENSE",
       "../NOTICE",
+      "../LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md",
       "../LICENSES/Apache-2.0.txt",
       "../src/core/opencc/LICENSE.txt",
       "../src/core/opencc/NOTICE.txt",

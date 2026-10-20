@@ -1,7 +1,7 @@
 import { toolTopbarMarkup } from '../../shared/tool-page-shell.js';
 const text=key=>`data-i18n="home.quickScreenshot.${key}"`;
 export default `<div id="quickScreenshotOverlay" class="pdf-merge-overlay pdf-merge-v2 tool-page-v2-light quick-screenshot" data-tool-page-chrome role="dialog" aria-modal="true" aria-hidden="true" inert>
-${toolTopbarMarkup({tag:'QUICK SCREENSHOT · V3.1',title:'QUICK SCREENSHOT',closeAttr:'data-screenshot-close'})}
+${toolTopbarMarkup({tag:'QUICK SCREENSHOT · V3.2',title:'QUICK SCREENSHOT',closeAttr:'data-screenshot-close'})}
 <div class="screenshot-workbench"><aside class="screenshot-settings">
 <h1 ${text('title')}></h1><p ${text('subtitle')}></p>
 <button id="screenshotStart" class="screenshot-primary" type="button"><i data-lucide="scan"></i><span ${text('start')}></span></button>

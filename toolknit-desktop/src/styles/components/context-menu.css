@@ -1,0 +1,12 @@
+.tk-context-menu { --menu-bg:#171719; --menu-fg:#f5f5f5; --menu-line:#ffffff1c; --menu-hover:#ffffff12; padding:7px; border:1px solid var(--menu-line); border-radius:14px; background:var(--menu-bg); color:var(--menu-fg); box-shadow:0 5px 10px #0003; animation:tk-context-enter .14s ease-out; outline:none; }
+html[data-theme="light"] .tk-context-menu { --menu-bg:#fff; --menu-fg:#171717; --menu-line:#00000010; --menu-hover:#00000008; }
+.tk-context-item { display:flex; align-items:center; gap:10px; width:100%; min-height:38px; padding:7px 9px; border:0; border-radius:8px; background:transparent; color:inherit; font:inherit; font-size:13px; text-align:left; cursor:pointer; }
+.tk-context-item>span { min-width:0; flex:1; overflow-wrap:anywhere; }
+.tk-context-item>svg { width:17px; height:17px; flex-shrink:0; }
+.tk-context-item:hover,.tk-context-item:focus-visible { background:var(--menu-hover); outline:none; }
+.tk-context-item:disabled { opacity:.5; cursor:wait; }
+.tk-context-item.is-danger { color:#ef5656; }
+html[data-theme="light"] .tk-context-item.is-danger { color:#c42f36; }
+.tk-context-separator { height:1px; margin:5px 7px; background:var(--menu-line); }
+@keyframes tk-context-enter { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+@media(prefers-reduced-motion:reduce) { .tk-context-menu { animation:none; } }

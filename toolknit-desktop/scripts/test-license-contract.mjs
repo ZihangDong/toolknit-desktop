@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 
 const read = p => readFile(p, 'utf8');
 const canonical = value => value.replace(/\r\n/g, '\n').trimEnd();
@@ -19,18 +20,36 @@ for (const file of ['../NOTICE', 'NOTICE', 'cli/NOTICE']) {
   assert.match(text, /Previously granted Apache-2\.0 rights are not withdrawn/);
   assert.match(text, /Joshua-Zion PR #67/);
 }
-for (const file of ['package.json', 'cli/package.json']) {
-  assert.equal(JSON.parse(await read(file)).license, 'PolyForm-Noncommercial-1.0.0', file);
-}
-assert.equal(JSON.parse(await read('package-lock.json')).packages[''].license, 'PolyForm-Noncommercial-1.0.0');
+assert.equal(JSON.parse(await read('package.json')).license, 'SEE LICENSE IN NOTICE');
+assert.equal(JSON.parse(await read('cli/package.json')).license, 'PolyForm-Noncommercial-1.0.0');
+assert.equal(JSON.parse(await read('package-lock.json')).packages[''].license, 'SEE LICENSE IN NOTICE');
 assert.equal(JSON.parse(await read('cli/npm-shrinkwrap.json')).packages[''].license, 'PolyForm-Noncommercial-1.0.0');
 const cli = JSON.parse(await read('cli/package.json'));
 assert.ok(cli.files.includes('NOTICE'));
 assert.ok(cli.files.includes('LICENSES'));
 const resources = JSON.parse(await read('src-tauri/tauri.conf.json')).bundle.resources;
-for (const file of ['../LICENSE', '../NOTICE', '../LICENSES/Apache-2.0.txt']) assert.ok(resources.includes(file));
+for (const file of ['../LICENSE', '../NOTICE', '../LICENSES/Apache-2.0.txt', '../LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md']) assert.ok(resources.includes(file));
+const cargo = await read('src-tauri/Cargo.toml');
+assert.match(cargo, /^license-file = "\.\.\/NOTICE"$/m);
+assert.doesNotMatch(cargo, /^license =/m);
+for (const file of ['../NOTICE', 'NOTICE']) {
+  const notice = await read(file);
+  assert.match(notice, /excluded\s+from the general PolyForm grant/);
+  assert.match(notice, /commercial\s+AND noncommercial use requires prior written authorization: info@toolknit\.com/);
+  assert.match(notice, /src\/features\/pdf-to-word\/\*\*/);
+  assert.match(notice, /src-tauri\/src\/native_runtime\/pdf\/docx_write\.rs/);
+}
+execFileSync(process.execPath, ['scripts/sync-pdf-word-license.mjs', '--check'], { stdio: 'pipe', windowsHide: true });
+const engineLicense = await read('../LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md');
+assert.equal(await read('cli/LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md'), engineLicense,
+  'CLI NOTICE references the scoped exception, so its complete text must accompany the notice');
+assert.match(engineLicense, /Official application use/);
+assert.match(engineLicense, /commercial and noncommercial purposes/);
+assert.match(engineLicense, /info@toolknit\.com/);
+assert.match(engineLicense, /previously granted under Apache-2\.0, PolyForm/);
 assert.match(await read('src/features/color-space-compare/README.md'), /LICENSES\/Apache-2\.0\.txt/);
 for (const file of ['../README.md', '../README_EN.md', 'src/legal-data.js']) {
   assert.match(await read(file), /PolyForm Noncommercial 1\.0\.0/);
+  assert.match(await read(file), /info@toolknit\.com/);
 }
-console.log('License contracts passed: official text, metadata, notices, Apache preservation and package inclusion.');
+console.log('License contracts passed: scoped Engine terms, source headers, metadata, official-app exception, third-party and prior grants, and package inclusion.');

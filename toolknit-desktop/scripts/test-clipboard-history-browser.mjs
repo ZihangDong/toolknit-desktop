@@ -16,21 +16,24 @@ import { DEFAULT_SETTINGS } from '/src/features/clipboard-history/core.js';
 export function setup() {
   document.body.insertAdjacentHTML('beforeend', markup);
   let enabled = false, records = [], listeners = new Set(), sequence = 0, settings = { ...DEFAULT_SETTINGS }, held = null;
-  const calls = []; let holdNext = false, pinError = '';
+  const calls = []; let holdNext = false, pinError = '', storageError = '';
   const status = () => ({ enabled, total: records.length, today: records.length, bytes: records.reduce((n,r)=>n+r.bytes,0), startedAt: enabled ? Date.now() : null, captured: records.length, skipped: 0, failed: 0, settings, latestId: sequence });
-  const emit = () => listeners.forEach(fn=>fn());
+  const emit = payload => listeners.forEach(fn=>fn(payload));
   const runtime = { available:true, subscribe:async fn=>{listeners.add(fn);return ()=>listeners.delete(fn);}, request:async request=>{
     calls.push(request);
+    if(request.action==='restart'){storageError='';records=[];enabled=false;settings={...DEFAULT_SETTINGS};return status();}
+    if(storageError)throw storageError;
     if (request.action==='status') return status();
     if (request.action==='start') { enabled=true; settings={...settings,resumeOnLaunch:true}; }
     if (request.action==='stop') { enabled=false; settings={...settings,resumeOnLaunch:false}; }
     if (request.action==='settings') settings={...request.settings,resumeOnLaunch:enabled};
     if (request.action==='list') {
       const q=request.query;
-      let items=records.filter(r=>(!q.kind||r.kind===q.kind)&&(!q.search||(r.text||r.preview).includes(q.search))&&(!q.favorites||r.favorite)&&(!q.before||r.id<q.before)&&(!q.snapshot||r.id<=q.snapshot));
+      let items=records.filter(r=>(!q.kind||r.kind===q.kind)&&(!q.search||[r.text,r.preview,r.note].filter(Boolean).join(' ').includes(q.search))&&(!q.favorites||r.favorite)&&(!q.before||r.id<q.before)&&(!q.snapshot||r.id<=q.snapshot));
       return { items: structuredClone(items.slice(0,50)), next:items.length>50?items[49].id:null, snapshot:q.snapshot||sequence };
     }
     if (request.action==='detail') { const result=structuredClone(records.find(r=>r.id===request.id)); if(holdNext){holdNext=false;return new Promise(resolve=>held=()=>resolve(result));}return result; }
+    if (request.action==='entry') return structuredClone(records.find(r=>r.id===request.id));
     if (request.action==='favorite') records.find(r=>r.id===request.id).favorite=request.favorite;
     if (request.action==='copy') records.find(r=>r.id===request.id).usedAt=Date.now();
     if (request.action==='pin'&&pinError) throw pinError;
@@ -39,7 +42,8 @@ export function setup() {
     emit();return status();
   }};
   const tool=initClipboardHistoryTool({overlay:document.getElementById('clipboardHistoryOverlay'),clipboardRuntime:runtime,refreshIcons:()=>createIcons({icons}),notify:()=>{}});
-  window.fixture={tool,calls,status,setLang,listeners,setPinError:value=>{pinError=value;},hold:()=>{holdNext=true;},release:()=>{held?.();held=null;},
+  window.fixture={tool,calls,status,setLang,listeners,setStorageError:value=>{storageError=value;},setPinError:value=>{pinError=value;},hold:()=>{holdNext=true;},release:()=>{held?.();held=null;},
+    note(id,note){records.find(r=>r.id===id).note=note;emit({recordId:id});},
     push(extra={}) {if(!enabled)return; const record={id:++sequence,capturedAt:Date.now()+sequence,offsetMinutes:480,kind:'text',favorite:false,source:'QA-editor.exe',preview:'Meeting notes: launch checklist',text:'Meeting notes: launch checklist\\n中文与 English 内容\\n<img src=x onerror=window.unsafe=true>',bytes:184,count:94,rich:false,paths:[],filesAvailable:true,...extra};records.unshift(record);emit();return record.id;},
     image() {const c=document.createElement('canvas');c.width=480;c.height=300;const x=c.getContext('2d');x.fillStyle='#f5f6f7';x.fillRect(0,0,480,300);x.fillStyle='#27684d';x.fillRect(30,40,150,200);x.fillStyle='#cc424f';x.fillRect(205,100,245,140);x.fillStyle='#141518';x.font='24px sans-serif';x.fillText('Clipboard image sample',35,280);const image=c.toDataURL();return this.push({kind:'image',image,thumbnail:image,width:480,height:300,count:0,bytes:5028,preview:''});}
   };tool.open();
@@ -88,6 +92,15 @@ try {
     await page.evaluate(async theme=>{await import('/__clipboard-test.js').then(m=>m.setup());document.documentElement.dataset.theme=theme;},theme);
     await page.waitForSelector('#clipboardToggle:not(:disabled)');
     assert.equal(await page.locator('#clipboardToggle').getAttribute('aria-checked'),'false');
+    await page.evaluate(()=>{window.fixture.tool.close();window.fixture.setStorageError('clipboard:key-missing');window.fixture.tool.open();});
+    await page.locator('#clipboardRestart').waitFor({state:'visible'});
+    assert.match(await page.locator('#clipboardError').textContent(),/missing|缺失/);
+    const restartCount=await page.evaluate(()=>window.fixture.calls.filter(r=>r.action==='restart').length);
+    await page.locator('#clipboardRestart').click();await page.locator('#clipboardDialogCancel').click();
+    assert.equal(await page.evaluate(()=>window.fixture.calls.filter(r=>r.action==='restart').length),restartCount,'cancel must leave the old history untouched');
+    await page.locator('#clipboardRestart').click();await page.locator('#clipboardDialogConfirm').click();
+    await page.locator('#clipboardRestart').waitFor({state:'hidden'});
+    assert.equal(await page.locator('#clipboardToggle').getAttribute('aria-checked'),'false','fresh history must not silently enable monitoring');
     await screenshot(page, `${theme}-empty`);
     await page.locator('#clipboardToggle').click(); await page.locator('#clipboardDialogConfirm').click();
     await page.waitForFunction(()=>window.fixture.status().enabled);
@@ -97,6 +110,10 @@ try {
     await page.waitForSelector('#clipboardPreview pre'); assert.equal(await page.evaluate(()=>window.unsafe),undefined);
     assert.equal(await page.locator('#clipboardOpenPinned').isVisible(),false,'text records have no image viewer action');
     assert.match(await page.locator('#clipboardMetadata').innerText(),/UTC\+08:00/);
+    await page.evaluate(()=>window.fixture.note(1,'Shared note <script>fixture</script>'));
+    await page.waitForFunction(()=>document.getElementById('clipboardMetadata').textContent.includes('Shared note'));
+    assert.match(await page.locator('[data-entry-id="1"]').textContent(),/Shared note/);
+    assert.equal(await page.locator('#clipboardMetadata script').count(),0);
     await page.evaluate(()=>window.fixture.image());
     await page.waitForSelector('#clipboardNew:not([hidden])');
     assert.match(await page.locator('#clipboardPreview').innerText(),/Meeting notes/,'new entries must not replace the selected preview');

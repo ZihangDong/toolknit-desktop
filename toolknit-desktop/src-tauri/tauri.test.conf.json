@@ -24,6 +24,7 @@
       "capabilities": [
         "default",
         "screenshot-windows",
+        "desktop-feedback",
         {
           "identifier": "qa-devtools",
           "description": "Local DevTools shortcut for explicitly requested test installers.",

@@ -6,7 +6,7 @@ const iconButton = (id, icon, key) => `<button id="duplicate${id}" class="cleanu
 export const TOOL_MARKUP = `
 <div class="pdf-merge-overlay pdf-merge-v2 cleanup-v2 duplicate-cleanup" id="duplicateFileCleanupOverlay" aria-hidden="true" inert data-tool-page-chrome>
   <div class="plasma-bg pdf-merge-v2-bg" id="duplicateCleanupBackground"></div>
-  ${toolTopbarMarkup({ tag: 'DUPLICATE FILES · TOOL PAGE 3.1', title: 'DUPLICATE FILES', closeAttr: 'data-duplicate-close' })}
+  ${toolTopbarMarkup({ tag: 'DUPLICATE FILES · TOOL PAGE 3.2', title: 'DUPLICATE FILES', closeAttr: 'data-duplicate-close' })}
   <div class="pdf-merge-v2-body cleanup-large-files-body">
     <aside class="cleanup-v2-side">
       <div class="cleanup-v2-side-scroll">

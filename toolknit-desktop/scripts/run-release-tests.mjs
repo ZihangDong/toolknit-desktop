@@ -26,6 +26,7 @@ const releaseTests = [
   'test:pdf-to-image-tool-contract',
   'test:pdf-to-scan',
   'test:pdf-to-scan-tool-contract',
+  'test:pdf-to-word',
   'test:pdf-text-markdown',
   'test:pdf-ai-markdown',
   'test:clipboard-history',

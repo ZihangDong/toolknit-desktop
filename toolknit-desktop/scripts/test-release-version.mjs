@@ -142,7 +142,14 @@ assert.match(repositoryReadme, new RegExp(`^${desktopToolCount} 项桌面工具 
 assert.match(zhHelpSource, new RegExp(`${desktopToolCount} 个桌面工具`), 'Chinese help overview must match the desktop catalog');
 assert.match(enHelpSource, new RegExp(`${desktopToolCount} desktop tools`), 'English help overview must match the desktop catalog');
 assert.match(repositoryReadme, /\*\*46 项 CLI \/ MCP 能力\*\*/, 'Repository README must state the 46-capability MCP contract');
-assert.match(releaseNotes, new RegExp(`^# ToolKnit Desktop ${escapeRegExp(fullVersion)}\\s*$`, 'm'), 'Release notes heading must match package.json version');
+const publishedVersion = captureExactlyOnce(releaseNotes, /^# ToolKnit Desktop (\d+\.\d+\.\d+)\r?\n/, 'Published release version');
+const versionParts = value => value.split('.').map(Number);
+const publishedParts = versionParts(publishedVersion), currentParts = versionParts(fullVersion);
+const firstDifference = publishedParts.findIndex((part, index) => part !== currentParts[index]);
+assert.ok(firstDifference === -1 || publishedParts[firstDifference] < currentParts[firstDifference], 'Published notes cannot announce an unreleased future version');
+if (publishedVersion !== fullVersion) {
+  assert.match(await readText('../changelog.md'), new RegExp(`^## V${escapeRegExp(seriesVersion)}（未发布）`, 'm'), 'A development version must have an unreleased changelog section');
+}
 // Published notes retain their release catalog while the next version is developed.
 const releasedToolCount = Number(captureExactlyOnce(releaseNotes,
   /^- \d+ 个分类、(\d+) 项工具/m, 'Published desktop catalog'));

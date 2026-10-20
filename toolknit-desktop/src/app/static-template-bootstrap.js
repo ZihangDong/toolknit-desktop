@@ -50,7 +50,7 @@ const STATIC_TEMPLATE_SPECS = Object.freeze([
   Object.freeze({
     name: 'ai-key',
     markup: aiKeyTemplate.replace('<!-- ai-key-topbar -->', toolTopbarMarkup({
-      tag: 'AI KEY SETTINGS · TOOL PAGE 3.1',
+      tag: 'AI KEY SETTINGS · TOOL PAGE 3.2',
       title: 'AI Platform Keys',
       closeAttr: 'id="apiKeyBack" data-i18n-title="apiKey.backToSettings"'
     })),

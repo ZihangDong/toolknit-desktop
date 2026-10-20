@@ -24,8 +24,8 @@ export function createClipboardHistoryController({ overlay, isTauri = false, cli
   const node = (tag, className, text) => { const value = documentRef.createElement(tag); if (className) value.className = className; if (text !== undefined) value.textContent = text; return value; };
   const icon = name => { const value = node('i'); value.dataset.lucide = name; value.setAttribute('aria-hidden', 'true'); return value; };
   const kindKey = kind => ({ text: 'typeText', image: 'typeImage', files: 'typeFiles' })[kind] || 'typeText';
-  function showError(error) { q('Error').textContent = tr(errorKey(error)); q('Error').hidden = false; }
-  function clearError() { q('Error').hidden = true; q('Error').textContent = ''; }
+  function showError(error) { q('Error').textContent = tr(errorKey(error)); q('Error').hidden = false; q('Restart').hidden = !['keyMissing','keyInvalid','keyUnavailable','keyMismatch'].includes(errorKey(error)); }
+  function clearError() { q('Error').hidden = true; q('Error').textContent = ''; q('Restart').hidden = true; }
 
   function renderStatus() {
     q('MonitorStatus').textContent = tr(!runtime.available ? 'desktopBadge' : status.enabled ? 'recording' : 'paused');
@@ -63,6 +63,7 @@ export function createClipboardHistoryController({ overlay, isTauri = false, cli
       const heading = node('span', 'clipboard-entry-heading'); heading.append(node('time', '', timeLabel(entry.capturedAt, getLang())), node('span', 'clipboard-muted', tr(kindKey(entry.kind))));
       if (entry.favorite) heading.append(icon('star'));
       copy.append(heading, node('span', 'clipboard-entry-preview', entry.kind === 'image' ? `${entry.width} × ${entry.height}` : entry.preview), node('span', 'clipboard-entry-source', `${entry.source || tr('unknownSource')} · ${sizeLabel(entry.bytes)}`));
+      if(entry.note)copy.append(node('span','clipboard-entry-preview',entry.note));
       button.append(visual, copy); row.append(button); list.append(row);
     }
     list.parentElement.scrollTop = position; q('More').hidden = !next; q('More').disabled = loading;
@@ -81,6 +82,7 @@ export function createClipboardHistoryController({ overlay, isTauri = false, cli
     if (detail.kind === 'image') values.push(['dimensions', `${detail.width} × ${detail.height}`]);
     if (detail.kind === 'files') values.push(['fileCount', String(detail.count)]);
     if (detail.usedAt) values.push(['usedAt', timeLabel(detail.usedAt, getLang(), true)]);
+    if (detail.note) values.push(['recordNote', detail.note]);
     q('Metadata').replaceChildren(...values.map(([label,value]) => { const row = node('div'); row.append(node('dt', '', tr(label)), node('dd', '', value)); return row; }));
     q('Preview').replaceChildren();
     if (detail.kind === 'text') q('Preview').append(node('pre', '', detail.text || ''));
@@ -184,6 +186,7 @@ export function createClipboardHistoryController({ overlay, isTauri = false, cli
     else confirm('startTitle', 'startDescription', () => mutate({ action: 'start' }, { reload: true }));
   });
   listen('Settings', 'click', settingsDialog);
+  listen('Restart', 'click', () => confirm('restartHistory', 'restartDescription', () => mutate({action:'restart'}, {reload:true})));
   for (const [id, field] of [['Text', 'text'], ['Images', 'images'], ['Files', 'files']]) listen(id, 'change', () => { void mutate({ action: 'settings', settings: { ...status.settings, [field]: q(id).checked } }); });
   listen('Search', 'input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { void loadList(); }, 220); });
   for (const id of ['Kind', 'Date']) listen(id, 'change', () => { void loadList(); });
@@ -231,7 +234,13 @@ export function createClipboardHistoryController({ overlay, isTauri = false, cli
       if (!runtime.available) return;
       void (async () => {
         try {
-          owner.use(await runtime.subscribe(() => {
+          owner.use(await runtime.subscribe(payload => {
+            if(current(owner)&&payload?.recordId){
+              void runtime.request({action:'entry',id:payload.recordId}).then(value=>{
+                if(!current(owner))return;entries=entries.map(entry=>entry.id===value.id?value:entry);
+                if(detail?.id===value.id)detail={...detail,note:value.note};renderList();renderDetail();
+              }).catch(error=>{if(current(owner))showError(error);});
+            }
             if (!current(owner)) return; clearTimeout(eventTimer);
             eventTimer = setTimeout(() => { void refreshStatus(owner).then(() => { if (current(owner) && !entries.length) void loadList(); }).catch(error => { if (current(owner)) showError(error); }); }, 120);
           }));

@@ -1,5 +1,21 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-10-18 V3.2 PDF 转 Word：新增 `features/pdf-to-word/`，解析适配器、来源账本、几何/表格/阅读顺序、AI 结构协议、Word writer 与 Worker 分层，组合根不追加业务。新增 `pdf-to-word` / `pdfWordOverlay` / `initPdfWordTool`；PDF 分类 15 项，总计 72 工具、12 分类，CLI/MCP 仍为 46。新增5个原生命令（begin/append/finalize/discard PDF-to-Word write 与 open result），`native_runtime/pdf/docx_write.rs` 限主窗口、受限会话、DOCX校验和不覆盖发布；共150个命令实现/149个唯一名称。依赖固定 docx 9.12.0、PDF.js 6.2.108，quick-xml 使用已有锁定版本。实现与验证持续记录于 [PDF 转 Word 维护记录](PDF_TO_WORD.zh-CN.md)。
+>
+> 2026-10-19 AI区域升级：feature内`core/ai-v2.js`负责同级区域和来源绑定验证，`ai-runtime.js`负责输入摘要、会话缓存及请求预算，`processor.js`裁切最终可见区域，controller拥有文件/关闭时清理。沿用共享AI transport；无新增DOM、storage或原生命令。公式建议保持待复核，不自动开启实验原生公式。实测与剩余P4范围见专项实施进展。
+
+> 2026-10-18 提示/菜单修补：提示窗通过共享窗口背景变量恢复透明；`history_menu.rs` 复用创建路径并提供只由历史窗调用的隐藏准备 action，空会话 boot 不显示菜单。前端菜单按 token 更新，shared render revision 隔离迟到操作；`drag.rs` 规范化 Windows 文字换行并保留逻辑分段。没有新命令名称、事件、权限或存储，验证结果与环境限制见 V3.2 历史改进报告。
+
+> 2026-10-17 排序/拖放增量：剪贴板 schema 3 仅增加两个排序表，`ordering.rs` 负责事务锚点排序，主时间线保持原契约；`drag.rs` 负责受限 OLE 数据与有容量边界的 PNG 导出。前端手势归 `history-drag.js`，表单去除常用语备注但保留旧数据。独立桌面反馈归 `quick_screenshot/feedback.rs` / `feedback-window.js`，复用真实 HWND 隐藏路径，白名单事件与最小 capability，不读取历史。新增 action/DOM/event 见领域文档；无新命令名称、工具或 CLI/MCP 能力。测试限制及结果见 V3.2 历史改进报告。
+
+> 2026-10-17 悬浮交互增量：`history-motion.js` 持有标题逐字翻转、分类选中块与卡片动画，辅助入口注入现有页面过渡运行时，整窗遮罩仅覆盖面板边界。实时搜索在 `history-window.js` 合并输入并隔离中文组词、过期查询、模式缓存；新增 `shotHistorySearchClear` 和前端清空 action，移除大切换按钮、搜索提交按钮及旧列表转场。没有原生命令、数据格式、存储或 CLI/MCP 变化。验证与产物见 V3.2 历史改进报告。
+
+> 2026-10-17 隐藏链修补：截图域新增 `window_visibility.rs`，统一处理原生显示后的实际窗口隐藏与结果校验，避免 Tao 可见状态缓存导致 hide 空操作。新增隐藏失败错误码，不新增 Tauri 命令、事件或持久化键。菜单焦点回送及迟到展开受当前可见性门禁约束；前端区分读取和操作错误。Tao 0.37.1 仅作为直接测试依赖使用，版本沿用现有锁文件；生产依赖没有新增版本。原生缓存复现与回归证据见历史记录改进报告。
+
+> 2026-10-17 V3.2 增量：`clipboard_history/library.rs` 负责事件备注和独立常用语的加密、搜索、去重、容量及持久化，schema 2 增量保留原数据。`history-editor.js` 负责表单，历史控制器负责两种模式和搜索/滚动状态；普通复制事件不触发常用语列表重查。菜单按触发按钮及 token 处理收起，主窗口统一复用托盘恢复入口。新 action/事件负载与容量边界见剪贴板、截图维护说明；命令总数、71 工具/12 分类/46 CLI/MCP 不变。原生测试 246 项（237 passed/9 ignored）；浏览器与发布回归结果记录在本轮历史改进报告。
+
+> 2026-10-16 V3.2 增量：开发版本升至 3.2.0，71 桌面工具 / 12 分类 / 46 CLI/MCP 能力不变，npm 尚未发布。快速截图移至创意分类（创意 4、AI 5）。历史密钥 owner 为 `clipboard_history/key.rs`，SQLite 保存 DPAPI 保护备份，无备份时保留旧库，确认重建复用 `restart` action。悬浮窗复用剪贴板服务的最新 20 条摘要、详情、复制、置顶和经确认的单条删除，列表上限不裁剪主库；查询 revision 按窗口分开，移除内存截图历史、重复缩略图缓存与悬浮窗分页。菜单由 `history_menu.rs` 持有独立透明窗口和 token，`shared/context-menu.js` 负责自绘交互；会话隐藏与拖动回退归 `history_actions.rs`，主界面导航收尾归 `app/auxiliary-tool-navigation.js`，格式与错误映射归 `shared/clipboard-history-format.js`。新增 action、事件和 DOM 见维护指南，沿用现有命令名称。以下 V3.1 快照为历史记录。
+
 > 2026-10-13 稳定性增量：窗口操作队列、回复超时与恢复同步归 `app/window-runtime.js`，转场动画等待兜底归 `app/page-transition-runtime.js`，模型状态 revision 归 `app/local-translation-runtime.js`，首页 hover RAF 与即时搜索归 `app/home-controller.js`。截图预览缓存归 native `quick_screenshot::Shot` 的共享 `OnceLock`，DOM/解码复用归 history controller；原图查看契约不变。本轮不新增原生命令、事件、存储或 DOM 契约，新增双语错误提示。当前 71 工具/12 分类/46 CLI/MCP，1454 HTML ID 无重复、145 命令实现/144 唯一名称、214 Rust 测试（207 passed/7 ignored）。完整发布 101 项与双主题浏览器专项通过；源码责任边界、证据和原生复现限制见[维护报告](V3_STABILITY_REVIEW_20261013.zh-CN.md)。
 
 > 2026-10-13 一键记录增量：组合状态与事务归 `app/recording-mode-state.js`，DOM/订阅归 `app/recording-mode-runtime.js`，原生命令归 `platform/recording-mode-runtime.js`，样式归 `styles/pages/recording-mode.css`。使用 `toolknit.recording-mode.snapshot.v1` 和 `toolknit.recording-mode.prompt-dismissed.v1`；失败回滚、恢复原设置、原生状态核验及生命周期取消有专项测试。新增 8 个内部 DOM ID、导航 `data-tool-help/feedback` 和截图偏好通知 `screenshot-preferences-changed`；沿用原生命令与 CLI/MCP。帮助/反馈由共享导航分发，modal session 持有来源页、焦点与输入锁。当前 71 工具/12 分类/46 CLI/MCP，1454 HTML ID 无重复，144 唯一原生命令。完整发布 101 项 npm 门禁通过，Rust 206 passed/7 ignored；Edge 双主题、响应式与组合模式浏览器专项通过，真实登录/重启未代替为模拟验证。

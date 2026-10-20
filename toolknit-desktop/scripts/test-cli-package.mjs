@@ -56,7 +56,7 @@ const packOutput = execFileSync(process.execPath, [npmCli, 'pack', '--dry-run', 
 });
 const pack = JSON.parse(packOutput)[0];
 const packedFiles = new Set(pack.files.map(file => file.path));
-for (const required of ['README.md', 'LICENSE', 'package.json', 'npm-shrinkwrap.json', 'toolknit.mjs']) {
+for (const required of ['README.md', 'LICENSE', 'NOTICE', 'LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md', 'package.json', 'npm-shrinkwrap.json', 'toolknit.mjs']) {
   assert.equal(packedFiles.has(required), true, `published CLI package must include ${required}`);
 }
 for (const required of ['lib/core/core/chinese-text.js', 'lib/core/core/opencc/t2s.json', 'lib/core/core/opencc/LICENSE.txt', 'lib/core/core/opencc/NOTICE.txt']) {
