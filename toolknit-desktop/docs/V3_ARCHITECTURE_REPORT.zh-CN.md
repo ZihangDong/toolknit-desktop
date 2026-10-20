@@ -1,5 +1,11 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-10-20 PDF编辑与A4修补：feature CSS固定文字优先的命中层级；core/page-plan.js负责A4缩放、安全内容带分页及拆分来源书签，docx-continuous.js复用该规划处理宽表格/图片。编辑入口沿用原DOM契约并同步状态文案，无新增原生命令、事件、存储或依赖。两个真实样本Office渲染及12组浏览器回归证据见[工作台维护记录](PDF_WORD_WORKBENCH.zh-CN.md)。
+
+> 2026-10-20 PDF 转 Word 工作台：新增结果编辑核心、结果预览、编辑会话和按需缩略图模块；复用PDF编辑器的共享历史，曲线动画和PDF裁剪渲染队列提取到shared并保留兼容入口。移除审核DOM与复选框门槛，一键转换支持编辑后重新导出；无新增Tauri、事件、storage或CLI/MCP契约。责任、容量边界和验证见[工作台维护记录](PDF_WORD_WORKBENCH.zh-CN.md)。
+
+> 2026-10-20 主窗关闭修补：`platform/window_visibility.rs`集中框架与Win32实际可见状态校正，截图域保留兼容转发和原错误码。新增仅主窗口可调用的`hide_main_window`异步命令，导航关闭由`app/window-runtime.js`调用；系统CloseRequested复用同一UI线程隐藏路径。当前151个command实现、150个唯一名称、124个前端invoke名；工具/事件/存储/CLI数量不变。验证与限制见[窗口可见状态维护记录](WINDOW_VISIBILITY.zh-CN.md)。
+
 > 2026-10-18 V3.2 PDF 转 Word：新增 `features/pdf-to-word/`，解析适配器、来源账本、几何/表格/阅读顺序、AI 结构协议、Word writer 与 Worker 分层，组合根不追加业务。新增 `pdf-to-word` / `pdfWordOverlay` / `initPdfWordTool`；PDF 分类 15 项，总计 72 工具、12 分类，CLI/MCP 仍为 46。新增5个原生命令（begin/append/finalize/discard PDF-to-Word write 与 open result），`native_runtime/pdf/docx_write.rs` 限主窗口、受限会话、DOCX校验和不覆盖发布；共150个命令实现/149个唯一名称。依赖固定 docx 9.12.0、PDF.js 6.2.108，quick-xml 使用已有锁定版本。实现与验证持续记录于 [PDF 转 Word 维护记录](PDF_TO_WORD.zh-CN.md)。
 >
 > 2026-10-19 AI区域升级：feature内`core/ai-v2.js`负责同级区域和来源绑定验证，`ai-runtime.js`负责输入摘要、会话缓存及请求预算，`processor.js`裁切最终可见区域，controller拥有文件/关闭时清理。沿用共享AI transport；无新增DOM、storage或原生命令。公式建议保持待复核，不自动开启实验原生公式。实测与剩余P4范围见专项实施进展。

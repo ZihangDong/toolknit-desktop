@@ -235,7 +235,9 @@ export function createWindowRuntime({
         release = scope.use(() => { clearTimeout(timer); resolve(); });
       });
       try {
-        const operation = action === 'close' ? appWindow.hide()
+        // Screenshot restoration can show the HWND without updating Tao's
+        // visibility cache. The native command verifies the actual hide.
+        const operation = action === 'close' ? tauriCorePromise.then(({ invoke }) => invoke('hide_main_window'))
           : action === 'minimize' ? appWindow.minimize() : appWindow.toggleMaximize();
         await Promise.race([operation, expired]);
         if (!scope.disposed && action === 'maximize') scheduleFrameSync();

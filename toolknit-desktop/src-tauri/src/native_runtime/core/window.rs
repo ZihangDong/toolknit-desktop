@@ -1,3 +1,11 @@
+#[tauri::command]
+pub(crate) async fn hide_main_window(window: tauri::Window) -> Result<(), String> {
+    if window.label() != "main" {
+        return Err("window:main-only".into());
+    }
+    platform::window_visibility::hide(&window).await
+}
+
 /// Read the installer language at startup (from install_lang.txt).
 /// Returns "zh" or "en", defaulting to "zh" on any error.
 pub(crate) fn read_initial_lang() -> String {

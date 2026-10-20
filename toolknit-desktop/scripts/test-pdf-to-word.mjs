@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import './test-pdf-word-result-edit.mjs';
+import './test-pdf-word-a4.mjs';
 import './test-pdf-word-quality.mjs';
 import './test-pdf-word-image-assets.mjs';
 import './test-pdf-word-table-layers.mjs';

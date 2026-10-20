@@ -18,8 +18,13 @@ try {
   const source = await open(sourcePath), target = await open(renderedPath);
   const selectedPages = metrics.pageRange ? parsePageRange(metrics.pageRange, source.numPages)
     : Array.from({ length: source.numPages }, (_, index) => index + 1);
-  assert.deepEqual([...new Set(mapping.map(item => item.page))].sort((a, b) => a - b), selectedPages, 'each selected source page needs exactly one placement');
-  assert.equal(mapping.length, selectedPages.length);
+  assert.deepEqual([...new Set(mapping.map(item => item.page))].sort((a, b) => a - b), selectedPages, 'every selected source page needs a placement');
+  assert.equal(new Set(mapping.map(item => item.bookmark)).size, mapping.length, 'split source fragments have distinct bookmarks');
+  for (const number of selectedPages) {
+    const parts = mapping.filter(item => item.page === number).sort((a, b) => a.sourceRect.y - b.sourceRect.y);
+    assert(parts.every((part, index) => !index || part.sourceRect.y >= parts[index - 1].sourceRect.y + parts[index - 1].sourceRect.height - .1),
+      'multiple placements of one source page must not duplicate its visible bands');
+  }
   assert.equal(Math.max(...mapping.map(item => item.targetPage)), target.numPages);
   for (let n = 1; n <= target.numPages; n++) {
     const page = await target.getPage(n), viewport = page.getViewport({ scale: ratio });

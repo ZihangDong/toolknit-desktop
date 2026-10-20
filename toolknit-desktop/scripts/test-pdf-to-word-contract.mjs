@@ -10,7 +10,8 @@ assert.equal(spec.overlayId, 'pdfWordOverlay'); assert.equal(spec.init, 'initPdf
 assert.equal((await spec.markup()).default, markup);
 const ids = [...markup.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
 assert.equal(ids.length, new Set(ids).size);
-for (const id of ['pdfWordOverlay', 'pdfWordAnalyze', 'pdfWordExport', 'pdfWordCanvas', 'pdfWordCancel', 'pdfWordFallback']) assert(ids.includes(id));
+for (const id of ['pdfWordOverlay', 'pdfWordEmptyPick', 'pdfWordExport', 'pdfWordCanvas', 'pdfWordCancel', 'pdfWordThumbnails', 'pdfWordReset', 'pdfWordEditText']) assert(ids.includes(id));
+for (const id of ['pdfWordAnalyze', 'pdfWordFallback', 'pdfWordReview', 'pdfWordAuto', 'pdfWordFontSize']) assert(!ids.includes(id));
 for (const language of ['zh', 'en']) {
   const dictionary = JSON.parse(await read(`src/locales/${language}.json`));
   for (const [, key] of markup.matchAll(/data-i18n(?:-aria-label|-title)?="([^"]+)"/g)) {

@@ -20,7 +20,7 @@ export function createWordWorker() {
     if (data.error) item.reject(wordError(data.error)); else item.resolve(data.result);
   };
   worker.onerror = () => dispose('worker'); worker.onmessageerror = () => dispose('worker');
-  return { dispose, request(type, payload = {}, transfer = []) {
+  return { dispose, get disposed() { return disposed; }, request(type, payload = {}, transfer = []) {
     if (disposed) return Promise.reject(wordError('cancelled'));
     return new Promise((resolve, reject) => {
       const id = ++sequence, timer = setTimeout(() => dispose('timeout'), LIMITS.timeoutMs);

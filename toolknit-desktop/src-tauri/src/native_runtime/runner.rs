@@ -38,6 +38,7 @@ pub fn run() {
             load_ai_api_key,
             clear_ai_api_key,
             set_window_corner_radius,
+            hide_main_window,
             get_documents_dir,
             get_download_dir,
             get_install_lang,
@@ -207,7 +208,9 @@ pub fn run() {
                     // close-to-tray behavior used by ToolKnit.
                     "main" => {
                         api.prevent_close();
-                        let _ = window.hide();
+                        if platform::window_visibility::hide_on_main_thread(window).is_err() {
+                            log::warn!("Unable to hide main window after system close request");
+                        }
                     }
                     // The picker minimizes the main window while it is active.
                     // A system close request (Alt+F4, taskbar command, etc.)

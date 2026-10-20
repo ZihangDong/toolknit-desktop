@@ -72,7 +72,7 @@ const detailedAnswer = planPackedPages({ schemaVersion: 1, pages: [fragment(1, '
   fragment(2, '15. Question', 50), fragment(3, '\u3010\u89e3\u9898\u5206\u6790\u3011', 100)] });
 assert.equal(detailedAnswer.sources[1].targetPage, detailedAnswer.sources[2].targetPage);
 const oversized = fragment(1, 'Oversized', 800);
-assert.throws(() => planPackedPages({ schemaVersion: 1, pages: [oversized] }), /a4-fit/);
+assert(planPackedPages({ schemaVersion: 1, pages: [oversized] }).sources[0].scale > .95, 'slight footer/margin overflow is fitted to A4');
 const crowded = fragment(1, 'Crowded', 30);
 crowded.blocks[0].lines = Array.from({ length: MAX_POSITIONED_FRAMES + 1 }, () => ({ items: [{ font: 'Arial', size: 10, preciseInk: true }] }));
 assert.throws(() => planPackedPages({ schemaVersion: 1, pages: [crowded] }), /layout-quality/);

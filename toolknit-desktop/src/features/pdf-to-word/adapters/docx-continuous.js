@@ -3,7 +3,6 @@
 // Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
 import { Bookmark, DocumentGridType, SectionType, Header, Footer } from 'docx';
 import { PdfParagraph } from './docx-paragraph.js';
-import { wordError } from '../core/input.js';
 import { planPackedPages } from '../core/page-plan.js';
 import { validateCoverage } from '../core/layout.js';
 import { requiresPackedLayout } from '../core/inline-layout.js';
@@ -15,10 +14,10 @@ const flattenColumns = blocks => blocks.flatMap(block => block.type === 'columns
 export function planContinuousSection(document) {
   if (requiresPackedLayout(document.pages)) return planPackedPages(document);
   for (const page of document.pages) for (const block of flattenColumns([...page.header, ...page.blocks, ...page.footer])) {
-    if (['image', 'table', 'option-grid'].includes(block.type) && block.rect.width > BODY_WIDTH) throw wordError('a4-fit');
-    if (block.type === 'image' && block.rect.height > 769.9) throw wordError('a4-fit');
+    if (['image', 'table', 'option-grid'].includes(block.type) && block.rect.width > BODY_WIDTH) return planPackedPages(document);
+    if (block.type === 'image' && block.rect.height > 769.9) return planPackedPages(document);
     for (const line of block.lines || []) for (const item of line.items) {
-      if (item.type === 'image' && item.rect.width > BODY_WIDTH) throw wordError('a4-fit');
+      if (item.type === 'image' && item.rect.width > BODY_WIDTH) return planPackedPages(document);
     }
   }
   return null;

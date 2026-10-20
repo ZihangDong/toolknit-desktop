@@ -30,9 +30,14 @@ self.onmessage = async ({ data }) => {
     } else if (type === 'layout') {
       result = inferDocument(scenes, data.options);
       if (data.options?.continuous) planContinuousSection(result);
+    } else if (type === 'assets') {
+      const ids = new Set(data.ids);
+      result = assets.filter(asset => ids.has(asset.id));
     } else if (type === 'finish') {
       validateCoverage(data.document);
-      result = await createWordBytes(data.document, assets, data.options);
+      const extra = data.editedAssets || [];
+      if (extra.reduce((sum, asset) => sum + asset.bytes.length, bytes) > LIMITS.assetBytes) throw wordError('asset-large');
+      result = await createWordBytes(data.document, [...assets, ...extra], data.options);
       self.postMessage({ id, result }, [result.bytes.buffer]); return;
     } else throw wordError('worker');
     self.postMessage({ id, result });

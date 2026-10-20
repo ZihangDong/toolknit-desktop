@@ -5,6 +5,7 @@ pub(crate) mod protected_data;
 #[cfg(feature = "qa-devtools")]
 pub mod qa_devtools;
 pub mod security;
+pub(crate) mod window_visibility;
 #[cfg(any(target_os = "windows", test))]
 pub(crate) mod window_shadow;
 #[cfg(target_os = "windows")]

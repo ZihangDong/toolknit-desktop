@@ -51,15 +51,11 @@ try {
   await page.waitForSelector('#pdfWordOverlay.visible');
   await page.waitForFunction(() => !document.querySelector('[data-tk-page-transition-veil]') || getComputedStyle(document.querySelector('[data-tk-page-transition-veil]')).visibility === 'hidden');
   await page.locator('#pdfWordFileInput').setInputFiles({ name: 'benchmark.pdf', mimeType: 'application/pdf', buffer: bytes });
-  await page.waitForFunction(() => !document.querySelector('#pdfWordAnalyze').disabled);
+  await page.waitForFunction(() => !document.querySelector('#pdfWordExport').disabled);
   await page.locator('#pdfWordLocal').click();
   if (pageRange) await page.locator('#pdfWordRange').fill(pageRange);
   if (process.argv.includes('--continuous')) await page.locator('#pdfWordFlow').click();
-  const started = performance.now(); await page.locator('#pdfWordAnalyze').click();
-  await page.waitForFunction(() => !document.querySelector('#pdfWordAnalyze').disabled
-    && (!document.querySelector('#pdfWordReview').hidden || document.querySelector('#pdfWordStatus').classList.contains('is-error')), null, { timeout: 120000 });
-  assert(!await page.locator('#pdfWordStatus').evaluate(node => node.classList.contains('is-error')), await page.locator('#pdfWordStatus').innerText());
-  if (await page.locator('#pdfWordFallbackLabel').isVisible()) await page.locator('#pdfWordFallback').check();
+  const started = performance.now();
   const download = page.waitForEvent('download', { timeout: 120000 }); await page.locator('#pdfWordExport').click();
   const exported = await Promise.race([download,
     page.waitForFunction(() => document.querySelector('#pdfWordStatus').classList.contains('is-error'), null, { timeout: 120000 })
@@ -73,7 +69,7 @@ try {
   assert(metrics.quality);
   await writeFile(`${destination}.metrics.json`, JSON.stringify(metrics, null, 2), { flag: 'wx' });
   console.log(JSON.stringify({ milliseconds: metrics.milliseconds, bytes: metrics.bytes,
-    quality: await page.locator('#pdfWordQuality').innerText(), errors, externalPosts }, null, 2));
+    quality: metrics.quality, errors, externalPosts }, null, 2));
 } finally {
   if (browser) await browser.close();
   await new Promise(resolve => server.httpServer.close(resolve));

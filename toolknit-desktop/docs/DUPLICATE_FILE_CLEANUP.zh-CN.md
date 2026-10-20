@@ -24,7 +24,7 @@ V3.1 新增本地 Windows 清理工具，只判断文件内容完全相同，不
 | `cleanup-view.js` | 内容遮罩、真实进度、结算、停止/返回、焦点与动画资源 |
 | `core.js` | 保留项、选择、汇总、清理计划和结果更新，无 DOM/平台依赖 |
 | `file-types.js` | 常用后缀分类，与原生允许列表保持一致 |
-| `scan-animation.js` / `rose-curve.b64` | 按需加载曲线动画、双主题、本地双语一言及资源释放 |
+| `scan-animation.js` / `shared/curve-loading.js` / `shared/rose-curve.b64` | 按需加载曲线动画、双主题、本地双语一言及资源释放；旧入口兼容转发，PDF 转 Word 复用相同动画 |
 | `duplicate-file-cleanup.css` | 专属布局、低高度滚动和双主题，沿用清理工具基础样式 |
 | `src-tauri/src/native_runtime/duplicate_files.rs` | 遍历、分阶段校验、独立扫描会话及回收站执行 |
 | `duplicate_files/protection.rs` | 只读查询注册表中明确的安装目录，按路径组件保护 |
