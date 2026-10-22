@@ -871,7 +871,12 @@ async function writeProjectStage({ project, paths, rendered, revisionRecord, pre
   }
 }
 
-async function publishStage(stage, paths, overwrite) {
+async function publishStage(stage, paths, overwrite, signal) {
+  // Stop before the atomic commit; never interrupt its rollback half-way.
+  if (signal?.aborted) {
+    await rm(stage.root, { recursive: true, force: true });
+    throw cancellationError(signal);
+  }
   const entries = [
     { source: stage.exportPath, target: paths.exportPath },
     { source: stage.projectPath, target: paths.projectPath },
@@ -930,16 +935,19 @@ async function publishStage(stage, paths, overwrite) {
   for (const backup of backups) await rm(backup.backup, { recursive: true, force: true }).catch(() => {});
 }
 
-export async function createAiTableProjectArtifacts({ data, outputPath, locale, format, overwrite, reportProgress }) {
+export async function createAiTableProjectArtifacts({ data, outputPath, locale, format, overwrite, reportProgress, signal }) {
+  throwIfAborted(signal);
   const paths = await assertAiTableOutputAvailable(outputPath, overwrite === true);
   const project = createAiTableProjectFromData(data, { locale, title: data.title, summary: data.summary });
   project.outputs = ensureProjectOutputPaths(project, paths, format || paths.format);
   reportProgress?.(50, 'Created the editable ToolKnit table project.');
+  throwIfAborted(signal);
   const rendered = await renderProject(project, paths);
   reportProgress?.(75, 'Rendered the table preview and export file.');
+  throwIfAborted(signal);
   const record = revisionRecord({ project, parentRevision: null, operations: [{ type: 'create' }], changes: [] });
   const stage = await writeProjectStage({ project, paths, rendered, revisionRecord: record, preserveExisting: false });
-  await publishStage(stage, paths, overwrite === true);
+  await publishStage(stage, paths, overwrite === true, signal);
   reportProgress?.(95, 'Published the editable table project and its artifacts.');
   const outputs = resultOutputs(paths, rendered);
   outputs.find(output => output.kind === 'project').revision = project.revision;
@@ -1014,9 +1022,11 @@ export async function editAiTableProject(argsValue, options = {}) {
       changes = applied.changes;
     }
     reportProgress(35, 'Applied the operations atomically.');
+    throwIfAborted(options.signal);
     editedProject.outputs = ensureProjectOutputPaths(editedProject, loaded.paths, loaded.project.outputs.find(output => output.kind === 'export')?.format || loaded.paths.format);
     const rendered = await renderProject(editedProject, loaded.paths);
     reportProgress(70, 'Validated the table preview and export artifacts.');
+    throwIfAborted(options.signal);
     if (argsValue.dry_run === true) {
       return {
         tool: 'ai.table.edit',
@@ -1045,7 +1055,7 @@ export async function editAiTableProject(argsValue, options = {}) {
       revisionRecord: record,
       preserveExisting: true
     });
-    await publishStage(stage, loaded.paths, true);
+    await publishStage(stage, loaded.paths, true, options.signal);
     reportProgress(95, 'Published the new revision and refreshed artifacts.');
     const outputs = resultOutputs(loaded.paths, rendered);
     outputs.find(output => output.kind === 'project').revision = editedProject.revision;
@@ -1068,6 +1078,7 @@ export async function renderAiTableProject(argsValue, options = {}) {
   const loaded = await loadAiTableProject(assertString(argsValue.project_path, 'project_path'));
   const reportProgress = typeof options.reportProgress === 'function' ? options.reportProgress : () => {};
   reportProgress(15, 'Loaded and validated the editable table project.');
+  throwIfAborted(options.signal);
   const rendered = await renderProject(loaded.project, loaded.paths);
   const blocking = blockingDiagnostics(rendered.diagnostics);
   if (blocking.length) {
@@ -1076,6 +1087,7 @@ export async function renderAiTableProject(argsValue, options = {}) {
     });
   }
   reportProgress(75, 'Rendered the table preview and export file.');
+  throwIfAborted(options.signal);
   const stage = await writeProjectStage({
     project: loaded.project,
     paths: loaded.paths,
@@ -1083,7 +1095,7 @@ export async function renderAiTableProject(argsValue, options = {}) {
     revisionRecord: null,
     preserveExisting: true
   });
-  await publishStage(stage, loaded.paths, true);
+  await publishStage(stage, loaded.paths, true, options.signal);
   reportProgress(95, 'Refreshed the table artifacts.');
   const outputs = resultOutputs(loaded.paths, rendered);
   outputs.find(output => output.kind === 'project').revision = loaded.project.revision;
@@ -1127,6 +1139,7 @@ export async function generateAiTableProject(argsValue, options = {}) {
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
   reportProgress(5, 'Validated the table request.');
   throwIfAborted(options.signal);
+  await assertAiTableOutputAvailable(paths.exportPath, argsValue.overwrite === true);
   const project = await generateTableFromPrompt(prompt, { locale, reportProgress, env, fetchImpl, signal: options.signal });
   if (!project.ready) {
     return {
@@ -1144,7 +1157,8 @@ export async function generateAiTableProject(argsValue, options = {}) {
     locale,
     format: argsValue.format || paths.format,
     overwrite: argsValue.overwrite === true,
-    reportProgress
+    reportProgress,
+    signal: options.signal
   });
   return {
     tool: 'ai.table.generate',
@@ -1396,6 +1410,9 @@ function retryableProviderFailure(error) {
 }
 
 function providerFailure(error) {
+  if (error?.code === 'invalid_config') return new ToolKnitError('ENGINE_UNAVAILABLE', 'The AI provider configuration is invalid.', {
+    details: { stage: 'provider_config', retryable: false }
+  });
   const statusSuffix = error?.code === 'http_error' && Number.isInteger(error.status) ? ` (HTTP ${error.status})` : '';
   const message = error?.code === 'http_error' && error.status !== null && error.status < 500 && error.status !== 429
     ? `The AI provider rejected the request${statusSuffix}. Check the configured API key, model, and provider URL.`
@@ -1434,12 +1451,13 @@ async function generateTableFromPrompt(prompt, { locale, reportProgress, env = p
         model: provider.model,
         messages,
         maxTokens: 8192,
+        timeoutMs: 120000,
         fetchImpl,
         signal
       });
     } catch (error) {
       if (error instanceof AiProviderError) {
-        if (error.code === 'aborted') {
+        if (error.code === 'aborted' || error.code === 'timeout') {
           if (signal?.aborted) throw cancellationError(signal);
           throw new ToolKnitError('PROVIDER_TIMEOUT', 'AI table generation timed out.', {
             details: { stage: 'provider_request', retryable: true }

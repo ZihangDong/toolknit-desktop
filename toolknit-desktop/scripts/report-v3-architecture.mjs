@@ -109,7 +109,8 @@ const duplicateHtmlIds = unique(htmlIds.filter((id, index) => htmlIds.indexOf(id
 const frontendInvokes = unique(matches(frontendText, /\binvoke\(\s*['"]([^'"]+)['"]/g).map(match => match[1]));
 const frontendEvents = unique(matches(frontendText, /\blisten\(\s*['"]([^'"]+)['"]/g).map(match => match[1]));
 const literalStorageKeys = unique(matches(frontendText, /\b(?:localStorage|sessionStorage)\.(?:getItem|setItem|removeItem)\(\s*['"]([^'"]+)['"]/g).map(match => match[1]));
-const mcpTools = unique(matches(mcpRegistry, /\bname:\s*['"](toolknit_[^'"]+)['"]/g).map(match => match[1]));
+const { TOOL_DEFINITIONS } = await import('../cli/lib/tool-definitions.mjs');
+const mcpTools = unique(TOOL_DEFINITIONS.map(tool => tool.name));
 
 const report = {
   generatedAt: new Date().toISOString(),
@@ -183,7 +184,7 @@ if (process.argv.includes('--check')) {
   if (report.rust.commandAttributeCount !== 154) failures.push(`expected 154 Tauri command implementations, found ${report.rust.commandAttributeCount}`);
   if (report.rust.commandCount !== 153) failures.push(`expected 153 unique Tauri command names, found ${report.rust.commandCount}`);
   if (report.rust.testCount < 93) failures.push(`expected at least 93 Rust tests, found ${report.rust.testCount}`);
-  if (report.mcp.toolCount !== 46) failures.push(`expected 46 MCP tools, found ${report.mcp.toolCount}`);
+  if (report.mcp.toolCount !== 77) failures.push(`expected 77 MCP tools, found ${report.mcp.toolCount}`);
   if (failures.length) {
     failures.forEach(failure => console.error(`Architecture baseline failure: ${failure}`));
     process.exit(1);

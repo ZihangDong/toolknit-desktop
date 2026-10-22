@@ -131,6 +131,7 @@
     "test:qa-devtools": "node scripts/test-qa-devtools-contract.mjs",
     "test:windows-installer": "node scripts/test-windows-installer.mjs",
     "test:windows-installer-native": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-windows-installer-native.ps1",
+    "test:windows-upgrade-native": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-windows-upgrade-native.ps1",
     "test:vertical-stripe-surfaces": "node scripts/test-vertical-stripe-surfaces.mjs",
     "test:pdf-ppt-browser": "node scripts/test-pdf-ppt-browser.mjs",
     "test:pdf-input-interactions-browser": "node scripts/test-pdf-input-interactions-browser.mjs",
@@ -142,9 +143,11 @@
     "test:duplicate-file-cleanup": "node scripts/test-duplicate-file-cleanup.mjs",
     "test:duplicate-file-cleanup-browser": "node scripts/test-duplicate-file-cleanup-browser.mjs",
     "test:excel-to-pdf": "node scripts/test-excel-to-pdf-shell.mjs && cargo test --manifest-path src-tauri/Cargo.toml excel_to_pdf --lib",
-    "test:cli-package": "npm run stage:cli-resources && node scripts/test-cli-package.mjs",
+    "test:cli-package": "node scripts/prepare-cli-package.cjs && node scripts/test-cli-package.mjs",
     "test:cli-clean-worktree": "node scripts/test-cli-clean-worktree.mjs",
-    "test:cli": "npm run test:cli-package && npm run test:cli-agent",
+    "test:cli": "npm run test:cli-package && npm run test:cli-agent && npm run test:cli-v32",
+    "test:cli-v32": "node scripts/test-cli-v32-extensions.mjs && node scripts/test-cli-v32-images.mjs && node scripts/test-cli-v32-office-ai.mjs && node scripts/test-cli-ai-failure.mjs && node scripts/test-cli-model-download.mjs && node scripts/test-cli-transcription-native.mjs && node scripts/test-cli-hardware-fallback.mjs && node scripts/test-cli-v32-protocol.mjs && node scripts/test-cli-v32-sdk.mjs && node scripts/sync-cli-catalog.mjs --check",
+    "test:cli-ai-live": "node scripts/test-cli-ai-live.mjs",
     "test:release": "node scripts/run-release-tests.mjs",
     "qa:image-stitch-native": "node scripts/qa-image-stitch-native.mjs",
     "qa:pdf-to-image-native": "node scripts/qa-pdf-to-image-native.mjs",
@@ -164,6 +167,7 @@
     "tauri": "tauri"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@tauri-apps/cli": "^2.0.0",
     "vite": "^8.2.0"
   },
@@ -179,6 +183,8 @@
     "@pdf-lib/fontkit": "^1.1.1",
     "@tauri-apps/api": "^2.12.3",
     "@tauri-apps/plugin-dialog": "^2.8.2",
+    "ajv": "^8.17.1",
+    "bmp-ts": "1.0.9",
     "chart.js": "^4.5.1",
     "crypto-js": "^4.2.0",
     "docx": "9.12.0",
@@ -198,8 +204,10 @@
     "pdf-lib-plus-encrypt": "^1.1.0",
     "pdfjs-dist": "6.2.108",
     "realtime-bpm-analyzer": "^5.0.15",
+    "sharp": "0.35.5",
     "sm-crypto": "^0.5.6",
-    "three": "^0.185.0"
+    "three": "^0.185.0",
+    "yauzl": "3.4.0"
   },
   "overrides": {
     "exceljs": {

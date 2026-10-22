@@ -48,7 +48,7 @@ export const HELP_CONTENT = {
     title: '功能概览',
     html: `<div class="help-doc">
       <h2>ToolKnit 功能概览</h2>
-      <p>ToolKnit 3.2 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前测试版本提供 12 个分类、73 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 46 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
+      <p>ToolKnit 3.2 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前测试版本提供 12 个分类、73 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 77 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
       <p>V3.1 已发布，包含 PDF 转扫描件、清理重复文件和快速截图；当前为 V3.2 开发版本，npm 包计划在 V3.2 发布时同步。</p>
 
       <h3>工具分类一览</h3>
@@ -152,7 +152,7 @@ export const HELP_CONTENT = {
 
       <h3>安装并确认 CLI 可用</h3>
       <ol class="help-steps">
-        <li>安装 Node.js <code>20.12.0+</code>，然后执行 <code>npm install --global @toolknit/cli</code></li>
+        <li>安装 Node.js <code>22.13.0+</code>，然后执行 <code>npm install --global @toolknit/cli</code>；V3.2 npm 尚未发布时，先使用对应的本地测试归档</li>
         <li>在 PowerShell 执行 <code>toolknit doctor</code> 检查环境和按需依赖</li>
         <li>看到环境状态后，执行 <code>toolknit --help</code> 查看全部命令</li>
         <li>需要某个命令的参数和示例时，执行 <code>toolknit help &lt;分类&gt; &lt;工具&gt;</code>，例如 <code>toolknit help video gif</code></li>
@@ -168,15 +168,19 @@ export const HELP_CONTENT = {
         <li><code>video</code>：格式转换、精确导出单帧图、截取最长 30 秒 GIF</li>
         <li><code>text stats</code>、<code>image colors</code>、<code>image stitch</code>：本地统计、取色、长图拼接</li>
         <li><code>ai-doc</code> 与 <code>ai-table</code>：生成、检查、编辑、撤销和重新渲染可编辑工程</li>
+        <li><code>pdf to-word</code>、<code>image to-pdf</code>、<code>excel to-pdf</code>：Word、图像 PDF 与 XLSX 转换；PDF 另有文本、裁剪、页码、扫描效果和空白页</li>
+        <li><code>image</code>、<code>text format</code>、<code>dev</code>、<code>calculate</code>、<code>color</code>：图像处理、文本整理、编码/校验和及计算工具</li>
+        <li><code>ai polish</code>、<code>ai translate</code>、<code>pdf ai-markdown</code>：主动调用的 AI 文本或图像分析；<code>files</code> 只扫描文件，<code>markdown html</code> 导出独立网页</li>
+        <li><code>tools list</code>、<code>tools describe</code>、<code>tools coverage</code>：查询能力与参数；<code>run</code> 接收明确的 JSON 参数调用同一接口</li>
       </ul>
 
       <h3>CLI 的安全默认值</h3>
       <p>所有会写文件的命令都要求明确输出位置。已有文件默认不会覆盖，只有显式传入 <code>--overwrite</code> 才会替换。密码不会作为命令行参数出现；JSON 输出、管道输出和 MCP 模式也不会混入 ASCII 横幅。</p>
 
       <h3>连接 IDE Agent</h3>
-      <p>MCP 服务命令是 <code>toolknit mcp serve</code>。把它配置到支持 MCP 的 IDE 后，Agent 可调用当前 46 项能力；桌面端不需要保持打开。</p>
+      <p>MCP 服务命令是 <code>toolknit mcp serve</code>。把 V3.2 CLI 配置到支持 MCP 的 IDE 后，Agent 可调用 77 项能力；桌面端不需要保持打开。</p>
 
-      <div class="help-note"><p>CLI 和 IDE Agent 使用的是单独的环境配置。桌面端保存的 AI 密钥不会自动交给 CLI；只有 AI 文档、AI 表格、PPT 文本 AI 整理、AI 生成 PPT 大纲、AI 生成 PPT 草稿 / PPTX 和 AI 二次润色需要在 CLI/MCP 进程中配置密钥。</p></div>
+      <div class="help-note"><p>CLI 和 IDE Agent 使用单独的环境配置，桌面密钥不会自动交给 CLI。AI 文档/表格、PPT 的 AI 操作、润色、翻译、视觉 PDF 转 Markdown，以及主动开启的 Word 布局辅助或转写润色需要密钥。普通本地工具不需要密钥，不会自动转用 AI。</p></div>
     </div>`
   },
 
@@ -1007,14 +1011,22 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       <p>把 ToolKnit CLI 连接到支持 MCP 的 IDE 后，你可以直接用自然语言让 Agent 处理项目里的本地文件。Agent 调用的是真正的 ToolKnit 工具，不需要打开桌面端，也不应把“我已经处理好了”当成没有调用工具时的替代答案。</p>
 
       <h3>当前可用范围</h3>
-      <div class="help-agent-scope"><p>当前 MCP 一共提供 <strong>46 项</strong>能力。下面按你平时会说的话归类，Agent 会自己转成明确的工具参数：</p><ul><li><strong>PDF（9 项）</strong>：查看页数和大小、合并、按页拆分、旋转、加密、解密、压缩、增强扫描件文字可读性，以及把 PDF 导出为逐页图像或拼成长图。</li><li><strong>PPT（7 项）</strong>：把 PPTX 转成 PDF；把 PPTX 按页导出为图片；从 PPTX 提取内嵌图片素材；提取每页标题、正文和备注，并可选把提取出的文字交给 AI 整理成大纲、讲稿、纪要或学习笔记；安全压缩 PPTX 并保留图片质量；根据文字资料生成结构化 PPT 大纲；生成可编辑 PPTX 草稿。</li><li><strong>硬件只读（8 项）</strong>：查看整机概况、CPU 与内存、实时状态、显卡与显示器、主板与固件、磁盘与健康、网络与设备、电源与传感器；只读取本机信息，不写入文件。</li><li><strong>音频（4 项）</strong>：转格式、测 BPM、按明确起止时间剪辑、从视频提取指定音轨。</li><li><strong>音视频转文字（4 项）</strong>：查看本地模型、下载模型、切换当前模型、输出 TXT / SRT / JSON；可选把识别文字交给 AI 润色，媒体本身不会上传。</li><li><strong>视频（3 项）</strong>：转格式、按精确毫秒导出单帧 PNG/JPG、按明确起止时间截取最长 30 秒 GIF。</li><li><strong>文本和图像（3 项）</strong>：统计 UTF-8 文本文件、提取主色板、把 2-100 张图片拼成长图。</li><li><strong>AI 文档（4 项）</strong>：生成 PDF、检查可编辑工程、按编号修改控件、重新渲染 PDF 和编号图。</li><li><strong>AI 表格（4 项）</strong>：生成 CSV/XLSX/PDF/PNG、检查工程、按行列图表编号修改、重新渲染。</li></ul></div>
+      <div class="help-agent-scope"><p>V3.2 MCP 提供 <strong>77 项</strong>能力；npm 尚未发布时需使用 V3.2 本地测试包。</p><ul>
+        <li><strong>PDF 与 Office</strong>：检查、合并、拆分、旋转、加解密、压缩、增强、导出图像、转 Word、文本/Markdown、裁剪、页码、扫描效果、空白 PDF，以及 XLSX 转 PDF。Word 默认离线，复杂区域可保留图像；Excel 渲染需要 LibreOffice。</li>
+        <li><strong>PPT</strong>：转 PDF/图像、提取素材/文字、压缩、AI 大纲和可编辑草稿。</li>
+        <li><strong>图像</strong>：转 PDF、格式转换、压缩、裁剪/旋转/翻转、颜色替换、图标包、取色、长图拼接与颜色空间换算。</li>
+        <li><strong>音视频与转写</strong>：格式转换、BPM、剪辑、音轨/单帧/GIF 提取，离线模型管理及 TXT/SRT/JSON 转写。</li>
+        <li><strong>文本、开发者与计算</strong>：统计、格式化、JSON、Base64、URL、UUID、JWT 解析、校验和、时间戳、BMI、房贷和利息估算；JWT 解析不验证签名。</li>
+        <li><strong>AI</strong>：润色、原文对齐翻译、视觉 PDF 转 Markdown；AI 文档/表格支持生成、检查、编辑、撤销和重新渲染。主动启用的 PDF 转 Word AI 模式仅辅助结构。</li>
+        <li><strong>文件与硬件</strong>：大文件/重复文件只读扫描、Markdown HTML 导出，以及八项 Windows 硬件查询。</li>
+      </ul><p>用 <code>toolknit tools list --json</code> 和 <code>toolknit tools describe &lt;名称&gt; --json</code> 查看精确参数；<code>tools coverage</code> 查看桌面覆盖范围。</p></div>
 
       <h3>哪些功能不让 Agent 调用</h3>
-      <p>图片格式转换、图片压缩、图标生成、文本格式化、计算器、密码生成器、打字测试、AI 润色和 AI 翻译目前是<strong>桌面端专用</strong>。这不是漏接：其中一部分不适合在终端或 Agent 对话里传递内容、密码或交互状态。</p>
+      <p>快速截图、剪贴板监听、提词器、打字测试、密码生成、系统盘清理与抠图保留在桌面端。PDF 自由编辑和 Markdown 交互编辑仍需可视界面；文件扫描不执行删除，加密工具只开放校验和。不要把密码等秘密写进 Agent 对话。</p>
 
       <h3>首次连接</h3>
       <ol class="help-steps">
-        <li>安装 ToolKnit CLI 后，先在 PowerShell 运行 <code>toolknit doctor</code>。本地文件工具和非 AI PPT 不需要 AI 密钥；AI 文档、AI 表格、PPT 文本 AI 整理、AI 生成 PPT 大纲、AI 生成 PPT 草稿 / PPTX 和 AI 二次润色才需要配置密钥。</li>
+        <li>使用 Node.js 22.13.0 或更高版本安装 V3.2 CLI，在 PowerShell 运行 <code>toolknit doctor</code>。本地文件工具不需要 AI 密钥；只有主动调用 AI 操作或启用 AI 模式时需要独立配置，桌面密钥不会自动共享。</li>
         <li>在 IDE 设置中搜索 <code>MCP</code>，添加 Server：命令填写 <code>toolknit</code>，参数填写 <code>mcp serve</code>，保存后重启或重新连接 Agent。</li>
         <li>在 Agent 对话中说清输入文件、要执行的操作、保存位置，以及是否允许覆盖已有文件。说“保存到当前项目”时，Agent 应使用当前工作区的 <code>toolknit-output</code> 文件夹，而不是猜测路径。</li>
       </ol>

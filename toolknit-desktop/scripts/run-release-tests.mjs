@@ -108,6 +108,7 @@ const releaseTests = [
   'test:cli-package',
   'test:cli-clean-worktree',
   'test:cli-agent',
+  'test:cli-v32',
   'test:release-artifacts'
 ];
 

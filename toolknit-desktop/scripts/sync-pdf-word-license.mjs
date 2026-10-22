@@ -17,6 +17,7 @@ async function visit(directory) {
 }
 await visit('src/features/pdf-to-word');
 sourceFiles.push('src-tauri/src/native_runtime/pdf/docx_write.rs');
+sourceFiles.push('cli/lib/pdf-word-engine.mjs');
 for (const file of sourceFiles) {
   const target = path.join(root, file), original = await readFile(target, 'utf8');
   const lines = [`SPDX-License-Identifier: ${identifier}`, 'Copyright 2026 Zihang Dong.',

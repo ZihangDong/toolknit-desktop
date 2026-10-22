@@ -176,7 +176,7 @@ Existing usable runtimes are reused where supported. WPS / Microsoft Office is n
 
 **Desktop for visual interaction. CLI for batches. Agents for orchestration.**
 
-Suitable automated tasks are available through `@toolknit/cli` and **46 CLI / MCP capabilities**.
+The V3.2 source exposes suitable automated tasks through `@toolknit/cli` and **77 CLI / MCP capabilities**.
 Their scope differs from the desktop catalog; not all 73 desktop tools are callable from the CLI.
 
 ```powershell
@@ -200,6 +200,8 @@ toolknit --help
 ```
 
 Basic file capabilities do not require an AI key. AI workflows require `DEEPSEEK_API_KEY` or `TOOLKNIT_AI_API_KEY` in the CLI / MCP process environment, as specified by the command contract.
+
+The V3.2 npm package is not published yet. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for the prepared capabilities and limits.
 
 [CLI / MCP contract](toolknit-desktop/docs/cli-agent.md) · [English Agent guide](toolknit-desktop/docs/agent-guide.en.md) · [中文 Agent 手册](toolknit-desktop/docs/agent-guide.zh-CN.md)
 

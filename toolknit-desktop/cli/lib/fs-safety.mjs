@@ -1,21 +1,9 @@
-import { access, link, lstat, mkdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { access, link, lstat, realpath, rename, stat, unlink } from 'node:fs/promises';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
-import { ToolKnitError } from './errors.mjs';
+import { ToolKnitError, throwIfAborted } from './errors.mjs';
+import { assertNoLinkedParents, readInputFile, prepareOutputFile, writeOutputFile } from './safe-files.mjs';
 
 const PDF_EXTENSION = '.pdf';
-
-function isWindows() {
-  return process.platform === 'win32';
-}
-
-function pathsEqual(left, right) {
-  const normalizedLeft = path.resolve(left);
-  const normalizedRight = path.resolve(right);
-  return isWindows()
-    ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
-    : normalizedLeft === normalizedRight;
-}
 
 function assertPathValue(value, label, errorCode = 'INVALID_ARGUMENT') {
   if (typeof value !== 'string' || value.trim().length === 0 || value.includes('\0')) {
@@ -34,6 +22,7 @@ function assertPdfPath(filePath, label, errorCode = 'INPUT_INVALID') {
 
 export async function inspectPdfInput(inputPath, options = {}) {
   const absolutePath = assertPdfPath(inputPath, options.label || 'Input path');
+  await assertNoLinkedParents(absolutePath);
   let metadata;
   try {
     metadata = await lstat(absolutePath);
@@ -62,7 +51,8 @@ export async function readPdfInput(input, options = {}) {
     ? await inspectPdfInput(input, options)
     : input;
   try {
-    const bytes = new Uint8Array(await readFile(descriptor.path));
+    const checked = await readInputFile(descriptor.path, { extensions: ['.pdf'], maxBytes: descriptor.size, signal: options.signal });
+    const bytes = Uint8Array.from(checked.bytes);
     if (bytes.length !== descriptor.size) {
       throw new ToolKnitError('INPUT_INVALID', `Input PDF changed while it was being read: ${descriptor.path}`);
     }
@@ -75,37 +65,7 @@ export async function readPdfInput(input, options = {}) {
 
 async function outputTarget(outputPath, inputPaths, overwrite) {
   const target = assertPdfPath(outputPath, 'Output path', 'OUTPUT_INVALID');
-  if (inputPaths.some(inputPath => pathsEqual(inputPath, target))) {
-    throw new ToolKnitError('OUTPUT_INVALID', 'Output path must not replace an input file.');
-  }
-
-  const directory = path.dirname(target);
-  try {
-    await mkdir(directory, { recursive: true });
-  } catch {
-    throw new ToolKnitError('OUTPUT_INVALID', `Output directory cannot be created: ${directory}`);
-  }
-
-  try {
-    const existing = await lstat(target);
-    if (existing.isDirectory()) {
-      throw new ToolKnitError('OUTPUT_INVALID', `Output path is a directory: ${target}`);
-    }
-    if (!overwrite) {
-      throw new ToolKnitError('OUTPUT_EXISTS', `Refusing to overwrite an existing file: ${target}`);
-    }
-  } catch (error) {
-    if (error instanceof ToolKnitError) throw error;
-    if (error?.code !== 'ENOENT') {
-      throw new ToolKnitError('OUTPUT_INVALID', `Output path cannot be inspected: ${target}`);
-    }
-  }
-
-  return {
-    target,
-    temporaryPath: path.join(directory, `.${path.basename(target)}.${process.pid}.${randomUUID()}.toolknit.tmp`),
-    overwrite
-  };
+  return prepareOutputFile(target, { extensions: ['.pdf'], inputPaths, overwrite });
 }
 
 export async function preparePdfOutput({ outputPath, inputPaths, overwrite = false }) {
@@ -115,14 +75,13 @@ export async function preparePdfOutput({ outputPath, inputPaths, overwrite = fal
   return outputTarget(outputPath, inputPaths, overwrite === true);
 }
 
-export async function publishTemporaryOutput({ target, temporaryPath, overwrite }) {
+export async function publishTemporaryOutput({ target, temporaryPath, overwrite, parent, inputPaths = [], signal }) {
   try {
+    throwIfAborted(signal);
+    await prepareOutputFile(target, { inputPaths, overwrite, signal });
+    if (parent && await realpath(path.dirname(target)) !== parent) throw new ToolKnitError('OUTPUT_INVALID', 'Output directory changed.');
+    throwIfAborted(signal);
     if (overwrite) {
-      try {
-        await unlink(target);
-      } catch (error) {
-        if (error?.code !== 'ENOENT') throw error;
-      }
       await rename(temporaryPath, target);
     } else {
       // link() makes the no-overwrite publish operation atomic on the target volume.
@@ -132,6 +91,7 @@ export async function publishTemporaryOutput({ target, temporaryPath, overwrite 
     return target;
   } catch (error) {
     try { await unlink(temporaryPath); } catch {}
+    if (error instanceof ToolKnitError) throw error;
     if (error?.code === 'EEXIST') {
       throw new ToolKnitError('OUTPUT_EXISTS', `Refusing to overwrite an existing file: ${target}`);
     }
@@ -139,30 +99,13 @@ export async function publishTemporaryOutput({ target, temporaryPath, overwrite 
   }
 }
 
-export async function writePdfOutput({ outputPath, inputPaths, bytes, overwrite = false }) {
-  if (!(bytes instanceof Uint8Array) || bytes.length === 0) {
-    throw new ToolKnitError('PROCESSING_FAILED', 'The PDF engine did not produce an output file.');
-  }
-  const prepared = await preparePdfOutput({ outputPath, inputPaths, overwrite });
-  try {
-    await writeFile(prepared.temporaryPath, bytes, { flag: 'wx', mode: 0o600 });
-  } catch {
-    throw new ToolKnitError('OUTPUT_WRITE_FAILED', `Output file could not be written: ${prepared.target}`);
-  }
-  return publishTemporaryOutput(prepared);
+export async function writePdfOutput({ outputPath, inputPaths, bytes, overwrite = false, signal }) {
+  if (!inputPaths?.length) throw new ToolKnitError('INTERNAL', 'Output safety requires an input path.');
+  return writeOutputFile(outputPath, bytes, { extensions: ['.pdf'], inputPaths, overwrite, signal });
 }
 
 export async function writeGeneratedPdfOutput({ outputPath, bytes, overwrite = false }) {
-  if (!(bytes instanceof Uint8Array) || bytes.length === 0) {
-    throw new ToolKnitError('PROCESSING_FAILED', 'The PDF engine did not produce an output file.');
-  }
-  const prepared = await outputTarget(outputPath, [], overwrite === true);
-  try {
-    await writeFile(prepared.temporaryPath, bytes, { flag: 'wx', mode: 0o600 });
-  } catch {
-    throw new ToolKnitError('OUTPUT_WRITE_FAILED', `Output file could not be written: ${prepared.target}`);
-  }
-  return publishTemporaryOutput(prepared);
+  return writeOutputFile(outputPath, bytes, { extensions: ['.pdf'], overwrite });
 }
 
 export async function fileExists(filePath) {

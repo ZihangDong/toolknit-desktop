@@ -494,29 +494,36 @@ export async function renderPptxToPdfFile(input, targetDirectory, fileName, opti
     throw new ToolKnitError('DEPENDENCY_MISSING', renderer.message || 'LibreOffice runtime is required for PPT rendering.');
   }
   await mkdir(targetDirectory, { recursive: true });
-  const workRoot = await mkdtemp(path.join(targetDirectory, '.toolknit-libreoffice-'));
-  const outDir = path.join(workRoot, 'out');
-  const profileDir = path.join(workRoot, 'profile');
-  await mkdir(outDir, { recursive: true });
-  await mkdir(profileDir, { recursive: true });
-  await seedLibreOfficePrinterProfile(profileDir);
-  const userInstallation = pathToFileURL(profileDir).href;
-  const args = [
-    '--headless',
-    '--nologo',
-    '--nofirststartwizard',
-    '--nodefault',
-    '--nolockcheck',
-    '--norestore',
-    `-env:UserInstallation=${userInstallation}`,
-    '--convert-to',
-    'pdf',
-    '--outdir',
-    outDir,
-    input.path
-  ];
-  let result;
+  // LibreOffice silently exits when nested output paths make its profile too
+  // long on Windows. Keep the profile and conversion files in a short workspace.
+  const workRoot = await mkdtemp(path.join(os.tmpdir(), 'toolknit-office-'));
   try {
+    const outDir = path.join(workRoot, 'out');
+    const profileDir = path.join(workRoot, 'profile');
+    const inputName = `input${path.extname(input.name).toLowerCase()}`;
+    const stagedInput = path.join(workRoot, inputName);
+    if (input.bytes) await writeFile(stagedInput, input.bytes, { flag: 'wx', mode: 0o600 });
+    else await copyFile(input.path, stagedInput);
+    throwIfAborted(options.signal);
+    await mkdir(outDir, { recursive: true });
+    await mkdir(profileDir, { recursive: true });
+    await seedLibreOfficePrinterProfile(profileDir);
+    const userInstallation = pathToFileURL(profileDir).href;
+    const args = [
+      '--headless',
+      '--nologo',
+      '--nofirststartwizard',
+      '--nodefault',
+      '--nolockcheck',
+      '--norestore',
+      `-env:UserInstallation=${userInstallation}`,
+      '--convert-to',
+      'pdf',
+      '--outdir',
+      outDir,
+      stagedInput
+    ];
+    let result;
     try {
       result = await runProcess(renderer.command, args, {
         signal: options.signal,
@@ -535,11 +542,12 @@ export async function renderPptxToPdfFile(input, targetDirectory, fileName, opti
     if (result.code !== 0) {
       throw new ToolKnitError('PROCESSING_FAILED', `LibreOffice conversion failed: ${result.stderr || result.stdout || `exit code ${result.code}`}`);
     }
-    const generatedPdf = await findConvertedPdf(outDir, input.name);
+    const generatedPdf = await findConvertedPdf(outDir, inputName);
     if (!generatedPdf) {
       throw new ToolKnitError('PROCESSING_FAILED', 'LibreOffice completed without producing a PDF file.');
     }
     const targetPath = path.join(targetDirectory, fileName);
+    throwIfAborted(options.signal);
     try {
       await lstat(targetPath);
       throw new ToolKnitError('OUTPUT_EXISTS', `Refusing to overwrite an existing file: ${targetPath}`);
@@ -565,6 +573,9 @@ export async function renderPptxToPdfFile(input, targetDirectory, fileName, opti
     await rm(workRoot, { recursive: true, force: true }).catch(() => {});
   }
 }
+
+// The isolated LibreOffice conversion also serves validated XLSX workbooks.
+export { renderPptxToPdfFile as renderOfficeToPdfFile };
 
 export async function writeJsonFile(filePath, value) {
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, { encoding: 'utf8', flag: 'wx', mode: 0o600 });

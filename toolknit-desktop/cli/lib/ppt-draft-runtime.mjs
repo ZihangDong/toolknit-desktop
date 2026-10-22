@@ -87,6 +87,9 @@ function mapPptDraftError(error) {
     return new ToolKnitError('PROCESSING_FAILED', message);
   }
   if (error instanceof AiProviderError) {
+    if (error.code === 'timeout') return new ToolKnitError('PROVIDER_TIMEOUT', 'AI PPT draft generation timed out.', {
+      details: { stage: 'provider_request', retryable: true }
+    });
     if (error.code === 'invalid_config') {
       return new ToolKnitError('ENGINE_UNAVAILABLE', 'AI provider configuration is invalid or missing.', {
         details: { stage: 'provider_config', retryable: false }
@@ -189,11 +192,8 @@ async function readOutlineFile(filePathValue) {
 }
 
 async function requestOutline({ request, provider, options, retry }) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  const abort = () => controller.abort();
-  options.signal?.addEventListener?.('abort', abort, { once: true });
   try {
+    throwIfAborted(options.signal);
     const style = [request.style, `PPTX draft theme: ${request.theme}`].filter(Boolean).join('\n');
     const content = await requestAiCompletion({
       url: provider.url,
@@ -201,7 +201,8 @@ async function requestOutline({ request, provider, options, retry }) {
       model: provider.model,
       messages: buildPptOutlineMessages({ ...request, style }, { retry }),
       maxTokens: 8192,
-      signal: controller.signal,
+      signal: options.signal,
+      timeoutMs: REQUEST_TIMEOUT_MS,
       fetchImpl: options.fetchImpl
     });
     if (String(content || '').length > outlineCore.PPT_OUTLINE_LIMITS.maxResponseChars) {
@@ -210,9 +211,9 @@ async function requestOutline({ request, provider, options, retry }) {
     const parsed = extractPptOutlineJson(content);
     if (!parsed) throw new PptOutlineError('invalid_ai_response', 'The AI provider did not return valid PPT outline JSON.');
     return normalizePptOutlineResult(parsed, request);
-  } finally {
-    clearTimeout(timeout);
-    options.signal?.removeEventListener?.('abort', abort);
+  } catch (error) {
+    throwIfAborted(options.signal);
+    throw error;
   }
 }
 

@@ -21,9 +21,9 @@ for (const file of ['../NOTICE', 'NOTICE', 'cli/NOTICE']) {
   assert.match(text, /Joshua-Zion PR #67/);
 }
 assert.equal(JSON.parse(await read('package.json')).license, 'SEE LICENSE IN NOTICE');
-assert.equal(JSON.parse(await read('cli/package.json')).license, 'PolyForm-Noncommercial-1.0.0');
+assert.equal(JSON.parse(await read('cli/package.json')).license, 'SEE LICENSE IN NOTICE');
 assert.equal(JSON.parse(await read('package-lock.json')).packages[''].license, 'SEE LICENSE IN NOTICE');
-assert.equal(JSON.parse(await read('cli/npm-shrinkwrap.json')).packages[''].license, 'PolyForm-Noncommercial-1.0.0');
+assert.equal(JSON.parse(await read('cli/npm-shrinkwrap.json')).packages[''].license, 'SEE LICENSE IN NOTICE');
 const cli = JSON.parse(await read('cli/package.json'));
 assert.ok(cli.files.includes('NOTICE'));
 assert.ok(cli.files.includes('LICENSES'));

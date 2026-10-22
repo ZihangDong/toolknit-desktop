@@ -1,6 +1,7 @@
 import { readAppMarkup } from './lib/app-markup.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { TOOL_DEFINITIONS } from '../cli/lib/tool-definitions.mjs';
 
 const memoryStorage = new Map();
 globalThis.localStorage = {
@@ -171,7 +172,10 @@ for (const content of [HELP_CONTENT, HELP_CONTENT_EN]) {
   const visibleHelp = helpSections.map((section) => `${content[section].title}\n${content[section].html}`).join('\n');
   assert.match(visibleHelp, /CLI/i, 'Visible help must explain CLI.');
   assert.match(visibleHelp, /MCP/i, 'Visible help must explain IDE Agent / MCP.');
-  assert.match(visibleHelp, /46/, 'Visible help must state the current 46 MCP capabilities.');
+  assert.match(content['agent-guide'].html, new RegExp(`${TOOL_DEFINITIONS.length}\\s*(?:项|capabilities)`), 'Agent help must match the actual MCP registry count.');
+  assert.doesNotMatch(content['agent-guide'].html, /46\s*(?:项|capabilities)/, 'Agent help must retire the previous capability count.');
+  assert.match(content['cli-guide'].html, /22\.13\.0\+/);
+  assert.match(content['agent-guide'].html, /tools describe/);
   assert.doesNotMatch(visibleHelp, /16\s*(项能力|capabilities)/i, 'Visible help must not advertise the retired 16-capability count.');
   assert.doesNotMatch(visibleHelp, /(自动检查更新|automatically checks.*update|forced update)/i, 'Visible help must not promise unsupported auto or forced updates.');
 }

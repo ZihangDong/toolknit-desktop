@@ -100,6 +100,8 @@ A4连续排版是否采用固定片段需在整个文档组行前统一决定，
 
 ## 发布源码与产物检查
 
+Windows 升级链路由 `src-tauri/windows/installer.nsi` 与 `upgrade.nsh` 维护。旧安装目录从旧卸载程序定位，不用新版 `$INSTDIR` 判断卸载结果；`ExecWait` 紧邻清错与取错，版本比较使用独立变量。传入明确安装范围，升级使用 `/UPDATE` 保留数据与自启动，文件占用失败先停止再清理注册表。验证入口为 `test:windows-installer`、`test:windows-upgrade-native` 和 `test:windows-installer-native`，说明见 [升级修复记录](WINDOWS_UPGRADE_REPAIR_20261022.zh-CN.md)。
+
 正式构建入口为 `npm run build:release-package`，默认不启用 QA feature，生产能力清单仅含
 主窗口与截图辅助窗口；`build:test-package` 保留为独立 F12 测试入口，测试安装包不能改名发布。
 发布审计同时排除私有 Skill、内部备份/维护文档、调试配置与 source map；Skill 仅在用户目录维护，
@@ -315,9 +317,16 @@ PDF 压缩的保结构/图像化、目标字节、写入和共享核心边界见
 ## CLI / MCP 维护
 
 - CLI 只能依赖明确导出的 core/runtime，不得导入页面或 Tauri 模块。
-- 保持 8 MB 消息限制、最多 4 个并发、重复 request id 拒绝和结构化错误。
-- 新增能力必须同时补 CLI package、MCP registry、clean-worktree 安装和调用契约。
-- 发布前必须从干净临时 worktree stage 资源并安装测试，避免依赖本机未跟踪文件。
+- V3.2 当前 77 项能力，桌面覆盖 60 项支持、6 项部分支持、7 项保留桌面。`tool-definitions.mjs` 与 `desktop-coverage.mjs` 是目录来源；`sync-cli-catalog.mjs --check` 核对全部桌面 ID、工具名和公开清单，不能只修改 README 数字。
+- 保持 8 MiB 消息/响应限制、最多 4 个 MCP 调用、2 个重计算 Worker、重复 request id 拒绝和结构化错误；取消、EOF、断流和背压统一释放任务，超大行剩余部分不能作为新请求执行。
+- 新增能力同时补 schema、CLI/MCP 调度、help/能力发现、staging、资源/许可、真实输出和失败路径验证。未知参数不默默忽略，错误不回显正文或密钥。
+- `test:cli-clean-worktree` 现为兼容名称：复制当前 tracked 与非忽略 untracked 源码到隔离目录，准备/打包并安装到独立消费项目；检查实际依赖树、audit、全部纯模块加载、CLI/MCP 真正转换。禁止用旧 HEAD 或开发仓库 node_modules 代替待发布代码。
+- CLI Node 最低 22.13.0，发布前在该版本和当前版本实跑。`prepare-cli-package.cjs` 安装 CLI shrinkwrap，捆绑 ExcelJS 及锁定依赖；库自身 overrides 不会传递给消费项目，UUID 修正必须在实际安装包内验证。NOTICE 保留第三方许可和唯一依赖元数据补丁说明。
+- `test:cli-v32` 包含官方 MCP SDK stdio 客户端互操作；AI 使用本地模拟服务的验证只能证明协议、校验、取消和错误链路，不能写成远端模型效果验收。
+- `test:cli-ai-live -- --live` 是需明确授权的远端付费验收，默认跳过，使用合成资料与环境变量密钥。覆盖十类 AI 入口、四种 PPT 文本整理以及生成工程的编辑、撤销和渲染；不纳入自动发布门禁。`test-cli-ai-failure.mjs` 则离线验证超时、取消不落盘、配置错误与目标已存在时不调用 AI。
+- Office 转换的临时 profile 不放进用户的深层输出目录；使用短工作目录、中性输入名称，并验证真实产物与页数。Windows MCP 宿主缺少 `APPDATA` 时模型发现使用当前用户 Roaming 目录兜底，不能因此要求重复下载。
+- 转写复用桌面模型，但 whisper.cpp 的 Windows 参数需映射到 ASCII 路径；独立临时目录限制当前用户 ACL，结果回到明确输出目录。真实验证使用已有模型与合成语音，不自动下载大模型。模型下载的 `.cli.part` 与桌面 `.part` 分离。
+- 注册表的 `(arguments, options)` 不能直接映射到只接收 `(options)` 的硬件函数；必须通过适配器透传 signal。旧 PDF 操作也需把 signal 传至最终原子发布；进度测试检查起点/终点和单调性，不固定为只有两个通知。
 
 ## 安全与生产门禁
 

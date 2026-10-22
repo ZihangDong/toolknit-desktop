@@ -1,5 +1,7 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-10-22 V3.2 CLI/MCP 增量：77 项 MCP 能力，73 个桌面工具 / 12 分类。`cli/lib/tool-definitions.mjs` 是可独立读取的工具契约，`tool-registry.mjs` 校验并调度；新增操作按文档、图片、AI、Office、实用工具和只读扫描划分，重计算使用有容量/取消边界的 Worker。`safe-files.mjs` 统一新能力与原有 PDF 的源文件/原子写出保护。npm 归档使用当前工作源码快照独立安装验证，不再只检查旧 HEAD。Node 22.13/24.19 消费安装、官方 MCP SDK、108 项发布脚本及 Rust 260 passed / 11 ignored 通过；Windows 转写路径、模型下载与硬件兜底的修补归 CLI 原生适配，不改变 Tauri command。完整范围和证据见 [CLI/MCP 审计](V32_CLI_MCP_AUDIT_20261022.zh-CN.md) 与 [能力清单](CLI_CAPABILITIES.md)。以下历史快照保留原有计数。
+
 > 2026-10-21 预览与表单增量：新增共享 `preview-viewport.js`、`pdf-preview-canvas.js` 与 `upload-empty-state.js`，分别负责画布输入、私有画布提交和静态上传空状态；输入底线与成功弹框主题适配位于 components。业务渲染、取消、输出仍属于 feature；没有增加 Tauri command、storage key 或 CLI/MCP 能力，73 个桌面工具和 12 个分类保持不变。新增共享 CSS class 契约与验证入口见 [UI 统一报告](V32_PDF_UI_UNIFICATION_20261021.zh-CN.md)。
 
 > 2026-10-21 图像 PDF / 空白编辑器增量：新增 `features/image-to-pdf/`，以 Worker 持有像素处理和 PDF 生成；`core/pdf-scan.js`、`shared/scanned-pdf-writer.js` 共享扫描算法与写出，旧 PDF 扫描入口保留转发。原生 `image/image_pdf.rs` 提供主窗口限定的检查、受限解码和结果打开三个命令，TIFF 采用 MIT 的 `tiff 0.11.2` 与已有 image crate。当前 73 工具 / 12 分类 / PDF 16 项，Tauri 154 个实现 / 153 个名称，CLI/MCP 46 不变。新功能交叉分类为六项。

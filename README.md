@@ -175,7 +175,7 @@ WPS / Microsoft Office 不等同于 LibreOffice，不能替代需要 `soffice` �
 
 **桌面端负责看得见的交互，CLI 负责批处理，Agent 负责串起任务。**
 
-适合自动化的能力通过 `@toolknit/cli` 和 **46 项 CLI / MCP 能力**提供。
+V3.2 源码中适合自动化的能力通过 `@toolknit/cli` 和 **77 项 CLI / MCP 能力**提供。
 它们与桌面工具的范围不同：并非全部 73 项工具都能从命令行调用。
 
 ```powershell
@@ -199,6 +199,8 @@ toolknit --help
 ```
 
 基础文件能力不需要 AI Key。需要 AI 的 CLI / MCP 工作流，在进程环境中配置 `DEEPSEEK_API_KEY` 或 `TOOLKNIT_AI_API_KEY`，具体要求以命令契约为准。
+
+V3.2 npm 包尚未发布，当前能力以[完整清单](toolknit-desktop/docs/CLI_CAPABILITIES.md)和本地测试包为准。
 
 [CLI / MCP 契约](toolknit-desktop/docs/cli-agent.md) · [中文 Agent 手册](toolknit-desktop/docs/agent-guide.zh-CN.md) · [English Agent guide](toolknit-desktop/docs/agent-guide.en.md)
 

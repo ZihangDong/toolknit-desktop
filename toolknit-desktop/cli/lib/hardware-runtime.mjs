@@ -746,7 +746,7 @@ function mergeNodeOsOverview(data) {
   const out = { ...(data || {}) };
   let used = false;
   const fill = (target, key, value, ok) => {
-    if (ok(value)) return;
+    if (!ok(value)) return;
     if (!target) return;
     if (ok(target[key])) return;
     target[key] = value;
@@ -755,10 +755,10 @@ function mergeNodeOsOverview(data) {
   out.device = { ...(out.device || {}) };
   out.system = { ...(out.system || {}) };
   out.core = { ...(out.core || {}) };
-  fill(out.device, 'model', n.hostname, v => !!v);
-  fill(out.system, 'caption', `${n.platform} ${n.release}`, v => !!v);
-  fill(out.system, 'architecture', n.arch === 'x64' ? '64-bit' : n.arch, v => !!v);
-  fill(out.core, 'cpu_name', n.cpu_model, v => !!v);
+  fill(out.device, 'model', n.hostname, v => cleanText(v) !== 'unknown');
+  fill(out.system, 'caption', `${n.platform} ${n.release}`, v => cleanText(v) !== 'unknown');
+  fill(out.system, 'architecture', n.arch === 'x64' ? '64-bit' : n.arch, v => cleanText(v) !== 'unknown');
+  fill(out.core, 'cpu_name', n.cpu_model, v => cleanText(v) !== 'unknown');
   fill(out.core, 'cpu_threads', n.cpu_threads, v => Number(v) > 0);
   fill(out.core, 'memory_total_bytes', n.totalmem, v => Number(v) > 0);
   fill(out.core, 'memory_available_bytes', n.freemem, v => Number(v) > 0);
@@ -771,7 +771,7 @@ function mergeNodeOsCpuMemory(data) {
   const out = { ...(data || {}) };
   let used = false;
   const fill = (target, key, value, ok) => {
-    if (ok(value)) return;
+    if (!ok(value)) return;
     if (!target) return;
     if (ok(target[key])) return;
     target[key] = value;
@@ -780,7 +780,7 @@ function mergeNodeOsCpuMemory(data) {
   out.cpu = { ...(out.cpu || {}) };
   out.memory = { ...(out.memory || {}) };
   out.current = { ...(out.current || {}) };
-  fill(out.cpu, 'name', n.cpu_model, v => !!v);
+  fill(out.cpu, 'name', n.cpu_model, v => cleanText(v) !== 'unknown');
   fill(out.cpu, 'threads', n.cpu_threads, v => Number(v) > 0);
   fill(out.memory, 'total_bytes', n.totalmem, v => Number(v) > 0);
   fill(out.memory, 'available_bytes', n.freemem, v => Number(v) > 0);

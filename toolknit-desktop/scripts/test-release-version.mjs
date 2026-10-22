@@ -141,7 +141,7 @@ const desktopToolCount = Object.keys(LAZY_TOOL_SPECS).length;
 assert.match(repositoryReadme, new RegExp(`^${desktopToolCount} 项桌面工具 ·`, 'm'), 'Repository README must match the current desktop catalog');
 assert.match(zhHelpSource, new RegExp(`${desktopToolCount} 个桌面工具`), 'Chinese help overview must match the desktop catalog');
 assert.match(enHelpSource, new RegExp(`${desktopToolCount} desktop tools`), 'English help overview must match the desktop catalog');
-assert.match(repositoryReadme, /\*\*46 项 CLI \/ MCP 能力\*\*/, 'Repository README must state the 46-capability MCP contract');
+assert.match(repositoryReadme, /\*\*77 项 CLI \/ MCP 能力\*\*/, 'Repository README must state the current 77-capability MCP contract');
 const publishedVersion = captureExactlyOnce(releaseNotes, /^# ToolKnit Desktop (\d+\.\d+\.\d+)\r?\n/, 'Published release version');
 const versionParts = value => value.split('.').map(Number);
 const publishedParts = versionParts(publishedVersion), currentParts = versionParts(fullVersion);
@@ -203,7 +203,7 @@ for (const [label, actual] of runtimeVersions) {
 }
 
 for (const source of [
-  'cli/lib/transcription-runtime.mjs',
+  'cli/lib/model-download.mjs',
   'src-tauri/src/ai_provider.rs',
   'src-tauri/src/onnx_segmenter.rs',
   'src-tauri/src/native_runtime/dependencies.rs',

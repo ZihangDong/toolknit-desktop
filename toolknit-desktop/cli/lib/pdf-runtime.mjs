@@ -376,11 +376,13 @@ async function discardTemporaryOutput(temporaryPath) {
   try { await unlink(temporaryPath); } catch {}
 }
 
-export async function inspectPdf(args) {
+export async function inspectPdf(args, options = {}) {
+  throwIfAborted(options.signal);
   assertObject(args, 'arguments');
   assertOnlyKeys(args, new Set(['input_path']));
-  const input = await readPdfInput(assertString(args.input_path, 'input_path'));
+  const input = await readPdfInput(assertString(args.input_path, 'input_path'), options);
   const pageCount = await pageCountFor(input.bytes);
+  throwIfAborted(options.signal);
   return {
     tool: 'pdf.inspect',
     input: { path: input.path, name: input.name, bytes: input.size, pages: pageCount },
@@ -388,7 +390,8 @@ export async function inspectPdf(args) {
   };
 }
 
-export async function mergePdf(args) {
+export async function mergePdf(args, options = {}) {
+  throwIfAborted(options.signal);
   assertObject(args, 'arguments');
   assertOnlyKeys(args, new Set(['input_paths', 'output_path', 'page_selections', 'overwrite']));
   const inputPaths = assertStringArray(args.input_paths, 'input_paths', 2);
@@ -399,7 +402,7 @@ export async function mergePdf(args) {
   } catch (error) {
     throw new ToolKnitError('INPUT_INVALID', String(error.message || error));
   }
-  const inputs = await Promise.all(descriptors.map(readPdfInput));
+  const inputs = await Promise.all(descriptors.map(input => readPdfInput(input, options)));
   const documents = await Promise.all(inputs.map(async input => ({
     fileData: input.bytes,
     fileName: input.name,
@@ -412,11 +415,12 @@ export async function mergePdf(args) {
   } catch (error) {
     throw mapPdfLoadError(error);
   }
+  options.reportProgress?.(90, 'Publishing merged PDF.');
   const outputPath = await writePdfOutput({
     outputPath: assertString(args.output_path, 'output_path'),
     inputPaths: inputs.map(input => input.path),
     bytes,
-    overwrite: assertBoolean(args.overwrite, 'overwrite')
+    overwrite: assertBoolean(args.overwrite, 'overwrite'), signal: options.signal
   });
   return {
     tool: 'pdf.merge',
@@ -425,12 +429,13 @@ export async function mergePdf(args) {
   };
 }
 
-export async function splitPdf(args) {
+export async function splitPdf(args, options = {}) {
+  throwIfAborted(options.signal);
   assertObject(args, 'arguments');
   assertOnlyKeys(args, new Set(['input_path', 'output_dir', 'pages', 'overwrite']));
   const input = await readPdfInput(await inspectPdfInput(assertString(args.input_path, 'input_path'), {
     maxBytes: PDF_SPLIT_LIMITS.maxTotalBytes
-  }));
+  }), options);
   try {
     assertPdfSplitSelection([input], input.size);
   } catch (error) {
@@ -453,24 +458,27 @@ export async function splitPdf(args) {
   });
   const published = [];
   for (const output of outputs) {
+    options.reportProgress?.(80 + 15 * published.length / outputs.length, 'Publishing split PDF pages.');
+    if (options.signal?.aborted) throw new ToolKnitError('CANCELLED', 'PDF split cancelled. Completed page files were retained.', { details: { outputs: published } });
     const outputPath = path.join(path.resolve(outputDirectory), output.fileName);
     const savedPath = await writePdfOutput({
       outputPath,
       inputPaths: [input.path],
       bytes: output.bytes,
-      overwrite: assertBoolean(args.overwrite, 'overwrite')
+      overwrite: assertBoolean(args.overwrite, 'overwrite'), signal: options.signal
     });
     published.push({ path: savedPath, page: output.pageIndex, bytes: output.bytes.length });
   }
   return { tool: 'pdf.split', inputs: [{ path: input.path, bytes: input.size }], outputs: published };
 }
 
-export async function rotatePdf(args) {
+export async function rotatePdf(args, options = {}) {
+  throwIfAborted(options.signal);
   assertObject(args, 'arguments');
   assertOnlyKeys(args, new Set(['input_path', 'output_path', 'rotation', 'page_rotations', 'overwrite']));
   const input = await readPdfInput(await inspectPdfInput(assertString(args.input_path, 'input_path'), {
     maxBytes: PDF_ROTATE_LIMITS.maxInputBytes
-  }));
+  }), options);
   try {
     assertPdfRotateSelection([input], input.size);
   } catch (error) {
@@ -488,21 +496,23 @@ export async function rotatePdf(args) {
   } catch (error) {
     throw mapPdfLoadError(error);
   }
+  options.reportProgress?.(90, 'Publishing rotated PDF.');
   const outputPath = await writePdfOutput({
     outputPath: assertString(args.output_path, 'output_path'),
     inputPaths: [input.path],
     bytes,
-    overwrite: assertBoolean(args.overwrite, 'overwrite')
+    overwrite: assertBoolean(args.overwrite, 'overwrite'), signal: options.signal
   });
   return { tool: 'pdf.rotate', inputs: [{ path: input.path, bytes: input.size }], outputs: [{ path: outputPath, pages: pages.length, bytes: bytes.length }] };
 }
 
-export async function encryptPdfFile(args) {
+export async function encryptPdfFile(args, options = {}) {
+  throwIfAborted(options.signal);
   assertObject(args, 'arguments');
   assertOnlyKeys(args, new Set(['input_path', 'output_path', 'password', 'permissions', 'overwrite']));
   const input = await readPdfInput(await inspectPdfInput(assertString(args.input_path, 'input_path'), {
     maxBytes: PDF_ENCRYPT_LIMITS.maxInputBytes
-  }));
+  }), options);
   try {
     assertPdfEncryptSelection([input], input.size);
     assertPdfEncryptLegacyPassword(assertString(args.password, 'password'));
@@ -516,11 +526,12 @@ export async function encryptPdfFile(args) {
   } catch (error) {
     throw mapPdfLoadError(error);
   }
+  options.reportProgress?.(90, 'Publishing encrypted PDF.');
   const outputPath = await writePdfOutput({
     outputPath: assertString(args.output_path, 'output_path'),
     inputPaths: [input.path],
     bytes,
-    overwrite: assertBoolean(args.overwrite, 'overwrite')
+    overwrite: assertBoolean(args.overwrite, 'overwrite'), signal: options.signal
   });
   return { tool: 'pdf.encrypt', inputs: [{ path: input.path, bytes: input.size }], outputs: [{ path: outputPath, bytes: bytes.length }] };
 }
@@ -559,7 +570,7 @@ export async function decryptPdfFile(args, options = {}) {
       await discardTemporaryOutput(prepared.temporaryPath);
       throw new ToolKnitError('PROCESSING_FAILED', 'PDF decryption produced an invalid output.');
     }
-    const outputPath = await publishTemporaryOutput(prepared);
+    const outputPath = await publishTemporaryOutput({ ...prepared, signal: options.signal });
     return { tool: 'pdf.decrypt', inputs: [{ path: input.path, bytes: input.size }], outputs: [{ path: outputPath, pages: pageCount, bytes: await fileSize(outputPath) }] };
   } catch (error) {
     await discardTemporaryOutput(prepared.temporaryPath);
@@ -616,7 +627,7 @@ export async function compressPdfFile(args, options = {}) {
         throw new ToolKnitError('PROCESSING_FAILED', 'PDF compression output failed validation.');
       }
       throwIfAborted(options.signal);
-      const outputPath = await publishTemporaryOutput(prepared);
+      const outputPath = await publishTemporaryOutput({ ...prepared, signal: options.signal });
       return outcome(result, [{ path: outputPath, pages: result.pages, bytes: await fileSize(outputPath) }]);
     }
     const pages = await runProcess(qpdf, ['--show-npages', '--', input.path], undefined, { signal: options.signal });
@@ -654,7 +665,7 @@ export async function compressPdfFile(args, options = {}) {
       return outcome(compression);
     }
     throwIfAborted(options.signal);
-    const outputPath = await publishTemporaryOutput(prepared);
+    const outputPath = await publishTemporaryOutput({ ...prepared, signal: options.signal });
     return outcome(compression, [{ path: outputPath, pages: pageCount, bytes: compressedBytes }]);
   } catch (error) {
     await discardTemporaryOutput(prepared.temporaryPath);
@@ -662,12 +673,13 @@ export async function compressPdfFile(args, options = {}) {
   }
 }
 
-export async function enhancePdfFile(args) {
+export async function enhancePdfFile(args, options = {}) {
+  throwIfAborted(options.signal);
   assertObject(args, 'arguments');
   assertOnlyKeys(args, new Set(['input_path', 'output_path', 'strength', 'overwrite']));
   const input = await readPdfInput(await inspectPdfInput(assertString(args.input_path, 'input_path'), {
     maxBytes: PDF_ENHANCE_LIMITS.maxInputBytes
-  }));
+  }), options);
   const strength = args.strength === undefined ? 'medium' : assertString(args.strength, 'strength');
   try {
     assertPdfEnhanceSelection([input]);
@@ -677,6 +689,9 @@ export async function enhancePdfFile(args) {
   }
 
   let loadingTask;
+  let activeRender;
+  const abort = () => { activeRender?.cancel(); void loadingTask?.destroy().catch(() => {}); };
+  options.signal?.addEventListener('abort', abort, { once: true });
   try {
     const [canvasModule, enhancementModule] = await Promise.all([
       import('@napi-rs/canvas'),
@@ -686,6 +701,7 @@ export async function enhancePdfFile(args) {
       if (canvasModule[name]) globalThis[name] = canvasModule[name];
     }
     const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    throwIfAborted(options.signal);
     const { createCanvas } = canvasModule;
     const { enhanceRgbaImage } = enhancementModule;
     loadingTask = pdfjsLib.getDocument({
@@ -695,8 +711,10 @@ export async function enhancePdfFile(args) {
       verbosity: 0
     });
     const sourcePdf = await loadingTask.promise;
+    throwIfAborted(options.signal);
     const pageSizes = [];
     for (let pageIndex = 1; pageIndex <= sourcePdf.numPages; pageIndex++) {
+      throwIfAborted(options.signal);
       const page = await sourcePdf.getPage(pageIndex);
       const outputViewport = page.getViewport({ scale: 1 });
       pageSizes.push({
@@ -710,33 +728,41 @@ export async function enhancePdfFile(args) {
 
     const outputPdf = await PDFDocument.create();
     for (let pageIndex = 1; pageIndex <= sourcePdf.numPages; pageIndex++) {
+      throwIfAborted(options.signal);
       const page = await sourcePdf.getPage(pageIndex);
       const plan = pagePlan[pageIndex - 1];
       const renderViewport = page.getViewport({ scale: plan.renderScale });
       const canvas = createCanvas(Math.ceil(plan.renderWidth), Math.ceil(plan.renderHeight));
-      const context = canvas.getContext('2d');
-      if (!context) throw new Error('pdf-enhance:enhancement-failed');
-      await page.render({ canvasContext: context, viewport: renderViewport }).promise;
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      enhanceRgbaImage(imageData.data, canvas.width, canvas.height, strength);
-      context.putImageData(imageData, 0, 0);
-      const image = await outputPdf.embedJpg(canvas.toBuffer('image/jpeg', { quality: 85 }));
-      const outputPage = outputPdf.addPage([plan.outputWidth, plan.outputHeight]);
-      outputPage.drawImage(image, { x: 0, y: 0, width: plan.outputWidth, height: plan.outputHeight });
-      try { page.cleanup(); } catch {}
+      try {
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('pdf-enhance:enhancement-failed');
+        activeRender = page.render({ canvasContext: context, viewport: renderViewport });
+        await activeRender.promise;
+        throwIfAborted(options.signal);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        enhanceRgbaImage(imageData.data, canvas.width, canvas.height, strength);
+        context.putImageData(imageData, 0, 0);
+        const image = await outputPdf.embedJpg(canvas.toBuffer('image/jpeg', 85));
+        const outputPage = outputPdf.addPage([plan.outputWidth, plan.outputHeight]);
+        outputPage.drawImage(image, { x: 0, y: 0, width: plan.outputWidth, height: plan.outputHeight });
+      } finally { activeRender = null; canvas.width = canvas.height = 0; try { page.cleanup(); } catch {} }
+      options.reportProgress?.(85 * pageIndex / sourcePdf.numPages, 'Enhancing PDF pages.');
     }
+    throwIfAborted(options.signal);
     const bytes = await outputPdf.save();
     if (bytes.length > PDF_ENHANCE_LIMITS.maxOutputBytes) throw new Error('pdf-enhance:output-too-large');
     const outputPath = await writePdfOutput({
       outputPath: assertString(args.output_path, 'output_path'),
       inputPaths: [input.path],
       bytes,
-      overwrite: assertBoolean(args.overwrite, 'overwrite')
+      overwrite: assertBoolean(args.overwrite, 'overwrite'), signal: options.signal
     });
     return { tool: 'pdf.enhance', inputs: [{ path: input.path, bytes: input.size }], outputs: [{ path: outputPath, pages: pagePlan.length, bytes: bytes.length }] };
   } catch (error) {
+    if (options.signal?.aborted) throw cancellationError(options.signal);
     throw mapPdfEnhanceError(error);
   } finally {
+    options.signal?.removeEventListener('abort', abort);
     try { await loadingTask?.destroy(); } catch {}
   }
 }

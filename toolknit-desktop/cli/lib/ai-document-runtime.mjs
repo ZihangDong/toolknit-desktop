@@ -292,7 +292,7 @@ function normalizeProviderError(error, stage = 'provider_request') {
     });
   }
   if (error instanceof AiProviderError) {
-    if (error.code === 'aborted') {
+    if (error.code === 'aborted' || error.code === 'timeout') {
       return new ToolKnitError('PROVIDER_TIMEOUT', 'AI document generation timed out.', {
         details: { stage: 'provider_request', retryable: true }
       });
@@ -333,10 +333,6 @@ function normalizeProviderError(error, stage = 'provider_request') {
 }
 
 async function requestLayout({ args, config, fetchImpl, retry, repairUngrounded, signal }) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  const abort = () => controller.abort(signal?.reason);
-  signal?.addEventListener?.('abort', abort, { once: true });
   try {
     throwIfAborted(signal);
     const content = await requestAiCompletion({
@@ -344,7 +340,8 @@ async function requestLayout({ args, config, fetchImpl, retry, repairUngrounded,
       apiKey: config.apiKey,
       model: config.model,
       maxTokens: 16384,
-      signal: controller.signal,
+      signal,
+      timeoutMs: REQUEST_TIMEOUT_MS,
       fetchImpl,
       messages: [
         { role: 'system', content: buildSystemPrompt({ pageCount: args.pageCount, locale: args.locale, retry }) },
@@ -390,9 +387,6 @@ async function requestLayout({ args, config, fetchImpl, retry, repairUngrounded,
   } catch (error) {
     if (signal?.aborted) throw cancellationError(signal);
     throw error;
-  } finally {
-    clearTimeout(timeout);
-    signal?.removeEventListener?.('abort', abort);
   }
 }
 
@@ -434,7 +428,8 @@ export async function generateAiDocument(argsValue, options = {}) {
           locale: args.locale,
           overwrite: args.overwrite,
           expectedPageCount: args.pageCount,
-          reportProgress
+          reportProgress,
+          signal: options.signal
         });
       } catch (error) {
         throw normalizeProviderError(error, 'document_render');

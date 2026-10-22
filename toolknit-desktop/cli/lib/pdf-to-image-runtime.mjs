@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createCanvas, DOMMatrix, ImageData, Path2D } from '@napi-rs/canvas';
-import { ToolKnitError, throwIfAborted } from './errors.mjs';
+import { ToolKnitError, throwIfAborted, cancellationError } from './errors.mjs';
 import { inspectPdfInput, readPdfInput } from './fs-safety.mjs';
 
 const CLI_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -67,8 +67,8 @@ function assertOnlyKeys(value, allowed) {
 
 function normalizeMode(value) {
   const mode = String(value ?? 'images').trim().toLowerCase();
-  if (!['images', 'long'].includes(mode)) {
-    throw new ToolKnitError('INVALID_ARGUMENT', 'mode must be images or long.');
+  if (!['images', 'long', 'long-horizontal', 'grid'].includes(mode)) {
+    throw new ToolKnitError('INVALID_ARGUMENT', 'mode must be images, long, long-horizontal or grid (4 or 9 pages).');
   }
   return mode;
 }
@@ -87,7 +87,7 @@ function mapPdfToImageError(error) {
     ? error.code
     : detail.match(/pdf-to-image:([a-z0-9_-]+)/i)?.[1]?.replaceAll('-', '_');
   if (code) {
-    if (['invalid_format', 'invalid_clarity', 'invalid_mode', 'invalid_request', 'invalid_selection', 'invalid_page_metrics'].includes(code)) {
+    if (['invalid_format', 'invalid_clarity', 'invalid_mode', 'invalid_request', 'invalid_selection', 'invalid_page_metrics', 'invalid_grid_count'].includes(code)) {
       return new ToolKnitError('INVALID_ARGUMENT', detail);
     }
     if (['input_too_large', 'too_many_pages', 'too_many_long_pages', 'page_too_large', 'output_too_large', 'output_too_large_for_memory'].includes(code)) {
@@ -172,7 +172,8 @@ function encodeCanvas(canvas, formatConfig) {
 async function renderPageCanvas(sourcePdf, pagePlan, options = {}) {
   throwIfAborted(options.signal);
   const page = await sourcePdf.getPage(pagePlan.pageNumber);
-  let canvas;
+  let canvas, renderTask;
+  const abort = () => renderTask?.cancel();
   try {
     const viewport = page.getViewport({ scale: pagePlan.renderScale });
     canvas = createCanvas(pagePlan.width, pagePlan.height);
@@ -180,19 +181,23 @@ async function renderPageCanvas(sourcePdf, pagePlan, options = {}) {
     if (!context) throw new Error('missing-canvas-context');
     context.fillStyle = '#fff';
     context.fillRect(0, 0, canvas.width, canvas.height);
-    await page.render({
+    renderTask = page.render({
       canvasContext: context,
       viewport,
       transform: [pagePlan.width / viewport.width, 0, 0, pagePlan.height / viewport.height, 0, 0],
       background: '#fff'
-    }).promise;
+    });
+    options.signal?.addEventListener('abort', abort, { once: true });
+    if (options.signal?.aborted) abort();
+    await renderTask.promise;
     throwIfAborted(options.signal);
     return canvas;
   } catch (error) {
-    throw new ToolKnitError('PROCESSING_FAILED', `PDF page ${pagePlan.pageNumber} could not be rendered.`, {
-      details: { renderer: String(error?.message || error || 'unknown-renderer-error') }
-    });
+    if (canvas) canvas.width = canvas.height = 0;
+    if (options.signal?.aborted) throw cancellationError(options.signal);
+    throw new ToolKnitError('PROCESSING_FAILED', `PDF page ${pagePlan.pageNumber} could not be rendered.`);
   } finally {
+    options.signal?.removeEventListener('abort', abort);
     try { page.cleanup(); } catch {}
   }
 }
@@ -209,12 +214,15 @@ async function renderOutputCanvas(sourcePdf, output, options = {}) {
   }
   context.fillStyle = '#fff';
   context.fillRect(0, 0, canvas.width, canvas.height);
-  for (const item of output.items) {
-    throwIfAborted(options.signal);
-    const pageCanvas = await renderPageCanvas(sourcePdf, item, options);
-    context.drawImage(pageCanvas, item.x, item.y, item.width, item.height);
-  }
-  return canvas;
+  try {
+    for (const item of output.items) {
+      throwIfAborted(options.signal);
+      const pageCanvas = await renderPageCanvas(sourcePdf, item, options);
+      try { context.drawImage(pageCanvas, item.x, item.y, item.width, item.height); }
+      finally { pageCanvas.width = pageCanvas.height = 0; }
+    }
+    return canvas;
+  } catch (error) { canvas.width = canvas.height = 0; throw error; }
 }
 
 async function publishPreparedOutputs(prepared, outputDirectory) {
@@ -308,8 +316,9 @@ export async function convertPdfToImages(args, options = {}) {
       throwIfAborted(options.signal);
       report(options, 15 + (index / plan.outputs.length) * 70, `Rendering PDF image ${index + 1}/${plan.outputs.length}.`);
       const canvas = await renderOutputCanvas(sourcePdf, output, options);
-      throwIfAborted(options.signal);
-      const bytes = encodeCanvas(canvas, plan.formatConfig);
+      let bytes;
+      try { throwIfAborted(options.signal); bytes = encodeCanvas(canvas, plan.formatConfig); }
+      finally { canvas.width = canvas.height = 0; }
       if (!Buffer.isBuffer(bytes) || bytes.length < 1) {
         throw new ToolKnitError('PROCESSING_FAILED', 'The image encoder produced an empty output.');
       }
@@ -345,6 +354,7 @@ export async function convertPdfToImages(args, options = {}) {
       }))
     };
   } catch (error) {
+    if (options.signal?.aborted) throw cancellationError(options.signal);
     throw mapPdfToImageError(error);
   } finally {
     try { await loadingTask?.destroy(); } catch {}

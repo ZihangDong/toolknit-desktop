@@ -103,7 +103,9 @@ if (!renderer.available) {
   const pdf = await PDFDocument.load(await readFile(exported.output_path));
   assert.equal(pdf.getPageCount(), 3);
 
-  const cliOut = path.join(fixtureDirectory, 'cli-out');
+  // The output remains accessible while the old nested Office profile exceeds
+  // Windows' practical path budget. Use a non-ASCII directory as well.
+  const cliOut = path.join(fixtureDirectory, 'deep-office-output-'.repeat(3), '中文输出');
   const cli = await runCli([
     'ppt', 'to-pdf',
     '--input', inputPath,
