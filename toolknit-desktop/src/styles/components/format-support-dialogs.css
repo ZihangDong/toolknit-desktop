@@ -915,7 +915,7 @@
       }
 
       #pptOutlineSummary span {
-        color: rgba(255, 255, 255, 0.66);
+        color: var(--ppt-workflow-muted, rgba(255, 255, 255, 0.66));
         line-height: 1.5;
         word-break: break-word;
       }

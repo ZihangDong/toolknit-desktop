@@ -481,6 +481,8 @@ mod tests {
                     Err(error) => panic!("loopback accept failed: {error}"),
                 }
             };
+            // Windows accepted sockets can inherit the listener's nonblocking mode.
+            stream.set_nonblocking(false).unwrap();
             stream
                 .set_read_timeout(Some(std::time::Duration::from_secs(10)))
                 .unwrap();

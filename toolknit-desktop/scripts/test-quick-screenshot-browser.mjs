@@ -103,6 +103,7 @@ async function open(role,theme,width=1400,height=900,dpr=1,{warmMenu=false}={}){
             items.splice(target+(r.after?1:0),0,item);window.__shotEmit('clipboard-history-changed',{library:r.collection==='phrases'});return {};
           }
           if(r.action==='drag'){
+            if(window.__dragFailure)throw 'clipboard:drag-failed';
             window.__dragPayload=structuredClone(r.collection==='phrases'?window.__phrases.find(p=>p.id===r.id):window.__shotHistory.find(p=>p.id===r.id));
             if(window.__dragDeferred)await new Promise(resolve=>window.__releaseDrag=resolve);
             return {accepted:false};
@@ -785,10 +786,19 @@ try{
     await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.entryId==='500'&&document.activeElement?.closest('[data-entry-id]')?.dataset.entryId==='499');
     await shelf.page.keyboard.press('ArrowUp');await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.entryId==='499');
     const copyBeforeDrag=await shelf.page.evaluate(()=>window.__shotCalls.filter(c=>['phraseCopy','copy','pin'].includes(c.args?.request?.action)).length);
-    const dragCard=async()=>{
+    const dragCard=async({selector='.shot-history-open',refresh=false,outside=false}={})=>{
       await shelf.page.evaluate(()=>{window.__dragDeferred=true;window.__releaseDrag=null;});
-      const box=await shelf.page.locator('.shot-history-open').first().boundingBox();
-      await shelf.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await shelf.page.mouse.down();await shelf.page.mouse.move(box.x+box.width/2+24,box.y+box.height/2,{steps:5});
+      const source=shelf.page.locator(selector).first();await source.scrollIntoViewIfNeeded();
+      const box=await source.boundingBox();
+      await shelf.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await shelf.page.mouse.down();
+      if(refresh){
+        const before=await source.boundingBox();
+        await shelf.page.evaluate(()=>{window.__shotHistory.unshift({id:902,kind:'text',text:'New incoming record',preview:'New incoming record',time:Date.now()});window.__shotEmit('clipboard-history-changed');});
+        await shelf.page.waitForTimeout(220);
+        assert.deepEqual(await source.boundingBox(),before,'live history must not move the pressed card before the drag threshold');
+        assert.equal(await shelf.page.locator('[data-entry-id="902"]').count(),0,'new records wait until the gesture ends');
+      }
+      await shelf.page.mouse.move(outside?390:box.x+box.width/2+24,box.y+box.height/2,{steps:outside?1:5});
       await shelf.page.waitForFunction(()=>Boolean(window.__releaseDrag));await shelf.page.mouse.up();
       await shelf.page.evaluate(()=>{window.__dragDeferred=false;window.__releaseDrag();});
       await shelf.page.waitForFunction(()=>!document.querySelector('.shot-history-item.is-dragging'));
@@ -803,6 +813,41 @@ try{
     await dragCard();assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.text.length),400);
     await moveCard(0,1);await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.entryId==='900');
     await dragCard();assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.image),image,'image drag references the full original');
+    await dragCard({selector:'[data-entry-id="901"] .shot-history-preview',refresh:true,outside:true});
+    assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.id),901,'a quick outward drag retains the pressed history ID');
+    assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.text.length),400,'history drag always uses the complete text');
+    await shelf.page.waitForFunction(()=>document.querySelector('[data-entry-id="902"]'));
+    assert.equal(await shelf.page.locator('#shotHistoryDetail').isVisible(),false,'dragging does not also open text details');
+    assert.equal(await shelf.page.locator('[data-entry-id="901"] .shot-history-open').evaluate(el=>getComputedStyle(el).cursor),'grab');
+    await shelf.page.evaluate(()=>{window.__dragFailure=true;});
+    const failedBox=await shelf.page.locator('[data-entry-id="902"] .shot-history-open').boundingBox();
+    await shelf.page.mouse.move(failedBox.x+60,failedBox.y+35);await shelf.page.mouse.down();await shelf.page.mouse.move(failedBox.x+90,failedBox.y+35,{steps:5});
+    await shelf.page.waitForFunction(()=>!document.getElementById('shotHistoryStatus').hidden);await shelf.page.mouse.up();
+    await shelf.page.evaluate(()=>{window.__dragFailure=false;});
+    await shelf.page.locator('[data-shot-action="retry-history"]').click();
+    await shelf.page.locator('#shotHistoryStatus').waitFor({state:'hidden'});
+    await dragCard({selector:'[data-entry-id="901"] .shot-history-open'});
+    assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.id),901,'a failed drag can be retried');
+    const dragCalls=()=>shelf.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='drag').length);
+    const beforeCaptureLoss=await dragCalls();
+    const pendingRow=shelf.page.locator('[data-entry-id="901"]');
+    await pendingRow.evaluate(el=>el.addEventListener('pointerdown',event=>el.dataset.pointer=event.pointerId,{once:true}));
+    const pendingBox=await pendingRow.locator('.shot-history-open').boundingBox();
+    await shelf.page.mouse.move(pendingBox.x+60,pendingBox.y+35);await shelf.page.mouse.down();
+    await pendingRow.evaluate(el=>el.releasePointerCapture(Number(el.dataset.pointer)));
+    await shelf.page.mouse.move(pendingBox.x+62,pendingBox.y+35);await shelf.page.mouse.up();
+    assert.equal(await dragCalls(),beforeCaptureLoss,'losing capture before threshold cancels instead of starting a stale drag');
+    assert.equal(await shelf.page.locator('#shotHistoryDetail').isVisible(),false);
+    await dragCard({selector:'[data-entry-id="901"] .shot-history-open'});
+    assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.id),901,'cancelled gestures release the next history drag');
+    await shelf.page.waitForTimeout(360);
+    const clickSource=shelf.page.locator('[data-entry-id="901"] .shot-history-open');await clickSource.scrollIntoViewIfNeeded();
+    const clickBox=await clickSource.boundingBox();await shelf.page.mouse.move(clickBox.x+70,clickBox.y+40);await shelf.page.mouse.down();
+    await shelf.page.evaluate(()=>{window.__shotHistory.unshift({id:903,kind:'text',text:'Another incoming record',preview:'Another incoming record',time:Date.now()});window.__shotEmit('clipboard-history-changed');});
+    await shelf.page.waitForTimeout(220);await shelf.page.mouse.up();
+    await shelf.page.locator('#shotHistoryDetail').waitFor({state:'visible'});
+    assert.equal(await shelf.page.locator('#shotHistoryDetailBody pre').innerText(),'完整正文'.repeat(100),'a pending refresh cannot redirect a plain click to the new record');
+    await shelf.page.locator('[data-shot-action="history-back"]').click();
     assert.equal(await shelf.page.locator('#shotHistoryMode svg').evaluate(el=>getComputedStyle(el).width),'15px');
     results.push(`history ${theme}: repeated title flips, veil/cancel/reduced motion, live search/IME/stale replies/clear contrast, tab motion, 320px fit, latest twenty, notes/phrases, delete failures and repeated open/close`);await shelf.context.close();
     const menu=await open('history-menu',theme,304,286,1,{warmMenu:true});

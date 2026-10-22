@@ -40,6 +40,7 @@ const coreFiles = [
   'core/pdf-compression.js',
   'core/pdf-raster-candidate.js',
   'core/limits/bytes.js',
+  'core/image-dimensions.js',
   'core/limits/pdf.js',
   'core/limits/ai.js',
   'core/limits/image.js',

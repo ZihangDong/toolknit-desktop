@@ -637,6 +637,10 @@
   margin-top: 6px;
 }
 
+.pdf-editor-empty-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; }
+.pdf-editor-empty-actions .pdf-merge-v2-cta { margin: 0; }
+.pdf-editor-empty-actions .pdf-editor-tool { min-height: 44px; width: auto; padding: 10px 16px; }
+
 .pdf-editor-preview-footer {
   flex: 0 0 auto;
   display: flex;
@@ -886,7 +890,7 @@
   padding: 0;
   color: #111111;
   background: transparent;
-  white-space: nowrap;
+  white-space: pre;
   font-family: var(--tk-font-pdf), "PingFang SC", "Microsoft YaHei", Helvetica, Arial, sans-serif;
 }
 
@@ -1162,18 +1166,25 @@
 }
 
 .pdf-editor-edit-modal-input {
+  resize: vertical;
+  max-height: 180px;
   width: 100%;
-  height: 40px;
-  padding: 0 11px;
+  height: auto;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 9px 11px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   color: #ffffff;
   background: rgba(0, 0, 0, 0.24);
   font: inherit;
   font-size: 14px;
+  line-height: 1.5;
   outline: none;
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
+
+.pdf-editor-edit-modal-input[rows="1"] { resize: none; }
 
 .pdf-editor-edit-modal-input:focus {
   border-color: rgba(255, 255, 255, 0.62);

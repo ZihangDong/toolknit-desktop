@@ -602,7 +602,7 @@
       }
 
       .image-stitch-v2 .image-stitch-name-setting input::placeholder {
-        color: rgba(255, 255, 255, 0.32);
+        color: rgba(255, 255, 255, 0.62);
       }
 
       /* The suffix owns a separate column, outside the native number spinner. */

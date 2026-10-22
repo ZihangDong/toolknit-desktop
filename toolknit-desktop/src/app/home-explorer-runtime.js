@@ -4,6 +4,8 @@ import { createSettingsController } from './settings-controller.js';
 const FAVORITES_KEY = 'toolknit_favorites';
 const MAX_FAVORITES = 6;
 const PAGE_SIZE = 12;
+// V3.1/V3.2 discoveries include the expanded clipboard workflow without changing tool categories.
+const NEW_FEATURE_TOOLS = new Set(['quick-screenshot', 'pdf-to-scan', 'duplicate-file-cleanup', 'pdf-to-word', 'clipboard-history', 'image-to-pdf']);
 
 const categoryGroup = category => ({ audio: 'media', video: 'media', calculator: 'calc', cleanup: 'clean' }[category] || category || '');
 const CATEGORY_LABEL_KEYS = Object.freeze({
@@ -177,7 +179,11 @@ export function createHomeExplorerRuntime({
     if (!homeToolSearch || !homeToolGrid) return;
     if (resetPagination) visibleToolCount = PAGE_SIZE;
     const query = homeToolSearch.value.trim().toLowerCase();
-    const tools = collectTools().filter(item => (activeCategory === 'all' || item.homeCategory === activeCategory) && (!query || item.searchable.includes(query)));
+    const tools = collectTools().filter(item => {
+      const matchesCategory = activeCategory === 'new' ? NEW_FEATURE_TOOLS.has(item.toolId)
+        : activeCategory === 'all' || item.homeCategory === activeCategory;
+      return matchesCategory && (!query || item.searchable.includes(query));
+    });
     const shown = lazyLoadEnabled ? tools.slice(0, visibleToolCount) : tools;
     homeToolGrid.innerHTML = shown.length ? shown.map(item => `<button class="tool-result-card" type="button" data-home-tool="${escapeHtml(item.toolId)}" data-tool-category="${escapeHtml(item.homeCategory)}"><span class="card-water-layer" aria-hidden="true"><span class="card-water-ripple"></span></span><span class="tool-result-top"><span class="tool-result-icon">${item.iconHtml || '<i data-lucide="sparkles"></i>'}</span><span class="tool-result-tag">${escapeHtml(item.tag)}</span></span><span><span class="tool-result-name">${escapeHtml(item.name)}</span><span class="tool-result-desc">${escapeHtml(item.desc)}</span></span></button>`).join('') : `<div class="tool-result-empty">${escapeHtml(translate('home.noToolsFound'))}</div>`;
     const remaining = Math.max(0, tools.length - shown.length);

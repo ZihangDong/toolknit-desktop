@@ -6,6 +6,7 @@ import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { createModalSession, setModalInteractivity } from '../../app/modal-runtime.js';
 import { moveFocusOutOfHiddenRegion } from '../../shared/tool-page-shell.js';
 import { pdfjsDocumentOptions, destroyPdfDocument } from '../../shared/pdfjs-options.js';
+import { createPreviewViewport } from '../../shared/preview-viewport.js';
 import { startScanAnimation } from '../../shared/curve-loading.js';
 import { tauriCorePromise, loadTauriDialog, loadTauriWebview } from '../../platform/tauri-runtime.js';
 import { t, onLangChange, applyTranslations } from '../../i18n.js';
@@ -27,6 +28,27 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
   const key = () => JSON.stringify([byId('Range').value.trim(), layout]);
   const alive = session => session && owner === session && !session.disposed;
   const current = op => active === op && alive(op.owner) && !op.cancelled;
+  const viewport = createPreviewViewport({ viewport: byId('Preview'), content: byId('Paper'),
+    enabled: () => Boolean(owner && pdf && !active), getScale: () => zoom, min: .2, max: 4,
+    setScale: value => {
+      zoom = value; sizePaper(); previewRevision++; try { previewTask?.cancel(); } catch {} previewTask = null;
+    }, render: () => showPage({ refreshUi: false }) });
+  scope.use(viewport.dispose);
+  function sizePaper() {
+    byId('Paper').style.width = Math.round(Math.min(760, byId('Preview').clientWidth - 48) * zoom) + 'px';
+    byId('Paper').style.maxWidth = 'none';
+  }
+  let resizeTimer = 0, previewWidth = 0;
+  const resizePreview = new ResizeObserver(() => {
+    if (!owner || !pdf || active || !byId('Preview').clientWidth) return;
+    const width = byId('Preview').getBoundingClientRect().width;
+    if (Math.abs(width - previewWidth) < .5) return;
+    previewWidth = width;
+    viewport.reset(); sizePaper(); clearTimeout(resizeTimer);
+    const session = owner;
+    resizeTimer = setTimeout(() => { resizeTimer = 0; if (alive(session) && !active) void showPage({ refreshUi: false }); }, 130);
+  });
+  resizePreview.observe(byId('Preview')); scope.use(() => { resizePreview.disconnect(); clearTimeout(resizeTimer); });
   const editor = createWordResultEditor({ overlay, byId, tr, enabled: () => Boolean(owner && !active && analysis),
     pageNumber: () => pageNumber, report, changed: () => { update(); editor.render(); void showPage(); } });
   const processModal = createModalSession({ root: byId('ProgressOverlay'), background: overlay, initialFocus: byId('Cancel'), onClose: cancel, canClose: () => !active?.committing });
@@ -147,8 +169,8 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
       releaseDocument(); pdf = loaded; file = candidate; inputDigest = digest; adopted = true; op.loadingTask = null;
       pageNumber = 1; zoom = 1; byId('Range').value = loaded.numPages > LIMITS.selectedPages ? '1-' + LIMITS.selectedPages : '';
       moveFocusOutOfHiddenRegion(byId('Empty')); byId('Empty').hidden = true; byId('Loaded').hidden = false;
-      byId('Structure').setAttribute('aria-pressed', 'false'); byId('Paper').style.width = '';
-      strip = createWordPageStrip({ root: byId('Thumbnails'), pdf, select: number => { if (!active) { pageNumber = number; void showPage(); } }, label: number => tr('pageLabel', { page: number }) });
+      byId('Structure').setAttribute('aria-pressed', 'false'); viewport.reset(); sizePaper();
+      strip = createWordPageStrip({ root: byId('Thumbnails'), pdf, select: number => { if (!active) { viewport.reset(); pageNumber = number; void showPage(); } }, label: number => tr('pageLabel', { page: number }) });
       strip.pause(); setStatus('ready');
     } catch (error) { if (current(op)) report(error); }
     finally { if (task && !adopted) void task.destroy().catch(() => {}); end(op); if (adopted && alive(op.owner)) void showPage(); }
@@ -163,7 +185,7 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
       if (path && alive(session)) await loadFile({ path, name: path.split(/[\\/]/).pop() });
     } catch (error) { if (alive(session)) report(error); }
   }
-  async function showPage() {
+  async function showPage({ refreshUi = true } = {}) {
     if (!pdf || !owner || active) return;
     const revision = ++previewRevision, session = owner, snapshot = pdf, number = pageNumber;
     try { previewTask?.cancel(); } catch {}
@@ -172,7 +194,8 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
     let canvas;
     try {
       const page = await snapshot.getPage(number); if (!valid()) return;
-      const viewport = page.getViewport({ scale: 1 }), scale = Math.min(2, 1600 / Math.max(viewport.width, viewport.height));
+      const viewport = page.getViewport({ scale: 1 });
+      const scale = Math.min(6, Math.max(.1, byId('Paper').clientWidth / viewport.width * Math.min(2, window.devicePixelRatio || 1)), Math.sqrt(8000000 / (viewport.width * viewport.height)));
       canvas = document.createElement('canvas'); canvas.width = Math.ceil(viewport.width * scale); canvas.height = Math.ceil(viewport.height * scale);
       const editedPage = editor.dirty && editor.document()?.pages.find(item => item.number === number);
       if (editedPage && analysis?.worker) {
@@ -183,7 +206,8 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
         try { await task.promise; } finally { if (previewTask === task) previewTask = null; }
         if (!valid()) return;
       }
-      const target = byId('Canvas'); target.width = canvas.width; target.height = canvas.height; target.getContext('2d').drawImage(canvas, 0, 0); update();
+      const target = byId('Canvas'); target.width = canvas.width; target.height = canvas.height; target.getContext('2d').drawImage(canvas, 0, 0);
+      if (refreshUi) update();
     } catch (error) { if (valid()) report(error); }
     finally { if (canvas) canvas.width = canvas.height = 0; }
   }
@@ -290,13 +314,12 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
     }
   });
   for (const [id, delta] of [['Prev', -1], ['Next', 1]]) scope.event(byId(id), 'click', () => {
-    if (!pdf || active) return; pageNumber = Math.max(1, Math.min(pdf.numPages, pageNumber + delta)); void showPage();
+    if (!pdf || active) return; viewport.reset(); pageNumber = Math.max(1, Math.min(pdf.numPages, pageNumber + delta)); void showPage();
   });
-  scope.event(byId('PageInput'), 'change', () => { if (pdf && !active) { pageNumber = Math.max(1, Math.min(pdf.numPages, Math.floor(Number(byId('PageInput').value)) || 1)); void showPage(); } });
+  scope.event(byId('PageInput'), 'change', () => { if (pdf && !active) { viewport.reset(); pageNumber = Math.max(1, Math.min(pdf.numPages, Math.floor(Number(byId('PageInput').value)) || 1)); void showPage(); } });
   for (const [id, delta] of [['ZoomOut', -.25], ['ZoomIn', .25], ['ZoomFit', 0]]) scope.event(byId(id), 'click', () => {
-    zoom = delta ? Math.min(3, Math.max(.5, zoom + delta)) : 1;
-    byId('Paper').style.width = zoom === 1 ? '' : Math.round(Math.min(760, byId('Preview').clientWidth - 48) * zoom) + 'px';
-    byId('Paper').style.maxWidth = zoom === 1 ? '' : 'none';
+    if (delta) viewport.zoomTo(zoom + delta);
+    else { viewport.reset(); zoom = 1; sizePaper(); void showPage({ refreshUi: false }); }
   });
   scope.event(byId('PagesToggle'), 'click', () => {
     const collapsed = byId('Loaded').classList.toggle('pages-collapsed'); byId('PagesToggle').setAttribute('aria-expanded', String(!collapsed));
@@ -331,6 +354,9 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
     translate(); refreshIcons(); byId('EmptyPick').focus({ preventScroll: true }); if (isTauri) void nativeDrop(owner);
   }
   function close() {
+    viewport.reset();
+    clearTimeout(resizeTimer); resizeTimer = 0;
+    previewWidth = 0;
     const session = owner; owner = null;
     if (active) {
       active.cancelled = true; active.abort.abort(); active.worker?.dispose(); active.nativeCancel?.(); active.releaseTimer();

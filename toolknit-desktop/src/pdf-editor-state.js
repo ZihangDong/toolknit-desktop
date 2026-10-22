@@ -45,5 +45,9 @@ export function pdfEditorPageIdsInDocumentOrder(pages, selectedIds, currentId = 
 export function pdfEditorSnapshotsEqual(left, right) {
   if (left === right) return true;
   if (!left || !right) return false;
-  return JSON.stringify(left) === JSON.stringify(right);
+  // Selection, zoom and insertion mode do not change the exported document.
+  const content = ({ selectedIds, currentId, selectionAnchorId, editMode, componentMode,
+    selectedComponent, viewMode, zoomPercent, idCounter, ...value }) => ({ ...value,
+      ...(Array.isArray(value.pages) ? { pages: value.pages.map(({ sourceRotation, ...page }) => page) } : {}) });
+  return JSON.stringify(content(left)) === JSON.stringify(content(right));
 }

@@ -157,8 +157,9 @@ const toolToHelp = new Map([
   ['ai-table', 'ai-table'],
 ]);
 
+toolToHelp.set('image-to-pdf', 'image-to-pdf');
 const desktopTools = unique(valuesForAttribute(indexHtml, 'data-tool'));
-assert.equal(desktopTools.length, 72, 'Current desktop catalog must contain exactly 72 unique tools.');
+assert.equal(desktopTools.length, 73, 'Current desktop catalog must contain exactly 73 unique tools.');
 for (const tool of desktopTools) {
   const section = toolToHelp.get(tool);
   assert.ok(section, `Desktop tool has no help mapping: ${tool}`);

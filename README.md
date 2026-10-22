@@ -8,7 +8,7 @@ V3.2 开发中，尚未发布；当前正式版为 V3.1。安装包发布状态�
 
 **把零散的桌面小事，收进一个工具箱。**
 
-72 项桌面工具 · 12 个分类 · 本地文件工作台 · CLI / MCP
+73 项桌面工具 · 12 个分类 · 本地文件工作台 · CLI / MCP
 
 <p align="center">
 <a href="https://toolknit.com/exe.html"><img src="assets/readme/v3.1/link-download-zh.svg" alt="下载 Windows 版" width="168" height="40" /></a>
@@ -34,7 +34,7 @@ ToolKnit 像一只不停织网的蜘蛛：一个需求牵出一根线，越来�
 
 ### 再用桌面端
 
-需要长期处理文件、找回复制内容或快速截图？[安装 Windows 桌面端](https://toolknit.com/exe.html)，当前开发目录提供 **72 项工具**；PDF 转 Word 随 V3.2 测试，正式安装包以 Release 为准。
+需要长期处理文件、找回复制内容或快速截图？[安装 Windows 桌面端](https://toolknit.com/exe.html)，当前开发目录提供 **73 项工具**；PDF 转 Word、图像转 PDF 随 V3.2 测试，正式安装包以 Release 为准。
 首次使用先设置输出目录；常用工具可收藏，重型模型按需安装。打开**一键记录模式**，让开机自启、剪贴板实时监控和截图历史悬浮窗一起就位，再用 `Alt + Q` 开始截图。
 安装环境与详细步骤见[开始使用](#08--开始使用)。
 
@@ -176,7 +176,7 @@ WPS / Microsoft Office 不等同于 LibreOffice，不能替代需要 `soffice` �
 **桌面端负责看得见的交互，CLI 负责批处理，Agent 负责串起任务。**
 
 适合自动化的能力通过 `@toolknit/cli` 和 **46 项 CLI / MCP 能力**提供。
-它们与桌面工具的范围不同：并非全部 72 项工具都能从命令行调用。
+它们与桌面工具的范围不同：并非全部 73 项工具都能从命令行调用。
 
 ```powershell
 npm install --global @toolknit/cli
@@ -243,11 +243,11 @@ Windows 10 **1803 / build 17134 及以上**或 Windows 11；需要 Microsoft Edg
 ## 完整工具目录
 
 <details>
-<summary><strong>展开 72 项桌面工具 / 12 个分类</strong></summary>
+<summary><strong>展开 73 项桌面工具 / 12 个分类</strong></summary>
 
 | 分类 | 数量 | 工具 |
 | --- | ---: | --- |
-| PDF | 15 | 文件合并、文件拆分、加页码、裁剪、转图像、转 Word、转扫描件、文本提取 / Markdown、编辑器、页面旋转、加密、解密、压缩、文字增强、Excel 转 PDF |
+| PDF | 16 | 文件合并、文件拆分、加页码、裁剪、转图像、转 Word、转扫描件、图像转 PDF、文本提取 / Markdown、编辑器（支持新建空白 PDF）、页面旋转、加密、解密、压缩、文字增强、Excel 转 PDF |
 | PPT | 7 | 转 PDF、转图片、图片提取、AI 文本提取、压缩、AI 大纲、AI 草稿 / PPTX |
 | 图片 | 7 | 裁剪、智能颜色替换、背景移除、格式转换、压缩、长图拼接、图标生成器 |
 | 音频 | 4 | 格式转换、BPM 节拍测速、剪辑、音频提取 |

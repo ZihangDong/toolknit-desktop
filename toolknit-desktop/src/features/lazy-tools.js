@@ -40,6 +40,12 @@ export const LAZY_TOOL_SPECS = Object.freeze({
     load: () => import('./pdf-to-image/tool.js'),
     init: 'initPdfToImageTool'
   }),
+  'image-to-pdf': Object.freeze({
+    overlayId: 'imagePdfOverlay',
+    markup: () => import('./image-to-pdf/template.js'),
+    load: () => import('./image-to-pdf/tool.js'),
+    init: 'initImagePdfTool'
+  }),
   'pdf-to-scan': Object.freeze({
     overlayId: 'pdfScanOverlay',
     markup: () => import('./pdf-to-scan/template.js'),

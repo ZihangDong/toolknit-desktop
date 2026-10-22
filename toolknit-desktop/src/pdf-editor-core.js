@@ -3,8 +3,9 @@ import fontkit from './pdf-lib-fontkit.js';
 import { encryptPdf as encryptPdfBytes, normalizePdfEncryptPermissions } from './pdf-encrypt-core.js';
 import { flattenPdfFormForPageCopy } from './pdf-document-structure.js';
 import { PDF_EDITOR_LIMITS } from './core/limits/pdf.js';
+import { estimateInsertedTextWidth, insertedTextLayout } from './core/pdf-inserted-text.js';
 
-export { PDF_EDITOR_LIMITS };
+export { PDF_EDITOR_LIMITS, estimateInsertedTextWidth };
 
 export function assertPdfEditorFile(name, size, limits = PDF_EDITOR_LIMITS) {
   if (!/\.pdf$/i.test(String(name || ''))) {
@@ -144,21 +145,6 @@ export async function assemblePdf({ sources, pages, useObjectStreams = true, onP
 }
 
 const CJK_TEXT_RE = /[\u2E80-\u2EFF\u3000-\u303F\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/;
-
-/**
- * Keep inserted-text visual boxes deterministic across the canvas and PDF
- * export paths. The browser overlay does not have the embedded PDF font
- * metrics available, so both paths use this conservative width estimate when
- * an object has not been explicitly resized.
- */
-export function estimateInsertedTextWidth(text, fontSize) {
-  const size = Math.max(1, Number(fontSize) || 16);
-  return Math.max(1, Array.from(String(text ?? '')).reduce((width, char) => {
-    if (/[^\u0000-\u00ff]/u.test(char)) return width + size;
-    if (/[MW@%]/.test(char)) return width + size * 0.95;
-    return width + size * 0.55;
-  }, 0));
-}
 
 function normalizeTextColor(color) {
   if (Array.isArray(color) && color.length >= 3) {
@@ -482,12 +468,11 @@ export async function assemblePdfWithTextEdits({
     }
 
     for (const object of textObjectsByPageIndex.get(index) || []) {
-      const text = String(object.text ?? '');
+      const layout = insertedTextLayout(object);
+      const text = layout.lines.join('\n');
       if (!text) continue;
       const fontSize = Math.max(1, Number(object.fontSize) || 16);
       const font = await ensureFont(text, Boolean(object.bold), false);
-      const width = Math.max(1, Number(object.width) || estimateInsertedTextWidth(text, fontSize));
-      const height = Math.max(1, Number(object.height) || fontSize * 1.15);
       const x = Number(object.x) || 0;
       const y = Number(object.y) || 0;
       const uiRotation = Number(object.rotation) || 0;
@@ -495,13 +480,14 @@ export async function assemblePdfWithTextEdits({
       const anchor = rotatePdfTextAnchorAroundBox(
         x,
         y,
-        { x, y: y - height * 0.2, width, height },
+        object.textBox || layout.box,
         pdfRotation
       );
       copiedPage.drawText(text, {
         x: anchor.x,
         y: anchor.y,
         size: fontSize,
+        lineHeight: Number(object.lineHeight) > 0 ? Number(object.lineHeight) : layout.lineHeight,
         font,
         rotate: degrees(pdfRotation),
         color: normalizeTextColor(object.color)

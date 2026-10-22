@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createPdfEditorHistory } from '../src/features/pdf-editor/history.js';
+import { createPdfEditorStateController } from '../src/features/pdf-editor/state.js';
 
 let state = { value: 0 };
 let refreshes = 0;
@@ -56,5 +57,38 @@ history.clear();
 assert.equal(history.length, 0);
 assert.equal(history.current, null);
 assert.ok(refreshes >= 6);
+
+// An image removed from the page remains available to undo, then is released
+// only when every retained history and baseline reference has disappeared.
+{
+  const bytes = new Uint8Array([137, 80, 78, 71]);
+  const assets = new Map([['image-1', { bytes, mimeType: 'image/png' }]]);
+  let images = [{ id: 'image-1', pageId: 'page-1', mimeType: 'image/png', bytes }];
+  let saved = null;
+  const state = createPdfEditorStateController({
+    getInsertedImages: () => images, setInsertedImages: value => { images = value; },
+    getInsertedImageStore: () => assets,
+    normalizeInsertedImageSnapshot: ({ bytes: _bytes, previewUrl: _url, ...image }) => image,
+    getSavedSnapshot: () => saved
+  });
+  const history = createPdfEditorHistory({ capture: state.captureEditorSnapshot, apply: state.applyEditorSnapshot,
+    equals: (a, b) => JSON.stringify(a) === JSON.stringify(b), limit: 3,
+    onChange: state.pruneImageAssets });
+  state.setHistory(history); history.reset();
+  assets.set('duplicate-payload', { bytes });
+  assert.equal(state.imageAssetBytes(), bytes.byteLength, 'copied pages share immutable bytes instead of double-counting capacity');
+  state.pruneImageAssets();
+  images = []; history.commit();
+  assert.equal(assets.has('image-1'), true);
+  history.undo();
+  assert.equal(images[0].bytes, bytes, 'undo restores the original immutable payload');
+  assert.match(images[0].previewUrl, /^blob:/);
+  history.redo(); assert.equal(images.length, 0);
+  history.commit(); history.commit();
+  assert.equal(assets.has('image-1'), false, 'history eviction releases unreachable bytes');
+  assets.set('saved-image', { bytes }); saved = { insertedImages: [{ id: 'saved-image' }] };
+  state.pruneImageAssets(); assert.equal(assets.has('saved-image'), true);
+  saved = null; state.pruneImageAssets(); assert.equal(assets.size, 0);
+}
 
 console.log('PDF editor history lifecycle checks passed');

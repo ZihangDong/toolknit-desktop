@@ -1,11 +1,15 @@
+import { createPreviewViewport } from '../../shared/preview-viewport.js';
+
 export function createPdfCompressionResultList({
   root, translate, formatFileSize, errorMessage,
   canRetryCompact = () => false,
   onRetryCompact = () => {}
 }) {
   const urls = new Set();
+  const previews = new Set();
   const exactSize = value => Number.isSafeInteger(value) && value >= 0 ? `${formatFileSize(value)} (${value} B)` : '--';
   function clear() {
+    previews.forEach(preview => preview.dispose()); previews.clear();
     urls.forEach(url => URL.revokeObjectURL(url));
     urls.clear();
     root?.replaceChildren();
@@ -68,6 +72,12 @@ export function createPdfCompressionResultList({
           image.src = url;
           image.alt = translate('home.pdfCompress.previewFirstPage');
           scroll.append(image);
+          let scale = 1;
+          const viewport = createPreviewViewport({ viewport: scroll, content: image,
+            enabled: () => image.naturalWidth > 0 && detail.open,
+            getScale: () => scale, setScale: value => { scale = value; image.style.width = image.naturalWidth * scale + 'px'; },
+            min: .1, max: 4, panPrimary: () => true });
+          previews.add(viewport);
           detail.append(scroll);
         }
         row.append(detail);

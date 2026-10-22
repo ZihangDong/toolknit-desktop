@@ -1,4 +1,9 @@
 /* Legacy class names retained for PPT tools that share these primitives. */
+.pdf-merge-v2:is(.ppt-text-v2, .ppt-compress-v2, .ppt-outline-v2, .ppt-render-v2, .ppt-images-v2, .ppt-draft-v2) :is(input, textarea)::placeholder {
+  color: rgba(255, 255, 255, .66);
+  opacity: 1;
+}
+
 /* File-driven PPT tools share one upload strip and a filling preview row. */
 .pdf-merge-v2 .ppt-file-workspace {
   display: grid;
@@ -273,3 +278,20 @@
 .ppt-images-export:disabled { cursor: not-allowed; opacity: 0.45; }
 .ppt-images-export:hover,
 .ppt-images-export:active { transform: none; }
+/* AI forms share the existing select control; its SVG follows the field ink
+   instead of relying on a background image reset by theme/focus rules. */
+.pdf-merge-v2:is(.ppt-outline-v2, .ppt-draft-v2) .ppt-outline-field .tool-custom-select-trigger {
+  min-height: 38px;
+  height: 38px;
+  border-color: rgba(255, 255, 255, .16);
+  border-radius: 16px;
+  background: #242428;
+  color: #f3f4f6;
+  box-shadow: none;
+}
+.pdf-merge-v2:is(.ppt-outline-v2, .ppt-draft-v2) .ppt-outline-field .tool-custom-select-trigger:hover:not(:disabled) {
+  background: #303034;
+  border-color: #777;
+  box-shadow: none;
+}
+.pdf-merge-v2:is(.ppt-outline-v2, .ppt-draft-v2) .ppt-outline-field .tool-custom-select-trigger svg { color: inherit; }

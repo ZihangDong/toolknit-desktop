@@ -117,6 +117,8 @@ body.shot-history-body { --tk-window-bg: transparent; }
 .shot-history-list::-webkit-scrollbar { width: 0; height: 0; }
 .shot-history-item { position:relative; box-sizing:border-box; height:168px; width:100%; border:0; border-radius:8px; background:var(--shot-panel); color:var(--shot-fg); padding:12px; overflow:hidden; text-align:left; }
 .shot-history-open { width:100%; height:100%; display:grid; grid-template-rows:16px minmax(0,1fr) 16px 14px; align-items:stretch; gap:6px; padding:0; border:0; background:transparent; color:inherit; text-align:left; font:inherit; }
+.shot-history-item:is([data-kind="text"],[data-kind="image"],[data-kind="phrase"]) .shot-history-open { cursor:grab; touch-action:none; }
+.shot-history-item.is-dragging .shot-history-open { cursor:grabbing; }
 .shot-history-grip { position:absolute; top:5px; right:5px; display:grid; place-items:center; width:26px; height:26px; padding:0; border:0; border-radius:5px; color:var(--shot-muted); background:var(--shot-panel); cursor:grab; touch-action:none; }
 .shot-history-grip:hover { color:var(--shot-fg); background:var(--shot-line); }
 .shot-history-grip svg { width:15px; height:15px; }

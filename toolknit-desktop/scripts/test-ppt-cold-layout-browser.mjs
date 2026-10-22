@@ -36,6 +36,10 @@ try {
       if (message.text().includes('Blocked aria-hidden')) errors.push(message.text());
     });
     await page.route('https://**/*', route => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+    await page.addInitScript(custom => {
+      localStorage.setItem('toolknit.theme.v3', custom ? 'dark' : 'light');
+      localStorage.setItem('toolknit.recording-mode.prompt-dismissed.v1', 'true');
+    }, custom);
     if (custom) await page.addInitScript(() => {
       const canvas = document.createElement('canvas');
       canvas.width = 240;
@@ -48,6 +52,7 @@ try {
       localStorage.setItem('toolknit.customBackground.v1', JSON.stringify({ type: 'image', src: canvas.toDataURL(), name: 'Synthetic QA background' }));
     });
     await page.goto(url);
+    await page.waitForFunction(() => !document.documentElement.dataset.tkStartup);
     return { page, errors };
   };
   const open = async (page, [id, overlayId]) => {
@@ -56,6 +61,10 @@ try {
     await card.evaluate(node => node.click());
     await page.waitForSelector(`#${overlayId}.visible`);
     await page.waitForFunction(id => getComputedStyle(document.getElementById(id)).opacity === '1', overlayId);
+    await page.waitForFunction(() => {
+      const veil = document.querySelector('[data-tk-page-transition-veil]');
+      return !veil || getComputedStyle(veil).visibility === 'hidden';
+    });
   };
   const close = async (page, overlayId) => {
     await page.locator(`#${overlayId} header .pdf-merge-v2-back`).click();

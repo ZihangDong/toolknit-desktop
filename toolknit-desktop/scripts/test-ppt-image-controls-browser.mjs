@@ -167,7 +167,9 @@ try {
       const small = await page.locator('.ppt-images-preview-dialog').boundingBox();
       assert.ok(small.x >= 0 && small.y >= 0 && small.x + small.width <= 720 && small.y + small.height <= 480);
       await page.screenshot({ path: path.join(output, `${label}-preview-small.png`) });
-      await page.locator('#pptImagesPreviewOverlay').click({ position: { x: 5, y: 5 } });
+      // The window's rounded top corner is outside its hit-test surface.
+      assert.equal(await page.evaluate(() => document.elementFromPoint(5, innerHeight / 2)?.id), 'pptImagesPreviewOverlay');
+      await page.locator('#pptImagesPreviewOverlay').click({ position: { x: 5, y: 240 } });
       await page.waitForFunction(() => !document.getElementById('pptImagesPreviewOverlay').classList.contains('visible'));
       await page.setViewportSize({ width: 1401, height: 920 });
       const oldUrls = await page.locator('.ppt-images-thumb img').evaluateAll(nodes => nodes.map(node => node.src));

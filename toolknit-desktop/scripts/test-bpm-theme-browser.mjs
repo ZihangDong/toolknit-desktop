@@ -65,7 +65,11 @@ try {
   };
   const color = (selector, property = 'backgroundColor') => page.locator(selector).first().evaluate((n, key) => getComputedStyle(n)[key], property);
   const screenshot = name => page.screenshot({ path: path.join(output, `${name}.png`), animations: 'disabled' });
-  const setTheme = theme => page.evaluate(value => document.querySelector(`[data-theme-choice="${value}"]`).click(), theme);
+  const setTheme = async theme => {
+    await page.evaluate(value => document.querySelector(`[data-theme-choice="${value}"]`).click(), theme);
+    await page.waitForFunction(value => document.documentElement.dataset.theme === value, theme);
+    await page.waitForFunction(() => document.getAnimations().every(animation => animation.constructor.name !== 'CSSTransition' || animation.playState !== 'running'));
+  };
 
   await open();
   // Parse the dedicated theme with the browser, including nested media rules.

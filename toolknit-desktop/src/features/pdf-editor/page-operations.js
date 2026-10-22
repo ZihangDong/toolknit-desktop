@@ -1,4 +1,4 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, PageSizes } from 'pdf-lib';
 import {
   PDF_EDITOR_LIMITS,
   normalizePageRotation
@@ -37,6 +37,7 @@ export function createPdfEditorPageOperations({
   setSelectionAnchorId = () => {},
   getPageStrip = () => null,
   hasDocument = () => false,
+  createBlankDocument = async () => {},
   targetIds = () => [],
   currentPage = () => null,
   pageStateFor = () => null,
@@ -205,7 +206,8 @@ export function createPdfEditorPageOperations({
   }
 
   async function insertBlankPage() {
-    if (getActiveOperation() || !hasDocument()) return;
+    if (getActiveOperation()) return;
+    if (!hasDocument()) return createBlankDocument();
     const pages = getPages() || [];
     if (pages.length >= PDF_EDITOR_LIMITS.maxPages) {
       showToast(t('home.pdfEditor.tooManyPages'));
@@ -216,39 +218,37 @@ export function createPdfEditorPageOperations({
     showProcess('preparingPages', 10);
     try {
       const current = currentPage();
-      let width = 612;
-      let height = 792;
+      let [width, height] = PageSizes.A4;
       if (current) {
         const sourceDoc = await getSourceDoc(current.sourceId);
         assertOperation(operation);
         const sourcePage = await sourceDoc.getPage(current.pageIndex + 1);
-        cacheSourceRotation(current, sourcePage);
-        const viewport = sourcePage.getViewport({
-          scale: 1,
-          rotation: effectivePageRotation(current)
-        });
-        width = Math.max(72, Number(viewport.width) || width);
-        height = Math.max(72, Number(viewport.height) || height);
-        try { sourcePage.cleanup(); } catch (_) {}
+        try {
+          assertOperation(operation);
+          cacheSourceRotation(current, sourcePage);
+          const viewport = sourcePage.getViewport({ scale: 1, rotation: effectivePageRotation(current) });
+          if (Number.isFinite(viewport.width) && viewport.width > 0) width = viewport.width;
+          if (Number.isFinite(viewport.height) && viewport.height > 0) height = viewport.height;
+        } finally { try { sourcePage.cleanup(); } catch (_) {} }
       }
 
-      const blankDocument = await PDFDocument.create();
-      blankDocument.addPage([width, height]);
-      const bytes = await blankDocument.save({ useObjectStreams: true });
-      assertOperation(operation);
       const sources = getSources() || [];
-      const totalBytes = sources.reduce((sum, source) => sum + Number(source.size || 0), 0) + bytes.length;
-      if (totalBytes > PDF_EDITOR_LIMITS.maxMergeTotalBytes) {
-        throw new Error('PDF inputs exceed the merge size limit');
+      let source = sources.find(item => item.blankSize
+        && Math.abs(item.blankSize[0] - width) < 0.01 && Math.abs(item.blankSize[1] - height) < 0.01);
+      if (!source) {
+        const blankDocument = await PDFDocument.create();
+        blankDocument.addPage([width, height]);
+        const bytes = await blankDocument.save({ useObjectStreams: true });
+        assertOperation(operation);
+        const totalBytes = sources.reduce((sum, item) => sum + Number(item.size || 0), 0) + bytes.length;
+        if (totalBytes > PDF_EDITOR_LIMITS.maxMergeTotalBytes) {
+          throw new Error('PDF inputs exceed the merge size limit');
+        }
+        source = { id: nextId('src'), name: 'blank-page.pdf', bytes, size: bytes.length,
+          pageCount: 1, blankSize: [width, height] };
+        sources.push(source);
+        getSourceStore().set(source.id, source);
       }
-
-      const source = {
-        id: nextId('src'),
-        name: 'blank-page.pdf',
-        bytes,
-        size: bytes.length,
-        pageCount: 1
-      };
       const blankPage = {
         id: nextId('page'),
         sourceId: source.id,
@@ -256,8 +256,6 @@ export function createPdfEditorPageOperations({
         rotation: 0,
         sourceRotation: 0
       };
-      sources.push(source);
-      getSourceStore().set(source.id, source);
       const insertAt = Math.max(0, pages.findIndex(page => page.id === getCurrentId()) + 1);
       pages.splice(insertAt, 0, blankPage);
       setPages(pages);
@@ -284,7 +282,6 @@ export function createPdfEditorPageOperations({
     if (getActiveOperation() || !hasDocument()) return;
     const selectedComponent = getSelectedComponent();
     const textEdits = getTextEdits() || new Map();
-    const insertedImageStore = getInsertedImageStore() || new Map();
     if (selectedComponent) {
       if (selectedComponent.type === 'text') {
         const edit = ensureTextEditEntry(selectedComponent, selectedComponent.segment);
@@ -297,7 +294,7 @@ export function createPdfEditorPageOperations({
       } else if (selectedComponent.type === 'inserted-image') {
         const object = (getInsertedImages() || []).find(item => item.id === selectedComponent.key);
         if (object?.previewUrl) revokeObjectUrl(object.previewUrl);
-        insertedImageStore.delete(selectedComponent.key);
+        // Undo snapshots retain image bytes; history pruning releases unreferenced assets.
         setInsertedImages((getInsertedImages() || []).filter(item => item.id !== selectedComponent.key));
       } else if (selectedComponent.type === 'inserted-shape') {
         setInsertedShapes((getInsertedShapes() || []).filter(item => item.id !== selectedComponent.key));
@@ -329,7 +326,6 @@ export function createPdfEditorPageOperations({
       setInsertedTexts((getInsertedTexts() || []).filter(item => item.pageId !== id));
       for (const image of (getInsertedImages() || []).filter(item => item.pageId === id)) {
         if (image.previewUrl) revokeObjectUrl(image.previewUrl);
-        insertedImageStore.delete(image.id);
       }
       setInsertedImages((getInsertedImages() || []).filter(item => item.pageId !== id));
       setInsertedShapes((getInsertedShapes() || []).filter(item => item.pageId !== id));

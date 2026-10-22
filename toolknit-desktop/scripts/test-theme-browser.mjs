@@ -238,7 +238,9 @@ try {
   assert.equal(await color('#windowRadiusCustomInput'), 'rgb(255, 255, 255)');
   assert.equal(await color('#windowRadiusCustomInput', 'color'), 'rgb(25, 25, 25)');
   await radiusInput.focus();
-  assert.equal(await color('#windowRadiusCustomInput', 'outlineStyle'), 'solid');
+  assert.equal(await color('#windowRadiusCustomInput', 'outlineStyle'), 'none');
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('windowRadiusCustomInput')).getPropertyValue('--tk-field-height').trim() === '3px');
+  assert.equal(await color('#windowRadiusCustomInput', 'boxShadow'), 'none');
   await capture('light-settings-window-controls');
   await radiusInput.fill(oldRadiusValue);
   await radiusInput.press('Tab');
@@ -300,8 +302,10 @@ try {
   assert.equal(await color('#homeToolSearch', 'outlineStyle'), 'none', 'clipped input outline must not create vertical bars');
   assert.equal(await color('#homeToolSearch', 'boxShadow'), 'none');
   assert.equal(await color('#homeToolSearch', 'borderLeftWidth'), '0px');
-  assert.equal(await color('.home-search-field', 'borderTopColor'), 'rgb(139, 143, 149)');
-  assert.notEqual(await color('.home-search-field', 'boxShadow'), 'none', 'the outer rounded field retains a visible focus indicator');
+  assert.equal(await color('.home-search-field', 'borderTopColor'), 'rgba(0, 0, 0, 0)');
+  assert.equal(await color('.home-search-field', 'boxShadow'), 'none', 'focus stays inside the shared underline');
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.home-search-field')).getPropertyValue('--tk-field-height').trim() === '3px');
+  assert.equal(await color('#homeToolSearch'), 'rgba(0, 0, 0, 0)', 'the input must not cover its shell underline');
   assert.equal(await field.evaluate(n => getComputedStyle(n, '::after').display), 'none');
   const fieldAfter = await field.boundingBox();
   assert.equal(fieldAfter.width, fieldBefore.width);

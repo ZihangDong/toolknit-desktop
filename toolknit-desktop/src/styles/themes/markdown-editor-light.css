@@ -3,6 +3,8 @@ html[data-theme="light"] .md-tool-shell {
   --md-surface: #ffffff;
   --md-ink: #171717;
   --md-muted: #62666d;
+  --md-syntax-weight: 80%;
+  --md-syntax-tint: #000000;
   color-scheme: light;
   color: var(--md-ink);
   background: #ffffff !important;
@@ -20,7 +22,7 @@ html[data-theme="light"] .md-tool-shell .tool-page-v2-steps small { color: var(-
 html[data-theme="light"] .md-tool-shell .md-toolbar { background: #f7f8f9; }
 html[data-theme="light"] .md-tool-shell .md-pane-head { background: #f7f8f9; }
 html[data-theme="light"] .md-tool-shell .md-codemirror .cm-editor { background: #fff; color: #25272b; }
-html[data-theme="light"] .md-tool-shell .md-codemirror .cm-gutters { border-right: 1px solid #eceef0; background: #fafafa; color: #858991; }
+html[data-theme="light"] .md-tool-shell .md-codemirror .cm-gutters { border-right: 1px solid #eceef0; background: #fafafa; color: var(--md-muted); }
 html[data-theme="light"] .md-tool-shell .md-help-page { background: #fafafa; color: var(--md-ink); }
 html[data-theme="light"] .md-export-success-overlay {
   --md-dialog-bg: #ffffff;

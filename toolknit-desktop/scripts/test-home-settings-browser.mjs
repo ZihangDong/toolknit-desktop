@@ -19,6 +19,38 @@ const settle = () => page.waitForFunction(() => {
   const veil = document.querySelector('[data-tk-page-transition-veil]');
   return !veil || getComputedStyle(veil).visibility === 'hidden';
 });
+const newTools = ['clipboard-history', 'duplicate-file-cleanup', 'image-to-pdf', 'pdf-to-scan', 'pdf-to-word', 'quick-screenshot'];
+const visibleTools = () => page.locator('#homeToolGrid [data-home-tool]').evaluateAll(nodes => nodes.map(node => node.dataset.homeTool).sort());
+const checkNewFeatures = async () => {
+  const chip = page.locator('[data-home-category="new"]');
+  await chip.focus();
+  await page.keyboard.press('Enter');
+  assert.deepEqual(await visibleTools(), newTools);
+  assert.equal(await chip.getAttribute('aria-pressed'), 'true');
+  assert.equal(await chip.locator('svg').count(), 1, 'new category uses a rendered icon');
+  assert.equal(await page.locator('#homeToolLoadMore').evaluate(node => node.hidden), true);
+  await page.locator('#homeToolSearch').fill('PDF');
+  assert.deepEqual(await visibleTools(), ['image-to-pdf', 'pdf-to-scan', 'pdf-to-word']);
+  await page.locator('#homeToolSearch').fill('no-matching-tool-123');
+  assert.equal(await page.locator('#homeToolGrid .tool-result-empty').count(), 1);
+  await page.locator('#homeToolSearch').fill('');
+  for (const [category, ids] of [['pdf', ['image-to-pdf', 'pdf-to-scan', 'pdf-to-word']], ['creative', ['quick-screenshot']],
+    ['hardware', ['clipboard-history']], ['clean', ['duplicate-file-cleanup']]]) {
+    await page.locator(`[data-home-category="${category}"]`).click();
+    const actual = await visibleTools();
+    for (const id of ids) assert.ok(actual.includes(id), `${id} remains in ${category}`);
+  }
+  await chip.click();
+  await page.locator('#homeToolGrid [data-home-tool="pdf-to-word"]').click();
+  await page.waitForSelector('#pdfWordOverlay.visible');
+  await settle();
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.querySelector('#pdfWordOverlay').inert);
+  await settle();
+  assert.deepEqual(await visibleTools(), newTools, 'returning from a tool preserves the discovery filter');
+  await page.locator('[data-home-category="all"]').click();
+  assert.equal(await page.locator('#homeToolGrid .tool-result-card').count(), 12);
+};
 const checkSupport = async (background, trigger, exit = 'escape') => {
   await page.locator(trigger).click();
   await page.waitForFunction(() => getComputedStyle(document.querySelector('#donationOverlay')).opacity === '1');
@@ -45,6 +77,8 @@ try {
   await page.goto(server.resolvedUrls.local[0]);
   await page.waitForFunction(() => !document.documentElement.dataset.tkStartup && document.querySelector('#homeCustomTools') && !document.querySelector('.app').inert);
   assert.equal(await page.locator('#homeToolGrid .tool-result-card').count(), 12);
+  assert.deepEqual(await page.locator('#homeCategoryStrip [data-home-category]').evaluateAll(nodes => nodes.map(node => node.dataset.homeCategory)),
+    ['all', 'new', 'pdf', 'ppt', 'image', 'media', 'text', 'calc', 'creative', 'ai', 'hardware', 'developer', 'clean']);
   assert.equal(await page.locator('.content-section[data-category="creative"] [data-tool]').count(), 4);
   assert.equal(await page.locator('.content-section[data-category="ai"] [data-tool]').count(), 5);
   assert.equal(await page.locator('.content-section[data-category="creative"] [data-tool="quick-screenshot"]').count(), 1);
@@ -97,6 +131,7 @@ try {
     }
     await page.locator('#settingsBack').click();
     await settle();
+    await checkNewFeatures();
     await checkSupport('.app', '.app .home-v2-topbar [data-open-support]');
     const malian = page.locator('.home-provider-malian');
     const doufu = page.locator('.home-provider-doufu');
@@ -138,13 +173,18 @@ try {
       assert.equal(await page.locator('.app').evaluate(n => n.inert), false);
       assert.equal(await page.evaluate(() => document.activeElement.id), 'homeCustomTools');
     }
-    for (const width of [1440, 1024, 640]) {
+    await page.locator('[data-home-category="new"]').click();
+    for (const width of [1440, 1100, 1024, 720, 640]) {
       await page.setViewportSize({ width, height: width === 1440 ? 900 : 640 });
       await page.evaluate(() => document.fonts.ready);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${theme} ${width} no document overflow`);
+      assert.deepEqual(await visibleTools(), newTools);
+      assert.equal(await page.locator('#homeToolGrid .tool-result-card:visible').count(), 5);
+      await page.locator('#homeToolGrid').scrollIntoViewIfNeeded();
       await page.screenshot({ path: path.join(output, `home-${theme}-${width}.png`), fullPage: true });
     }
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.locator('[data-home-category="all"]').click();
     console.log(`PASS ${theme}: startup switch, persisted home batching, support layering/focus, centered reversible morph, AI navigation, responsive homepage`);
   }
   await page.locator('#homeV2Settings').click();
@@ -152,6 +192,8 @@ try {
   await page.locator('[data-lang="en"]').click();
   await page.locator('#settingsBack').click();
   await settle();
+  assert.equal(await page.locator('[data-i18n="home.categoryNew"]').innerText(), 'New in V3.2');
+  await checkNewFeatures();
   await page.locator('#homeCustomTools').click();
   assert.equal(await page.locator('#customToolsTitle').innerText(), 'Tools tailored to your work');
   await page.keyboard.press('Escape');

@@ -60,6 +60,9 @@ html[data-theme="light"] .image-crop-v2 :is(.image-crop-custom-ratio input, .ima
   background: #ffffff;
   color: #171717;
 }
+html[data-theme="light"] .image-crop-v2 .image-crop-field input::placeholder {
+  color: var(--image-crop-muted);
+}
 html[data-theme="light"] .image-crop-v2 :is(.image-crop-custom-ratio input, .image-crop-field input[type="text"], .image-crop-field select):focus {
   border-color: #171717;
   box-shadow: 0 0 0 3px rgba(17,17,17,.08);

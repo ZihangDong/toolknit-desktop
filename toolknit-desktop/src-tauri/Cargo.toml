@@ -33,7 +33,8 @@ tokio = { version = "1", features = ["rt-multi-thread", "process", "io-util", "m
 dirs = "5"
 opener = "0.7"
 url = "2"
-image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp", "gif"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp", "gif", "tiff"] }
+tiff = "=0.11.2"
 oxipng = { version = "10.2.1", default-features = false }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 sha2 = "0.10"

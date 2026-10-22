@@ -50,6 +50,7 @@
       "../NOTICE",
       "../LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md",
       "../LICENSES/Apache-2.0.txt",
+      "../LICENSES/Image-PDF-Dependencies.txt",
       "../src/core/opencc/LICENSE.txt",
       "../src/core/opencc/NOTICE.txt",
       "resources/qpdf/qpdf.exe",

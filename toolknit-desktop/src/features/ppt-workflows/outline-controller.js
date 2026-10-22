@@ -1,6 +1,7 @@
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { applyTranslations, getLang } from '../../i18n.js';
 import { tauriCorePromise } from '../../platform/tauri-runtime.js';
+import { enhanceToolSelects } from '../../tool-custom-select.js';
 import {
   buildPptOutlineMessages,
   createPptOutlineGuide,
@@ -79,6 +80,10 @@ export function createPptOutlineController({
   const successToDraft = byId('pptOutlineSuccessToDraft');
   const successOk = byId('pptOutlineSuccessOk');
   const lifecycle = createLifecycleScope({ onError: error => console.error('[PPT Outline] dispose error:', error) });
+  const selects = enhanceToolSelects([locale, deckType].filter(Boolean));
+  const refreshSelects = () => selects.forEach(select => select.refresh());
+  lifecycle.use(() => selects.forEach(select => select.dispose()));
+  refreshIcons();
   let session = null;
   const guard = createOperationGuard(() => session);
   let plasma = null;
@@ -156,6 +161,7 @@ export function createPptOutlineController({
     const current = String(prompt?.value || '').trim(); const replacePrompt = !current || current === lastPresetPrompt;
     if (prompt && replacePrompt) { prompt.value = preset.prompt; lastPresetPrompt = preset.prompt; } else lastPresetPrompt = '';
     if (slideCount) slideCount.value = String(preset.slideCount); if (deckType) deckType.value = preset.deckType; if (audience) audience.value = preset.audience; if (purpose) purpose.value = preset.purpose; if (tone) tone.value = preset.tone; if (style) style.value = preset.style;
+    refreshSelects();
     setPptAiPresetActive(presetButtons, 'pptOutlinePreset', key); notify(text(replacePrompt ? 'presetAppliedToast' : 'presetAppliedKeepPromptToast', { name: preset.name }));
   }
 
@@ -177,6 +183,8 @@ export function createPptOutlineController({
     guard.cancel(); busy = false; lastResult = null; lastOutputPath = '';
     if (clearPrompt) { if (prompt) prompt.value = ''; lastPresetPrompt = ''; setPptAiPresetActive(presetButtons, 'pptOutlinePreset', ''); if (audience) audience.value = ''; if (purpose) purpose.value = ''; if (tone) tone.value = ''; if (style) style.value = ''; if (slideCount) slideCount.value = '8'; if (deckType) deckType.value = 'auto'; }
     if (locale) locale.value = getLang() === 'en' ? 'en' : 'zh-CN'; empty.hidden = false; resultPanel.hidden = true; summary?.replaceChildren(); guide?.setAttribute('hidden', ''); guideBody?.replaceChildren(); meta?.replaceChildren(); factBank?.replaceChildren(); quality?.replaceChildren(); slideList?.replaceChildren(); if (generateButton) generateButton.disabled = false; setPptAiPresetDisabled(presetButtons, false); scrollTop?.classList.remove('visible'); setInteractiveLayer(successOverlay, false); setProgress(0, text('processing'), false);
+    selects.forEach(select => select.close());
+    refreshSelects();
   }
 
   function open() {
@@ -231,7 +239,7 @@ export function createPptOutlineController({
     }
   });
   bindPptChrome(lifecycle, overlay, { onClose: close, openSettings, openSupport, openExternalUrl, handleWindowAction });
-  lifecycle.use(onLangChange(() => { if (!isOpen(session)) return; applyTranslations(); if (lastResult) renderResult(lastResult); }));
+  lifecycle.use(onLangChange(() => { if (!isOpen(session)) return; applyTranslations(); refreshSelects(); if (lastResult) renderResult(lastResult); }));
 
   return { open, close, dispose() { close(); lifecycle.dispose(); }, get busy() { return busy; } };
 }

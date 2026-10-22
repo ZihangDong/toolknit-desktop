@@ -2,6 +2,7 @@
 // Copyright 2026 Zihang Dong.
 // Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
 import { toolTopbarMarkup } from '../../shared/tool-page-shell.js';
+import { uploadEmptyStateMarkup } from '../../shared/upload-empty-state.js';
 const tr = key => '<span data-i18n="home.pdfWord.' + key + '"></span>';
 const button = (id, icon, key, attrs = '', iconOnly = false) => '<button id="pdfWord' + id + '" type="button" class="pdf-word-button" data-i18n-title="home.pdfWord.' + key + '" data-i18n-aria-label="home.pdfWord.' + key + '" ' + attrs + '><i data-lucide="' + icon + '"></i>' + (iconOnly ? '' : tr(key)) + '</button>';
 const icon = (id, name, key, attrs = '') => button(id, name, key, attrs, true);
@@ -11,10 +12,7 @@ export default '<div id="pdfWordOverlay" class="pdf-word tool-page-v2-overlay" r
   + '<div class="pdf-word-toolbar"><h1 data-i18n="home.pdfWord.title"></h1><span id="pdfWordFileName" class="pdf-word-file"></span>'
   + button('Pick', 'folder-open', 'pick')
   + '<input id="pdfWordFileInput" type="file" accept="application/pdf,.pdf" hidden></div>'
-  + '<div id="pdfWordEmpty" class="pdf-word-empty"><div class="pdf-word-empty-icon"><i data-lucide="file-pen-line"></i></div>'
-  + '<span class="pdf-word-kicker">LOCAL PDF WORKSPACE</span><h2 data-i18n="home.pdfWord.empty"></h2><p data-i18n="home.pdfWord.emptyHint"></p>'
-  + button('EmptyPick', 'upload', 'pick', 'data-export-primary')
-  + '<small data-i18n="home.pdfWord.limit"></small></div>'
+  + uploadEmptyStateMarkup({ id: 'pdfWordEmpty', icon: 'file-pen-line', title: 'home.pdfWord.empty', description: 'home.pdfWord.emptyHint', pickId: 'pdfWordEmptyPick', pick: 'home.pdfWord.pick', limit: 'home.pdfWord.limit' })
   + '<div id="pdfWordLoaded" class="pdf-word-body" hidden><aside class="pdf-word-options">'
   + '<div class="pdf-word-settings"><label data-i18n="home.pdfWord.mode"></label><div class="pdf-word-segments" role="group" data-i18n-aria-label="home.pdfWord.mode">'
   + button('Local', 'hard-drive', 'local', 'data-word-mode="local" aria-pressed="true"')

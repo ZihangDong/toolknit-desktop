@@ -96,6 +96,7 @@ export function createSnapshotHistory({
     clear,
     commit,
     firstSnapshot() { return entries[0] || null; },
+    forEachSnapshot(visitor) { entries.forEach(visitor); },
     get index() { return index; },
     get length() { return entries.length; },
     hasUnsavedChanges,

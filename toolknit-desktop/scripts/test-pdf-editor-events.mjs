@@ -31,7 +31,9 @@ const toolItem = element();
 const fileInput = element();
 const appendInput = element();
 const imageInput = element();
+const editModalInput = element();
 const cta = element();
+const newDocumentBtn = element();
 const appendBtn = element();
 const editTextBtn = element();
 const selectComponentBtn = element();
@@ -53,7 +55,9 @@ const events = createPdfEditorEvents({
   fileInput,
   appendInput,
   imageInput,
+  editModalInput,
   cta,
+  newDocumentBtn,
   appendBtn,
   editTextBtn,
   selectComponentBtn,
@@ -84,9 +88,12 @@ const events = createPdfEditorEvents({
   setComponentMode: value => { componentMode = value; calls.push(`component:${value}`); },
   updateSelectedShapeProperty: (property, value) => calls.push(`shape:${property}:${value[0] ?? value}`),
   chooseMainFile: () => calls.push('choose-main'),
+  saveEditModal: () => calls.push('save-text'),
+  handleEditModalCancel: () => calls.push('cancel-text'),
+  insertBlankPage: async () => calls.push('create-blank'),
   chooseAppendFile: () => calls.push('choose-append'),
   loadMainFile: file => calls.push(`load:${file?.name || 'none'}`),
-  appendPdfBytes: (_bytes, name) => calls.push(`append:${name}`),
+  appendFile: file => calls.push(`append:${file.name}`),
   prepareInsertImage: file => calls.push(`image:${file?.name || 'none'}`),
   targetIds: () => ['page-1'],
   openOverlay: () => calls.push('open'),
@@ -119,6 +126,8 @@ assert.deepEqual(calls.slice(0, 10), [
 ]);
 selectComponentBtn.trigger('click');
 assert.equal(componentMode, true, 'Clicking selection again must keep it active');
+newDocumentBtn.trigger('click');
+assert.equal(calls.at(-1), 'create-blank');
 
 fileInput.files = [{ name: 'input.pdf' }];
 fileInput.trigger('change');
@@ -130,10 +139,24 @@ overlay.classList.add('visible');
 overlay.trigger('dragover', { preventDefault() {} });
 overlay.trigger('dragleave', { relatedTarget: null });
 assert.ok(calls.includes('load:input.pdf'));
+assert.ok(calls.includes('append:append.pdf'));
 assert.ok(calls.includes('image:image.png'));
 assert.ok(calls.includes('drag-show'));
 assert.ok(calls.includes('drag-hide'));
 assert.equal(canvasScroll.listenerCount('wheel'), 1);
+editModalInput.rows = 3;
+let prevented = false;
+editModalInput.trigger('keydown', { key: 'Enter', preventDefault() { prevented = true; } });
+assert.equal(prevented, false, 'Enter inserts a line break into inserted text');
+const beforeComposition = calls.length;
+editModalInput.trigger('keydown', { key: 'Enter', ctrlKey: true, isComposing: true, preventDefault() { throw new Error('IME confirmation must stay with the input'); } });
+assert.equal(calls.length, beforeComposition);
+editModalInput.trigger('keydown', { key: 'Enter', ctrlKey: true, preventDefault() {} });
+assert.equal(calls.at(-1), 'save-text', 'Ctrl+Enter submits multiline text');
+editModalInput.rows = 1; editModalInput.value = 'old\nnew'; editModalInput.trigger('input');
+assert.equal(editModalInput.value, 'old new', 'editing source lines preserves its single-line contract');
+editModalInput.trigger('keydown', { key: 'Enter', preventDefault() {} });
+assert.equal(calls.at(-1), 'save-text');
 
 events.dispose();
 console.log('PDF editor event binding checks passed');

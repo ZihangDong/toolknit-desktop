@@ -48,6 +48,7 @@ export function createPdfEditorEvents({
   moveDownBtn,
   duplicateBtn,
   blankPageBtn,
+  newDocumentBtn,
   selectAllBtn,
   invertSelectionBtn,
   deleteBtn,
@@ -103,7 +104,7 @@ export function createPdfEditorEvents({
   closeOverlay = () => {},
   closeSuccess = () => {},
   loadMainFile = async () => {},
-  appendPdfBytes = async () => {},
+  appendFile = async () => {},
   prepareInsertImage = async () => {},
   cancelInsertMode = () => {},
   showDropZone = () => {},
@@ -118,6 +119,7 @@ export function createPdfEditorEvents({
 
   add(back, 'click', closeOverlay);
   add(cta, 'click', chooseMainFile);
+  add(newDocumentBtn, 'click', () => { void insertBlankPage(); });
   add(appendBtn, 'click', chooseAppendFile);
   add(replaceBtn, 'click', chooseMainFile);
   add(editTextBtn, 'click', () => setEditMode(!getEditMode()));
@@ -147,13 +149,19 @@ export function createPdfEditorEvents({
   add(editModalCancel, 'click', handleEditModalCancel);
   add(editModalClose, 'click', handleEditModalCancel);
   add(editModalInput, 'keydown', event => {
-    if (event.key === 'Enter') {
+    if (event.isComposing || event.keyCode === 229) return;
+    if (event.key === 'Enter' && (editModalInput.rows <= 1 || event.ctrlKey || event.metaKey)) {
       event.preventDefault();
+      event.stopPropagation?.();
       saveEditModal();
     } else if (event.key === 'Escape') {
       event.preventDefault();
+      event.stopPropagation?.();
       handleEditModalCancel();
     }
+  });
+  add(editModalInput, 'input', () => {
+    if (editModalInput.rows <= 1) editModalInput.value = editModalInput.value.replace(/[\r\n\u2028\u2029]+/g, ' ');
   });
   add(rotateCcwBtn, 'click', () => rotateSelected(-90));
   add(rotateCwBtn, 'click', () => rotateSelected(90));
@@ -204,7 +212,7 @@ export function createPdfEditorEvents({
     }
     const file = files[0];
     if (!file) return;
-    void file.arrayBuffer().then(buffer => appendPdfBytes(new Uint8Array(buffer), file.name, file.size));
+    void appendFile(file);
   });
   add(imageInput, 'change', () => {
     const file = Array.from(imageInput.files || [])[0];

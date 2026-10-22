@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { createServer } from 'vite';
+import { preview } from 'vite';
 import { AI_TABLE_DEMO_DATA } from '../src/features/ai-table/prompts.js';
 
 const require = createRequire(process.env.TOOLKNIT_TEST_MODULES
@@ -101,8 +101,7 @@ async function chartsReady(page) {
 }
 
 await mkdir(output, { recursive: true });
-const server = await createServer({ logLevel: 'error', server: { host: '127.0.0.1', port: 0, open: false, hmr: false } });
-await server.listen();
+const server = await preview({ configFile: false, logLevel: 'error', preview: { host: '127.0.0.1', port: 0, open: false } });
 let browser;
 try {
   browser = await chromium.launch({ headless: true,
@@ -241,5 +240,5 @@ try {
   }
 } finally {
   await browser?.close();
-  await server.close();
+  await new Promise(resolve => server.httpServer.close(resolve));
 }

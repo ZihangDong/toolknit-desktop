@@ -2,6 +2,7 @@ import { createLifecycleScope } from '../app/tool-lifecycle.js';
 import { toolTopbarMarkup } from './tool-page-shell.js';
 import { onLangChange, t } from '../i18n.js';
 import '../styles/components/pdf-workbench.css';
+import { createPreviewViewport } from './preview-viewport.js';
 
 // Document ownership and export actions belong to the feature. This view owns only its canvases and listeners.
 export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels, stageId, ids = {}, getRotation = () => 0, transformPreview = null, sortable = false, onReorder = () => {}, onChange = () => {}, refreshIcons = () => {} }) {
@@ -58,7 +59,18 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
   const scroll = find('[data-wb-scroll]');
   const error = find('[data-wb-error]');
   let pages = [], currentIndex = 0, zoom = null, locked = false, generation = 0, previewRevision = 0;
-  let getPage = null, mainTask = null, observer = null, renderScope = null, frame = 0, wheelFrame = 0, wheelDelta = 0, renderedScale = 1, draggedIndex = -1;
+  let getPage = null, mainTask = null, observer = null, renderScope = null, frame = 0, renderedScale = 1, draggedIndex = -1;
+  const viewport = createPreviewViewport({ viewport: scroll, content: canvas, getScale: () => zoom || renderedScale,
+    enabled: () => !locked && pages.length > 0 && root.classList.contains('visible') && !canvas.hidden,
+    min: .15, max: 3, panPrimary: () => true,
+    setScale: value => {
+      const ratio = value / (zoom || renderedScale);
+      const rect = canvas.getBoundingClientRect();
+      canvas.style.width = rect.width * ratio + 'px'; canvas.style.height = rect.height * ratio + 'px';
+      zoom = value; update();
+      previewRevision++; try { mainTask?.cancel(); } catch {} mainTask = null;
+    }, render: renderMain });
+  scope.use(viewport.dispose);
   const thumbTasks = new Set();
   let queue = [], activeThumbs = 0;
 
@@ -147,6 +159,7 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
   }
   function select(index) {
     if (locked || !pages[index]) return;
+    viewport.reset();
     currentIndex = index; update(); scheduleMain();
   }
   function reorder(from, to) {
@@ -202,6 +215,7 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
   }
   function refreshPages(indices) {
     if (locked) return;
+    viewport.reset();
     for (const index of indices) {
       const thumbnail = pageStrip.children[index]?.querySelector('canvas');
       if (thumbnail) updateThumbRotation(index, thumbnail);
@@ -210,10 +224,10 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
     if (indices.includes(currentIndex)) scheduleMain();
   }
   function clear() {
+    viewport.reset();
     generation++; previewRevision++; queue = []; activeThumbs = 0;
     observer?.disconnect(); observer = null; renderScope?.dispose(); renderScope = null;
     if (frame) cancelAnimationFrame(frame); frame = 0;
-    if (wheelFrame) cancelAnimationFrame(wheelFrame); wheelFrame = 0; wheelDelta = 0;
     try { mainTask?.cancel(); } catch {} mainTask = null;
     for (const task of thumbTasks) { try { task.cancel(); } catch {} } thumbTasks.clear();
     body.scrollTop = 0;
@@ -284,32 +298,9 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
   }
   scope.event(shell, 'click', event => {
     const button = event.target.closest('[data-wb-zoom]'); if (!button || locked) return;
-    if (button.dataset.wbZoom === 'fit') zoom = null;
-    else zoom = Math.max(.15, Math.min(3, (zoom || renderedScale) * (button.dataset.wbZoom === 'in' ? 1.2 : 1 / 1.2)));
-    update(); scheduleMain();
+    if (button.dataset.wbZoom === 'fit') { viewport.reset(); zoom = null; update(); scheduleMain(); }
+    else viewport.zoomTo((zoom || renderedScale) * (button.dataset.wbZoom === 'in' ? 1.2 : 1 / 1.2));
   });
-  scope.event(scroll, 'wheel', event => {
-    if (locked || !pages.length || !root.classList.contains('visible')) return;
-    const delta = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaMode === 2 ? event.deltaY * scroll.clientHeight : event.deltaY;
-    if (!Number.isFinite(delta) || delta === 0) return;
-    event.preventDefault(); wheelDelta = Math.max(-2400, Math.min(2400, wheelDelta + delta));
-    if (wheelFrame) return;
-    wheelFrame = requestAnimationFrame(() => {
-      wheelFrame = 0; const change = wheelDelta; wheelDelta = 0;
-      const current = zoom || renderedScale;
-      const next = Math.max(0.15, Math.min(3, current * Math.max(0.72, Math.min(1.38, Math.exp(-change * 0.0015)))));
-      if (Math.abs(next - current) < 0.001) return;
-      const rect = scroll.getBoundingClientRect();
-      const anchorX = event.clientX >= rect.left && event.clientX <= rect.right ? event.clientX - rect.left + scroll.scrollLeft : scroll.clientWidth / 2 + scroll.scrollLeft;
-      const anchorY = event.clientY >= rect.top && event.clientY <= rect.bottom ? event.clientY - rect.top + scroll.scrollTop : scroll.clientHeight / 2 + scroll.scrollTop;
-      const ratio = next / current;
-      zoom = next; update(); scheduleMain();
-      window.requestAnimationFrame(() => {
-        scroll.scrollLeft = Math.max(0, anchorX * ratio - (event.clientX - rect.left));
-        scroll.scrollTop = Math.max(0, anchorY * ratio - (event.clientY - rect.top));
-      });
-    });
-  }, { passive: false });
   const resize = new ResizeObserver(scheduleMain); resize.observe(scroll); scope.use(() => resize.disconnect());
   scope.use(onLangChange(translate));
   translate(); refreshIcons();

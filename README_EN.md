@@ -8,7 +8,7 @@ V3.2 is in development and has not been released. V3.1 is the current desktop re
 
 **One toolbox for the little tasks scattered across your desktop.**
 
-72 desktop tools · 12 categories · Local file workflows · CLI / MCP
+73 desktop tools · 12 categories · Local file workflows · CLI / MCP
 
 <p align="center">
 <a href="https://toolknit.com/exe.html"><img src="assets/readme/v3.1/link-download-en.svg" alt="Download for Windows" width="192" height="40" /></a>
@@ -34,7 +34,7 @@ Most need no account. Supported file tasks run locally in the browser; AI and on
 
 ### Then bring it to your desktop
 
-For recurring file tasks, clipboard history and quick captures, [install the Windows app](https://toolknit.com/exe.html). The development catalog contains **72 desktop tools**; PDF to Word is part of V3.2 testing. Check Releases for the current installer.
+For recurring file tasks, clipboard history and quick captures, [install the Windows app](https://toolknit.com/exe.html). The development catalog contains **73 desktop tools**; PDF to Word and Images to PDF are part of V3.2 testing. Check Releases for the current installer.
 Set your output folder first, favorite frequently used tools, and install heavy models only when needed. Enable **one-click recording mode** to combine startup, clipboard monitoring and floating history, then capture with `Alt + Q`.
 See [Get started](#08--get-started) for installation requirements and instructions.
 
@@ -177,7 +177,7 @@ Existing usable runtimes are reused where supported. WPS / Microsoft Office is n
 **Desktop for visual interaction. CLI for batches. Agents for orchestration.**
 
 Suitable automated tasks are available through `@toolknit/cli` and **46 CLI / MCP capabilities**.
-Their scope differs from the desktop catalog; not all 72 desktop tools are callable from the CLI.
+Their scope differs from the desktop catalog; not all 73 desktop tools are callable from the CLI.
 
 ```powershell
 npm install --global @toolknit/cli
@@ -246,11 +246,11 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 ## Complete tool catalog
 
 <details>
-<summary><strong>Expand 72 desktop tools / 12 categories</strong></summary>
+<summary><strong>Expand 73 desktop tools / 12 categories</strong></summary>
 
 | Category | Count | Tools |
 | --- | ---: | --- |
-| PDF | 15 | Merge, split, page numbers, crop, export images, export Word, scanned-style PDF, text / Markdown extraction, editor, rotate, encrypt, decrypt, compress, text enhancement, Excel to PDF |
+| PDF | 16 | Merge, split, page numbers, crop, export images, export Word, scanned-style PDF, images to PDF, text / Markdown extraction, editor with blank PDF creation, rotate, encrypt, decrypt, compress, text enhancement, Excel to PDF |
 | PPT | 7 | Export PDF, export images, extract images, AI text extraction, compress, AI outline, AI draft / PPTX |
 | Image | 7 | Crop, smart color replacement, background removal, format conversion, compress, stitch, icon generator |
 | Audio | 4 | Format conversion, BPM measurement, trim, extract audio |

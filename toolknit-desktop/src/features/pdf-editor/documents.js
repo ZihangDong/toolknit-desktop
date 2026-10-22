@@ -1,16 +1,17 @@
 import { PdfEditorCancelledError } from './errors.js';
 import { pdfjsDocumentOptions, destroyPdfDocument } from '../../shared/pdfjs-options.js';
 
-export function createPdfEditorDocumentStore({ pdfWorkerUrl, getSources, isDisposed }) {
+export function createPdfEditorDocumentStore({ pdfWorkerUrl, getSources, isDisposed,
+  loadPdfjs = () => import('pdfjs-dist/legacy/build/pdf.mjs') }) {
   const documents = new Map();
   const pending = new Map();
   const loadingTasks = new Set();
   let generation = 0;
   let disposed = false;
 
-  async function createLoadingTask(bytes) {
-    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    if (disposed) throw new PdfEditorCancelledError();
+  async function createLoadingTask(bytes, requestGeneration) {
+    const pdfjsLib = await loadPdfjs();
+    if (disposed || isDisposed?.() || requestGeneration !== generation) throw new PdfEditorCancelledError();
     pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
     const loadingTask = pdfjsLib.getDocument(pdfjsDocumentOptions({ data: bytes.slice() }));
     loadingTasks.add(loadingTask);
@@ -19,15 +20,17 @@ export function createPdfEditorDocumentStore({ pdfWorkerUrl, getSources, isDispo
 
   async function loadBytes(bytes, { onLoadingTask } = {}) {
     const requestGeneration = generation;
-    const loadingTask = await createLoadingTask(bytes);
-    onLoadingTask?.(loadingTask);
+    const loadingTask = await createLoadingTask(bytes, requestGeneration);
     try {
+      onLoadingTask?.(loadingTask);
       const pdfDocument = await loadingTask.promise;
       if (disposed || requestGeneration !== generation || isDisposed?.()) {
-        try { await destroyPdfDocument(pdfDocument); } catch (_) {}
         throw new PdfEditorCancelledError();
       }
       return { document: pdfDocument, loadingTask };
+    } catch (error) {
+      try { await loadingTask.destroy(); } catch (_) {}
+      throw error;
     } finally {
       loadingTasks.delete(loadingTask);
     }
@@ -64,12 +67,12 @@ export function createPdfEditorDocumentStore({ pdfWorkerUrl, getSources, isDispo
   async function destroyAll() {
     generation += 1;
     const tasks = Array.from(loadingTasks);
+    for (const task of tasks) loadingTasks.delete(task);
+    const values = Array.from(documents.values());
+    documents.clear(); pending.clear();
     await Promise.allSettled(tasks.map(async task => {
       try { await task.destroy(); } catch (_) {}
     }));
-    loadingTasks.clear();
-    const values = Array.from(documents.values());
-    documents.clear();
     await Promise.allSettled(values.map(async pdfDocument => {
       try { await destroyPdfDocument(pdfDocument); } catch (_) {}
     }));

@@ -6,7 +6,13 @@ html[data-theme="light"] :is(
   .pdf-merge-v2.ppt-outline-v2,
   .pdf-merge-v2.ppt-render-v2,
   .pdf-merge-v2.ppt-images-v2,
-  .pdf-merge-v2.ppt-draft-v2
+  .pdf-merge-v2.ppt-draft-v2,
+  [data-ppt-text-portal],
+  [data-ppt-compress-portal],
+  [data-ppt-outline-portal],
+  [data-ppt-render-portal],
+  [data-ppt-images-portal],
+  .ppt-draft-portal
 ) {
   --ppt-light-bg: #f5f6f8;
   --ppt-light-surface: #ffffff;
@@ -205,7 +211,7 @@ html[data-theme="light"] :is(
   .pdf-merge-v2.ppt-images-v2,
   .pdf-merge-v2.ppt-draft-v2
 ) :is(input, select, textarea)::placeholder {
-  color: var(--ppt-light-quiet);
+  color: var(--ppt-light-muted);
 }
 
 html[data-theme="light"] :is(
@@ -222,6 +228,22 @@ html[data-theme="light"] :is(
 }
 
 /* The two AI forms share presets and a single-border input focus state. */
+html[data-theme="light"] .pdf-merge-v2:is(.ppt-outline-v2, .ppt-draft-v2) .ppt-outline-pill {
+  border-color: var(--ppt-light-border);
+  background: var(--ppt-light-surface-soft);
+  color: var(--ppt-light-muted);
+}
+
+html[data-theme="light"] .pdf-merge-v2:is(.ppt-outline-v2, .ppt-draft-v2) .ppt-outline-field .tool-custom-select-trigger {
+  border-color: var(--ppt-light-border-strong);
+  background: var(--ppt-light-surface);
+  color: var(--ppt-light-ink);
+}
+html[data-theme="light"] .pdf-merge-v2:is(.ppt-outline-v2, .ppt-draft-v2) .ppt-outline-field .tool-custom-select-trigger:hover:not(:disabled) {
+  border-color: var(--ppt-light-muted);
+  background: #f0f1f3;
+}
+
 html[data-theme="light"] .pdf-merge-v2:is(.ppt-outline-v2, .ppt-draft-v2) .ppt-ai-preset-card {
   border-color: var(--ppt-light-border);
   background: var(--ppt-light-surface);

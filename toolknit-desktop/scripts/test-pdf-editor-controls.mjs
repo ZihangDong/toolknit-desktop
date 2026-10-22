@@ -24,7 +24,7 @@ function button() {
 
 const refs = Object.fromEntries([
   'appendBtn', 'rotateCcwBtn', 'rotateCwBtn', 'moveUpBtn', 'moveDownBtn',
-  'duplicateBtn', 'blankPageBtn', 'deleteBtn', 'extractBtn', 'replaceBtn',
+  'duplicateBtn', 'blankPageBtn', 'newDocumentBtn', 'deleteBtn', 'extractBtn', 'replaceBtn',
   'exportBtn', 'editTextBtn', 'editTextSidebarBtn', 'insertTextBtn',
   'insertImageBtn', 'insertRectBtn', 'insertEllipseBtn', 'insertLineBtn',
   'selectComponentBtn', 'resetBtn', 'undoBtn', 'redoBtn', 'selectedCountEl',
@@ -77,6 +77,8 @@ controls.setHistoryState({ getBaseline: () => baseline, canUndo: () => undo, can
 controls.updateControls();
 assert.equal(refs.exportBtn.disabled, true);
 assert.equal(refs.insertTextBtn.disabled, true);
+assert.equal(refs.blankPageBtn.disabled, false, 'blank page can initialize an empty editor');
+assert.equal(refs.newDocumentBtn.disabled, false);
 assert.equal(refs.footerHint.textContent, 'home.pdfEditor.footerEmptyHint:');
 
 hasDocument = true;
@@ -99,6 +101,8 @@ assert.equal(refs.redoBtn.disabled, false);
 
 busy = { type: 'export' };
 controls.updateControls();
+assert.equal(refs.blankPageBtn.disabled, true);
+assert.equal(refs.newDocumentBtn.disabled, true);
 assert.equal(refs.exportBtn.disabled, true);
 assert.equal(refs.insertTextBtn.disabled, true);
 busy = null;

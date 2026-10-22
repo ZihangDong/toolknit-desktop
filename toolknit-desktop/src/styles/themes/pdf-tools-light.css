@@ -74,6 +74,10 @@ html[data-theme="light"] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2
   color: #686b72;
 }
 
+html[data-theme="light"] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-options-hint {
+  color: #65686f;
+}
+
 html[data-theme="light"] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-step > span {
   border-color: #d1d3d7;
   color: #686b72;

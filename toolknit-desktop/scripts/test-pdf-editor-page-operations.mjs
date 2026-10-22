@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { PDFDocument } from 'pdf-lib';
 import { createPdfEditorPageOperations } from '../src/features/pdf-editor/page-operations.js';
 
 let idCounter = 100;
@@ -165,7 +166,7 @@ assert.equal(commitCount, 3);
 selectedComponent = { type: 'inserted-image', key: 'image-1' };
 operations.deleteSelected();
 assert.equal(insertedImages.some(item => item.id === 'image-1'), false);
-assert.equal(imageStore.has('image-1'), false, 'deleting an image must release its backing bytes');
+assert.equal(imageStore.has('image-1'), true, 'undo history still owns the deleted image bytes');
 assert.equal(contentRefreshCount, 1, 'component deletion must refresh the content layer immediately');
 assert.equal(commitCount, 4);
 
@@ -190,5 +191,47 @@ assert.ok(buildCount >= 2);
 assert.equal(notices.length, 0);
 assert.ok(updateCount > 0);
 assert.equal(selectionAnchorId, currentId);
+
+const blankSource = pages[1].sourceId;
+for (let i = 0; i < 30; i++) await operations.insertBlankPage();
+assert.equal(sources.length, 2, 'same-sized blank pages share an immutable blank PDF source');
+assert.equal(new Set(pages.filter(page => page.sourceId === blankSource).map(page => page.id)).size, 31,
+  'shared source pages retain independent editable identities');
+let created = 0;
+await createPdfEditorPageOperations({ hasDocument: () => false, createBlankDocument: async () => created++ }).insertBlankPage();
+assert.equal(created, 1, 'the empty editor routes blank insertion through document creation');
+
+{
+  const gate = Promise.withResolvers(), reachedPage = Promise.withResolvers();
+  const page = { id: 'page', sourceId: 'source', pageIndex: 0 };
+  const pages = [page], operation = { cancelled: false };
+  let cleaned = 0;
+  const deferred = createPdfEditorPageOperations({ hasDocument: () => true,
+    getPages: () => pages, currentPage: () => page, getCurrentId: () => page.id,
+    getSources: () => [{ id: 'blank', blankSize: [595.28, 841.89] }],
+    beginOperation: () => operation,
+    assertOperation: op => { if (op.cancelled) throw new Error('cancelled'); },
+    getSourceDoc: async () => ({ async getPage() { reachedPage.resolve(); await gate.promise;
+      return { getViewport: () => ({ width: 595.28, height: 841.89 }), cleanup() { cleaned++; } }; } })
+  });
+  const pending = deferred.insertBlankPage(); await reachedPage.promise;
+  operation.cancelled = true; gate.resolve(); await pending;
+  assert.equal(pages.length, 1, 'late page geometry cannot insert a cached blank page after cancellation');
+  assert.equal(cleaned, 1);
+}
+
+{
+  const sources = [], pages = [{ id: 'small', sourceId: 'small-source', pageIndex: 0 }];
+  const small = createPdfEditorPageOperations({ hasDocument: () => true,
+    getPages: () => pages, getSources: () => sources, currentPage: () => pages[0],
+    getCurrentId: () => 'small', nextId,
+    getSourceDoc: async () => ({ async getPage() { return {
+      getViewport: () => ({ width: 40, height: 60 }), cleanup() {}
+    }; } })
+  });
+  await small.insertBlankPage();
+  const result = await PDFDocument.load(sources[0].bytes);
+  assert.deepEqual(result.getPage(0).getSize(), { width: 40, height: 60 }, 'small label pages must not be enlarged to one inch');
+}
 
 console.log('PDF editor page operation lifecycle checks passed');

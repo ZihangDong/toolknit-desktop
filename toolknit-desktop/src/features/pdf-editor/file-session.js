@@ -1,4 +1,4 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, PageSizes } from 'pdf-lib';
 import {
   PDF_EDITOR_LIMITS,
   assertPdfEditorFile,
@@ -7,6 +7,7 @@ import {
 } from '../../pdf-editor-core.js';
 import { loadTauriDialog } from '../../platform/tauri-runtime.js';
 import { PdfEditorCancelledError } from './errors.js';
+import { destroyPdfDocument } from '../../shared/pdfjs-options.js';
 
 /**
  * Owns PDF Editor file selection and document replacement/append sessions.
@@ -43,6 +44,7 @@ export function createPdfEditorFileSession({
   readBytes = async file => new Uint8Array(await file.arrayBuffer()),
   beginOperation = () => null,
   assertOperation = () => {},
+  beginCommit = () => {},
   endOperation = () => {},
   showProcess = () => {},
   setLocalizedProgress = () => {},
@@ -68,7 +70,7 @@ export function createPdfEditorFileSession({
     return getPages() || [];
   }
 
-  async function loadMainFile(file) {
+  async function loadMainFile(file, { blank = false } = {}) {
     if (isDisposed() || !file || getActiveOperation()) {
       if (getActiveOperation()) showToast(t('home.pdfEditor.busy'));
       return;
@@ -84,12 +86,20 @@ export function createPdfEditorFileSession({
     let stagedDocument = null;
     let documentCommitted = false;
     try {
-      const size = await fileSizeFor(file);
+      let size, bytes;
+      if (blank) {
+        const document = await PDFDocument.create();
+        document.addPage(PageSizes.A4);
+        bytes = await document.save({ useObjectStreams: true });
+        size = bytes.length;
+      } else size = await fileSizeFor(file);
       assertOperation(operation);
       assertPdfEditorFile(name, size);
       setLocalizedProgress(12, 'loadingDocument');
-      const bytes = await readBytes(file);
+      if (!bytes) bytes = await readBytes(file);
       assertOperation(operation);
+      assertPdfEditorFile(name, bytes?.byteLength);
+      size = bytes.byteLength;
       const documents = getDocuments();
       const loaded = await documents.loadBytes(bytes, {
         onLoadingTask: loadingTask => {
@@ -107,7 +117,8 @@ export function createPdfEditorFileSession({
         name,
         bytes,
         size,
-        pageCount: stagedDocument.numPages
+        pageCount: stagedDocument.numPages,
+        ...(blank ? { generated: true, blankSize: [...PageSizes.A4] } : {})
       };
       const stagedPages = Array.from({ length: stagedDocument.numPages }, (_, index) => ({
         id: `page-${++stagedIdCounter}`,
@@ -116,6 +127,7 @@ export function createPdfEditorFileSession({
         rotation: 0
       }));
 
+      beginCommit(operation);
       await resetDocument();
       assertOperation(operation);
       setIdCounter(stagedIdCounter);
@@ -138,12 +150,12 @@ export function createPdfEditorFileSession({
       resetEditorHistory();
       const firstSnapshot = editorHistoryFirstSnapshot();
       setBaselineSnapshot(cloneState(firstSnapshot));
-      setSavedSnapshot(cloneState(firstSnapshot));
+      setSavedSnapshot(blank ? null : cloneState(firstSnapshot));
       setLocalizedProgress(100, 'loadingDocument');
     } catch (error) {
       const cancelled = operation?.cancelled || error instanceof PdfEditorCancelledError;
       if (stagedDocument) {
-        try { await stagedDocument.destroy(); } catch (_) {}
+        try { await destroyPdfDocument(stagedDocument); } catch (_) {}
       }
       if (documentCommitted) await resetDocument();
       if (!isDisposed()) {
@@ -158,18 +170,26 @@ export function createPdfEditorFileSession({
     }
   }
 
-  async function appendPdfBytes(bytes, name, size) {
-    if (getActiveOperation()) {
-      showToast(t('home.pdfEditor.busy'));
+  async function appendSource(file, suppliedBytes) {
+    if (isDisposed() || !file || getActiveOperation() || !hasDocument()) {
+      if (getActiveOperation()) showToast(t('home.pdfEditor.busy'));
       return;
     }
     const operation = beginOperation('append');
     showProcess('appending', 8);
     try {
+      const name = String(file.name || '');
+      let size = suppliedBytes ? file.size : await fileSizeFor(file);
+      assertOperation(operation);
       assertPdfEditorFile(name, size);
       const appendSources = [...currentSources(), { name, size }];
       const totalBytes = appendSources.reduce((sum, source) => sum + Number(source.size || 0), 0);
-      assertPdfEditorMergeSelection(appendSources, totalBytes);
+      assertPdfEditorMergeSelection(appendSources.filter(source => !source.blankSize), totalBytes);
+      const bytes = suppliedBytes || await readBytes(file);
+      assertOperation(operation);
+      assertPdfEditorFile(name, bytes?.byteLength);
+      assertPdfEditorMergeSelection(appendSources.filter(source => !source.blankSize), totalBytes - size + bytes.byteLength);
+      size = bytes.byteLength;
       setLocalizedProgress(30, 'appending');
       const pdfDoc = await PDFDocument.load(bytes.slice());
       assertOperation(operation);
@@ -210,7 +230,7 @@ export function createPdfEditorFileSession({
       setLocalizedProgress(100, 'appending');
     } catch (error) {
       const cancelled = operation?.cancelled || error instanceof PdfEditorCancelledError;
-      showToast(
+      if (!isDisposed()) showToast(
         cancelled ? t('home.pdfEditor.cancelled') : messageForError(error, 'append'),
         cancelled ? 4500 : 9000
       );
@@ -225,6 +245,7 @@ export function createPdfEditorFileSession({
       return;
     }
     if (isTauri) {
+      const sourcesAtSelection = currentSources();
       void (async () => {
         try {
           const { open } = await loadTauriDialog();
@@ -232,7 +253,7 @@ export function createPdfEditorFileSession({
             multiple: false,
             filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
           });
-          if (!isDisposed() && typeof selected === 'string') {
+          if (!isDisposed() && sourcesAtSelection === currentSources() && typeof selected === 'string') {
             await loadMainFile({
               name: selected.split(/[\\/]/).pop() || selected,
               path: selected,
@@ -240,7 +261,7 @@ export function createPdfEditorFileSession({
             });
           }
         } catch (error) {
-          showToast(messageForError(error, 'load'));
+          if (!isDisposed() && sourcesAtSelection === currentSources()) showToast(messageForError(error, 'load'));
         }
       })();
       return;
@@ -261,6 +282,7 @@ export function createPdfEditorFileSession({
       return;
     }
     if (isTauri) {
+      const sourcesAtSelection = currentSources();
       void (async () => {
         try {
           const { open } = await loadTauriDialog();
@@ -268,14 +290,12 @@ export function createPdfEditorFileSession({
             multiple: false,
             filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
           });
-          if (!isDisposed() && typeof selected === 'string') {
+          if (!isDisposed() && sourcesAtSelection === currentSources() && hasDocument() && typeof selected === 'string') {
             const name = selected.split(/[\\/]/).pop() || selected;
-            const size = await fileSizeFor({ path: selected, name });
-            const bytes = await readBytes({ path: selected, name });
-            await appendPdfBytes(bytes, name, size);
+            await appendSource({ path: selected, name });
           }
         } catch (error) {
-          showToast(messageForError(error, 'append'));
+          if (!isDisposed() && sourcesAtSelection === currentSources()) showToast(messageForError(error, 'append'));
         }
       })();
       return;
@@ -287,7 +307,9 @@ export function createPdfEditorFileSession({
   }
 
   return {
-    appendPdfBytes,
+    createBlankDocument: () => loadMainFile({ name: 'untitled.pdf' }, { blank: true }),
+    appendPdfBytes: (bytes, name, size) => appendSource({ name, size }, bytes),
+    appendFile: file => appendSource(file),
     chooseAppendFile,
     chooseMainFile,
     loadMainFile

@@ -211,6 +211,13 @@ try {
     assert.equal(await page.locator('.pdf-word-region[aria-pressed="true"]').getAttribute('data-key'), probe.key);
     assert(await page.locator('#pdfWordEdit').isVisible()); assert(await page.locator('#pdfWordReplace').isHidden());
   }
+  const selectedRegion = await page.locator('.pdf-word-region[aria-pressed="true"]').elementHandle();
+  try {
+    for (const id of ['ZoomIn', 'ZoomFit']) {
+      await page.locator('#pdfWord' + id).click(); await page.waitForTimeout(500);
+      assert.equal(await selectedRegion.evaluate(el => el.isConnected), true, 'zoom repaint must preserve live editing targets');
+    }
+  } finally { await selectedRegion.dispose(); }
   await page.locator('#pdfWordStructure').click();
   assert.equal(await page.locator('#pdfWordStructure').innerText(), '开始编辑');
   assert.equal(await page.locator('.pdf-word-region').count(), 0);

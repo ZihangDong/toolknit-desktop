@@ -24,6 +24,7 @@ import '../../styles/components/toasts.css';
 import '../../styles/components/tool-custom-select.css';
 import '../../styles/components/page-transitions.css';
 import './quick-screenshot.css';
+import '../../styles/components/input-focus.css';
 import '../../styles/components/context-menu.css';
 
 const icons={Scan,ScanText,ScanLine,MousePointer2,Square,Circle,MoveUpRight,Pencil,Grid2x2,Type,Sparkles,Languages,Undo2,Redo2,Eye,Download,Pin,X,Check,Copy,FolderOpen,Minus,Plus,ChevronDown,Ellipsis,ArrowLeft,ArrowLeftRight,Trash2,ClipboardList,EyeOff,Pause,Play,Maximize2,Minimize2,Search,NotebookPen,StickyNote,AppWindow,GripVertical};

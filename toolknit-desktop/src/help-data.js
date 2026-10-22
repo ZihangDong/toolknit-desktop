@@ -2,6 +2,13 @@ import { getLang } from './i18n.js';
 import { HELP_CONTENT_EN } from './help-data-en.js';
 
 export const HELP_CONTENT = {
+  'image-to-pdf': {
+    title: '图像转 PDF',
+    html: `<div class="help-doc"><h2>图像转 PDF</h2><p>将多张图像合并为一个 PDF，也可生成带扫描质感的图像型 PDF。无需 AI、Office 或额外模型，图像在本地处理。</p>
+      <h3>添加与排序</h3><p>支持 JPG、PNG、BMP、WebP、GIF 和 TIFF。按文件名自然排序；继续添加只追加，不打乱已有顺序。拖动页面卡片的小柄或聚焦小柄后按上下方向键可排序，可删除或旋转当前页。GIF、动态 WebP 仅取第一帧，桌面端将多页 TIFF 展开为多页。无法读取的文件会单独列出，移除后再生成，避免漏页。</p>
+      <h3>页面与效果</h3><p>A4 可自动选择横纵向或指定方向，等比居中、不裁切，可选无边距、8 mm 或 15 mm。原图尺寸读取 PNG、JPEG、WebP、BMP、TIFF 的有效物理分辨率，缺少元数据时按 96 DPI。透明区域铺白色。高清、均衡、小文件三档可选，清晰度始终受原图限制。原彩和灰度外，扫描件增加轻微噪点、纸色和倾斜，仍保留整张图像。结果不包含 OCR 文字层。</p>
+      <h3>保存与限制</h3><p>桌面结果保存在统一输出目录的 Image_PDF 子目录，重名另存；可打开 PDF 或在文件夹中选中结果。最多 100 页；单个输入 64 MiB、合计 256 MiB，单图最多 4000 万像素、最长边 32768 像素，输出不超过 100 MiB。处理可取消，已有图像保留；最终保存阶段不再撤回。浏览器不支持 TIFF，结果通过浏览器下载。</p></div>`
+  },
   'pdf-to-word': {
     title: 'PDF 转 Word',
     html: `<div class="help-doc"><h2>PDF 转 Word</h2><p>将原生中文、英文及混排 PDF 转为可编辑 DOCX。本地模式无需密钥、Office、Python 或额外模型。原文件保留，结果存入统一输出目录的 PDF_Word 子目录，重名自动另存。</p><h3>使用方法</h3><ol class="help-steps"><li>选择一个 PDF，必要时输入打开密码</li><li>选择页面范围和保留原页或连续编辑</li><li>分析页面，查看原图上的结构标记与复杂区域提示</li><li>需要时调整当前页为单栏，或取消页眉页脚判定</li><li>导出 Word，打开文件或所在文件夹</li></ol><h3>可编辑范围</h3><p>支持段落、标题、页眉页脚、规则表格、选项网格与多栏正文。扫描页不执行 OCR；无法可靠重建的文字或图形会提示图片保留，必须确认后导出。图片区域无法像正文一样编辑。字体替换和不同 Office 软件可能改变换行与分页。</p><h3>AI 辅助</h3><p>使用设置中的图像模型。主动选择 AI 辅助并导出时，只发送局部可见图像及文字，优先当前页和疑难区域；每次导出最多请求 8 个区域、总预算 90 秒。已验证的区域在当前文件会话内可复用，结果显示已检查、未检查与复用数量。AI 只能建议结构，不能改写原文或跨越已有表格、分栏边界；未经复核的公式仍以原式图像导出。不支持图像、网络失败或无效响应会提示，可切换本地导出。预览结构不等于 Word 最终排版。</p><h3>限制与安全</h3><p>单文件最多 64 MiB，文档最多 300 页，每次最多选择 100 页，输出最多 64 MiB；图像和文字复杂度另有限制。关闭或取消会停止任务并清理未完成输出；若原子保存已经完成，已发布文件仍会保留。隐藏或被覆盖内容不应成为可编辑文字，复杂剪裁会保留可见图像；转换不恢复数字签名、活动表单、附件或外部链接。</p></div>`
@@ -41,12 +48,12 @@ export const HELP_CONTENT = {
     title: '功能概览',
     html: `<div class="help-doc">
       <h2>ToolKnit 功能概览</h2>
-      <p>ToolKnit 3.2 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前测试版本提供 12 个分类、72 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 46 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
+      <p>ToolKnit 3.2 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前测试版本提供 12 个分类、73 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 46 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
       <p>V3.1 已发布，包含 PDF 转扫描件、清理重复文件和快速截图；当前为 V3.2 开发版本，npm 包计划在 V3.2 发布时同步。</p>
 
       <h3>工具分类一览</h3>
       <div class="help-tool-grid">
-        <div class="help-tool-card"><div class="help-tool-card-name">PDF 工具</div><div class="help-tool-card-desc">编辑、合并、拆分、添加页码、转图像、转扫描件、本地文本转 Markdown、AI PDF 转 Markdown、旋转、加密、解密、压缩、文字增强与 Excel 转 PDF</div></div>
+        <div class="help-tool-card"><div class="help-tool-card-name">PDF 工具</div><div class="help-tool-card-desc">新建与编辑、合并、拆分、添加页码、转图像、转 Word、转扫描件、图像转 PDF、本地文本转 Markdown、AI PDF 转 Markdown、旋转、加密、解密、压缩、文字增强与 Excel 转 PDF</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">PPT 工具</div><div class="help-tool-card-desc">转 PDF / 图像、素材与文字提取、压缩、AI 大纲和黑白极简草稿</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">图像工具</div><div class="help-tool-card-desc">格式转换、图片压缩、长图拼接、图标生成器、图像与屏幕取色</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">音频工具</div><div class="help-tool-card-desc">格式转换、BPM 测速、剪辑、从视频提取音频</div></div>
@@ -449,7 +456,7 @@ export const HELP_CONTENT = {
 
       <h3>使用方法</h3>
       <ol class="help-steps">
-        <li>上传需要编辑的 PDF 文件</li>
+        <li>上传 PDF，或点击「新建空白 PDF」直接创建 A4 文档；无文件时侧栏的添加空白页也能创建文档</li>
         <li>点击「编辑文字」选中文字后修改内容，点击「插入文本 / 图像 / 形状」向页面添加内容</li>
         <li>点击「选择组件」后可单击选中任意文字、图像或形状，再拖动、缩放、旋转或删除</li>
         <li>使用底部或侧栏工具调整页面顺序、旋转、删除与提取</li>
@@ -458,7 +465,10 @@ export const HELP_CONTENT = {
 
       <h3>注意事项</h3>
       <ul>
-        <li>输入限制为 150 MB、500 页</li>
+        <li>输入限制为 150 MB、500 页；已有文档添加空白页时沿用当前页的可见尺寸</li>
+        <li>新建文档导出前属于未保存内容。撤销、重做、重置不会改动已经导出的文件；仅缩放或切换页面不会产生未保存修改</li>
+        <li>新增文字可保留多行和空行；Enter 换行，Ctrl+Enter 保存。编辑原 PDF 的文字行时仍按 Enter 保存。Escape 只关闭当前文字弹框</li>
+        <li>读取和生成阶段可取消；文档已开始替换或结果进入最终保存时，取消按钮暂时关闭，避免实际完成却提示取消</li>
         <li>文字替换依赖 PDF 自带的文字层，扫描件或纯图像型 PDF 不支持文字编辑</li>
         <li>文件全程在本地处理，不上传服务器</li>
       </ul>

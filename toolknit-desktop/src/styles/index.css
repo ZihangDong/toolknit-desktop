@@ -8,8 +8,11 @@
 @import url('./components/navigation.css');
 @import url('./components/vertical-stripe-surface.css');
 @import url('./components/tool-empty-hero.css');
+@import url('./components/upload-empty-state.css');
 @import url('./components/page-transitions.css');
 @import url('./components/forms.css');
+@import url('./components/input-focus.css');
+@import url('./components/preview-viewport.css');
 @import url('./components/progress.css');
 @import url('./components/window-controls.css');
 @import url('./components/dependency-overlays.css');
@@ -20,6 +23,7 @@
 @import url('./pages/audio.css');
 @import url('./pages/audio-convert.css');
 @import url('./components/format-support-dialogs.css');
+@import url('./components/file-result-dialog.css');
 @import url('./pages/pdf-common.css');
 @import url('./pages/ppt.css');
 @import url('./pages/transcription.css');

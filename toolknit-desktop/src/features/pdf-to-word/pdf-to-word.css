@@ -31,14 +31,7 @@ html[data-theme="light"] :is(.pdf-word, .pdf-word-modal, .pdf-word-process) { --
 .pdf-word-status.is-error, .pdf-word-empty-status.is-error { color:#ef8e86; }
 html[data-theme="light"] .pdf-word-status.is-error, html[data-theme="light"] .pdf-word-empty-status.is-error { color:#b43228; }
 .pdf-word-workspace { min-width:0; min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr) auto; background:var(--word-surface); position:relative; }
-.pdf-word-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; background:var(--word-surface); overflow:auto; }
-.pdf-word-empty-icon { width:68px; height:68px; display:grid; place-items:center; background:var(--word-text); color:var(--word-surface); border-radius:50%; margin-bottom:18px; flex-shrink:0; }
-.pdf-word-empty-icon svg { width:30px; height:30px; }
 .pdf-word-kicker { font-size:11px; font-weight:700; color:var(--word-muted); }
-.pdf-word-empty h2 { font-size:25px; line-height:1.35; margin:10px 0; }
-.pdf-word-empty p { margin:0 0 22px; color:var(--word-muted); font-size:13px; line-height:1.7; }
-.pdf-word-empty .pdf-word-button { border-radius:999px; padding:11px 22px; }
-.pdf-word-empty small { color:var(--word-muted); font-size:11px; margin-top:18px; }
 .pdf-word-empty-status { position:absolute; bottom:20px; left:24px; right:24px; margin:0; text-align:center; font-size:13px; pointer-events:none; }
 :is(.pdf-word, .pdf-word-modal) [hidden] { display:none; }
 .pdf-word-preview-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 14px; border-bottom:1px solid var(--word-border); min-width:0; }
@@ -89,5 +82,5 @@ html[data-theme="light"] .pdf-word-process canvas { --dup-curve-base:#e2e3e5; }
 #pdfWordProgressQuote.is-changing { opacity:0; }
 @media(max-width:1100px) { .pdf-word-body { grid-template-columns:230px minmax(0,1fr) 156px; } .pdf-word-body.pages-collapsed { grid-template-columns:230px minmax(0,1fr); } .pdf-word-options { padding:16px 12px; } .pdf-word-preview { padding:16px; } .pdf-word-pages { padding-inline:8px; } .pdf-word-zoom .pdf-word-button { min-width:30px; padding:6px; } }
 @media(max-width:760px) { .pdf-word-body, .pdf-word-body.pages-collapsed { grid-template-columns:190px minmax(0,1fr); position:relative; } .pdf-word-pages { position:absolute; right:0; top:0; bottom:0; width:150px; z-index:4; background:var(--word-surface); box-shadow:-4px 0 15px #0002; } .pdf-word-segments { grid-template-columns:1fr; } .pdf-word-preview-toolbar { flex-wrap:wrap; } .pdf-word-file { display:none; } .pdf-word-toolbar #pdfWordPick { margin-left:auto; } .pdf-word-toolbar { padding:12px; } .pdf-word-toolbar h1 { font-size:18px; } }
-@media(max-height:650px) { .pdf-word-empty-icon { width:52px; height:52px; margin-bottom:10px; } .pdf-word-empty h2 { font-size:22px; } .pdf-word-options { gap:9px; } .pdf-word-process canvas { width:150px; height:150px; } }
+@media(max-height:650px) { .pdf-word-options { gap:9px; } .pdf-word-process canvas { width:150px; height:150px; } }
 @media(prefers-reduced-motion:reduce) { .pdf-word-modal, .pdf-word-process, #pdfWordProgressQuote { transition:none; } }

@@ -4,6 +4,7 @@ import {
   buildPdfName
 } from '../../pdf-editor-core.js';
 import { PdfEditorCancelledError } from './errors.js';
+import { insertedTextLayout } from '../../core/pdf-inserted-text.js';
 
 export { PdfEditorCancelledError };
 
@@ -35,6 +36,7 @@ export function createPdfEditorExporter({
   getMainSourceName,
   beginOperation,
   assertOperation,
+  beginCommit,
   endOperation,
   showProcess,
   setLocalizedProgress,
@@ -145,6 +147,8 @@ export function createPdfEditorExporter({
           y: object.y,
           width: visualBox.width,
           height: visualBox.height,
+          textBox: visualBox,
+          lineHeight: insertedTextLayout(object).lineHeight,
           text: object.text,
           fontSize: object.fontSize,
           bold: object.bold,
@@ -230,6 +234,7 @@ export function createPdfEditorExporter({
       assertOperation(operation);
       const fileName = buildPdfName(getMainSourceName(), 'edited');
       setLocalizedProgress(88, 'exporting');
+      beginCommit(operation);
       const outputPath = await writePdf(bytes, outputDir, fileName);
       assertOperation(operation);
       setLocalizedProgress(100, 'exporting');
@@ -237,7 +242,7 @@ export function createPdfEditorExporter({
       showSuccess({ outputDir, outputPath, mode: 'export' }, operation.returnFocus);
     } catch (error) {
       const cancelled = operation.cancelled || error instanceof PdfEditorCancelledError;
-      showToast(
+      if (!isDisposed()) showToast(
         cancelled ? t('home.pdfEditor.cancelled') : messageForError(error, 'export'),
         cancelled ? 4500 : 9000
       );
@@ -264,13 +269,14 @@ export function createPdfEditorExporter({
       assertOperation(operation);
       const fileName = buildPdfName(getMainSourceName(), `extracted_${ids.length}`);
       setLocalizedProgress(88, 'extracting');
+      beginCommit(operation);
       const outputPath = await writePdf(bytes, outputDir, fileName);
       assertOperation(operation);
       setLocalizedProgress(100, 'extracting');
       showSuccess({ outputDir, outputPath, mode: 'extract', count: ids.length }, operation.returnFocus);
     } catch (error) {
       const cancelled = operation.cancelled || error instanceof PdfEditorCancelledError;
-      showToast(
+      if (!isDisposed()) showToast(
         cancelled ? t('home.pdfEditor.cancelled') : messageForError(error, 'extract'),
         cancelled ? 4500 : 9000
       );

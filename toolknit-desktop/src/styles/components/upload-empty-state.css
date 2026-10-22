@@ -1,0 +1,14 @@
+.tk-upload-empty { min-height:0; overflow:auto; background:#191919; }
+html[data-theme="light"] .tk-empty-hero.tk-upload-empty,
+html[data-theme="light"] .tk-empty-hero.tk-upload-empty:hover { background:#fff; }
+.tk-upload-empty h2 { margin:0; font-size:25px; line-height:1.35; color:var(--tk-empty-hero-ink); }
+.tk-upload-empty .tk-empty-hero-description { margin:10px 0 22px; }
+.tk-upload-empty-pick { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 22px; min-height:42px; flex-shrink:0; border:0; border-radius:999px; background:var(--tk-empty-hero-button-bg); color:var(--tk-empty-hero-button-ink); font:600 13px/1.5 var(--tk-font-ui,sans-serif); cursor:pointer; }
+.tk-upload-empty-pick svg { width:18px; height:18px; }
+.tk-upload-empty-pick:focus-visible { outline:2px solid var(--tk-empty-hero-button-ink); outline-offset:-4px; }
+.tk-upload-empty small { margin-top:18px; color:var(--tk-empty-hero-muted); font-size:11px; line-height:1.6; }
+@media (max-height:650px) {
+  .tk-upload-empty { justify-content:safe center; padding:18px; }
+  .tk-upload-empty .tk-empty-hero-icon { width:52px; height:52px; margin-bottom:10px; }
+  .tk-upload-empty h2 { font-size:22px; }
+}

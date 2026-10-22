@@ -1,0 +1,47 @@
+@property --tk-field-fill { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+@property --tk-field-height { syntax: '<length>'; inherits: false; initial-value: 1px; }
+
+:root { --tk-field-ink: #fff; --tk-field-idle: #727272; --tk-field-error: #f19b95; }
+html[data-theme="light"] { --tk-field-ink: #111; --tk-field-idle: #999; --tk-field-error: #a52b24; }
+
+/* A shared invariant across legacy and lazy-loaded themes: text-entry focus stays
+   inside the existing box. Important declarations here avoid specificity races
+   with feature focus rings; button, checkbox, range and editor canvases are excluded. */
+html body :is(input:not([type]),input[type="text"],input[type="search"],input[type="password"],input[type="email"],input[type="url"],input[type="tel"],input[type="number"],input[type="date"],input[type="time"],input[type="datetime-local"],input[type="month"],input[type="week"],textarea,.home-search-field,.clipboard-search,.shot-history-search,.image-stitch-number-field,.color-space-compare-hex-row,.color-space-compare-value-group,.ai-doc-style-number) {
+  --tk-field-accent: var(--tk-field-ink);
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+  background-image: linear-gradient(var(--tk-field-accent),var(--tk-field-accent)),linear-gradient(var(--tk-field-idle),var(--tk-field-idle)) !important;
+  background-size: var(--tk-field-fill) var(--tk-field-height),100% 1px !important;
+  background-position: left bottom !important;
+  background-origin: border-box !important;
+  background-clip: border-box !important;
+  background-repeat: no-repeat !important;
+  transition: --tk-field-fill 220ms ease, --tk-field-height 220ms ease !important;
+}
+html body :is(input:not([type]),input[type="text"],input[type="search"],input[type="password"],input[type="email"],input[type="url"],input[type="tel"],input[type="number"],input[type="date"],input[type="time"],input[type="datetime-local"],input[type="month"],input[type="week"],textarea):focus:not(:disabled) {
+  --tk-field-fill: 100%;
+  --tk-field-height: 3px;
+}
+html body :is(.home-search-field,.clipboard-search,.shot-history-search,.image-stitch-number-field,.color-space-compare-hex-row,.color-space-compare-value-group,.ai-doc-style-number):focus-within {
+  --tk-field-fill: 100%; --tk-field-height: 3px;
+}
+/* The shell owns the full underline, including the unit/action column. An
+   opaque child focus surface would cover the upper pixels of that underline. */
+html body :is(.home-search-field,.clipboard-search,.shot-history-search,.image-stitch-number-field,.color-space-compare-hex-row,.color-space-compare-value-group,.ai-doc-style-number) input {
+  background-image: none !important;
+  background-color: transparent !important;
+}
+.home-search-field::after { display:none; }
+html body :is(input,textarea)[aria-invalid="true"] { --tk-field-accent: var(--tk-field-error); --tk-field-idle: var(--tk-field-error); }
+html body :is(.color-space-compare-hex-row,.color-space-compare-value-group).is-invalid,
+html body :is(.home-search-field,.clipboard-search,.image-stitch-number-field,.ai-doc-style-number):has([aria-invalid="true"]) { --tk-field-accent:var(--tk-field-error); --tk-field-idle:var(--tk-field-error); }
+html body :is(input,textarea):disabled { --tk-field-fill: 0%; }
+html body :is(.shot-history-search,.shot-history-search input,input[readonly],textarea[readonly]) { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  html body :is(input:not([type]),input[type],textarea,.home-search-field,.clipboard-search,.shot-history-search,.image-stitch-number-field,.color-space-compare-hex-row,.color-space-compare-value-group,.ai-doc-style-number) { transition: none !important; }
+}
+@media (forced-colors: active) {
+  html body :is(input,textarea):focus-visible { outline: 2px solid Highlight !important; outline-offset: -3px !important; }
+}

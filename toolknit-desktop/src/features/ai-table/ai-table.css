@@ -242,6 +242,11 @@
   scrollbar-width: none;
 }
 
+.ai-table-v2 .ai-doc-chat-input::placeholder {
+  color: #a3a3a3;
+  opacity: 1;
+}
+
 .ai-table-v2 .ai-doc-chat-input::-webkit-scrollbar {
   width: 0;
   height: 0;

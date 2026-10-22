@@ -1,4 +1,6 @@
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
+import { createPreviewViewport } from '../../shared/preview-viewport.js';
+import { renderPdfPreviewCanvas } from '../../shared/pdf-preview-canvas.js';
 import { destroyPdfDocument } from '../../shared/pdfjs-options.js';
 import { calculatePdfPageNumberLayout } from '../../pdf-page-number-core.js';
 
@@ -83,8 +85,22 @@ export function createPdfPageNumberWorkspace({
   const currentPageIndex = () => model.pages.findIndex(page => page.id === model.currentId);
   const currentPage = () => model.pages.find(page => page.id === model.currentId) || null;
   const pageSource = page => model.sources.find(source => source.id === page?.sourceId) || null;
+  const viewport = createPreviewViewport({ viewport: canvasScroll, content: canvasWrap,
+    enabled: () => !isDisposed() && overlay?.classList.contains('visible') && !isLocked() && hasPages() && !dragState && !canvasWrap.hidden,
+    getScale: () => previewZoom, min: PREVIEW_MIN_ZOOM, max: PREVIEW_MAX_ZOOM,
+    setScale: value => {
+      const ratio = value / previewZoom; previewZoom = value; previewScale *= ratio;
+      previewRequest++; try { previewTask?.cancel(); } catch {} previewTask = null;
+      const rect = canvasWrap.getBoundingClientRect();
+      for (const element of [canvasWrap, previewCanvas]) {
+        element.style.width = rect.width * ratio + 'px'; element.style.height = rect.height * ratio + 'px';
+      }
+      renderLivePageNumber(); onStateChange();
+    }, render: renderPreview });
+  lifecycle.use(viewport.dispose);
 
   function notifyChange({ preview = false, list = false } = {}) {
+    if (preview) viewport.reset();
     if (list) renderPageList();
     onStateChange();
     if (preview) void renderPreview();
@@ -104,12 +120,11 @@ export function createPdfPageNumberWorkspace({
     pageList?.querySelectorAll('canvas').forEach(releaseCanvas);
   }
 
-  function cancelPreview() {
+  function cancelPreview({ clear = true } = {}) {
     previewRequest += 1;
     try { previewTask?.cancel(); } catch (_) {}
     previewTask = null;
-    releaseCanvas(previewCanvas);
-    if (canvasWrap) canvasWrap.hidden = true;
+    if (clear) { releaseCanvas(previewCanvas); if (canvasWrap) canvasWrap.hidden = true; }
   }
 
   function stopPointerDrag(commit = false) {
@@ -316,6 +331,7 @@ export function createPdfPageNumberWorkspace({
   function selectPageFromEvent(pageId, event) {
     const index = model.pages.findIndex(page => page.id === pageId);
     if (index < 0 || isLocked()) return;
+    viewport.reset();
     model.currentId = pageId;
     if (event.shiftKey && model.selectionAnchorId) {
       const anchor = model.pages.findIndex(page => page.id === model.selectionAnchorId);
@@ -340,6 +356,7 @@ export function createPdfPageNumberWorkspace({
 
   function togglePageSelection(pageId) {
     if (isLocked()) return;
+    viewport.reset();
     if (model.selectedIds.has(pageId)) model.selectedIds.delete(pageId);
     else model.selectedIds.add(pageId);
     model.currentId = pageId;
@@ -431,7 +448,7 @@ export function createPdfPageNumberWorkspace({
 
   async function renderPreview() {
     const page = currentPage();
-    cancelPreview();
+    cancelPreview({ clear: !page });
     const request = previewRequest;
     onStateChange();
     if (!page) {
@@ -452,17 +469,8 @@ export function createPdfPageNumberWorkspace({
       previewScale = Math.max(0.08, fitScale * previewZoom);
       previewPageWidth = base.width;
       previewPageHeight = base.height;
-      const cssViewport = proxy.getViewport({ scale: previewScale });
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const renderViewport = proxy.getViewport({ scale: previewScale * dpr });
-      previewCanvas.width = Math.max(1, Math.round(renderViewport.width));
-      previewCanvas.height = Math.max(1, Math.round(renderViewport.height));
-      previewCanvas.style.width = `${Math.round(cssViewport.width)}px`;
-      previewCanvas.style.height = `${Math.round(cssViewport.height)}px`;
-      canvasWrap.style.width = `${Math.round(cssViewport.width)}px`;
-      canvasWrap.style.height = `${Math.round(cssViewport.height)}px`;
-      canvasWrap.hidden = false;
-      task = proxy.render({ canvasContext: previewCanvas.getContext('2d'), viewport: renderViewport });
+      task = renderPdfPreviewCanvas({ proxy, canvas: previewCanvas, wrap: canvasWrap, scale: previewScale,
+        isCurrent: () => request === previewRequest && !isDisposed() });
       previewTask = task;
       await task.promise;
       if (request !== previewRequest || isDisposed()) return;
@@ -562,6 +570,7 @@ export function createPdfPageNumberWorkspace({
   }
 
   function selectAdjacent(delta) {
+    viewport.reset();
     if (isLocked()) return;
     const target = model.pages[currentPageIndex() + delta];
     if (!target) return;
@@ -573,11 +582,11 @@ export function createPdfPageNumberWorkspace({
   }
 
   function changeZoom(factor) {
-    previewZoom = Math.min(PREVIEW_MAX_ZOOM, Math.max(PREVIEW_MIN_ZOOM, previewZoom * factor));
-    notifyChange({ preview: true });
+    viewport.zoomTo(previewZoom * factor);
   }
 
   function fitPreview() {
+    viewport.reset();
     previewZoom = 1;
     notifyChange({ preview: true });
   }
@@ -637,6 +646,7 @@ export function createPdfPageNumberWorkspace({
   }
 
   async function resetDocument() {
+    viewport.reset();
     stopPointerDrag(false);
     releaseThumbs();
     cancelPreview();

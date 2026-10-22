@@ -1,4 +1,11 @@
 export const HELP_CONTENT_EN = {
+  'image-to-pdf': {
+    title: 'Images to PDF',
+    html: `<div class="help-doc"><h2>Images to PDF</h2><p>Combine images into one PDF, with optional scanned appearance. Processing stays local and requires no AI, Office or extra model.</p>
+      <h3>Inputs and order</h3><p>JPG, PNG, BMP, WebP, GIF and TIFF are supported. Inputs are naturally sorted by name; later additions append without changing your order. Drag the page handle, or focus it and press Up/Down, to reorder. Rotate or delete the selected page. GIF and animated WebP use the first frame; the desktop app expands multi-page TIFF. Unreadable files must be removed before export so pages are not silently omitted.</p>
+      <h3>Page size and appearance</h3><p>A4 follows image orientation or uses portrait or landscape. Images are centered without cropping, with 0, 8 or 15 mm margins. Original size reads valid physical resolution from PNG, JPEG, WebP, BMP and TIFF, falling back to 96 DPI. Transparent areas become white. Choose High, Balanced or Small quality; source resolution still limits detail. Color and Grayscale preserve the image; Scanned adds subtle paper color, noise and skew while retaining all edges. Results are image-only PDFs without OCR text.</p>
+      <h3>Output and limits</h3><p>Desktop output uses a unique name under Image_PDF in the configured output directory. Open the PDF or reveal it in its folder after saving. Limits: 100 pages, 64 MiB per input, 256 MiB total, 40 million pixels per image, 32768 pixels per side, and 100 MiB output. Cancellation retains previously added images; final publication cannot be reversed. Browsers do not decode TIFF and export through browser downloads.</p></div>`
+  },
   'pdf-to-word': {
     title: 'PDF to Word',
     html: `<div class="help-doc"><h2>PDF to Word</h2><p>Convert native Chinese, English and mixed PDFs into editable DOCX locally. No Python, Office or additional model is required. Originals are unchanged; desktop results use unique filenames in the PDF_Word output folder.</p><h3>Workflow</h3><p>Choose a PDF, enter its password if needed, select pages and layout, then analyze. Review structural overlays and warnings, optionally adjust a page to a single column or retain headers as body content, and export.</p><h3>Scope</h3><p>Paragraphs, headings, headers, footers, ruled tables, answer grids and columns are reconstructed. Scanned pages are not OCRed. Complex content requires confirmation before being retained as non-editable images. Font availability and Office applications can affect wrapping and pagination.</p><h3>Optional AI</h3><p>Selecting AI assisted export sends visible region crops and text to your configured image-capable service, prioritizing the current page and uncertain regions. Each export permits up to 8 requests within a 90-second budget. Validated regions can be reused during the current file session; results show reviewed, remaining and reused counts. AI cannot rewrite source text or cross existing table and column boundaries. Unreviewed formula proposals retain the original formula images. Errors are visible and local export remains available. The structure preview is not a Word renderer.</p><h3>Limits</h3><p>One PDF up to 64 MiB and 300 source pages; up to 100 selected pages and 64 MiB output per conversion. Additional image and text complexity limits apply. Cancellation or closing stops work and removes incomplete output; a file already atomically published remains. Complex clipping is retained as visible images. Signatures, active forms, attachments and external links are not preserved as active objects.</p></div>`
@@ -38,12 +45,12 @@ export const HELP_CONTENT_EN = {
     title: 'Overview',
     html: `<div class="help-doc">
       <h2>ToolKnit Overview</h2>
-      <p>ToolKnit 3.2 is a <strong>local-first</strong> Windows toolbox with 72 desktop tools in the current test catalog across 12 categories and 46 capabilities exposed to IDE Agents through CLI / MCP. Basic file processing stays local; AI tools send the necessary content to your selected provider only when explicitly invoked.</p>
+      <p>ToolKnit 3.2 is a <strong>local-first</strong> Windows toolbox with 73 desktop tools in the current test catalog across 12 categories and 46 capabilities exposed to IDE Agents through CLI / MCP. Basic file processing stays local; AI tools send the necessary content to your selected provider only when explicitly invoked.</p>
       <p>V3.1 has been released with PDF to Scanned PDF, Clean Duplicate Files and Quick Screenshot. This is the V3.2 development version; npm publication is planned with V3.2.</p>
 
       <h3>Tool Categories</h3>
       <div class="help-tool-grid">
-        <div class="help-tool-card"><div class="help-tool-card-name">PDF Tools</div><div class="help-tool-card-desc">Edit, merge, split, add page numbers, export images, create scanned PDFs, extract text to Markdown locally, AI PDF to Markdown, rotate, encrypt, decrypt, compress, enhance text, and convert Excel to PDF</div></div>
+        <div class="help-tool-card"><div class="help-tool-card-name">PDF Tools</div><div class="help-tool-card-desc">Create and edit, merge, split, add page numbers, export images or Word, create scanned PDFs, images to PDF, local text to Markdown, AI PDF to Markdown, rotate, encrypt, decrypt, compress, enhance text, and Excel to PDF</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">PPT Tools</div><div class="help-tool-card-desc">PDF/image export, asset and text extraction, compression, AI outlines and monochrome drafts</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">Image Tools</div><div class="help-tool-card-desc">Conversion, compression, stitching, icon generation, image and screen color picking</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">Audio Tools</div><div class="help-tool-card-desc">Format conversion, BPM detection, clipping, video audio extraction</div></div>
@@ -422,7 +429,7 @@ export const HELP_CONTENT_EN = {
 
       <h3>How to Use</h3>
       <ol class="help-steps">
-        <li>Upload the PDF file you want to edit</li>
+        <li>Upload a PDF or choose "New blank PDF" to create an A4 document. The sidebar blank-page action also works without an uploaded file</li>
         <li>Click "Edit Text" and select text to modify; click "Insert Text / Image / Shape" to add content</li>
         <li>Click "Select Component", then click any text, image or shape to move, resize, rotate or delete it</li>
         <li>Use the page tools to reorder, rotate, delete and extract pages</li>
@@ -431,7 +438,10 @@ export const HELP_CONTENT_EN = {
 
       <h3>Notes</h3>
       <ul>
-        <li>Limits: 150 MB input, 500 pages</li>
+        <li>Limits: 150 MB input, 500 pages. Added blank pages inherit the current page's visible dimensions</li>
+        <li>A new document is unsaved until export. Undo, redo and reset do not change files already exported. Zooming or changing pages alone does not create unsaved changes</li>
+        <li>Inserted text preserves line breaks and blank lines. Enter adds a line; Ctrl+Enter saves. Existing PDF text lines still use Enter to save. Escape closes only the current text dialog</li>
+        <li>Reading and generation can be cancelled. Cancellation is disabled during document replacement and final saving so the reported result matches the actual outcome</li>
         <li>Text replacement requires an embedded text layer; scanned or image-only PDFs are not supported</li>
         <li>Files are processed locally and never uploaded</li>
       </ul>

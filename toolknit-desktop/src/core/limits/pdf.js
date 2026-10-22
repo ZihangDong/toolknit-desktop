@@ -4,6 +4,7 @@ export const PDF_EDITOR_LIMITS = Object.freeze({
   maxInputBytes: 150 * MEBIBYTE,
   maxPages: 500,
   maxMergeFiles: 25,
+  maxImageAssetBytes: 128 * MEBIBYTE,
   maxMergeTotalBytes: 150 * MEBIBYTE
 });
 
@@ -45,6 +46,18 @@ export const PDF_SCAN_LIMITS = Object.freeze({
   pages: 100,
   pixels: 16_000_000,
   side: 8_192,
+  timeoutMs: 10 * 60 * 1000
+});
+
+export const IMAGE_PDF_LIMITS = Object.freeze({
+  inputBytes: 64 * MEBIBYTE,
+  totalInputBytes: 256 * MEBIBYTE,
+  pages: 100,
+  inputPixels: 40_000_000,
+  inputSide: 32_768,
+  renderPixels: 16_000_000,
+  renderSide: 8_192,
+  outputBytes: 100 * MEBIBYTE,
   timeoutMs: 10 * 60 * 1000
 });
 

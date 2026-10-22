@@ -252,7 +252,7 @@ html[data-theme="light"] .image-stitch-v2 :is(.image-stitch-number-field:focus-w
 }
 
 html[data-theme="light"] .image-stitch-v2 .image-stitch-name-setting input::placeholder {
-  color: #9a9da3;
+  color: #656970;
 }
 
 html[data-theme="light"] .image-stitch-v2 :is(.image-stitch-number-field em, .image-stitch-alpha-setting em) {

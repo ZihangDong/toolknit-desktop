@@ -1,5 +1,6 @@
 /* Feature-owned layout. The document remains a white reading surface in both themes. */
 .md-tool-shell { --md-rail-width: 300px; --md-line: rgba(255,255,255,.13); --md-surface: rgba(12,13,14,.9); --md-ink: #f4f5f6; --md-muted: #a6a8ac; height: 100%; color: var(--md-ink); }
+.md-tool-shell { --md-syntax-weight: 28%; --md-syntax-tint: #ffffff; }
 /* The legacy shell enforces flex and fixed columns at narrow widths. Keep this
    document workspace a bounded grid in every viewport. */
 .md-tool-shell .md-tool-main { display: grid !important; grid-template-columns: minmax(0,var(--md-rail-width)) minmax(0,1fr) !important; grid-template-rows: minmax(0,1fr); gap: 18px; transition: grid-template-columns 280ms ease, gap 280ms ease; }

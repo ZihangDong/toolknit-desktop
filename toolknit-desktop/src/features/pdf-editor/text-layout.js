@@ -1,4 +1,4 @@
-import { estimateInsertedTextWidth } from '../../pdf-editor-core.js';
+import { estimateInsertedTextWidth, insertedTextLayout } from '../../core/pdf-inserted-text.js';
 
 function cloneBox(box) {
   return box ? { ...box } : box;
@@ -126,6 +126,16 @@ export function rectToViewport(view, rect) {
   return { left: minX, top: minY, width: maxX - minX, height: maxY - minY };
 }
 
+/** Position an unrotated DOM box at the PDF box center, then rotate its contents. */
+export function insertedComponentViewport(view, box, rotation = 0) {
+  const bounds = rectToViewport(view, box);
+  const origin = view.convertToViewportPoint(0, 0), unit = view.convertToViewportPoint(1, 0);
+  const scale = Math.hypot(unit[0] - origin[0], unit[1] - origin[1]);
+  const width = Math.max(1, box.width * scale), height = Math.max(1, box.height * scale);
+  return { left: bounds.left + (bounds.width - width) / 2, top: bounds.top + (bounds.height - height) / 2,
+    width, height, rotation: (Number(view.rotation) || 0) + (Number(rotation) || 0) };
+}
+
 export function sourceTextBox(edit, segment) {
   return edit?.baseSegment?.sourceBox
     || edit?.baseSegment?.box
@@ -149,16 +159,5 @@ export function editedTextVisualBox(edit, segment) {
 }
 
 export function insertedTextVisualBox(object) {
-  const fontSize = Math.max(1, Number(object?.fontSize) || 16);
-  const width = Math.max(
-    1,
-    Number(object?.visualTextWidth) || Number(object?.width) || estimateInsertedTextWidth(object?.text, fontSize)
-  );
-  const height = Math.max(1, Number(object?.height) || fontSize * 1.15, Number(object?.visualTextHeight) || 0);
-  return {
-    x: Number(object?.x) || 0,
-    y: (Number(object?.y) || 0) - height * 0.2,
-    width,
-    height
-  };
+  return insertedTextLayout(object).box;
 }

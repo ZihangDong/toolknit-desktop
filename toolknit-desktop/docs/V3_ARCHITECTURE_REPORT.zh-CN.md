@@ -1,5 +1,19 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-10-21 预览与表单增量：新增共享 `preview-viewport.js`、`pdf-preview-canvas.js` 与 `upload-empty-state.js`，分别负责画布输入、私有画布提交和静态上传空状态；输入底线与成功弹框主题适配位于 components。业务渲染、取消、输出仍属于 feature；没有增加 Tauri command、storage key 或 CLI/MCP 能力，73 个桌面工具和 12 个分类保持不变。新增共享 CSS class 契约与验证入口见 [UI 统一报告](V32_PDF_UI_UNIFICATION_20261021.zh-CN.md)。
+
+> 2026-10-21 图像 PDF / 空白编辑器增量：新增 `features/image-to-pdf/`，以 Worker 持有像素处理和 PDF 生成；`core/pdf-scan.js`、`shared/scanned-pdf-writer.js` 共享扫描算法与写出，旧 PDF 扫描入口保留转发。原生 `image/image_pdf.rs` 提供主窗口限定的检查、受限解码和结果打开三个命令，TIFF 采用 MIT 的 `tiff 0.11.2` 与已有 image crate。当前 73 工具 / 12 分类 / PDF 16 项，Tauri 154 个实现 / 153 个名称，CLI/MCP 46 不变。新功能交叉分类为六项。
+>
+> PDF 编辑器创建走已有文件会话的暂存提交与历史链路。删除图片不再提前销毁撤销所需字节，`state.js` 按当前、历史、基线与保存状态引用清理；共享历史增加只读遍历入口。图片异步读取以 revision 隔离，初始对象放置考虑 CropBox 边界。过程方案及最终证据持续记录于 [本轮实施与验证方案](V32_PDF_CREATION_PLAN_20261021.zh-CN.md)，下方既有发布回归数字为之前快照。
+>
+> 多行新增文字的公共几何在 `core/pdf-inserted-text.js`，旋转 DOM 映射由编辑器 text-layout 持有；缩放将局部中心位移转回 PDF 坐标以固定对侧节点。文件会话统一追加读取及迟到结果隔离，operation 的 beginCommit 划定文档替换和保存的不可取消阶段。完整发布 106 项、安全 1553 项、Rust 260 passed / 11 ignored 通过；25 格式矩阵与真实 Windows 发布另行验证。完整范围、持续压力结果及安装环境限制见 [验收报告](V32_PDF_CREATION_ACCEPTANCE_20261021.zh-CN.md)。
+
+> 2026-10-21 历史外拖修补：`features/quick-screenshot/history-drag.js` 从指针按下时固定记录、阻止实时刷新并失效查询，窗口级 move/up 与捕获丢失统一收尾；原生 `drag {collection,id}`、完整正文/原图读取及排序契约不变。双主题抓取光标归截图 feature CSS，没有新命令、事件、存储或权限。对照验证、测试证据与目标应用验收限制见 [历史改进报告](V3_2_HISTORY_IMPROVEMENT.zh-CN.md)。
+
+> 2026-10-21 首页发现增量：`app/home-explorer-runtime.js` 持有 V3.1/V3.2 五项工具的“新功能”交叉筛选，`index.html` 新增 `data-home-category="new"`，双语键为 `home.categoryNew`。复用原工具入口、卡片、搜索、分页与主题；原 72 工具 / 12 业务分类不变，没有新增原生命令、事件或存储。验证入口为 `test-app-runtimes.mjs`、`test-home-settings-browser.mjs` 及架构门禁。
+>
+> 本轮验证：完整发布回归 104 项脚本（含架构、构建、安全 1516 项与 CLI/MCP）通过，Rust 251 passed / 9 ignored。Edge 浏览器通过双主题、中英文、键盘选择、分类内搜索、空结果、原分类保留、工具打开/返回及 640–1440 宽度检查，五张卡片可见，无未捕获页面异常；截图与日志保留在忽略目录 `tmp/home-settings-browser/` 和 `tmp/home-new-features-*`。未重新生成安装包，安装后 WebView2 验收仍与浏览器检查区分。
+
 > 2026-10-20 PDF图像AI修补：`core/ai-batch.js`持有同页有界分批、短编号可逆映射、v3批量信封与逐区域v2验证；`ai-runtime.js`持有整数超时、最多两路网络并发、原子应用、LRU响应缓存和独立会话进度。`processor.js`工作台仅请求布局分析，公式内部协议保留；Writer按原坐标输出AI推断的无框表格。共享JS/Rust传输分开8 MiB请求预算与2 MiB响应预算，无新增命令、事件、存储或依赖。真实网络、原生函数、Office输出与限制见[AI专项实验记录](PDF_WORD_AI_SOAK_2026-10-20.zh-CN.md)。
 
 > 2026-10-20 PDF编辑与A4修补：feature CSS固定文字优先的命中层级；core/page-plan.js负责A4缩放、安全内容带分页及拆分来源书签，docx-continuous.js复用该规划处理宽表格/图片。编辑入口沿用原DOM契约并同步状态文案，无新增原生命令、事件、存储或依赖。两个真实样本Office渲染及12组浏览器回归证据见[工作台维护记录](PDF_WORD_WORKBENCH.zh-CN.md)。

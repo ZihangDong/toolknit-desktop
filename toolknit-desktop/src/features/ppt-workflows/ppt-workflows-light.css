@@ -18,8 +18,32 @@ html[data-theme="light"] :is(.ppt-text-v2, .ppt-compress-v2) :is(.ppt-images-sum
   color: var(--ppt-workflow-ink);
 }
 
-html[data-theme="light"] :is(.ppt-text-v2, .ppt-compress-v2) :is(.ppt-images-summary, .ppt-compress-stat span, .ppt-compress-stat em, .ppt-text-item span, .ppt-text-item p) {
+html[data-theme="light"] :is(.ppt-text-v2, .ppt-compress-v2) :is(.ppt-images-summary, .ppt-compress-stat span, .ppt-compress-stat em) {
   color: var(--ppt-workflow-muted);
+}
+
+html[data-theme="light"] .ppt-text-v2 :is(.ppt-text-item, .ppt-text-detail) {
+  border-color: var(--ppt-workflow-border);
+  color: var(--ppt-workflow-ink);
+}
+
+html[data-theme="light"] .ppt-text-v2 :is(.ppt-text-detail-block h4, .ppt-text-detail-text, .ppt-text-detail-line) {
+  color: var(--ppt-workflow-ink);
+}
+
+html[data-theme="light"] .ppt-text-v2 :is(.ppt-text-preview, .ppt-text-meta, .ppt-text-chevron) {
+  color: var(--ppt-workflow-muted);
+}
+
+html[data-theme="light"] .ppt-text-v2 :is(.ppt-text-page, .ppt-text-meta span:first-child) {
+  border-color: var(--ppt-workflow-border);
+  background: #f5f6f8;
+  color: var(--ppt-workflow-ink);
+}
+
+html[data-theme="light"] .ppt-text-v2 .ppt-text-item-toggle:hover .ppt-text-page {
+  border-color: #cfd2d8;
+  background: #e9ebef;
 }
 
 html[data-theme="light"] :is(.ppt-text-v2, .ppt-compress-v2) :is(.ppt-text-list, .ppt-compress-stats) {
@@ -110,3 +134,25 @@ html[data-theme="light"] .ppt-outline-v2 .ppt-outline-guide-section.is-warning {
   border-color: #ead6a6;
   background: #fffaf0;
 }
+
+html[data-theme="light"] .ppt-outline-v2 :is(.ppt-images-summary, .ppt-outline-fact-group, .ppt-outline-quality-list > div, .ppt-outline-slide) {
+  border-color: var(--ppt-workflow-border);
+  background: var(--ppt-workflow-panel);
+  color: var(--ppt-workflow-ink);
+}
+
+html[data-theme="light"] .ppt-outline-v2 :is(.ppt-images-summary strong, .ppt-outline-fact-group strong, .ppt-outline-quality-list strong, .ppt-outline-quality-score, .ppt-outline-slide-content strong) {
+  color: var(--ppt-workflow-ink);
+}
+
+html[data-theme="light"] .ppt-outline-v2 :is(.ppt-images-summary > span, .ppt-outline-fact-group div, .ppt-outline-quality-list span, .ppt-outline-slide-content p, .ppt-outline-slide-content em, .ppt-outline-guide-eyebrow) {
+  color: var(--ppt-workflow-muted);
+}
+
+html[data-theme="light"] .ppt-outline-v2 :is(.ppt-outline-fact-group span, .ppt-outline-slide-tags span, .ppt-outline-slide-number) {
+  border-color: var(--ppt-workflow-border);
+  background: #f5f6f8;
+  color: var(--ppt-workflow-muted);
+}
+
+html[data-theme="light"] .ppt-outline-v2 .ppt-outline-slide-number { color: var(--ppt-workflow-ink); }

@@ -9,6 +9,10 @@ const { chromium } = require('playwright');
 const browser = await chromium.launch({ headless: true,
   ...(process.env.TOOLKNIT_TEST_BROWSER ? { executablePath: process.env.TOOLKNIT_TEST_BROWSER } : {}) });
 const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+await page.addInitScript(() => {
+  localStorage.setItem('toolknit.theme.v3', 'dark');
+  localStorage.setItem('toolknit.recording-mode.prompt-dismissed.v1', 'true');
+});
 await page.emulateMedia({ reducedMotion: 'reduce' });
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
@@ -77,7 +81,9 @@ async function checkNumberField(selector, theme) {
   assert.equal(await input.inputValue(), String(bounds.min + 2));
   await input.press('ArrowDown');
   assert.equal(await input.inputValue(), String(bounds.min + 1));
-  assert.equal(await input.evaluate(n => getComputedStyle(n.parentElement).outlineStyle), 'solid');
+  assert.equal(await input.evaluate(n => getComputedStyle(n.parentElement).outlineStyle), 'none');
+  assert.equal(await input.evaluate(n => getComputedStyle(n.parentElement).getPropertyValue('--tk-field-height').trim()), '3px');
+  assert.equal(await input.evaluate(n => getComputedStyle(n).backgroundColor), 'rgba(0, 0, 0, 0)');
   const box = await input.boundingBox();
   await page.mouse.click(box.x + box.width - 7, box.y + box.height / 4);
   assert.equal(await input.inputValue(), String(bounds.min + 2), `${selector}: native spinner remains clickable`);
@@ -93,6 +99,7 @@ async function checkNumberField(selector, theme) {
 try {
   await page.goto(process.env.TOOLKNIT_TEST_URL || 'http://localhost:1420/');
   await page.waitForSelector('[data-home-tool]', { state: 'attached' });
+  await page.waitForFunction(() => !document.documentElement.dataset.tkStartup);
   await page.evaluate(async () => {
     const { initImageStitchTool } = await import('/src/features/image-stitch/tool.js');
     const { t, onLangChange } = await import('/src/i18n.js');

@@ -93,6 +93,7 @@ export function createPdfEditorZoomController({
     const canvasWrap = getCanvasWrap();
     const canvasScroll = getCanvasScroll();
     if (!canvasWrap || !canvasScroll) return null;
+    const visualRect = canvasWrap.getBoundingClientRect();
     const layoutRect = readCanvasLayoutRect(canvasWrap);
     const scrollRect = canvasScroll.getBoundingClientRect();
     if (!layoutRect || !scrollRect) return null;
@@ -104,14 +105,16 @@ export function createPdfEditorZoomController({
     const clientY = Number.isFinite(requestedY)
       ? requestedY
       : scrollRect.top + scrollRect.height / 2;
-    const localX = Math.max(0, Math.min(layoutRect.width, clientX - layoutRect.left));
-    const localY = Math.max(0, Math.min(layoutRect.height, clientY - layoutRect.top));
+    const localX = (clientX - visualRect.left) * layoutRect.width / Math.max(.0001, visualRect.width);
+    const localY = (clientY - visualRect.top) * layoutRect.height / Math.max(.0001, visualRect.height);
     const baseScale = Math.max(0.0001, Number(getLastRenderScale()) || 1);
     return {
       clientX,
       clientY,
       localX,
       localY,
+      layoutLeft: layoutRect.left,
+      layoutTop: layoutRect.top,
       pdfX: localX / baseScale,
       pdfY: localY / baseScale,
       baseScale
@@ -150,10 +153,17 @@ export function createPdfEditorZoomController({
     // of compounding transforms from successive wheel events.
     const ratio = Math.max(0.02, Math.min(40, nextScale / lastRenderScale));
     const token = ++zoomPreviewToken;
-    const originX = anchor ? anchor.localX : Math.max(0, canvasWrap.clientWidth / 2);
-    const originY = anchor ? anchor.localY : Math.max(0, canvasWrap.clientHeight / 2);
-    canvasWrap.style.transformOrigin = `${Math.round(originX)}px ${Math.round(originY)}px`;
-    canvasWrap.style.transform = `translateZ(0) scale(${ratio})`;
+    if (anchor) {
+      // The preceding wheel frame may still be a transformed preview. Preserve
+      // its visible point even when the pointer moves before the next repaint.
+      const x = anchor.clientX - anchor.layoutLeft - anchor.localX * ratio;
+      const y = anchor.clientY - anchor.layoutTop - anchor.localY * ratio;
+      canvasWrap.style.transformOrigin = '0px 0px';
+      canvasWrap.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${ratio})`;
+    } else {
+      canvasWrap.style.transformOrigin = 'center';
+      canvasWrap.style.transform = `translateZ(0) scale(${ratio})`;
+    }
     canvasWrap.dataset.zoomPreviewToken = String(token);
     scheduleMenuPosition();
     return token;
@@ -229,10 +239,11 @@ export function createPdfEditorZoomController({
       : event.deltaMode === 2
         ? event.deltaY * Math.max(1, canvasScroll.clientHeight)
         : event.deltaY;
+    if (!Number.isFinite(delta) || delta === 0) return;
+    event.preventDefault();
     const factor = Math.max(0.88, Math.min(1.14, Math.exp(-delta * 0.0015)));
     const nextScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, currentScale * factor));
     if (Math.abs(nextScale - currentScale) < 0.001) return;
-    event.preventDefault();
     setZoom('manual', nextScale, { clientX: event.clientX, clientY: event.clientY }, { defer: true });
   }
 

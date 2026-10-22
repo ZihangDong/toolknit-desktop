@@ -11,6 +11,7 @@ const releaseTests = [
   'test:theme',
   'test:startup',
   'test:architecture',
+  'test:preview-viewport',
   // Rust's generate_context! embeds frontendDist even during library tests.
   'build',
   'test:animation-policy',
@@ -26,6 +27,7 @@ const releaseTests = [
   'test:pdf-to-image-tool-contract',
   'test:pdf-to-scan',
   'test:pdf-to-scan-tool-contract',
+  'test:image-to-pdf',
   'test:pdf-to-word',
   'test:pdf-text-markdown',
   'test:pdf-ai-markdown',
@@ -42,6 +44,7 @@ const releaseTests = [
   'test:pdf-enhance',
   'test:pdf-enhance-tool-contract',
   'test:pdf-editor',
+  'test:pdf-editor-exporter',
   'test:pdf-page-number',
   'test:pdf-page-number-tool-contract',
   'test:pdf-crop',

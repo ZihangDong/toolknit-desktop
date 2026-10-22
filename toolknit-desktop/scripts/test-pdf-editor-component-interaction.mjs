@@ -95,7 +95,7 @@ interaction.beginComponentResize(
 );
 documentRef.listeners.get('pointermove')({ pointerId: 3, clientX: 20, clientY: 30, preventDefault() {} });
 assert.equal(object.width, 40);
-assert.equal(object.height, 50);
+assert.equal(object.height, 30, 'live zero rotation wins over a stale selection snapshot; positive PDF y raises the south edge');
 documentRef.listeners.get('pointerup')({ pointerId: 3 });
 assert.equal(commits, 3);
 
@@ -149,5 +149,28 @@ batched.reset();
 assert.equal(frames.size, 0);
 assert.equal(documentRef.listeners.size, 0);
 assert.equal(queuedUpdates, 1, 'reset discards pending moves');
+
+for (const pageAngle of [0, 90, 180, 270]) for (const objectAngle of [0, 30, 90, 180, 270]) {
+  const rotate = (x, y, angle) => { const r = angle * Math.PI / 180; return [x * Math.cos(r) - y * Math.sin(r), x * Math.sin(r) + y * Math.cos(r)]; };
+  const viewport = { rotation: pageAngle,
+    convertToViewportPoint: (x, y) => rotate(x, -y, pageAngle),
+    convertToPdfPoint: (x, y) => { const [px, py] = rotate(x, y, -pageAngle); return [px, -py]; } };
+  const object = { id: 'rotated', pageId: 'p1', x: 100, y: 100, width: 100, height: 50, rotation: objectAngle, aspectRatioLocked: false };
+  const component = { type: 'inserted-image', pageId: 'p1', key: object.id, object };
+  const oppositeCorner = box => { const offset = rotate(-box.width / 2, box.height / 2, -box.rotation);
+    return [box.x + box.width / 2 + offset[0], box.y + box.height / 2 + offset[1]]; };
+  const fixed = oppositeCorner(object), visual = makeElement();
+  const test = createPdfEditorComponentInteraction({ documentRef, cloneState: structuredClone,
+    getComponentMode: () => true, hasDocument: () => true, getSelectedComponent: () => component,
+    getCurrentPage: () => ({ id: 'p1' }), getCurrentTextLayerCache: () => ({ scale: 1, cssViewport: viewport }),
+    getCanvasWrap: () => canvasWrap, getTextLayer: () => visual, componentElement: () => visual,
+    resolveComponentObject: () => object, getComponentRotation: () => objectAngle });
+  test.beginComponentResize({ button: 0, pointerId: 99, clientX: 0, clientY: 0, preventDefault() {}, stopPropagation() {} }, component, 'se');
+  const delta = rotate(20, -20, -objectAngle), screen = viewport.convertToViewportPoint(...delta);
+  documentRef.listeners.get('pointermove')({ pointerId: 99, clientX: screen[0], clientY: screen[1], preventDefault() {} });
+  assert.ok(Math.abs(object.width - 120) < 1e-6 && Math.abs(object.height - 70) < 1e-6, `outward resize: page ${pageAngle}, object ${objectAngle}`);
+  oppositeCorner(object).forEach((value, index) => assert.ok(Math.abs(value - fixed[index]) < 1e-6, 'opposite rotated corner must remain fixed'));
+  documentRef.listeners.get('pointerup')({ pointerId: 99 }); test.reset();
+}
 
 console.log('PDF editor component interaction lifecycle checks passed');

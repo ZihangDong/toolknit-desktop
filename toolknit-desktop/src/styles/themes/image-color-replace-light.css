@@ -239,6 +239,10 @@ html[data-theme="light"] .color-replace-shell .color-replace-stage-footer {
   color: var(--color-replace-muted);
 }
 
+html[data-theme="light"] .color-replace-shell .color-replace-stage-footer svg {
+  color: inherit;
+}
+
 html[data-theme="light"] .color-replace-shell .color-replace-stage-footer output {
   color: var(--color-replace-heading);
   font-weight: 800;
@@ -271,7 +275,8 @@ html[data-theme="light"] .color-replace-shell .color-pair > button.is-active {
 }
 
 html[data-theme="light"] .color-replace-shell :is(.color-pair > button, .color-pair > label) > svg,
-html[data-theme="light"] .color-replace-shell .color-pair-arrow {
+html[data-theme="light"] .color-replace-shell .color-pair-arrow,
+html[data-theme="light"] .color-replace-shell .color-pair-arrow svg {
   color: var(--color-replace-ink);
 }
 

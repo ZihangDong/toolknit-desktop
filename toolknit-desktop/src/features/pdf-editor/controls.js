@@ -12,6 +12,7 @@ export function createPdfEditorControls({
   moveDownBtn,
   duplicateBtn,
   blankPageBtn,
+  newDocumentBtn,
   deleteBtn,
   extractBtn,
   replaceBtn,
@@ -64,7 +65,8 @@ export function createPdfEditorControls({
     if (moveUpBtn) moveUpBtn.disabled = busy || !has || currentIndex <= 0;
     if (moveDownBtn) moveDownBtn.disabled = busy || !has || currentIndex < 0 || currentIndex >= pages.length - 1;
     if (duplicateBtn) duplicateBtn.disabled = busy || !has || pages.length + Math.max(1, selectedCount) > PDF_EDITOR_LIMITS.maxPages;
-    if (blankPageBtn) blankPageBtn.disabled = busy || !has || pages.length >= PDF_EDITOR_LIMITS.maxPages;
+    if (blankPageBtn) blankPageBtn.disabled = busy || pages.length >= PDF_EDITOR_LIMITS.maxPages;
+    if (newDocumentBtn) newDocumentBtn.disabled = busy;
     if (selectAllBtn) selectAllBtn.disabled = busy || !has || selectedCount === pages.length;
     if (invertSelectionBtn) invertSelectionBtn.disabled = busy || !has;
     if (deleteBtn) deleteBtn.disabled = busy || !has || (!hasSelectedComponent && pages.length <= 1);

@@ -107,9 +107,15 @@ export function createPdfEditorOperationRuntime({
     }
   }
 
+  function beginCommit(operation) {
+    assertOperation(operation);
+    operation.committing = true;
+    if (processCancel) processCancel.disabled = true;
+  }
+
   async function cancelActiveOperation() {
     const operation = activeOperation;
-    if (!operation || operation.cancelled) return;
+    if (!operation || operation.cancelled || operation.committing) return;
     operation.cancelled = true;
     if (processCancel) processCancel.disabled = true;
     setLocalizedProgress(0, 'cancelling');
@@ -179,6 +185,7 @@ export function createPdfEditorOperationRuntime({
     hideProcess,
     beginOperation,
     assertOperation,
+    beginCommit,
     endOperation,
     cancelActiveOperation,
     messageForError,
