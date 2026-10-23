@@ -1,6 +1,6 @@
 # 版本检查与代码许可维护
 
-初版实现日期：2026-10-14；以下版本检查记录为V3.1历史。2026-10-20补充V3.2引擎单独授权；V3.1已发布，V3.2仍未发布。
+初版实现日期：2026-10-14；以下版本检查记录为 V3.1 历史。2026-10-20 补充 V3.2 引擎单独授权；V3.2 桌面正式版发布于 2026-10-23，npm 3.2.0 暂缓发布。
 
 ## 版本来源与发布顺序
 
@@ -27,8 +27,8 @@
 
 - V3.2的`src/features/pdf-to-word/**`及`src-tauri/src/native_runtime/pdf/docx_write.rs`中的自有代码使用`LicenseRef-ToolKnit-PDF-Word-Source-View-1.0`，从首次公开提交即与完整专属条款一起进入分支。允许阅读及必要私人阅览副本；其他商业/非商业用途需事先联系info@toolknit.com取得书面授权。官方应用运行有明确例外，第三方与历史授权不撤回。
 - 完整专属许可的主文件在根`LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md`。`scripts/sync-pdf-word-license.mjs`同步桌面端副本、feature内LICENSE、前端许可资产和59个自有源码文件头，`--check`只读验证；新增引擎源码必须同步。标准PolyForm正文不改写，根/桌面NOTICE明确排除引擎范围。
-- 桌面package及锁文件使用`SEE LICENSE IN NOTICE`，Cargo使用`license-file`指向NOTICE以表明混合许可。CLI未包含该引擎，继续保持原PolyForm metadata。Tauri资源显式包含专属许可，静态前端同时携带`assets/licenses/pdf-word-engine.txt`。
-- CLI资源暂存仍同步项目NOTICE，同时携带其引用的专属许可全文；这不把引擎源码打入CLI，也不改变CLI的PolyForm授权。`test:license`检查完整文本一致性，`test:cli-package`检查实际npm清单。
+- 桌面、CLI package 及锁文件使用 `SEE LICENSE IN NOTICE`，Cargo 使用 `license-file` 指向 NOTICE 以表明混合许可。V3.2 CLI 源码及待发布包已包含 PDF 转 Word 引擎，适用相同的专属许可。Tauri 资源显式包含专属许可，静态前端同时携带 `assets/licenses/pdf-word-engine.txt`。
+- CLI 资源暂存同步项目 NOTICE、完整专属许可及引擎源码中的许可头；官方 CLI 的运行例外不授予引擎再利用权。`test:license` 检查完整文本一致性，`test:cli-package` 检查实际 npm 清单。
 - 根目录、桌面端与 CLI 的 LICENSE 使用未经改写的官方 PolyForm Noncommercial 1.0.0 正文；NOTICE 指明作者、商业授权联系与保留权利。
 - 新授权的作者代码及修改适用新许可。旧 Apache-2.0 授权不撤销；原文本保存在各层 `LICENSES/Apache-2.0.txt`。未改动旧代码、既有第三方贡献与依赖保留原许可。贡献者保留自身版权。
 - Joshua-Zion PR #67 的颜色空间比较改编保留 Apache-2.0 声明，不借更换顶层 LICENSE 改写第三方权利。

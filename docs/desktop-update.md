@@ -1,3 +1,38 @@
+# ToolKnit Desktop 3.2.0
+
+发布日期：2026-10-23。Windows x64 无签名正式版，关闭 F12 / DevTools。
+
+## V3.2 正式版记录
+
+- 12 个分类、73 项工具；CLI / MCP 源码扩展至 77 项能力。
+- 新增 PDF 转 Word：本地分析文字型 PDF，支持原页布局、A4 重排和可选 AI 辅助。转换后可编辑文字、替换或删除图片、重置结果，再导出 Word；扫描件暂不支持。
+- 新增图像转 PDF：多图合并、排序、旋转与页边距设置，支持原彩、灰度和扫描件效果；常见多页 TIFF 可展开为独立页面。
+- 记录悬浮窗接入完整剪贴板历史，增加分类、实时搜索、备注和常用语。文字与图像支持跨应用拖放，列表可拖动排序；超出悬浮窗 20 条展示范围的记录仍保留在完整历史中。
+- 完善悬浮窗右键菜单、隐藏与主窗口恢复，修复首次菜单卡顿和桌面提示背景；加强剪贴板密钥备份与恢复保护。
+- PDF 编辑器无需上传即可新建空白页；修复旋转、文字编辑、撤销及导出中的多项问题。PDF 拆分支持范围累加选择，进入工作台默认不选页。
+- PDF 画布统一支持滚轮围绕鼠标缩放。统一输入框底线聚焦、工作台导航与结果弹框，改善双主题、PPT 下拉菜单和提取内容的可读性。
+- 修复覆盖升级偶发误报卸载失败，改进托盘运行时退出、文件占用等待、旧安装目录识别与用户数据保护。
+- 改进 FFmpeg、Office 与模型检测、下载和失败恢复；更新依赖并加强异常输入、任务取消和输出文件保护。
+- 首页新增“V3.2新功能”分类；一键记录模式、帮助中心与工具入口继续完善。
+
+## 下载与使用
+
+- 安装包：本页 Assets 中的 `toolknit-desktop_3.2.0_x64-setup.exe`，附 `.sha256` 校验文件。
+- 系统：Windows 10 1803（内部版本 17134）及以上的 x64 系统，包括 Windows 11。安装器携带 WebView2 引导程序；缺少运行时时需联网安装。
+- 本次安装包未进行 Authenticode 签名。请从本仓库 Release 或 [ToolKnit 官网](https://toolknit.com/exe.html)下载。FFmpeg、Office 和本地模型按需安装。
+- 干净源码：`toolknit-desktop_3.2.0_source.zip`，不含私有 Skill、密钥、用户数据、依赖缓存和测试输出。构建步骤见 [README](https://github.com/ZihangDong/toolknit-desktop/blob/v3.2.0/README.md#源码运行与构建)。
+- **npm 3.2.0 暂缓发布。** 本次发布桌面端和源码；npm 当前仍为 2.3.1，不能通过 npm 安装尚未发布的 3.2.0。CLI / MCP 后续单独发布。
+- 普通工具优先本地处理；主动使用 AI 时，所选内容会发送到用户配置的服务。复杂 PDF 与不同 Office 预览器可能存在排版差异，重要文件请核对。
+
+## 代码许可
+
+- 项目作者新授权代码适用 PolyForm Noncommercial 1.0.0；既有 Apache-2.0 授权及第三方权利保留。
+- **PDF 转 Word 自研引擎适用单独的源码阅览条款。** 可阅读及保留必要的私人阅览副本；集成、修改、再分发等商业或非商业使用，须事先取得书面授权。官方应用正常运行属于条款规定的例外。
+- 完整条款见 [引擎专属许可](https://github.com/ZihangDong/toolknit-desktop/blob/v3.2.0/LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md)及 [NOTICE](https://github.com/ZihangDong/toolknit-desktop/blob/v3.2.0/NOTICE)。授权联系：info@toolknit.com。
+- 完整更新内容见 [V3.2 更新日志](https://github.com/ZihangDong/toolknit-desktop/blob/v3.2.0/changelog.md)。
+
+---
+
 # ToolKnit Desktop 3.1.0
 
 发布日期：2026-10-15。Windows x64 无签名正式版，关闭 F12 / DevTools。
