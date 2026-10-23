@@ -1,6 +1,8 @@
 import { getLang, onLangChange, t } from '../../i18n.js';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
+import { createModalSession } from '../../app/modal-runtime.js';
 import { tauriCorePromise } from '../../platform/tauri-runtime.js';
+import { enhanceToolSelects } from '../../tool-custom-select.js';
 import {
   buildPptDraftPptx,
   PPT_DRAFT_ASSET_LIMITS,
@@ -85,6 +87,10 @@ const pptDraftSlideCount = document.getElementById('pptDraftSlideCount');
 const pptDraftLocale = document.getElementById('pptDraftLocale');
 const pptDraftDeckType = document.getElementById('pptDraftDeckType');
 const pptDraftTheme = document.getElementById('pptDraftTheme');
+const pptDraftSelects = enhanceToolSelects([pptDraftLocale, pptDraftDeckType, pptDraftTheme].filter(Boolean));
+const refreshPptDraftSelects = () => pptDraftSelects.forEach(select => select.refresh());
+featureScope.use(() => pptDraftSelects.forEach(select => select.dispose()));
+context.refreshIcons?.();
 const pptDraftAudience = document.getElementById('pptDraftAudience');
 const pptDraftPurpose = document.getElementById('pptDraftPurpose');
 const pptDraftTone = document.getElementById('pptDraftTone');
@@ -151,6 +157,15 @@ let pptDraftEditorExporting = false;
 let pptDraftEditorAutosaveTimer = null;
 let pptDraftEditorDragIndex = -1;
 let pptDraftEditorDropTargetIndex = -1;
+const pptDraftEditorModal = createModalSession({
+  root: pptDraftEditorOverlay,
+  background: pptDraftOverlay,
+  initialFocus: pptDraftEditorSlideTitle,
+  onClose: () => closePptDraftEditor(),
+  canClose: () => !pptDraftEditorExporting,
+  documentRef: document
+});
+featureScope.use(() => pptDraftEditorModal.dispose());
 
 function pptDraftText(key, params) {
   return t(`home.pptDraftPage.${key}`, params);
@@ -213,6 +228,7 @@ function applyPptDraftPreset(key) {
   if (pptDraftPurpose) pptDraftPurpose.value = preset.purpose;
   if (pptDraftTone) pptDraftTone.value = preset.tone;
   if (pptDraftStyle) pptDraftStyle.value = preset.style;
+  refreshPptDraftSelects();
   setPptAiPresetActive(pptDraftPresetButtons, 'pptDraftPreset', key);
   showToast(pptDraftText(shouldReplacePrompt ? 'presetAppliedToast' : 'presetAppliedKeepPromptToast', { name: preset.name }));
 }
@@ -239,6 +255,8 @@ function resetPptDraftState({ clearPrompt = false } = {}) {
     if (pptDraftTheme) pptDraftTheme.value = 'minimal-mono';
   }
   if (pptDraftLocale) pptDraftLocale.value = getLang() === 'en' ? 'en' : 'zh-CN';
+  pptDraftSelects.forEach(select => select.close());
+  refreshPptDraftSelects();
   if (pptDraftEmpty) pptDraftEmpty.hidden = false;
   if (pptDraftResult) pptDraftResult.hidden = true;
   if (pptDraftSummary) pptDraftSummary.innerHTML = '';
@@ -495,6 +513,7 @@ function syncPptDraftImportedOutline(normalized, sourceLabel = '') {
   if (pptDraftPurpose) pptDraftPurpose.value = seed.purpose || '';
   if (pptDraftTone) pptDraftTone.value = seed.tone || '';
   if (pptDraftStyle) pptDraftStyle.value = seed.style || '';
+  refreshPptDraftSelects();
   if (pptDraftOutlineImportBtn) {
     pptDraftOutlineImportBtn.textContent = pptDraftText('outlineImportBtnImported');
   }
@@ -516,6 +535,7 @@ function applyPptDraftOutlineDefaults(normalized) {
   if (pptDraftDeckType) {
     pptDraftDeckType.value = normalized.request?.deck_type || normalized.deck_type || 'auto';
   }
+  refreshPptDraftSelects();
   return normalized;
 }
 
@@ -610,6 +630,7 @@ function openPptDraftOverlay() {
   updatePptDraftScrollTop();
   if (pptDraftLocale) pptDraftLocale.value = getLang() === 'en' ? 'en' : 'zh-CN';
   if (pptDraftDeckType) pptDraftDeckType.value = pptDraftDeckType.value || 'auto';
+  refreshPptDraftSelects();
   if (pptDraftOutlineClearBtn) pptDraftOutlineClearBtn.disabled = !pptDraftImportedOutline;
   updatePptDraftOutlineStatus(
     pptDraftImportedOutline
@@ -634,7 +655,7 @@ function closePptDraftOverlay() {
   pptDraftController?.abort();
   pptDraftController = null;
   pptDraftBusy = false;
-  closePptDraftEditor({ force: true });
+  closePptDraftEditor({ force: true, restore: false });
   pptDraftOverlay.classList.remove('visible');
   pptDraftOverlay.setAttribute('aria-hidden', 'true');
   pptDraftPlasmaInstance = disposeStandardToolPlasma(pptDraftPlasmaInstance);
@@ -939,15 +960,14 @@ function openPptDraftEditor(index = 0) {
   pptDraftEditorTheme = pptDraftEditorOriginalTheme;
   pptDraftEditorSelectedIndex = clampPptDraftEditorIndex(index);
   applyPptDraftEditorSavedState();
-  pptDraftEditorOverlay?.classList.add('visible');
-  pptDraftEditorOverlay?.setAttribute('aria-hidden', 'false');
   if (pptDraftEditorPlasmaBg && !pptDraftEditorPlasmaInstance) {
     pptDraftEditorPlasmaInstance = initStandardToolPlasma(pptDraftEditorPlasmaBg);
   }
   renderPptDraftEditor();
+  pptDraftEditorModal.open();
 }
 
-function closePptDraftEditor({ force = false } = {}) {
+function closePptDraftEditor({ force = false, restore = true } = {}) {
   if (!pptDraftEditorOverlay) return;
   if (pptDraftEditorExporting && !force) {
     showToast(pptDraftText('editorExporting'));
@@ -960,8 +980,7 @@ function closePptDraftEditor({ force = false } = {}) {
   if (pptDraftEditorOutline) {
     writePptDraftEditorState();
   }
-  pptDraftEditorOverlay.classList.remove('visible');
-  pptDraftEditorOverlay.setAttribute('aria-hidden', 'true');
+  pptDraftEditorModal.close({ restore });
   pptDraftEditorPlasmaInstance = disposeStandardToolPlasma(pptDraftEditorPlasmaInstance);
 }
 
@@ -1301,6 +1320,7 @@ bind(pptDraftEditorStrip, 'drop', (event) => {
   .forEach(input => bind(input, 'input', updatePptDraftEditorCurrentSlide));
 bind(pptDraftEditorExportBtn, 'click', () => { void exportPptDraftEditorResult(); });
 bind(document, 'keydown', (event) => {
+  if (event.defaultPrevented) return;
   if (!pptDraftEditorOverlay?.classList.contains('visible')) return;
   const targetTag = String(event.target?.tagName || '').toLowerCase();
   const editingField = event.target?.isContentEditable || targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select';
@@ -1351,8 +1371,10 @@ bind(pptDraftSuccessOpenFolder, 'click', async () => {
   if (!pptDraftOverlay?.classList.contains('visible')) return;
   if (!pptDraftLastResult) {
     if (pptDraftLocale) pptDraftLocale.value = getLang() === 'en' ? 'en' : 'zh-CN';
+    refreshPptDraftSelects();
     return;
   }
+  refreshPptDraftSelects();
   renderPptDraftResult(pptDraftLastResult);
   if (pptDraftEditorOverlay?.classList.contains('visible')) {
     renderPptDraftEditor();
@@ -1372,7 +1394,7 @@ bind(pptDraftSuccessOpenFolder, 'click', async () => {
       pptDraftController?.abort();
       pptDraftController = null;
       pptDraftBusy = false;
-      closePptDraftEditor({ force: true });
+      closePptDraftEditor({ force: true, restore: false });
       if (pptDraftOverlay) {
         pptDraftOverlay.classList.remove('visible');
         pptDraftOverlay.setAttribute('aria-hidden', 'true');

@@ -24,6 +24,8 @@ export function enhanceToolSelect(select) {
   const label = document.createElement('span');
   const chevron = document.createElement('i');
   const menu = document.createElement('div');
+  const nativeTabIndex = select.getAttribute('tabindex');
+  const nativeAriaHidden = select.getAttribute('aria-hidden');
   let signature = '';
   let open = false;
   let disposed = false;
@@ -49,6 +51,8 @@ export function enhanceToolSelect(select) {
 
   select.dataset.toolSelectReady = '1';
   select.classList.add('tool-custom-select-native');
+  select.tabIndex = -1;
+  select.setAttribute('aria-hidden', 'true');
   select.insertAdjacentElement('afterend', control);
   document.body.append(menu);
 
@@ -184,7 +188,8 @@ export function enhanceToolSelect(select) {
       return;
     }
     if (event.key === 'Tab') {
-      close();
+      // Continue from the trigger's place in the form, not the body portal.
+      close({ restoreFocus: true });
       return;
     }
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
@@ -198,6 +203,11 @@ export function enhanceToolSelect(select) {
   }, options);
 
   select.addEventListener('change', refresh, options);
+  document.addEventListener('keydown', event => {
+    if (!open || event.defaultPrevented || event.key !== 'Escape') return;
+    event.preventDefault();
+    close({ restoreFocus: true });
+  }, options);
   document.addEventListener('pointerdown', event => {
     if (!open || control.contains(event.target) || menu.contains(event.target)) return;
     close();
@@ -224,6 +234,10 @@ export function enhanceToolSelect(select) {
       menu.remove();
       control.remove();
       select.classList.remove('tool-custom-select-native');
+      if (nativeTabIndex === null) select.removeAttribute('tabindex');
+      else select.setAttribute('tabindex', nativeTabIndex);
+      if (nativeAriaHidden === null) select.removeAttribute('aria-hidden');
+      else select.setAttribute('aria-hidden', nativeAriaHidden);
       delete select.dataset.toolSelectReady;
     }
   };

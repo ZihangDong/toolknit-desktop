@@ -38,6 +38,7 @@ pub fn run() {
             load_ai_api_key,
             clear_ai_api_key,
             set_window_corner_radius,
+            hide_main_window,
             get_documents_dir,
             get_download_dir,
             get_install_lang,
@@ -117,6 +118,11 @@ pub fn run() {
             append_pdf_compress_chunk,
             finalize_pdf_compress_write,
             discard_pdf_compress_write,
+            begin_pdf_to_word_write,
+            append_pdf_to_word_chunk,
+            finalize_pdf_to_word_write,
+            discard_pdf_to_word_write,
+            open_pdf_to_word_result,
             trim_audio,
             probe_video,
             render_video_preview_frame,
@@ -143,6 +149,9 @@ pub fn run() {
             decrypt_tkaes_file,
             rsa_legacy_windows::rsa_legacy_operation,
             inspect_image_stitch_inputs,
+            inspect_image_pdf_input,
+            open_image_pdf_result,
+            read_image_pdf_page,
             create_image_stitch_pdf_session,
             write_image_stitch_pdf_page,
             discard_image_stitch_pdf_session,
@@ -202,7 +211,9 @@ pub fn run() {
                     // close-to-tray behavior used by ToolKnit.
                     "main" => {
                         api.prevent_close();
-                        let _ = window.hide();
+                        if platform::window_visibility::hide_on_main_thread(window).is_err() {
+                            log::warn!("Unable to hide main window after system close request");
+                        }
                     }
                     // The picker minimizes the main window while it is active.
                     // A system close request (Alt+F4, taskbar command, etc.)

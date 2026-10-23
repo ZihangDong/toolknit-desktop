@@ -1,0 +1,16 @@
+/* Theme/overflow adapter for the established audio-clip success component. */
+.tk-file-result .audio-clip-success-dialog { box-sizing:border-box; max-width:500px; max-height:calc(100dvh - 40px); overflow:auto; background:#222; color:#f3f3f3; }
+.tk-file-result :is(.audio-clip-success-title,.audio-convert-success-value) { color:inherit; }
+.tk-file-result .audio-clip-success-dialog .audio-clip-success-meta { color:#bdbdbd; margin:0; max-width:100%; overflow-wrap:anywhere; display:block; overflow:visible; -webkit-line-clamp:unset; }
+.tk-file-result .audio-convert-success-detail { width:100%; min-width:0; background:#303030; }
+.tk-file-result .audio-convert-success-value { overflow-wrap:anywhere; }
+.tk-file-result .audio-clip-success-actions { flex-wrap:wrap; }
+.tk-file-result .audio-clip-success-btn { flex:1 1 120px; white-space:normal; overflow:visible; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+.tk-file-result .audio-clip-success-btn svg { width:16px; height:16px; flex-shrink:0; }
+.tk-file-result [hidden] { display:none; }
+html[data-theme="light"] .tk-file-result .audio-clip-success-dialog { background:#fff; color:#171717; }
+html[data-theme="light"] .tk-file-result .audio-clip-success-dialog .audio-clip-success-meta { color:#686b72; }
+html[data-theme="light"] .tk-file-result .audio-convert-success-detail { background:#f5f6f7; }
+@media (prefers-reduced-motion:reduce) {
+  .tk-file-result, .tk-file-result .audio-clip-success-dialog { transition:none; }
+}

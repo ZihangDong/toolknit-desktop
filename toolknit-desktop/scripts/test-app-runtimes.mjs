@@ -8,6 +8,7 @@ import { createModalRuntime, createModalSession, setModalInteractivity } from '.
 import { createAutostartRuntime } from '../src/app/autostart-runtime.js';
 import { bindGlobalToolPageChrome } from '../src/shared/tool-page-shell.js';
 import { createHelpCenterRuntime } from '../src/app/help-center-runtime.js';
+import { createSettingsNavigationRuntime } from '../src/app/settings-navigation-runtime.js';
 
 class FakeElement extends EventTarget {
   constructor(id = '') {
@@ -77,6 +78,38 @@ class FakeRoot extends FakeElement {
 
 const makeByIdRoot = ids => new FakeRoot(ids.map(id => new FakeElement(id)));
 
+{
+  const root = new FakeRoot(), view = new EventTarget(), settings = new FakeElement('settingsOverlay');
+  let activePage = settings, closed = 0, backgroundKeys = 0;
+  settings.classList.add('visible');
+  const navigation = createSettingsNavigationRuntime({ root, windowRef: view, settingsOverlay: settings,
+    getActivePage: () => activePage, onClose: () => { closed++; } });
+  root.addEventListener('keydown', () => { backgroundKeys++; });
+  const escape = (prevented = false) => {
+    const event = new Event('keydown', { cancelable: true });
+    Object.defineProperty(event, 'key', { value: 'Escape' });
+    if (prevented) event.preventDefault();
+    root.dispatchEvent(event);
+    return event;
+  };
+  assert.equal(escape().defaultPrevented, true);
+  await Promise.resolve();
+  assert.equal(closed, 1);
+  assert.equal(backgroundKeys, 0, 'Settings Escape must not reach background tool listeners');
+  escape(true); await Promise.resolve(); assert.equal(closed, 1, 'a child control owns a consumed Escape');
+  activePage = new FakeElement('helpOverlay');
+  escape(); await Promise.resolve(); assert.equal(closed, 1, 'foreground help or feedback owns Escape');
+  activePage = settings; settings.querySelector = () => ({ inert: false });
+  escape(); await Promise.resolve(); assert.equal(closed, 1, 'nested model managers own Escape');
+  settings.querySelector = () => null; settings.inert = true;
+  escape(); await Promise.resolve(); assert.equal(closed, 1, 'suspended Settings ignores Escape');
+  settings.inert = false; settings.classList.remove('visible');
+  escape(); await Promise.resolve(); assert.equal(closed, 1, 'closed Settings ignores Escape');
+  settings.classList.add('visible'); view.dispatchEvent(new Event('pagehide'));
+  escape(); await Promise.resolve(); assert.equal(closed, 1, 'pagehide releases the permanent listener');
+  navigation.dispose(); navigation.dispose();
+}
+
 // Optional DOM nodes must not make a runtime fail during initialization.
 const emptyRoot = new FakeRoot();
 const emptyAi = createAiSettingsRuntime({ root: emptyRoot, storage: null, aiKeyStore: null });
@@ -126,12 +159,18 @@ home.dispose();
 // Home batching changes only the card projection and survives a new runtime.
 {
   const batchRoot = makeByIdRoot(['homeToolSearch', 'homeToolGrid', 'homeToolLoadMore', 'homeToolLoadMoreButton', 'homeLazyLoadToggle', 'homeLazyLoadStatus']);
+  const discoveries = ['quick-screenshot', 'pdf-to-scan', 'duplicate-file-cleanup', 'pdf-to-word', 'clipboard-history', 'image-to-pdf'];
   const tools = Array.from({ length: 27 }, (_, index) => {
     const tool = new FakeElement();
-    tool.dataset.tool = `fixture-${index}`;
+    tool.dataset.tool = discoveries[index - 21] || `fixture-${index}`;
+    tool.closest = () => ({ dataset: { category: tool.dataset.tool.includes('pdf') ? 'pdf' : 'creative' } });
     return tool;
   });
-  batchRoot.querySelectorAll = selector => selector.includes('.audio-list-item') ? tools : [];
+  const chips = ['all', 'new', 'pdf'].map(category => {
+    const chip = new FakeElement(); chip.dataset.homeCategory = category; return chip;
+  });
+  batchRoot.querySelectorAll = selector => selector.includes('.audio-list-item') ? tools
+    : selector === '[data-home-category]' ? chips : [];
   const values = new Map();
   const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
   const count = () => (batchRoot.getElementById('homeToolGrid').innerHTML.match(/data-home-tool=/g) || []).length;
@@ -140,6 +179,25 @@ home.dispose();
   assert.equal(count(), 12, 'batching is enabled by default');
   batchRoot.getElementById('homeToolLoadMoreButton').dispatchEvent(new Event('click'));
   assert.equal(count(), 24);
+  chips[1].dispatchEvent(new Event('click'));
+  const ids = () => [...batchRoot.getElementById('homeToolGrid').innerHTML.matchAll(/data-home-tool="([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(ids(), discoveries, 'new features are filtered before pagination, including older enhanced tools');
+  assert.equal(batchRoot.getElementById('homeToolLoadMore').hidden, true);
+  assert.equal(chips[1].getAttribute('aria-pressed'), 'true');
+  const search = batchRoot.getElementById('homeToolSearch');
+  search.value = 'pdf'; search.dispatchEvent(new Event('input'));
+  assert.deepEqual(ids(), ['pdf-to-scan', 'pdf-to-word', 'image-to-pdf'], 'search intersects the new-feature filter');
+  search.value = 'fixture'; search.dispatchEvent(new Event('input'));
+  assert.equal(count(), 0, 'search does not leak tools from other categories');
+  search.value = ''; search.dispatchEvent(new Event('input'));
+  toggle.dispatchEvent(new Event('click'));
+  assert.deepEqual(ids(), discoveries, 'disabling batching preserves the new-feature filter');
+  toggle.dispatchEvent(new Event('click'));
+  chips[2].dispatchEvent(new Event('click'));
+  assert.deepEqual(ids(), ['pdf-to-scan', 'pdf-to-word', 'image-to-pdf'], 'featured tools retain their original categories');
+  chips[0].dispatchEvent(new Event('click'));
+  assert.equal(count(), 12, 'returning to all resets pagination');
+  assert.equal(chips[1].getAttribute('aria-pressed'), 'false');
   toggle.dispatchEvent(new Event('click'));
   assert.equal(count(), 27);
   assert.equal(toggle.getAttribute('aria-pressed'), 'false');
@@ -450,6 +508,26 @@ modalSession.open();
 modalSession.close();
 assert.equal(modalBackground.inert, true, 'an already suspended background must stay suspended');
 modalSession.dispose();
+
+{
+  const documentRef = new FakeRoot(), modal = new FakeElement('fallbackOverlay');
+  const disabledCommand = new FakeElement('install'), closeButton = new FakeElement('close');
+  disabledCommand.disabled = true;
+  closeButton.tabIndex = 0;
+  closeButton.focus = () => { documentRef.activeElement = closeButton; };
+  modal.querySelectorAll = () => [disabledCommand, closeButton];
+  modal.contains = node => node === closeButton || node === disabledCommand;
+  let closed = 0;
+  const session = createModalSession({ root: modal, documentRef, initialFocus: disabledCommand, onClose: () => { closed++; } });
+  session.open();
+  assert.equal(documentRef.activeElement, closeButton, 'a disabled initial command falls back to a focusable control');
+  const escape = new Event('keydown', { cancelable: true });
+  Object.defineProperty(escape, 'key', { value: 'Escape' });
+  documentRef.dispatchEvent(escape);
+  assert.equal(escape.defaultPrevented, true);
+  assert.equal(closed, 1, 'the fallback focus keeps Escape owned by the modal');
+  session.dispose();
+}
 
 // Late key reads cannot reopen a page the user already left.
 let completeKeyRead;

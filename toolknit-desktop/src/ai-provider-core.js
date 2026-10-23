@@ -1,6 +1,7 @@
 import { readResponseTextLimited as readBoundedResponseText, ResponseSizeLimitError } from './core/bounded-response.js';
 
 export const AI_PROVIDER_LIMITS = Object.freeze({
+  maxRequestBytes: 8 * 1024 * 1024,
   maxResponseBytes: 2 * 1024 * 1024,
   maxMessages: 12,
   maxMessageChars: 50000,
@@ -416,6 +417,8 @@ async function requestAiCompletionImpl({
   if (supportsReasoningEffort) {
     body.reasoning_effort = reasoningEffort ?? 'low';
   }
+  const encodedBody = JSON.stringify(body);
+  if (utf8ByteLength(encodedBody) > AI_PROVIDER_LIMITS.maxRequestBytes) throw new AiProviderError('invalid_request');
   const diagnosticRequest = { ...config, apiKey, messages, maxTokens, reasoningEffort: body.reasoning_effort };
   // Tauri's WebView enforces browser CORS for public HTTPS providers. When a
   // native adapter is supplied, use it for both HTTPS and explicitly allowed
@@ -460,7 +463,7 @@ async function requestAiCompletionImpl({
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey.trim()}`
       },
-      body: JSON.stringify(body),
+      body: encodedBody,
       signal
     });
   } catch {

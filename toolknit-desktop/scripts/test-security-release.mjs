@@ -301,7 +301,10 @@ for (const required of [
 }
 
 const cliTranscription = read('toolknit-desktop/cli/lib/transcription-runtime.mjs');
-check(cliTranscription.includes('nextDownloaded > model.bytes'), 'CLI model downloads must stop above the signed catalog size');
+const cliModelDownload = read('toolknit-desktop/cli/lib/model-download.mjs');
+check(cliTranscription.includes('await downloadVerifiedModel('), 'Transcription must use the bounded verified model downloader');
+check(cliModelDownload.includes('received > model.bytes'), 'CLI model downloads must stop above the signed catalog size');
+check(cliModelDownload.includes("'content-range'") && cliModelDownload.includes('!== model.sha256'), 'CLI model downloads must verify resumed ranges and final integrity');
 
 async function waitFor(predicate, message) {
   const deadline = Date.now() + 2_000;

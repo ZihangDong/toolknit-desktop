@@ -1,0 +1,57 @@
+import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { PDFDocument, PDFName, PDFString, PDFOperator, StandardFonts, rgb } from 'pdf-lib';
+import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { createCanvas } from '@napi-rs/canvas';
+import JSZip from 'jszip';
+import { snapshotPage, snapshotFonts, renderPage, collectPageAssets } from '../src/features/pdf-to-word/adapters/pdfjs.js';
+import { prepareWordScene } from '../src/features/pdf-to-word/adapters/scene.js';
+import { inferDocument } from '../src/features/pdf-to-word/core/layout.js';
+import { createWordBytes } from '../src/features/pdf-to-word/adapters/docx.js';
+import { inspectSceneInk } from '../src/features/pdf-to-word/core/ink-coverage.js';
+
+const folder = 'tmp/pdf-word-layers'; await mkdir(folder, { recursive: true });
+const source = await PDFDocument.create(), font = await source.embedFont(StandardFonts.Helvetica);
+const visibleLayer = source.context.register(source.context.obj({ Type: 'OCG', Name: PDFString.of('Visible') }));
+const hiddenLayer = source.context.register(source.context.obj({ Type: 'OCG', Name: PDFString.of('Hidden') }));
+source.catalog.set(PDFName.of('OCProperties'), source.context.obj({ OCGs: [visibleLayer, hiddenLayer],
+  D: { BaseState: 'ON', OFF: [hiddenLayer], Order: [visibleLayer, hiddenLayer] } }));
+const page = source.addPage([400, 250]);
+const begin = name => PDFOperator.of('BDC', [PDFName.of('OC'), PDFName.of(name)]);
+const end = () => PDFOperator.of('EMC');
+page.drawText('PUBLIC-A', { x: 20, y: 210, font, size: 12 });
+page.pushOperators(begin('Hidden'));
+page.drawRectangle({ x: 15, y: 200, width: 150, height: 30, color: rgb(0, 0, 0) });
+page.drawText('HIDDEN-LAYER-TEXT', { x: 20, y: 170, font, size: 12 });
+page.pushOperators(begin('Visible'));
+page.drawText('HIDDEN-NESTED-TEXT', { x: 20, y: 140, font, size: 12 });
+page.pushOperators(end(), end(), begin('Visible'));
+page.drawText('PUBLIC-B', { x: 20, y: 110, font, size: 12 });
+page.pushOperators(end());
+page.node.Resources().set(PDFName.of('Properties'), source.context.obj({ Visible: visibleLayer, Hidden: hiddenLayer }));
+const bytes = await source.save(); await writeFile(`${folder}/source.pdf`, bytes);
+const task = getDocument({ data: bytes.slice(), fontExtraProperties: true, verbosity: 0 });
+try {
+  const pdf = await task.promise, original = await pdf.getPage(1);
+  const operation = { optionalContentConfig: await pdf.getOptionalContentConfig({ intent: 'display' }) };
+  const snapshot = await snapshotPage(original, OPS, () => {}, operation.optionalContentConfig);
+  const layers = snapshot.operations.filter(op => op.name === 'beginMarkedContentProps' && op.args[0] === 'OC');
+  assert(layers.some(op => op.args[2] === false)); assert(layers.some(op => op.args[2] === true));
+  const canvas = createCanvas(1, 1), plan = await renderPage(original, canvas, operation);
+  snapshot.fonts = snapshotFonts(original, snapshot.fontIds);
+  const scene = prepareWordScene(snapshot, { measurementContext: createCanvas(1, 1).getContext('2d') });
+  assert(!scene.rasterPage, 'resolved layers do not rasterize the page');
+  for (const marker of ['HIDDEN-LAYER-TEXT', 'HIDDEN-NESTED-TEXT']) assert.equal(scene.sources.find(source => source.text === marker).disposition, 'excluded-hidden');
+  for (const marker of ['PUBLIC-A', 'PUBLIC-B']) assert.equal(scene.sources.find(source => source.text === marker).disposition, 'editable');
+  assert.equal(scene.items.filter(item => item.type === 'image').length, 0, 'invisible covering paint cannot occlude public text');
+  assert(inspectSceneInk(scene, canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height, plan.scale).accepted);
+  const assets = await collectPageAssets(scene, canvas, createCanvas);
+  const document = inferDocument([scene], { preserveGeometry: true });
+  const output = await createWordBytes(document, assets, { preserveGeometry: true, measurementContext: createCanvas(1, 1).getContext('2d') });
+  await writeFile(`${folder}/converted.docx`, output.bytes);
+  const zip = await JSZip.loadAsync(output.bytes), xml = await zip.file('word/document.xml').async('string');
+  assert(xml.includes('PUBLIC-A') && xml.includes('PUBLIC-B'));
+  assert(!xml.includes('HIDDEN-LAYER') && !xml.includes('HIDDEN-NESTED'));
+  canvas.width = canvas.height = 0;
+} finally { await task.destroy(); }
+console.log('PDF optional-layer checks passed: shared renderer visibility, nested hidden text, hidden covering paint and editable visible content.');

@@ -9,7 +9,7 @@ const [html, main, specs, tool, workspace, interaction, thumbnailQueue, document
   readFile(new URL('../src/features/pdf-crop/tool.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/pdf-crop/workspace.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/pdf-crop/interaction.js', import.meta.url), 'utf8'),
-  readFile(new URL('../src/features/pdf-crop/thumbnail-queue.js', import.meta.url), 'utf8'),
+  readFile(new URL('../src/shared/pdf-render-queue.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/pdf-crop/document.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/pdf-crop/exporter.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/pdf-crop/view.js', import.meta.url), 'utf8'),

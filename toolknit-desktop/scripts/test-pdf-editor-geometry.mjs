@@ -1,5 +1,17 @@
 import assert from 'node:assert/strict';
 import { resizePdfBoxFromHandle, rotatePdfDeltaToLocal } from '../src/pdf-editor-geometry.js';
+import { fitInitialPdfPlacement } from '../src/features/pdf-editor/placement.js';
+
+for (const viewBox of [[0, 0, 595, 842], [20, 30, 420, 330], [0, 0, 36, 54]]) {
+  for (const [x, y] of [[-1000, -1000], [1000, 1000], [80, 120]]) {
+    const box = fitInitialPdfPlacement({ x, y, width: 240, height: 120 }, viewBox, 2);
+    assert.ok(box.x >= viewBox[0] + 2 && box.y >= viewBox[1] + 2);
+    assert.ok(box.x + box.width <= viewBox[2] - 2 && box.y + box.height <= viewBox[3] - 2);
+    assert.equal(box.width / box.height, 2, 'fitting preserves original aspect ratio');
+  }
+}
+assert.deepEqual(fitInitialPdfPlacement({ x: -50, y: 400, width: 200, height: 0 }, [0, 0, 400, 300], 1),
+  { x: 1, y: 299, width: 200, height: 0 }, 'line endpoints and strokes remain inside the page');
 
 const base = { x: 100, y: 200, width: 120, height: 80 };
 

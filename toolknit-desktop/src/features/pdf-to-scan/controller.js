@@ -29,7 +29,7 @@ export function createPdfScanController({ overlay, isTauri = false, getOutputDir
   const passwordModal = createModalSession({ root: passwordRoot, background: overlay, initialFocus: byId('Password'), onClose: () => cancel() });
   const successModal = createModalSession({ root: successRoot, background: overlay, initialFocus: byId('SuccessOk'), onClose: () => successModal.close() });
 
-  workbench = createPdfWorkbench({ root: overlay, pageStrip: pagesRoot, back, actions, tag: 'PDF TO SCAN · TOOL PAGE 3.1',
+  workbench = createPdfWorkbench({ root: overlay, pageStrip: pagesRoot, back, actions, tag: 'PDF TO SCAN · TOOL PAGE 3.2',
     labels: { back: 'settings.back', selectedCount: 'home.pdfScan.selected', sourcePage: 'home.pdfScan.sourcePage' },
     onChange: () => { if (workbench) updateControls(); }, refreshIcons,
     async transformPreview(canvas, entry, isCurrent) {

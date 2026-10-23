@@ -74,6 +74,10 @@ assert.equal(processMask.classList.contains('visible'), false);
 const exportOperation = runtime.beginOperation('export');
 assert.equal(exportOperation.id, 2);
 assert.throws(() => runtime.beginOperation('append'), /busy/);
+runtime.beginCommit(exportOperation);
+assert.equal(processCancel.disabled, true);
+await runtime.cancelActiveOperation();
+assert.equal(exportOperation.cancelled, false, 'an irreversible write cannot be reported as cancelled');
 runtime.endOperation(exportOperation);
 assert.equal(restored.at(-1), focused);
 

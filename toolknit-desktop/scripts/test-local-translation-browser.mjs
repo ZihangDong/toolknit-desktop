@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import {readFile, mkdir, writeFile} from 'node:fs/promises';
 import {build, preview} from 'vite';
-import {chromium} from 'playwright';
+import {createRequire} from 'node:module';
+import path from 'node:path';
+
+const require=createRequire(process.env.TOOLKNIT_TEST_MODULES
+  ? path.join(process.env.TOOLKNIT_TEST_MODULES,'package.json')
+  : import.meta.url);
+const {chromium}=require('playwright');
 
 const settings=await readFile('src/app/templates/settings.html','utf8');
 const managers=await readFile('src/app/templates/dependency-managers.html','utf8');

@@ -196,6 +196,11 @@ try {
       });
       await page.locator('.pdf-compress-result-row summary').click();
       await page.waitForFunction(() => document.querySelector('.pdf-compress-preview img')?.naturalWidth > 0);
+      const previewImage = page.locator('.pdf-compress-preview img');
+      const imageBefore = await previewImage.boundingBox();
+      await page.locator('.pdf-compress-preview').hover();
+      await page.mouse.wheel(0, -180);
+      await page.waitForFunction(width => document.querySelector('.pdf-compress-preview img').getBoundingClientRect().width > width, imageBefore.width);
       assert.equal(await page.locator('#pdfCompressSuccessOverlay .audio-convert-success-icon').evaluate(node => Math.abs(node.getBoundingClientRect().width - node.getBoundingClientRect().height) < 1), true, 'result icon must stay circular when details expand');
       await page.screenshot({ path: path.join(output, `${language}-target-result.png`) });
       await page.locator('#pdfCompressSuccessOk').click();

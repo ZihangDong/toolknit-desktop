@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createPdfEditorContentEditing } from '../src/features/pdf-editor/content-editing.js';
+import { PDF_EDITOR_LIMITS } from '../src/core/limits/pdf.js';
 
 function makeClassList() {
   const values = new Set();
@@ -202,4 +203,36 @@ assert.equal(editModal.attributes['aria-hidden'], 'true');
 assert.ok(renderCalls > 0);
 assert.equal(documentRef.listeners.size, 0);
 
-console.log('PDF editor content editing lifecycle checks passed');
+{
+  let resolveSize, readCount = 0, updates = 0;
+  const stale = createPdfEditorContentEditing({ hasDocument: () => true, getCurrentPage: () => ({ id: 'page-1' }),
+    fileSizeFor: () => new Promise(resolve => { resolveSize = resolve; }),
+    readBytes: async () => { readCount++; return new Uint8Array(10); },
+    setPendingInsert: () => { updates++; }, showToast: () => { updates++; } });
+  const pending = stale.prepareInsertImage({ name: 'old.png' });
+  stale.invalidateImageRead(); resolveSize(10); await pending;
+  assert.equal(readCount, 0, 'a cancelled read must not continue to allocate image bytes');
+  assert.equal(updates, 0, 'cancelled input cannot update the reopened UI');
+}
+{
+  let resolveBytes, currentPage = 'page-1', updates = 0;
+  const started = Promise.withResolvers();
+  const stale = createPdfEditorContentEditing({ hasDocument: () => true, getCurrentPage: () => ({ id: currentPage }),
+    fileSizeFor: async () => 10,
+    readBytes: () => { started.resolve(); return new Promise(resolve => { resolveBytes = resolve; }); },
+    setPendingInsert: () => { updates++; }, showToast: () => { updates++; } });
+  const pending = stale.prepareInsertImage({ name: 'old.png' }); await started.promise;
+  currentPage = 'page-2'; resolveBytes(new Uint8Array(10)); await pending;
+  assert.equal(updates, 0, 'late image results cannot attach to another page');
+}
+{
+  const errors = [];
+  const bounded = createPdfEditorContentEditing({ hasDocument: () => true, getCurrentPage: () => ({ id: 'page-1' }),
+    fileSizeFor: async () => 10, readBytes: async () => new Uint8Array(10),
+    getImageAssetBytes: () => PDF_EDITOR_LIMITS.maxImageAssetBytes,
+    t: (key, args) => args?.error || key, showToast: message => errors.push(message),
+    setPendingInsert: () => { throw new Error('oversized image must not be staged'); } });
+  await bounded.prepareInsertImage({ name: 'limit.png' });
+  assert.match(errors[0], /imageMemoryLimit/);
+}
+console.log('PDF editor content editing, stale image cancellation and retained-asset budget checks passed');

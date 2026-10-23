@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { PDFDocument } from 'pdf-lib';
 import { createPdfEditorFileSession } from '../src/features/pdf-editor/file-session.js';
+import { createPdfEditorOperationRuntime } from '../src/features/pdf-editor/operation.js';
 
 let idCounter = 0;
 let sources = [{ id: 'old-source', name: 'old.pdf', size: 10, pageCount: 1 }];
@@ -18,6 +19,7 @@ let historyResetCount = 0;
 let destroyedStagedDocument = 0;
 let lastProgress = null;
 let lastToast = null;
+let savedSnapshot = null;
 const fileClicks = [];
 const pageStrip = {
   scrollHeight: 800,
@@ -81,7 +83,7 @@ const session = createPdfEditorFileSession({
   updateControls() {},
   resetEditorHistory: () => { historyResetCount += 1; },
   setBaselineSnapshot() {},
-  setSavedSnapshot() {},
+  setSavedSnapshot(value) { savedSnapshot = value; },
   editorHistoryFirstSnapshot: () => ({ pages: [{ id: 'snapshot-page' }] }),
   cloneState: value => structuredClone(value),
   messageForError: error => String(error?.message || error),
@@ -131,5 +133,70 @@ session.chooseAppendFile();
 assert.deepEqual(fileClicks, ['main', 'append']);
 assert.equal(input.value, '');
 assert.equal(appendInput.value, '');
+
+documents.loadBytes = async bytes => {
+  const pdf = await PDFDocument.load(bytes);
+  assert.deepEqual(pdf.getPage(0).getSize(), { width: 595.28, height: 841.89 }, 'new documents start at A4');
+  return { document: { numPages: pdf.getPageCount(), async destroy() { destroyedStagedDocument++; } } };
+};
+sources = []; pages = [];
+await session.createBlankDocument();
+assert.equal(pages.length, 1);
+assert.equal(sources.length, 1);
+assert.equal(sources[0].generated, true);
+assert.equal(sources[0].name, 'untitled.pdf');
+assert.equal(savedSnapshot, null, 'a newly created PDF has not been saved');
+assert.equal(sourceStore.get(pages[0].sourceId), sources[0]);
+assert.equal(currentId, pages[0].id);
+const createdSource = sources[0], createdPage = pages[0];
+const cancelledCreation = session.createBlankDocument();
+activeOperation.cancelled = true;
+await cancelledCreation;
+assert.equal(sources[0], createdSource, 'cancelling creation preserves the current document');
+assert.equal(pages[0], createdPage);
+documents.loadBytes = async () => { throw new Error('fixture:decode-failed'); };
+await session.createBlankDocument();
+assert.equal(sources[0], createdSource, 'failed replacement must preserve the existing blank document');
+assert.equal(activeOperation, null);
+
+let finishRead;
+const beforeAppend = pages.length;
+const pendingAppend = session.appendFile({ name: 'late.pdf', size: appendBytes.length,
+  arrayBuffer: () => new Promise(resolve => { finishRead = resolve; }) });
+await Promise.resolve();
+assert.equal(activeOperation.type, 'append', 'file reading belongs to the cancellable append operation');
+activeOperation.cancelled = true;
+finishRead(appendBytes.buffer); await pendingAppend;
+assert.equal(pages.length, beforeAppend, 'cancelled reads cannot append pages later');
+assert.equal(activeOperation, null);
+await session.appendFile({ name: 'unreadable.pdf', size: 100, async arrayBuffer() { throw new Error('fixture:read-failed'); } });
+assert.equal(pages.length, beforeAppend);
+assert.equal(lastToast, 'fixture:read-failed', 'file read errors become visible feedback');
+assert.equal(activeOperation, null);
+await session.appendFile({ name: 'append-read.pdf', size: appendBytes.length + 10, async arrayBuffer() { return appendBytes.buffer; } });
+assert.equal(pages.length, beforeAppend + 1);
+assert.equal(sources.at(-1).size, appendBytes.length, 'source budget uses actual bytes, not stale file metadata');
+
+{
+  const resetGate = Promise.withResolvers(), reachedReset = Promise.withResolvers();
+  const cancel = { disabled: false, style: {} };
+  const runtime = createPdfEditorOperationRuntime({ processCancel: cancel });
+  let sources = [{ id: 'previous' }], pages = [{ id: 'previous-page' }], ids = 0;
+  const replacement = createPdfEditorFileSession({ ...runtime,
+    getIdCounter: () => ids, setIdCounter: value => { ids = value; },
+    getSources: () => sources, setSources: value => { sources = value; },
+    getPages: () => pages, setPages: value => { pages = value; },
+    hasDocument: () => pages.length > 0,
+    getDocuments: () => ({ async loadBytes() { return { document: { numPages: 1 } }; }, set() {} }),
+    resetDocument: async () => { sources = []; pages = []; reachedReset.resolve(); await resetGate.promise; }
+  });
+  const pending = replacement.createBlankDocument(); await reachedReset.promise;
+  assert.equal(cancel.disabled, true, 'document replacement cannot be cancelled after removing the old document');
+  await runtime.cancelActiveOperation();
+  assert.equal(runtime.getActiveOperation().cancelled, false);
+  resetGate.resolve(); await pending;
+  assert.equal(pages.length, 1); assert.equal(sources[0].generated, true);
+  assert.equal(runtime.getActiveOperation(), null);
+}
 
 console.log('PDF editor file session lifecycle checks passed');

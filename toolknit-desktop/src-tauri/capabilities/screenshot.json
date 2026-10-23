@@ -2,6 +2,6 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "screenshot-windows",
   "description": "Local screenshot editor, recent shelf and image viewer windows",
-  "windows": ["screenshot-capture", "screenshot-history", "screenshot-viewer-*"],
+  "windows": ["screenshot-capture", "screenshot-history", "screenshot-history-menu", "screenshot-viewer-*"],
   "permissions": ["core:event:default", "core:window:allow-close", "core:window:allow-minimize", "core:window:allow-toggle-maximize", "core:window:allow-start-dragging", "core:window:allow-set-always-on-top"]
 }

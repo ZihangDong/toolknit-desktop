@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS, dateRange, timeLabel, normalizeExcludedApps, validate
 import { createClipboardRuntime, copySensitiveText } from '../src/platform/clipboard-runtime.js';
 import template from '../src/features/clipboard-history/template.js';
 import { LAZY_TOOL_SPECS } from '../src/features/lazy-tools.js';
+import { createAuxiliaryToolNavigation } from '../src/app/auxiliary-tool-navigation.js';
 
 assert.equal(LAZY_TOOL_SPECS['clipboard-history'].overlayId, 'clipboardHistoryOverlay');
 assert.equal(LAZY_TOOL_SPECS['clipboard-history'].init, 'initClipboardHistoryTool');
@@ -21,6 +22,14 @@ const day = new Date(2026, 8, 20, 14, 23, 45);
 assert.equal(dateRange('today', day).from, new Date(2026, 8, 20).getTime());
 assert.match(timeLabel(Date.UTC(2026, 8, 20, 6, 23, 45, 123), 'en', true, 480), /14:23:45\.123.*UTC\+08:00/);
 assert.equal(errorKey('clipboard:record-damaged'), 'recordDamaged');
+for (const [code,key] of [['key-missing','keyMissing'],['key-invalid','keyInvalid'],['key-unavailable','keyUnavailable'],['key-mismatch','keyMismatch'],['key-storage','keyStorage']]) assert.equal(errorKey(`clipboard:${code}`),key);
+const pages=['apiKeyOverlay','settingsOverlay'], navigation=[];
+let release;
+const openFromAuxiliary=createAuxiliaryToolNavigation({getActivePage:()=>({id:pages[0]}),closePages:{apiKeyOverlay:async()=>{navigation.push(pages.shift());await new Promise(resolve=>{release=resolve;});},settingsOverlay:()=>navigation.push(pages.shift())},openTool:id=>navigation.push(id)});
+const opening=openFromAuxiliary('clipboard-history');
+assert.equal(openFromAuxiliary('clipboard-history'),opening,'duplicate navigation is coalesced');
+release();await opening;
+assert.deepEqual(navigation,['apiKeyOverlay','settingsOverlay','clipboard-history']);
 assert.equal(errorKey('screenshot:viewer-limit'), 'viewerLimit');
 assert.equal(errorKey('screenshot:image-too-large'), 'tooLarge');
 assert.equal(errorKey('sensitive arbitrary native error'), 'operationFailed');

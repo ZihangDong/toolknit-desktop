@@ -25,7 +25,7 @@ C:\Users\<your-user-name>\AppData\Roaming\npm\node_modules\@toolknit\cli\toolkni
 
 Local PDF, image, audio/video, text, and non-AI PPT tools do not need an AI key. AI documents, AI tables, PPT text AI organization, AI PPT outline generation, AI PPT draft/PPTX generation, and transcription with `refine` require a real `DEEPSEEK_API_KEY` (or `TOOLKNIT_AI_API_KEY`) in the IDE's MCP environment/secret settings; restart the IDE after setting it. Never place the key in an Agent message, document brief, output path, or filename. CLI/MCP does not read the credential stored by ToolKnit Desktop.
 
-After a successful connection, the Agent exposes 46 ToolKnit tools: nine PDF tools, seven PPT tools, eight read-only hardware tools, four audio tools, four offline model and transcription tools, three video tools, one text tool, two image tools, four AI document project tools, and four AI table project tools:
+V3.2 exposes 77 ToolKnit tools and requires Node.js >=22.13.0. The V3.2 npm package is not published yet. See the [complete capability catalog](CLI_CAPABILITIES.md) or run `toolknit tools list --json`; the following list describes the existing tools.
 
 - `toolknit_pdf_inspect` inspects page counts, sizes, and page-by-page details.
 - `toolknit_pdf_merge` merges multiple local PDFs in order into one file.
@@ -73,6 +73,24 @@ After a successful connection, the Agent exposes 46 ToolKnit tools: nine PDF too
 - `toolknit_hardware_storage_health` inspects physical disks, volumes, capacity, bus type, and available health/reliability counters without writing files.
 - `toolknit_hardware_network_devices` inspects network adapters, Bluetooth, audio, USB, and camera device lists without writing files.
 - `toolknit_hardware_power_sensors` inspects the active power plan, battery state, thermal zones, and available fan/sensor data without writing files.
+
+## V3.2 additions
+
+The catalog adds PDF-to-Word, local PDF text, crop, page numbers, scan appearance and blank creation; image-to-PDF, conversion/compression/crop/color replacement/icons; XLSX-to-PDF and safe Markdown HTML; text formatting, AI polish/translation, JSON/Base64/URL/UUID/JWT/checksums; timestamp/BMI/mortgage/interest/color calculations; and read-only large/duplicate-file scans.
+
+PDF-to-Word is offline by default. Only explicit `ai_mode=true` sends region text/images to the environment-configured vision provider. PDF AI Markdown sends selected page images; AI polish/translate send supplied text. Do not switch a local operation to AI without the user's request. Desktop credentials are never read.
+
+Image-to-PDF preserves the explicit input order and supports multipage TIFF. Animated sources need explicit first-frame permission. Compression with no reduction publishes no file; inspect the result status and outputs. Excel accepts XLSX and requires LibreOffice. Cropping PDF page boxes is not secure redaction.
+
+```text
+Use toolknit_pdf_to_word to convert this project's report.pdf locally, with original-page layout, to toolknit-output/report.docx. Resolve absolute paths and preserve existing outputs. Report the actual result path and regions that remain images.
+```
+
+```text
+Use toolknit_image_to_pdf to combine first.png and second.jpg in exactly that order, A4 paper and faithful mode, into toolknit-output/images.pdf in this project. Do not upload images or overwrite existing files.
+```
+
+Read-only file scans never delete data. Password generation, clipboard monitoring, system cleanup and real-time overlay interaction remain desktop-only. Background removal has no independent npm native inference adapter and is not advertised as callable.
 
 ## Color extraction
 
@@ -163,7 +181,7 @@ Call ToolKnit MCP's toolknit_ppt_to_image to export slides 1 through 3 of this p
 When the user asks “make a PPT outline from these notes” or “plan an 8-slide talk,” the Agent should call `toolknit_ppt_outline`. This tool does not read PPTX and does not generate PPTX. It generates `outline.md`, `outline.json`, and `manifest.json` from the supplied text. If the source notes come from project files, read and summarize the text first, then pass the concise brief as `prompt`. Never put API keys in the prompt.
 
 ```text
-Call ToolKnit MCP's toolknit_ppt_outline to generate an 8-slide Chinese PPT outline from the product notes I provided. The audience is open-source users, and the purpose is to help them understand ToolKnit 2.3's local-first and AI Agent capabilities and want to try it. Save into this workspace's toolknit-output folder. Resolve the output directory to an absolute path first and do not overwrite existing outputs. Report the outline.md, outline.json, manifest.json paths and missing-info list.
+Call ToolKnit MCP's toolknit_ppt_outline to generate an 8-slide Chinese PPT outline from the product notes I provided. The audience is new users, and the purpose is to help them understand ToolKnit's local-first and AI Agent capabilities. Save into this workspace's toolknit-output folder. Resolve the output directory to an absolute path first and do not overwrite existing outputs. Report the outline.md, outline.json, manifest.json paths and missing-info list.
 ```
 
 ```text

@@ -138,14 +138,27 @@ pub(crate) async fn verified_partial(path: &Path, size: u64, hash: &str) -> Resu
 mod tests {
     use super::*;
 
+    async fn read_request_headers(stream: &mut tokio::net::TcpStream) {
+        use tokio::io::AsyncReadExt;
+        tokio::time::timeout(Duration::from_secs(5), async {
+            let mut request = Vec::new();
+            let mut buffer = [0; 512];
+            while !request.windows(4).any(|part| part == b"\r\n\r\n") {
+                let count = stream.read(&mut buffer).await.unwrap();
+                assert!(count > 0, "fixture request ended before its headers");
+                request.extend_from_slice(&buffer[..count]);
+                assert!(request.len() <= 8192, "fixture request headers are bounded");
+            }
+        }).await.expect("fixture request timed out");
+    }
+
     async fn response_fixture(bytes: &'static [u8]) -> reqwest::Response {
-        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        use tokio::io::AsyncWriteExt;
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
             let (mut stream, _) = listener.accept().await.unwrap();
-            let mut request = [0; 2048];
-            stream.read(&mut request).await.unwrap();
+            read_request_headers(&mut stream).await;
             stream.write_all(bytes).await.unwrap();
         });
         let response = reqwest::Client::builder()
@@ -181,13 +194,12 @@ mod tests {
 
     #[tokio::test]
     async fn http_stalled_body_times_out_and_is_cancellable() {
-        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        use tokio::io::AsyncWriteExt;
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
             let (mut stream, _) = listener.accept().await.unwrap();
-            let mut request = [0; 2048];
-            stream.read(&mut request).await.unwrap();
+            read_request_headers(&mut stream).await;
             stream
                 .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\n")
                 .await

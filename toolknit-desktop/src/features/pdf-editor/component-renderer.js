@@ -1,9 +1,11 @@
 import {
   editedTextVisualBox,
   insertedTextVisualBox,
+  insertedComponentViewport,
   rectToViewport,
   sourceTextBox
 } from './text-layout.js';
+import { insertedTextLines, insertedTextLayout } from '../../core/pdf-inserted-text.js';
 
 /**
  * Owns the PDF Editor text layer and generated component DOM. State mutation,
@@ -35,17 +37,20 @@ export function createPdfEditorComponentRenderer({
   let lastRender = null;
   let measureContext;
 
-  function measureText(object, text, fontSize) {
+  function measureText(object, text, fontSize, multiline = false) {
     if (measureContext === undefined) measureContext = documentRef?.createElement('canvas')?.getContext?.('2d') || null;
     if (!measureContext) return;
     const family = documentRef.defaultView?.getComputedStyle(getTextLayer())
       .getPropertyValue('--tk-font-pdf').trim() || '"Microsoft YaHei", Helvetica, Arial, sans-serif';
     measureContext.font = `500 ${fontSize}px ${family}`;
-    const metrics = measureContext.measureText(String(text ?? ''));
-    object.visualTextWidth = metrics.width;
+    const lines = multiline ? insertedTextLines(text) : [String(text ?? '')];
+    const metrics = measureContext.measureText(lines.find(line => line.length) || 'M');
+    object.visualTextWidth = lines.reduce((maximum, line) => Math.max(maximum, measureContext.measureText(line).width), 1);
     object.visualTextHeight = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)
       || fontSize * 1.2;
   }
+
+  function measureInsertedText(object) { measureText(object, object.text, object.fontSize, true); }
 
   function syncSelection() {
     const layer = getTextLayer();
@@ -258,9 +263,9 @@ export function createPdfEditorComponentRenderer({
     }
 
     for (const object of getInsertedTexts().filter(item => item.pageId === pageId)) {
-      measureText(object, object.text, object.fontSize);
+      measureInsertedText(object);
       const visualBox = insertedTextVisualBox(object);
-      const rect = rectToViewport(cssViewport, visualBox);
+      const rect = insertedComponentViewport(cssViewport, visualBox, object.rotation);
       const element = documentRef.createElement('div');
       element.className = 'pdf-editor-inserted-text';
       element.dataset.objectId = object.id;
@@ -271,15 +276,15 @@ export function createPdfEditorComponentRenderer({
         && selectedComponent.pageId === pageId
         && selectedComponent.key === object.id);
       element.classList.toggle('is-selected', isSelected);
-      element.textContent = object.text;
+      element.textContent = insertedTextLines(object.text).join('\n');
       element.style.left = rect.left + 'px';
       element.style.top = rect.top + 'px';
       element.style.width = Math.max(1, rect.width) + 'px';
       element.style.height = Math.max(1, rect.height) + 'px';
       element.style.fontSize = Math.max(1, object.fontSize * scale) + 'px';
-      element.style.lineHeight = Math.max(1, rect.height) + 'px';
+      element.style.lineHeight = Math.max(1, insertedTextLayout(object).lineHeight * scale) + 'px';
       element.style.transformOrigin = '50% 50%';
-      element.style.transform = `rotate(${Number(object.rotation) || 0}deg)`;
+      element.style.transform = `rotate(${rect.rotation}deg)`;
       element.addEventListener('click', event => {
         event.stopPropagation();
         if (editMode) openEditModal(object.id, object, object, 'edit-inserted-text');
@@ -312,7 +317,7 @@ export function createPdfEditorComponentRenderer({
     }
 
     for (const object of getInsertedImages().filter(item => item.pageId === pageId)) {
-      const rect = rectToViewport(cssViewport, { x: object.x, y: object.y, width: object.width, height: object.height });
+      const rect = insertedComponentViewport(cssViewport, { x: object.x, y: object.y, width: object.width, height: object.height }, object.rotation);
       const wrapper = documentRef.createElement('div');
       wrapper.className = 'pdf-editor-inserted-image-wrap';
       wrapper.dataset.objectId = object.id;
@@ -327,7 +332,7 @@ export function createPdfEditorComponentRenderer({
       wrapper.style.top = rect.top + 'px';
       wrapper.style.width = Math.max(1, rect.width) + 'px';
       wrapper.style.height = Math.max(1, rect.height) + 'px';
-      wrapper.style.transform = `rotate(${Number(object.rotation) || 0}deg)`;
+      wrapper.style.transform = `rotate(${rect.rotation}deg)`;
       const image = documentRef.createElement('img');
       image.className = 'pdf-editor-inserted-image';
       image.src = object.previewUrl;
@@ -350,12 +355,12 @@ export function createPdfEditorComponentRenderer({
     }
 
     for (const object of getInsertedShapes().filter(item => item.pageId === pageId)) {
-      const rect = rectToViewport(cssViewport, {
+      const rect = insertedComponentViewport(cssViewport, {
         x: object.x,
         y: object.y,
         width: Math.max(1, object.width),
         height: Math.max(1, object.height)
-      });
+      }, object.rotation);
       const wrapper = documentRef.createElement('div');
       wrapper.className = 'pdf-editor-inserted-shape';
       if (object.shapeType === 'line') wrapper.classList.add('pdf-editor-inserted-shape--line');
@@ -371,7 +376,7 @@ export function createPdfEditorComponentRenderer({
       wrapper.style.top = rect.top + 'px';
       wrapper.style.width = Math.max(1, rect.width) + 'px';
       wrapper.style.height = Math.max(1, rect.height) + 'px';
-      wrapper.style.transform = `rotate(${Number(object.rotation) || 0}deg)`;
+      wrapper.style.transform = `rotate(${rect.rotation}deg)`;
       const svg = buildShapeSvg(object, rect.width, rect.height, scale);
       if (svg) wrapper.appendChild(svg);
       wrapper.addEventListener('click', event => {
@@ -394,6 +399,7 @@ export function createPdfEditorComponentRenderer({
     applyRelativeViewportRect,
     ensureTextMask,
     render,
+    measureInsertedText,
     syncSelection,
     syncTextLayerAccessibility
   };

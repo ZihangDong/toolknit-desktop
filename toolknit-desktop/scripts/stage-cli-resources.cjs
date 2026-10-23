@@ -21,6 +21,8 @@ const sharedDestination = path.join(root, 'cli', 'lib', 'shared');
 const guideSource = path.join(root, 'docs');
 const guideDestination = path.join(root, 'cli', 'guides');
 const guideFiles = [
+  'CLI_CAPABILITIES.md',
+  'CLI_CAPABILITIES.json',
   'agent-guide.zh-CN.md',
   'agent-guide.en.md',
   'ai-document-project-spec.md',
@@ -30,6 +32,30 @@ const fontSource = path.join(root, 'public', 'assets', 'fonts');
 const fontDestination = path.join(root, 'cli', 'resources', 'fonts');
 const fontFiles = ['NotoSansSC-Regular.ttf', 'NotoSansSC-Semibold.ttf'];
 const coreFiles = [
+  'features/pdf-to-word/ai-runtime.js',
+  'features/markdown-editor/core.js',
+  'ai-polish-core.js',
+  'ai-translate-core.js',
+  'features/pdf-ai-markdown/pipeline.js',
+  'features/pdf-ai-markdown/core.js',
+  'features/pdf-ai-markdown/ai-messages.js',
+  'features/pdf-ai-markdown/markdown-serializer.js',
+  'features/image-to-pdf/core.js',
+  'features/image-color-replace/core.js',
+  'features/icon-generator/core.js',
+  'core/image-resolution.js',
+  'pdf-page-number-core.js',
+  'features/pdf-crop/core.js',
+  'features/pdf-text-extract/core.js',
+  'features/pdf-text-extract/table-grid.js',
+  'core/pdf-scan.js',
+  'shared/scanned-pdf-writer.js',
+  'text-format-core.js',
+  'features/developer-toolbox/core.js',
+  'features/bmi-calculator/core.js',
+  'features/mortgage-calculator/core.js',
+  'features/interest-calculator/core.js',
+  'features/color-space-compare/core.js',
   'pdf-merge-core.js',
   'pdf-document-structure.js',
   'pdf-split-core.js',
@@ -40,6 +66,7 @@ const coreFiles = [
   'core/pdf-compression.js',
   'core/pdf-raster-candidate.js',
   'core/limits/bytes.js',
+  'core/image-dimensions.js',
   'core/limits/pdf.js',
   'core/limits/ai.js',
   'core/limits/image.js',
@@ -80,6 +107,12 @@ const coreFiles = [
   'ai-doc-pdf-core.js',
   'pdf-lib-fontkit.js'
 ];
+// Only platform-free engine modules are copied, never their UI controllers.
+for (const directory of ['features/pdf-to-word/core', 'features/pdf-to-word/adapters']) {
+  for (const entry of fs.readdirSync(path.join(coreSource, directory), { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.endsWith('.js')) coreFiles.push(`${directory}/${entry.name}`);
+  }
+}
 const sharedFiles = [
   'task-contract.mjs',
   'task-runtime.mjs'
@@ -193,7 +226,7 @@ for (const fileName of fontFiles) {
   if (!fs.existsSync(filePath)) throw new Error(`CLI font resource is missing: ${filePath}`);
   copyFileAtomic(filePath, path.join(fontDestination, fileName));
 }
-for (const fileName of ['LICENSE', 'NOTICE', 'LICENSES/Apache-2.0.txt']) {
+for (const fileName of ['LICENSE', 'NOTICE', 'LICENSES/Apache-2.0.txt', 'LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md']) {
   copyFileAtomic(path.join(root, fileName), path.join(root, 'cli', fileName));
 }
 releaseStageLockOnce();

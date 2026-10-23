@@ -12,7 +12,7 @@
             <i data-lucide="arrow-left"></i>
             <span data-i18n="settings.back">返回首页</span>
           </button>
-          <span class="pdf-merge-v2-top-tag pdf-editor-v2-top-tag">PDF EDITOR · TOOL PAGE 3.1</span>
+          <span class="pdf-merge-v2-top-tag pdf-editor-v2-top-tag">PDF EDITOR · TOOL PAGE 3.2</span>
         </div>
         <div class="home-v2-top-actions pdf-merge-v2-top-actions">
           <button class="home-v2-nav-link" type="button" data-home-link="website">
@@ -75,12 +75,15 @@
             <div class="pdf-editor-canvas-stage" id="pdfEditorCanvasStage">
               <div class="pdf-editor-empty" id="pdfEditorEmpty">
                 <div class="pdf-editor-empty-icon"><i data-lucide="file-pen-line"></i></div>
-                <h2 data-i18n="home.pdfEditor.emptyTitle">把 PDF 放到这里开始编辑</h2>
+                <h2 data-i18n="home.pdfEditor.emptyTitle">从文件或空白页开始</h2>
                 <p data-i18n="home.pdfEditor.emptyDesc">支持文字替换、内容插入、页面排序、旋转、提取与追加合并，文件仅在本机处理。</p>
+                <div class="pdf-editor-empty-actions">
                 <button class="audio-convert-cta pdf-merge-v2-cta" id="pdfEditorCta" type="button">
                   <i data-lucide="upload"></i>
                   <span data-i18n="home.pdfEditor.cta">上传 PDF 文件</span>
                 </button>
+                <button class="pdf-editor-tool" id="pdfEditorNewDocument" type="button"><i data-lucide="file-plus-2"></i><span data-i18n="home.pdfEditor.newDocument">新建空白 PDF</span></button>
+                </div>
               </div>
               <div class="pdf-editor-component-menu" id="pdfEditorComponentMenu" role="toolbar" aria-label="组件操作" hidden>
                 <button type="button" id="pdfEditorComponentScaleDown" data-i18n-title="home.pdfEditor.zoomOut" title="缩小" aria-label="缩小"><i data-lucide="minus"></i></button>
@@ -242,7 +245,7 @@
             <label class="pdf-editor-edit-modal-label" id="pdfEditorEditOriginalLabel" data-i18n="home.pdfEditor.editTextOriginal">原文字</label>
             <div class="pdf-editor-edit-modal-original" id="pdfEditorEditOriginal"></div>
             <label class="pdf-editor-edit-modal-label" id="pdfEditorEditNewLabel" data-i18n="home.pdfEditor.editTextNew">新文字</label>
-            <input class="pdf-editor-edit-modal-input" id="pdfEditorEditInput" type="text" autocomplete="off">
+            <textarea class="pdf-editor-edit-modal-input" id="pdfEditorEditInput" rows="3" autocomplete="off" aria-labelledby="pdfEditorEditNewLabel"></textarea>
             <div class="pdf-editor-edit-security-note" id="pdfEditorEditSecurityNote" hidden>
               <i data-lucide="shield-alert"></i>
               <span data-i18n="home.pdfEditor.visualEditWarning">此操作仅覆盖原文字的视觉外观，原内容仍可能被提取，不可用于敏感信息脱敏。</span>
@@ -275,7 +278,7 @@
         </button>
       </div>
 
-<div class="audio-clip-success-overlay" id="pdfEditorSuccessOverlay" aria-hidden="true" inert>
+<div class="audio-clip-success-overlay tk-file-result" id="pdfEditorSuccessOverlay" aria-hidden="true" inert>
         <div class="audio-clip-success-dialog" role="dialog" aria-modal="true" aria-labelledby="pdfEditorSuccessTitle">
           <div class="audio-clip-success-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>

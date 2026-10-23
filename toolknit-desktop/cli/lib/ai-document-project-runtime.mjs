@@ -11,7 +11,7 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { ToolKnitError } from './errors.mjs';
+import { ToolKnitError, throwIfAborted, cancellationError } from './errors.mjs';
 import { renderAiDocumentPreviews } from './ai-document-preview.mjs';
 
 const CLI_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -302,7 +302,12 @@ async function writeProjectStage({ project, paths, rendered, revisionRecord, new
   }
 }
 
-async function publishStage(stage, paths, overwrite) {
+async function publishStage(stage, paths, overwrite, signal) {
+  // Cancellation is safe before commit; publication and rollback stay atomic.
+  if (signal?.aborted) {
+    await rm(stage.root, { recursive: true, force: true });
+    throw cancellationError(signal);
+  }
   const entries = [
     { source: stage.pdfPath, target: paths.pdfPath },
     { source: stage.projectPath, target: paths.projectPath },
@@ -376,10 +381,12 @@ function blockingDiagnostics(diagnostics) {
   return diagnostics.filter(diagnostic => diagnostic.severity === 'error');
 }
 
-export async function createAiDocumentProjectArtifacts({ layout, outputPath, locale, overwrite, expectedPageCount, reportProgress }) {
+export async function createAiDocumentProjectArtifacts({ layout, outputPath, locale, overwrite, expectedPageCount, reportProgress, signal }) {
+  throwIfAborted(signal);
   const paths = projectPathsFromPdf(outputPath);
   const project = createAiDocProjectFromLayout(layout, { locale, title: layout.summary || 'ToolKnit AI Document' });
   reportProgress?.(68, 'Created the editable ToolKnit document project.');
+  throwIfAborted(signal);
   const rendered = await renderProject(project, paths);
   const blocking = blockingDiagnostics(rendered.diagnostics);
   if (blocking.length) {
@@ -392,9 +399,10 @@ export async function createAiDocumentProjectArtifacts({ layout, outputPath, loc
   }
   reportProgress?.(82, 'Rendered the PDF and stable control geometry.');
   reportProgress?.(90, 'Rendered clean previews and numbered control maps.');
+  throwIfAborted(signal);
   const record = revisionRecord({ project, parentRevision: null, operations: [{ type: 'create' }], changes: [] });
   const stage = await writeProjectStage({ project, paths, rendered, revisionRecord: record, newAssets: new Map(), preserveExisting: false });
-  await publishStage(stage, paths, overwrite === true);
+  await publishStage(stage, paths, overwrite === true, signal);
   reportProgress?.(96, 'Published the editable project and its artifacts.');
   const outputs = resultOutputs(paths, rendered);
   outputs.find(output => output.kind === 'project').revision = project.revision;
@@ -532,11 +540,13 @@ export async function editAiDocumentProject(argsValue, options = {}) {
       changes = applied.changes;
     }
     reportProgress(35, 'Applied the operations atomically.');
+    throwIfAborted(options.signal);
     const rendered = await renderProject(editedProject, loaded.paths, {
       previews: argsValue.dry_run !== true,
       inlineAssets: newAssets
     });
     reportProgress(70, 'Validated the rendered page geometry and document diagnostics.');
+    throwIfAborted(options.signal);
     if (argsValue.dry_run === true) {
       return {
         tool: 'ai.document.edit',
@@ -566,7 +576,7 @@ export async function editAiDocumentProject(argsValue, options = {}) {
       newAssets,
       preserveExisting: true
     });
-    await publishStage(stage, loaded.paths, true);
+    await publishStage(stage, loaded.paths, true, options.signal);
     reportProgress(95, 'Published the new revision and refreshed artifacts.');
     const outputs = resultOutputs(loaded.paths, rendered);
     outputs.find(output => output.kind === 'project').revision = editedProject.revision;
@@ -589,6 +599,7 @@ export async function renderAiDocumentProject(argsValue, options = {}) {
   const loaded = await loadAiDocumentProject(assertString(argsValue.project_path, 'project_path'));
   const reportProgress = typeof options.reportProgress === 'function' ? options.reportProgress : () => {};
   reportProgress(15, 'Loaded and validated the editable document project.');
+  throwIfAborted(options.signal);
   const rendered = await renderProject(loaded.project, loaded.paths);
   const blocking = blockingDiagnostics(rendered.diagnostics);
   if (blocking.length) {
@@ -597,6 +608,7 @@ export async function renderAiDocumentProject(argsValue, options = {}) {
     });
   }
   reportProgress(75, 'Rendered the PDF, previews, and numbered control maps.');
+  throwIfAborted(options.signal);
   const stage = await writeProjectStage({
     project: loaded.project,
     paths: loaded.paths,
@@ -605,7 +617,7 @@ export async function renderAiDocumentProject(argsValue, options = {}) {
     newAssets: new Map(),
     preserveExisting: true
   });
-  await publishStage(stage, loaded.paths, true);
+  await publishStage(stage, loaded.paths, true, options.signal);
   reportProgress(95, 'Refreshed the document artifacts.');
   const outputs = resultOutputs(loaded.paths, rendered);
   outputs.find(output => output.kind === 'project').revision = loaded.project.revision;

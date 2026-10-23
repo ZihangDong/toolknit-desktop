@@ -1,6 +1,6 @@
 # 版本检查与代码许可维护
 
-本轮实现日期：2026-10-14。应用版本仍为 3.1.0，尚未发布。
+初版实现日期：2026-10-14；以下版本检查记录为V3.1历史。2026-10-20补充V3.2引擎单独授权；V3.1已发布，V3.2仍未发布。
 
 ## 版本来源与发布顺序
 
@@ -25,6 +25,10 @@
 
 ## 许可范围
 
+- V3.2的`src/features/pdf-to-word/**`及`src-tauri/src/native_runtime/pdf/docx_write.rs`中的自有代码使用`LicenseRef-ToolKnit-PDF-Word-Source-View-1.0`，从首次公开提交即与完整专属条款一起进入分支。允许阅读及必要私人阅览副本；其他商业/非商业用途需事先联系info@toolknit.com取得书面授权。官方应用运行有明确例外，第三方与历史授权不撤回。
+- 完整专属许可的主文件在根`LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md`。`scripts/sync-pdf-word-license.mjs`同步桌面端副本、feature内LICENSE、前端许可资产和59个自有源码文件头，`--check`只读验证；新增引擎源码必须同步。标准PolyForm正文不改写，根/桌面NOTICE明确排除引擎范围。
+- 桌面package及锁文件使用`SEE LICENSE IN NOTICE`，Cargo使用`license-file`指向NOTICE以表明混合许可。CLI未包含该引擎，继续保持原PolyForm metadata。Tauri资源显式包含专属许可，静态前端同时携带`assets/licenses/pdf-word-engine.txt`。
+- CLI资源暂存仍同步项目NOTICE，同时携带其引用的专属许可全文；这不把引擎源码打入CLI，也不改变CLI的PolyForm授权。`test:license`检查完整文本一致性，`test:cli-package`检查实际npm清单。
 - 根目录、桌面端与 CLI 的 LICENSE 使用未经改写的官方 PolyForm Noncommercial 1.0.0 正文；NOTICE 指明作者、商业授权联系与保留权利。
 - 新授权的作者代码及修改适用新许可。旧 Apache-2.0 授权不撤销；原文本保存在各层 `LICENSES/Apache-2.0.txt`。未改动旧代码、既有第三方贡献与依赖保留原许可。贡献者保留自身版权。
 - Joshua-Zion PR #67 的颜色空间比较改编保留 Apache-2.0 声明，不借更换顶层 LICENSE 改写第三方权利。
@@ -33,6 +37,8 @@
 
 ## 验证与边界
 
+- 2026-10-20 V3.2单独许可：完整`test:release`104个脚本通过，其中安全检查1499项；资源审计为19个public文件、560个构建文件、39个原生资源。许可专项验证标准PolyForm正文未改写、自有源码文件头、四处完整专属文本、应用使用例外及旧授权保留；工具集成数量和中英文完整性通过。待提交源码检查未发现凭据、个人路径、Skill、安装器或测试文件。本轮沿用此前功能浏览器和完整Rust验证，未新增安装包或正式发布；首次全量门禁中的干净检出仍验证当时HEAD V3.1，提交后另验证V3.2的干净CLI检出。
+- 首次V3.2源码提交`4d70da4`基于主分支`49a11fd`，引擎与专属授权同批加入。提交后的`test:cli-clean-worktree`通过：从该提交全新检出、打包并安装本地CLI，实际版本3.2.0、46项MCP工具；没有发布npm。源文档中的第三方许可生成器仅规范化行尾空白，完整正文校验和最终构建/资源审计通过。原始日志位于本机忽略目录`tmp/v3.2-source-publish/`。
 - `test:update-service`：双源、单源失败、双源失败、正式版本筛选、乱序分页、大小/时间边界、并发、缓存及可见性/联网/退出恢复。
 - `test:license`：官方正文摘要、三处一致性、历史授权、第三方例外、metadata 及打包资源。
 - `scripts/test-update-dialog-browser.mjs`：双主题、中英文、4 种窗口尺寸、实际设置入口、居中、滚动、焦点锁、Escape/背景点击、重复检查、下载失败/重试、语言切换和销毁。

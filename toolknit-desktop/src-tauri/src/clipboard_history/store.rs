@@ -8,14 +8,11 @@ use hmac::{Hmac, Mac};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sha2::Sha256;
-use std::{
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 use zeroize::Zeroizing;
 
 type Result<T> = std::result::Result<T, String>;
-fn db_error(_: rusqlite::Error) -> String {
+pub(super) fn db_error(_: rusqlite::Error) -> String {
     "clipboard:storage-failed".into()
 }
 
@@ -63,7 +60,7 @@ impl Summary {
                     .map_err(|_| "clipboard:image-invalid")?;
                 let mut buffer = std::io::Cursor::new(Vec::new());
                 image
-                    .thumbnail(160, 120)
+                    .thumbnail(320, 200)
                     .write_to(&mut buffer, image::ImageFormat::Png)
                     .map_err(|_| "clipboard:image-invalid")?;
                 summary.thumbnail = Some(format!(
@@ -77,53 +74,48 @@ impl Summary {
 }
 
 pub struct Store {
-    db: Connection,
-    key: Zeroizing<Vec<u8>>,
+    pub(super) db: Connection,
+    pub(super) key: Zeroizing<Vec<u8>>,
     pub directory: PathBuf,
 }
 impl Store {
+    pub fn preserve_unreadable(directory: &Path) -> Result<PathBuf> {
+        match Self::open(directory) {
+            Err(error)
+                if matches!(
+                    error.as_str(),
+                    "clipboard:key-missing"
+                        | "clipboard:key-invalid"
+                        | "clipboard:key-unavailable"
+                        | "clipboard:key-mismatch"
+                ) => {}
+            _ => return Err("clipboard:restart-unavailable".into()),
+        }
+        let archive = directory.with_file_name(format!("clipboard-history-preserved-{}", now_ms()));
+        if archive.exists() {
+            return Err("clipboard:storage-failed".into());
+        }
+        std::fs::rename(directory, &archive).map_err(|_| "clipboard:storage-failed")?;
+        Ok(archive)
+    }
     pub fn open(directory: &Path) -> Result<Self> {
         std::fs::create_dir_all(directory).map_err(|_| "clipboard:storage-failed")?;
-        let key_path = directory.join("history-key.dpapi");
-        let key = if key_path.exists() {
-            if std::fs::metadata(&key_path)
-                .map_err(|_| "clipboard:key-failed")?
-                .len()
-                > 16384
-            {
-                return Err("clipboard:key-failed".into());
-            }
-            crate::platform::protected_data::transform(
-                &mut std::fs::read(&key_path).map_err(|_| "clipboard:key-failed")?,
-                false,
-            )
-            .map_err(|_| "clipboard:key-failed")?
-        } else {
-            if directory.join("history.sqlite").exists() {
-                return Err("clipboard:key-failed".into());
-            }
-            let mut key = Zeroizing::new(vec![0u8; 32]);
-            getrandom::getrandom(&mut key).map_err(|_| "clipboard:key-failed")?;
-            let protected = crate::platform::protected_data::transform(&mut key, true)
-                .map_err(|_| "clipboard:key-failed")?;
-            let mut file = std::fs::OpenOptions::new()
-                .create_new(true)
-                .write(true)
-                .open(&key_path)
-                .map_err(|_| "clipboard:key-failed")?;
-            file.write_all(&protected)
-                .and_then(|_| file.sync_all())
-                .map_err(|_| "clipboard:key-failed")?;
-            key.to_vec()
-        };
-        if key.len() != 32 {
-            return Err("clipboard:key-failed".into());
-        }
+        let guard = std::fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(directory.join("history-init.lock"))
+            .map_err(|_| "clipboard:key-storage")?;
+        guard.try_lock().map_err(|_| "clipboard:storage-busy")?;
         let db = Connection::open(directory.join("history.sqlite")).map_err(db_error)?;
+        db.busy_timeout(std::time::Duration::from_secs(2))
+            .map_err(db_error)?;
+        let key = super::key::load(&db, directory)?;
         Self::initialize(db, key, directory.to_owned())
     }
 
-    fn initialize(db: Connection, key: Vec<u8>, directory: PathBuf) -> Result<Self> {
+    pub(super) fn initialize(db: Connection, key: Vec<u8>, directory: PathBuf) -> Result<Self> {
         db.busy_timeout(std::time::Duration::from_secs(2))
             .map_err(db_error)?;
         db.execute_batch("PRAGMA foreign_keys=ON; PRAGMA journal_mode=DELETE; PRAGMA secure_delete=ON; PRAGMA auto_vacuum=INCREMENTAL;
@@ -133,14 +125,22 @@ impl Store {
                 kind TEXT NOT NULL, hash TEXT NOT NULL REFERENCES contents(hash), source BLOB NOT NULL, favorite INTEGER NOT NULL DEFAULT 0, used_at INTEGER);
             CREATE INDEX IF NOT EXISTS events_time ON events(captured_at);
             CREATE INDEX IF NOT EXISTS events_hash ON events(hash);
-            PRAGMA user_version=1;").map_err(db_error)?;
+            CREATE TABLE IF NOT EXISTS event_notes (id INTEGER PRIMARY KEY REFERENCES events(id) ON DELETE CASCADE, body BLOB NOT NULL);
+            CREATE TABLE IF NOT EXISTS phrases (id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT NOT NULL UNIQUE, body BLOB NOT NULL);
+            CREATE TABLE IF NOT EXISTS history_order (id INTEGER PRIMARY KEY REFERENCES events(id) ON DELETE CASCADE, rank INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS phrase_order (id INTEGER PRIMARY KEY REFERENCES phrases(id) ON DELETE CASCADE, rank INTEGER NOT NULL);
+            INSERT OR IGNORE INTO history_order SELECT id,id FROM events;
+            INSERT OR IGNORE INTO phrase_order SELECT id,id FROM phrases;
+            CREATE INDEX IF NOT EXISTS history_order_rank ON history_order(rank);
+            CREATE INDEX IF NOT EXISTS phrase_order_rank ON phrase_order(rank);
+            PRAGMA user_version=3;").map_err(db_error)?;
         Ok(Self {
             db,
             key: Zeroizing::new(key),
             directory,
         })
     }
-    fn seal<T: Serialize>(&self, value: &T, context: &[u8]) -> Result<Vec<u8>> {
+    pub(super) fn seal<T: Serialize>(&self, value: &T, context: &[u8]) -> Result<Vec<u8>> {
         let plain =
             Zeroizing::new(serde_json::to_vec(value).map_err(|_| "clipboard:storage-failed")?);
         let mut nonce = [0u8; 12];
@@ -160,7 +160,7 @@ impl Store {
         );
         Ok(result)
     }
-    fn unseal<T: DeserializeOwned>(&self, bytes: &[u8], context: &[u8]) -> Result<T> {
+    pub(super) fn unseal<T: DeserializeOwned>(&self, bytes: &[u8], context: &[u8]) -> Result<T> {
         if bytes.len() < 28 {
             return Err("clipboard:record-damaged".into());
         }
@@ -232,8 +232,8 @@ impl Store {
             )
             .map_err(db_error)
     }
-    fn logical_bytes(&self) -> Result<u64> {
-        self.db.query_row("SELECT COALESCE((SELECT SUM(length(body)+length(summary)) FROM contents),0) + COALESCE((SELECT SUM(length(source)+128) FROM events),0)", [], |r|r.get(0)).map_err(db_error)
+    pub(super) fn logical_bytes(&self) -> Result<u64> {
+        self.db.query_row("SELECT COALESCE((SELECT SUM(length(body)+length(summary)) FROM contents),0) + COALESCE((SELECT SUM(length(source)+128) FROM events),0) + COALESCE((SELECT SUM(length(body)) FROM event_notes),0)", [], |r|r.get(0)).map_err(db_error)
     }
     fn garbage_collect(&self) -> Result<()> {
         self.db.execute("DELETE FROM contents WHERE NOT EXISTS(SELECT 1 FROM events WHERE events.hash=contents.hash)", []).map_err(db_error)?;
@@ -314,6 +314,7 @@ impl Store {
         }
         transaction.execute("INSERT INTO events(captured_at,offset_minutes,kind,hash,source) VALUES(?1,?2,?3,?4,?5)", params![timestamp,offset,content.kind(),hash,provenance]).map_err(db_error)?;
         let id = transaction.last_insert_rowid();
+        transaction.execute("INSERT INTO history_order VALUES(?1,(SELECT COALESCE(MAX(rank),0)+1 FROM history_order))", [id]).map_err(db_error)?;
         self.enforce(settings, timestamp)?;
         let retained: bool = transaction
             .query_row(
@@ -328,7 +329,7 @@ impl Store {
         transaction.commit().map_err(db_error)?;
         Ok(id)
     }
-    fn entry(&self, id: i64) -> Result<Entry> {
+    pub fn entry(&self, id: i64) -> Result<Entry> {
         let (timestamp,offset,kind,hash,source,favorite,used_at,summary): (i64,i32,String,String,Vec<u8>,bool,Option<i64>,Vec<u8>) = self.db.query_row(
             "SELECT e.captured_at,e.offset_minutes,e.kind,e.hash,e.source,e.favorite,e.used_at,c.summary FROM events e JOIN contents c ON e.hash=c.hash WHERE e.id=?1", [id],
             |r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?,r.get(6)?,r.get(7)?))).optional().map_err(db_error)?.ok_or("clipboard:not-found")?;
@@ -336,6 +337,7 @@ impl Store {
         let source: Provenance = self.unseal(&source, b"source")?;
         Ok(Entry {
             id,
+            note: self.note(id)?,
             captured_at: timestamp,
             offset_minutes: offset,
             kind,
@@ -384,7 +386,9 @@ impl Store {
         Ok(detail)
     }
     pub fn page(&self, query: &Query, cancelled: impl Fn() -> bool) -> Result<Page> {
+        let limit = query.limit.unwrap_or(50);
         if query.search.len() > 512
+            || !(1..=50).contains(&limit)
             || !["", "text", "image", "files"].contains(&query.kind.as_str())
         {
             return Err("clipboard:invalid-query".into());
@@ -394,7 +398,15 @@ impl Store {
             .query_row("SELECT COALESCE(MAX(id),0) FROM events", [], |r| r.get(0))
             .map_err(db_error)?;
         let snapshot = query.snapshot.unwrap_or(max).min(max);
-        let mut stmt = self.db.prepare("SELECT id FROM events WHERE id<=?1 AND id<?2 AND (?3='' OR kind=?3) AND (?4=0 OR favorite=1) AND captured_at>=?5 AND captured_at<=?6 ORDER BY id DESC").map_err(db_error)?;
+        if query.ordered && (query.before.is_some() || query.snapshot.is_some()) {
+            return Err("clipboard:invalid-query".into());
+        }
+        let sql = if query.ordered {
+            "SELECT e.id FROM events e JOIN history_order o ON o.id=e.id WHERE e.id<=?1 AND e.id<?2 AND (?3='' OR kind=?3) AND (?4=0 OR favorite=1) AND captured_at>=?5 AND captured_at<=?6 ORDER BY o.rank DESC,e.id DESC"
+        } else {
+            "SELECT id FROM events WHERE id<=?1 AND id<?2 AND (?3='' OR kind=?3) AND (?4=0 OR favorite=1) AND captured_at>=?5 AND captured_at<=?6 ORDER BY id DESC"
+        };
+        let mut stmt = self.db.prepare(sql).map_err(db_error)?;
         let ids = stmt
             .query_map(
                 params![
@@ -425,6 +437,7 @@ impl Store {
                     .to_lowercase()
                     .contains(&needle)
                 && !entry.preview.to_lowercase().contains(&needle)
+                && !entry.note.to_lowercase().contains(&needle)
                 && (entry.kind == "image"
                     || !self
                         .content(id)?
@@ -434,8 +447,10 @@ impl Store {
             {
                 continue;
             }
-            if items.len() == 50 {
-                next = items.last().map(|e: &Entry| e.id);
+            if items.len() == limit {
+                if !query.ordered {
+                    next = items.last().map(|e: &Entry| e.id);
+                }
                 break;
             }
             items.push(entry);
@@ -508,6 +523,137 @@ mod tests {
             text: value.into(),
             rich: false,
         }
+    }
+    #[cfg(windows)]
+    #[test]
+    fn protected_backup_recovers_missing_and_corrupt_key_without_losing_records() {
+        let directory = std::env::temp_dir().join(format!(
+            "toolknit-key-recovery-{}-{}",
+            std::process::id(),
+            now_ms()
+        ));
+        let store = Store::open(&directory).unwrap();
+        let id = store
+            .insert(
+                &text("recovery fixture"),
+                None,
+                now_ms(),
+                0,
+                &Settings::default(),
+            )
+            .unwrap();
+        drop(store);
+        std::fs::remove_file(directory.join("history-key.dpapi")).unwrap();
+        let store = Store::open(&directory).unwrap();
+        assert_eq!(
+            store.detail(id).unwrap().text.as_deref(),
+            Some("recovery fixture")
+        );
+        drop(store);
+        std::fs::write(directory.join("history-key.dpapi"), b"damaged").unwrap();
+        let store = Store::open(&directory).unwrap();
+        assert_eq!(
+            store.detail(id).unwrap().text.as_deref(),
+            Some("recovery fixture")
+        );
+        assert!(std::fs::read_dir(&directory).unwrap().any(|p| p
+            .unwrap()
+            .file_name()
+            .to_string_lossy()
+            .starts_with("history-key-unreadable-")));
+        drop(store);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+    #[cfg(windows)]
+    #[test]
+    fn legacy_missing_key_is_distinguished_and_database_is_preserved() {
+        let directory = std::env::temp_dir().join(format!(
+            "toolknit-key-legacy-{}-{}",
+            std::process::id(),
+            now_ms()
+        ));
+        let store = Store::open(&directory).unwrap();
+        store
+            .insert(
+                &text("keep encrypted record"),
+                None,
+                now_ms(),
+                0,
+                &Settings::default(),
+            )
+            .unwrap();
+        store.db.execute_batch("DROP TABLE key_backup").unwrap();
+        drop(store);
+        std::fs::remove_file(directory.join("history-key.dpapi")).unwrap();
+        let before = std::fs::read(directory.join("history.sqlite")).unwrap();
+        assert!(matches!(Store::open(&directory), Err(e) if e == "clipboard:key-missing"));
+        assert_eq!(
+            before,
+            std::fs::read(directory.join("history.sqlite")).unwrap()
+        );
+        assert!(!directory.join("history-key.dpapi").exists());
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+    #[cfg(windows)]
+    #[test]
+    fn foreign_valid_key_never_replaces_the_database_key() {
+        let directory = std::env::temp_dir().join(format!(
+            "toolknit-key-mismatch-{}-{}",
+            std::process::id(),
+            now_ms()
+        ));
+        let store = Store::open(&directory).unwrap();
+        let id = store
+            .insert(&text("original"), None, now_ms(), 0, &Settings::default())
+            .unwrap();
+        drop(store);
+        let other = crate::platform::protected_data::transform(&mut [4; 32], true).unwrap();
+        std::fs::write(directory.join("history-key.dpapi"), other).unwrap();
+        let store = Store::open(&directory).unwrap();
+        assert_eq!(store.detail(id).unwrap().text.as_deref(), Some("original"));
+        drop(store);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+    #[cfg(windows)]
+    #[test]
+    fn restarting_unreadable_history_preserves_the_entire_database() {
+        let parent = std::env::temp_dir().join(format!(
+            "toolknit-key-preserve-{}-{}",
+            std::process::id(),
+            now_ms()
+        ));
+        let directory = parent.join("clipboard-history");
+        let store = Store::open(&directory).unwrap();
+        store
+            .insert(
+                &text("preserve me"),
+                None,
+                now_ms(),
+                0,
+                &Settings::default(),
+            )
+            .unwrap();
+        store.db.execute_batch("DROP TABLE key_backup").unwrap();
+        drop(store);
+        assert!(
+            matches!(Store::preserve_unreadable(&directory), Err(error) if error == "clipboard:restart-unavailable")
+        );
+        // A successful legacy open creates the backup, so remove it to simulate a V3.1 loss.
+        let db = Connection::open(directory.join("history.sqlite")).unwrap();
+        db.execute_batch("DROP TABLE key_backup").unwrap();
+        drop(db);
+        std::fs::remove_file(directory.join("history-key.dpapi")).unwrap();
+        let bytes = std::fs::read(directory.join("history.sqlite")).unwrap();
+        let archive = Store::preserve_unreadable(&directory).unwrap();
+        assert_eq!(
+            bytes,
+            std::fs::read(archive.join("history.sqlite")).unwrap()
+        );
+        let new = Store::open(&directory).unwrap();
+        assert_eq!(new.stats(0).unwrap().0, 0);
+        assert!(!new.settings().unwrap().resume_on_launch);
+        drop(new);
+        std::fs::remove_dir_all(parent).unwrap();
     }
     #[cfg(target_os = "windows")]
     #[test]
@@ -715,6 +861,48 @@ mod tests {
             1
         );
         assert!(s.page(&Query::default(), || true).is_err());
+    }
+    #[test]
+    fn recent_twenty_is_a_view_and_single_delete_updates_shared_history() {
+        let store = store();
+        for index in 0..21 {
+            store
+                .insert(
+                    &text(&format!("record {index}")),
+                    None,
+                    now_ms(),
+                    0,
+                    &Settings::default(),
+                )
+                .unwrap();
+        }
+        let query = Query {
+            limit: Some(20),
+            ..Default::default()
+        };
+        let recent = store.page(&query, || false).unwrap();
+        assert_eq!(recent.items.len(), 20);
+        assert_eq!(recent.items[0].id, 21);
+        assert_eq!(recent.items[19].id, 2);
+        assert_eq!(store.stats(0).unwrap().0, 21);
+        assert_eq!(store.detail(1).unwrap().text.as_deref(), Some("record 0"));
+        store.delete(&[21]).unwrap();
+        assert!(store.detail(21).is_err());
+        let after = store.page(&query, || false).unwrap();
+        assert_eq!(after.items[0].id, 20);
+        assert_eq!(after.items[19].id, 1);
+        assert_eq!(store.stats(0).unwrap().0, 20);
+        for limit in [0, 51, usize::MAX] {
+            assert!(store
+                .page(
+                    &Query {
+                        limit: Some(limit),
+                        ..Default::default()
+                    },
+                    || false
+                )
+                .is_err());
+        }
     }
     #[test]
     fn clear_preserves_favorites_and_removes_unreferenced_content() {

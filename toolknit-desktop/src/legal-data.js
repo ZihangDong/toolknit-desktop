@@ -5,10 +5,11 @@ const LEGAL_CONTENT_ZH = {
     title: '程序声明',
     html: `<div class="help-doc">
       <h2>程序声明</h2>
-      <p>本声明适用于 ToolKnit Desktop 3.1.0 及本仓库发布的 CLI / MCP 组件，用于说明软件性质、数据边界、第三方依赖与责任范围。使用前请结合实际任务阅读；继续使用即表示你理解本声明所述边界。</p>
+      <p>本声明适用于 ToolKnit Desktop 3.2.0 及本仓库发布的 CLI / MCP 组件，用于说明软件性质、数据边界、第三方依赖与责任范围。使用前请结合实际任务阅读；继续使用即表示你理解本声明所述边界。</p>
 
       <h3>一、软件性质与源码许可</h3>
-      <p>ToolKnit Desktop 是 Windows 10 / 11（64 位）的免费、本地优先文件工作台。自 2026-10-14 起，新授权的作者代码及修改采用 <strong>PolyForm Noncommercial 1.0.0</strong>，允许遵守许可与 <code>NOTICE</code> 的非商业使用、修改及分发；商业用途需联系作者（微信：wunanvip6）另行授权。版权归各自作者所有。这是源码可见许可，不是 OSI 定义的开源许可。旧 Apache-2.0 授权不撤销，未改动的旧代码及第三方贡献、依赖继续遵循原许可。</p>
+      <p>ToolKnit Desktop 是 Windows 10 / 11（64 位）的免费、本地优先文件工作台。除单独授权组件外，自 2026-10-14 起新授权的作者代码及修改采用 <strong>PolyForm Noncommercial 1.0.0</strong>，允许遵守许可与 <code>NOTICE</code> 的非商业使用、修改及分发；商业用途需联系 info@toolknit.com 另行授权。版权归各自作者所有。这是源码可见许可，不是 OSI 定义的开源许可。旧 Apache-2.0 授权不撤销，未改动的旧代码及第三方贡献、依赖继续遵循原许可。</p>
+      <p>PDF 转 Word 自研引擎适用单独的源码阅览许可：允许阅读源码；运行、编译、修改、集成、分发或提供服务等其他用途，无论商业或非商业，均须事先联系 <strong>info@toolknit.com</strong> 取得书面授权。普通用户使用作者分发的官方应用或测试版转换文件，按应用条款执行，不因该引擎另行申请授权。完整范围与条款见随附 <code>LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md</code>；用户输入与输出文件不因此转为引擎源码许可。</p>
       <p>ToolKnit 网页端、官网托管服务、域名、服务账号以及 ToolKnit 名称、Logo 和视觉标识不因代码公开而自动获得授权。网页端与源码可见的桌面仓库属于相关但边界独立的产品。</p>
 
       <h3>二、本地文件处理</h3>
@@ -50,14 +51,14 @@ const LEGAL_CONTENT_ZH = {
       <div class="help-note"><p>在适用法律允许的范围内，本软件按“现状”提供，不对特定用途适用性、持续可用性或无错误运行作出保证。开发者不对因错误操作、未备份、第三方服务变化、依赖故障或不可抗力造成的间接损失承担责任。</p></div>
 
       <h3>八、知识产权与品牌边界</h3>
-      <p>用户处理的文件、数据和依法享有权利的内容仍归用户或相应权利人所有。新授权的作者代码使用权以 PolyForm Noncommercial 1.0.0 为准；旧 Apache-2.0 授权与第三方许可保持有效；该许可不授予 ToolKnit 商标、名称、Logo、视觉识别、官网、域名或托管服务的使用权，也不得冒充官方版本或官方账号。</p>
+      <p>用户处理的文件、数据和依法享有权利的内容仍归用户或相应权利人所有。一般作者代码使用权以 PolyForm Noncommercial 1.0.0 为准，PDF 转 Word 引擎以其单独源码阅览许可为准；旧 Apache-2.0 授权与第三方许可保持有效。上述许可不授予 ToolKnit 商标、名称、Logo、视觉识别、官网、域名或托管服务的使用权，也不得冒充官方版本或官方账号。</p>
 
       <h3>九、捐赠说明</h3>
       <p>捐赠完全自愿，用于 AI 开发与测试、兼容性测试、依赖与镜像验证、文档、安装包发布和开源维护。经作者确认后，赞助者可加入 ToolKnit 灰度体验群，参与版本交流、提前测试和功能建议收集；该群不解锁软件额外功能，也不构成购买、订阅、付费外包、技术支持合同或功能优先排期承诺。</p>
 
       <h3>十、更新与联系</h3>
       <p>本声明会随功能和数据边界变化而更新。正式安装包请从 toolknit.com/exe.html 获取；源代码和问题反馈见官方 GitHub / AtomGit 仓库；提交问题前请移除文件内容、密钥、密码、完整私人路径等敏感信息。</p>
-      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.1.0<br/>最后更新：2026 年 10 月 14 日<br/>开发者：董子航（Zihang Dong）</p></div>
+      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.2.0<br/>最后更新：2026 年 10 月 14 日<br/>开发者：董子航（Zihang Dong）</p></div>
     </div>`
   },
 
@@ -113,7 +114,7 @@ const LEGAL_CONTENT_ZH = {
       </ul>
 
       <h3>七、源码许可与品牌使用</h3>
-      <p>新授权的作者代码允许依照 PolyForm Noncommercial 1.0.0 非商业使用、修改和分发，并保留许可与必要声明；商业用途需另行授权。旧 Apache-2.0 授权和第三方许可不变。不得冒用 ToolKnit 名称、Logo、官网、域名、服务账号或视觉标识把第三方版本包装成官方版本，也不得把恶意软件与 ToolKnit 名义捆绑传播。</p>
+      <p>一般作者代码允许依照 PolyForm Noncommercial 1.0.0 非商业使用、修改和分发，并保留许可与必要声明；商业用途需另行授权。PDF 转 Word 引擎适用单独源码阅览许可，除阅览和官方应用使用例外外，商业及非商业使用均须联系 info@toolknit.com 取得书面授权。旧 Apache-2.0 授权和第三方许可不变。不得冒用 ToolKnit 名称、Logo、官网、域名、服务账号或视觉标识把第三方版本包装成官方版本，也不得把恶意软件与 ToolKnit 名义捆绑传播。</p>
 
       <h3>八、捐赠与反馈</h3>
       <p>捐赠是自愿支持。赞助者可经确认加入灰度体验群，参与提前测试并提交功能建议，但不代表购买功能、获得技术支持合同或优先排期。反馈问题时请提供可复现步骤、版本与已脱敏日志，不要上传包含私人内容的原文件、密钥或密码。</p>
@@ -123,7 +124,7 @@ const LEGAL_CONTENT_ZH = {
 
       <h3>十、责任与规范变更</h3>
       <div class="help-note"><p>用户应对输入内容、操作授权、结果复核和最终用途负责。本规范会随当前功能边界更新；继续使用后续版本表示你理解当时版本中展示的最新说明。</p></div>
-      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.1.0<br/>最后更新：2026 年 10 月 14 日<br/>开发者：董子航（Zihang Dong）</p></div>
+      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.2.0<br/>最后更新：2026 年 10 月 14 日<br/>开发者：董子航（Zihang Dong）</p></div>
     </div>`
   }
 };
@@ -133,10 +134,11 @@ const LEGAL_CONTENT_EN = {
     title: 'Program Declaration',
     html: `<div class="help-doc">
       <h2>Program Declaration</h2>
-      <p>This declaration applies to ToolKnit Desktop 3.1.0 and the CLI / MCP components published in this repository. It explains the software's nature, data boundaries, third-party dependencies, and limits of responsibility. Please read it in the context of your intended task before use.</p>
+      <p>This declaration applies to ToolKnit Desktop 3.2.0 and the CLI / MCP components published in this repository. It explains the software's nature, data boundaries, third-party dependencies, and limits of responsibility. Please read it in the context of your intended task before use.</p>
 
       <h3>1. Software and Source License</h3>
-      <p>ToolKnit Desktop is a free, local-first workspace for 64-bit Windows 10 / 11. From 2026-10-14, newly licensed author-owned code and modifications use <strong>PolyForm Noncommercial 1.0.0</strong>. Noncommercial use, modification and distribution must preserve LICENSE and required NOTICEs. Commercial use requires separate permission (WeChat: wunanvip6). Copyright remains with each author. This is source-available software, not OSI-approved open source. Existing Apache-2.0 grants are not withdrawn; unchanged previously licensed code, third-party contributions and dependencies retain their original licenses.</p>
+      <p>ToolKnit Desktop is a free, local-first workspace for 64-bit Windows 10 / 11. Except for separately licensed components, newly licensed author-owned code and modifications from 2026-10-14 use <strong>PolyForm Noncommercial 1.0.0</strong>. Noncommercial use, modification and distribution must preserve LICENSE and required NOTICEs. Commercial use requires separate permission via info@toolknit.com. Copyright remains with each author. This is source-available software, not OSI-approved open source. Existing Apache-2.0 grants are not withdrawn; unchanged previously licensed code, third-party contributions and dependencies retain their original licenses.</p>
+      <p>The PDF-to-Word Engine uses a separate proprietary source-viewing license. Reading is permitted; other execution, compilation, modification, integration, distribution and service use require prior written authorization for both commercial and noncommercial purposes from <strong>info@toolknit.com</strong>. Ordinary use of official applications or test builds remains subject to the application's terms and does not itself require separate Engine authorization. See <code>LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md</code> for the scope and full terms. Input and output documents are not relicensed as Engine source.</p>
       <p>The hosted ToolKnit website, domains, service accounts, ToolKnit name, logos, and visual identity are not automatically licensed with the source code. The hosted web product and the source-available desktop repository are related products with separate boundaries.</p>
 
       <h3>2. Local File Processing</h3>
@@ -178,14 +180,14 @@ const LEGAL_CONTENT_EN = {
       <div class="help-note"><p>To the extent permitted by applicable law, the software is provided “as is” without a warranty of fitness for a particular purpose, uninterrupted availability, or error-free operation. The developer is not responsible for indirect loss caused by misuse, missing backups, third-party service changes, dependency failures, or force majeure.</p></div>
 
       <h3>8. Intellectual Property and Brand Boundary</h3>
-      <p>Files and data processed by the user remain with the user or their rightful owners. Newly licensed author-owned code uses PolyForm Noncommercial 1.0.0. Existing Apache-2.0 grants and third-party licenses remain valid. That license does not grant rights to ToolKnit trademarks, names, logos, visual identity, official websites, domains, or hosted services, and it does not permit impersonating an official release or account.</p>
+      <p>Files and data processed by the user remain with the user or their rightful owners. General author-owned code uses PolyForm Noncommercial 1.0.0; the PDF-to-Word Engine uses its separate source-viewing license. Existing Apache-2.0 grants and third-party licenses remain valid. These licenses do not grant rights to ToolKnit trademarks, names, logos, visual identity, official websites, domains, or hosted services, and do not permit impersonating an official release or account.</p>
 
       <h3>9. Donations</h3>
       <p>Donations are voluntary support for AI development and testing, compatibility testing, dependency and mirror verification, documentation, package distribution, and open-source maintenance. After confirmation by the author, supporters may join the ToolKnit preview group for release discussion, early testing, and feature-request collection. Group access does not unlock software features or create a purchase, subscription, paid-development contract, support contract, or priority roadmap commitment.</p>
 
       <h3>10. Updates and Contact</h3>
       <p>This declaration may be updated when features or data boundaries change. Get installers at toolknit.com/exe.html; use the official GitHub / AtomGit repositories for source code and reports. Remove file contents, keys, passwords, and private full paths from reports before submitting them.</p>
-      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.1.0<br/>Last updated: October 14, 2026<br/>Developer: Zihang Dong</p></div>
+      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.2.0<br/>Last updated: October 14, 2026<br/>Developer: Zihang Dong</p></div>
     </div>`
   },
 
@@ -241,7 +243,7 @@ const LEGAL_CONTENT_EN = {
       </ul>
 
       <h3>7. Source License and Brand Use</h3>
-      <p>Newly licensed author-owned code permits noncommercial use, modification and distribution under PolyForm Noncommercial 1.0.0 with required notices retained. Commercial use requires separate permission. Existing Apache-2.0 grants and third-party licenses remain valid. Do not use ToolKnit names, logos, websites, domains, service accounts, or visual identity to present a third-party build as official, and do not bundle malware under the ToolKnit name.</p>
+      <p>General author-owned code permits noncommercial use, modification and distribution under PolyForm Noncommercial 1.0.0 with required notices retained. Commercial use requires separate permission. The PDF-to-Word Engine has a separate source-viewing license: beyond viewing and its official-application exception, both commercial and noncommercial use require prior written authorization via info@toolknit.com. Existing Apache-2.0 grants and third-party licenses remain valid. Do not use ToolKnit names, logos, websites, domains, service accounts, or visual identity to present a third-party build as official, and do not bundle malware under the ToolKnit name.</p>
 
       <h3>8. Donations and Feedback</h3>
       <p>Donations are voluntary. Confirmed supporters may join the preview group for early testing and feature requests, but this does not purchase a feature, support contract, or priority scheduling. When reporting a problem, provide reproducible steps, the app version, and sanitized logs. Do not upload source files containing private content, keys, or passwords.</p>
@@ -251,7 +253,7 @@ const LEGAL_CONTENT_EN = {
 
       <h3>10. Responsibility and Policy Changes</h3>
       <div class="help-note"><p>Users are responsible for input content, authorization, result review, and final use. This policy may be updated with the current feature boundary; continued use of a later release means you understand the latest policy shown for that release.</p></div>
-      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.1.0<br/>Last updated: October 14, 2026<br/>Developer: Zihang Dong</p></div>
+      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.2.0<br/>Last updated: October 14, 2026<br/>Developer: Zihang Dong</p></div>
     </div>`
   }
 };

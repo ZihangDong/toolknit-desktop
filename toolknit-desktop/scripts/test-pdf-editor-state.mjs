@@ -8,6 +8,14 @@ import {
 import { createPdfEditorStateController } from '../src/features/pdf-editor/state.js';
 
 const imageBytes = new Uint8Array([10, 20, 30, 40]);
+let blankSaved = null;
+const blankState = createPdfEditorStateController({ hasDocument: () => true,
+  getSources: () => [{ generated: true }], getSavedSnapshot: () => blankSaved,
+  confirm: () => false });
+assert.equal(blankState.hasUnsavedChanges(), true, 'new blank document prompts even before the first edit');
+assert.equal(blankState.confirmDiscardChanges('close'), false);
+blankSaved = { pages: ['saved'] };
+assert.equal(blankState.hasUnsavedChanges(), false, 'after a real save, regular history comparison owns dirty state');
 const imageLocator = compactPdfEditorComponent({
   type: 'inserted-image',
   pageId: 'page-2',
@@ -66,6 +74,11 @@ assert.equal(pdfEditorSnapshotsEqual(cleanSnapshot, {
   edits: []
 }), false);
 assert.equal(pdfEditorSnapshotsEqual(null, cleanSnapshot), false);
+assert.equal(pdfEditorSnapshotsEqual({ ...cleanSnapshot, currentId: 'a', selectedIds: ['a'], zoomPercent: 50 },
+  { ...cleanSnapshot, currentId: 'b', selectedIds: ['b'], zoomPercent: 125, editMode: true }), true,
+  'view changes do not mark an unchanged document dirty');
+assert.equal(pdfEditorSnapshotsEqual(cleanSnapshot, { ...cleanSnapshot, pages: [{ id: 'page-1', rotation: 0, sourceRotation: 90 }] }), true,
+  'lazy rotation metadata is not a content edit');
 
 const state = {
   sources: [{ id: 'source-1', name: 'sample.pdf' }],
@@ -146,6 +159,9 @@ assert.deepEqual([...state.selectedIds], ['page-1']);
 assert.equal(state.currentId, 'page-1');
 assert.equal(state.selectedComponent.segment.text, 'source text');
 assert.deepEqual(zoomState, { viewMode: 'manual', zoomPercent: 125 });
+state.idCounter = 50;
+controller.applyEditorSnapshot(captured);
+assert.equal(state.idCounter, 50, 'undo must not recycle image/source IDs still referenced by saved snapshots');
 
 const uiSource = await readFile(new URL('../src/features/pdf-editor/controller.js', import.meta.url), 'utf8');
 const templateSource = await readFile(new URL('../src/features/pdf-editor/template.html', import.meta.url), 'utf8');
@@ -225,7 +241,7 @@ assert.doesNotMatch(uiSource, /@tauri-apps\//);
 assert.doesNotMatch(fileSessionSource, /@tauri-apps\//);
 assert.doesNotMatch(eventsSource, /@tauri-apps\//);
 
-const appendStart = fileSessionSource.indexOf('async function appendPdfBytes(');
+const appendStart = fileSessionSource.indexOf('async function appendSource(');
 const appendEnd = fileSessionSource.indexOf('function chooseMainFile()', appendStart);
 const appendSource = fileSessionSource.slice(appendStart, appendEnd);
 const limitCheckIndex = appendSource.indexOf('assertPdfEditorMergeSelection(');
@@ -234,7 +250,7 @@ assert.ok(limitCheckIndex >= 0, 'append must enforce total PDF editor limits');
 assert.ok(sourceMutationIndex > limitCheckIndex, 'append limits must be checked before editor state changes');
 
 const loadStart = fileSessionSource.indexOf('async function loadMainFile(');
-const loadEnd = fileSessionSource.indexOf('async function appendPdfBytes(', loadStart);
+const loadEnd = fileSessionSource.indexOf('async function appendSource(', loadStart);
 const loadSource = fileSessionSource.slice(loadStart, loadEnd);
 const stagedLoadIndex = loadSource.indexOf('const loaded = await documents.loadBytes(bytes');
 const stagedDocumentIndex = loadSource.indexOf('stagedDocument = loaded.document');
@@ -272,7 +288,7 @@ assert.match(contentEditingSource, /setInsertedShapes\(insertedShapes\)/);
 assert.match(uiSource, /return pageOperations\?\.rotateSelected\(delta\)/);
 assert.match(uiSource, /return pageOperations\?\.deleteSelected\(\)/);
 assert.match(pageOperationsSource, /function duplicateSelectedPages\(\)/);
-assert.match(pageOperationsSource, /insertedImageStore\.delete\(selectedComponent\.key\)/);
+assert.doesNotMatch(pageOperationsSource, /insertedImageStore\.delete\(selectedComponent\.key\)/);
 assert.match(uiSource, /return pageSelection\?\.selectRange\(pageState\)/);
 assert.match(pageSelectionSource, /pdfEditorPageIdsInDocumentOrder/);
 assert.match(pageSelectionSource, /function invertPageSelection\(\)/);
@@ -286,7 +302,7 @@ assert.match(componentRendererSource, /pdf-editor-inserted-shape/);
 assert.doesNotMatch(uiSource, /textLayer\.replaceChildren\(\)/);
 assert.match(textLayoutSource, /export function editedTextVisualBox\(edit, segment\)/);
 assert.match(textLayoutSource, /export function insertedTextVisualBox\(object\)/);
-assert.match(textLayoutSource, /estimateInsertedTextWidth\(object\?\.text, fontSize\)/);
+assert.match(textLayoutSource, /insertedTextLayout\(object\)\.box/);
 assert.doesNotMatch(uiSource, /function editedTextVisualBox\(edit, segment\)/);
 assert.doesNotMatch(uiSource, /function insertedTextVisualBox\(object\)/);
 assert.match(contentEditingSource, /IMAGE_BATCH_LIMITS\.maxBytesPerFile/);

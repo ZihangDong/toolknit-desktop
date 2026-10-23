@@ -271,8 +271,8 @@
       }
 
       .ppt-draft-slide-card:focus-visible {
-        outline: 2px solid rgba(255, 255, 255, 0.72);
-        outline-offset: 3px;
+        outline: 2px solid currentColor;
+        outline-offset: -3px;
       }
 
       .ppt-draft-slide-head {
@@ -980,6 +980,7 @@
 
       .ppt-draft-editor-overlay.visible {
         display: flex;
+        pointer-events: auto;
       }
 
       .ppt-draft-editor-overlay .plasma-bg {
@@ -1001,6 +1002,8 @@
         height: 42px;
         margin: 0;
         justify-content: center;
+        opacity: 1;
+        transform: none;
       }
 
       .ppt-draft-editor-inspector .ppt-draft-editor-export {

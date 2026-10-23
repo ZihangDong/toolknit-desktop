@@ -9,7 +9,7 @@ export function createClipboardRuntime({ isTauri = false, tauri = tauriCorePromi
     },
     async subscribe(callback) {
       if (!isTauri) return () => {};
-      return (await events).listen('clipboard-history-changed', () => callback());
+      return (await events).listen('clipboard-history-changed', event => callback(event?.payload));
     }
   };
 }

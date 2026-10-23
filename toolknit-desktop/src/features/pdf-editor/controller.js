@@ -17,6 +17,7 @@ import {
 import { createPdfEditorExporter } from './exporter.js';
 import { createPdfEditorDocumentStore } from './documents.js';
 import { createPdfEditorZoomController } from './zoom.js';
+import { createPreviewViewport } from '../../shared/preview-viewport.js';
 import { createPdfEditorComponentRenderer } from './component-renderer.js';
 import { createPdfEditorComponentModel } from './component-model.js';
 import { createPdfEditorComponentControls } from './component-controls.js';
@@ -96,6 +97,7 @@ export function initPdfEditorTool({
   const moveDownBtn = document.getElementById('pdfEditorMoveDown');
   const duplicateBtn = document.getElementById('pdfEditorDuplicate');
   const blankPageBtn = document.getElementById('pdfEditorBlankPage');
+  const newDocumentBtn = document.getElementById('pdfEditorNewDocument');
   const deleteBtn = document.getElementById('pdfEditorDelete');
   const extractBtn = document.getElementById('pdfEditorExtract');
   const selectComponentBtn = document.getElementById('pdfEditorSelectComponent');
@@ -270,6 +272,7 @@ export function initPdfEditorTool({
   }
 
   function clearPendingInsert() {
+    contentEditing?.invalidateImageRead();
     if (pendingInsert?.previewUrl) URL.revokeObjectURL(pendingInsert.previewUrl);
     pendingInsert = null;
   }
@@ -354,6 +357,8 @@ export function initPdfEditorTool({
     normalizeInsertedShapeSnapshot,
     hasDocument,
     getSavedSnapshot: () => savedSnapshot,
+    getBaselineSnapshot: () => baselineSnapshot,
+    getHistory: () => editorHistory,
     t,
     confirm: message => window.confirm(message)
   });
@@ -363,7 +368,7 @@ export function initPdfEditorTool({
     apply: applyEditorSnapshot,
     equals: pdfEditorSnapshotsEqual,
     hasDocument,
-    onChange: () => updateControls()
+    onChange: () => { pdfEditorState.pruneImageAssets(); updateControls(); }
   });
   pdfEditorState.setHistory(editorHistory);
 
@@ -661,6 +666,7 @@ export function initPdfEditorTool({
     stopTileObserver(true);
     cancelMainRender();
     zoom.reset();
+    panViewport.reset();
     if (componentRenderFrame) {
       cancelAnimationFrame(componentRenderFrame);
       componentRenderFrame = 0;
@@ -696,7 +702,6 @@ export function initPdfEditorTool({
       editTextBtn.setAttribute('aria-pressed', 'false');
     }
     syncEditModeClass();
-    await documents.destroyAll();
     if (mainCanvas) {
       releaseCanvas(mainCanvas);
       mainCanvas = null;
@@ -720,6 +725,8 @@ export function initPdfEditorTool({
     updateFileCard();
     updateControls();
     syncStageVisibility();
+    // Detach UI state before awaiting worker shutdown; a quick reopen owns new state.
+    await documents.destroyAll();
   }
 
   function updateFileCard() {
@@ -822,6 +829,7 @@ export function initPdfEditorTool({
     moveDownBtn,
     duplicateBtn,
     blankPageBtn,
+    newDocumentBtn,
     deleteBtn,
     extractBtn,
     replaceBtn,
@@ -893,6 +901,7 @@ export function initPdfEditorTool({
     readBytes,
     beginOperation,
     assertOperation,
+    beginCommit: operation => operationRuntime.beginCommit(operation),
     endOperation,
     showProcess,
     setLocalizedProgress,
@@ -1269,6 +1278,10 @@ export function initPdfEditorTool({
     listenerOptions
   });
 
+  const panViewport = createPreviewViewport({ viewport: canvasScroll, content: () => canvasWrap,
+    enabled: () => !disposed && hasDocument() && !currentOperation() && overlay.classList.contains('visible'),
+    getScale: () => zoom.getCurrentScale(), setScale: () => {}, bindWheel: false });
+
   preview = createPdfEditorPreview({
     canvasStage,
     canvasScroll,
@@ -1441,6 +1454,9 @@ export function initPdfEditorTool({
     getActiveOperation: currentOperation,
     nextId: type => `${type}-${++idCounter}`,
     storeInsertedImage: (id, value) => { insertedImageStore.set(id, value); },
+    isDisposed: () => disposed,
+    getImageAssetBytes: () => pdfEditorState.imageAssetBytes(),
+    measureInsertedText: object => componentRenderer.measureInsertedText(object),
     clearPendingInsert,
     closeSelectedComponent: clearSelectedComponent,
     setComponentMode,
@@ -1463,6 +1479,7 @@ export function initPdfEditorTool({
   pageOperations = createPdfEditorPageOperations({
     documentRef: document,
     t,
+    createBlankDocument: () => fileSession.createBlankDocument(),
     getActiveOperation: currentOperation,
     getPages: () => pages,
     setPages: value => { pages = value; },
@@ -1543,8 +1560,8 @@ export function initPdfEditorTool({
     return fileSession?.loadMainFile(file);
   }
 
-  function appendPdfBytes(bytes, name, size) {
-    return fileSession?.appendPdfBytes(bytes, name, size);
+  function appendFile(file) {
+    return fileSession?.appendFile(file);
   }
 
   function chooseMainFile() {
@@ -1582,7 +1599,6 @@ export function initPdfEditorTool({
     applyEditorSnapshot(baselineSnapshot);
     resetEditorHistory();
     baselineSnapshot = cloneState(editorHistory.firstSnapshot());
-    savedSnapshot = cloneState(editorHistory.firstSnapshot());
   }
 
   operationRuntime = createPdfEditorOperationRuntime({
@@ -1664,6 +1680,7 @@ export function initPdfEditorTool({
     getMainSourceName: mainSourceName,
     beginOperation,
     assertOperation,
+    beginCommit: operation => operationRuntime.beginCommit(operation),
     endOperation,
     showProcess,
     setLocalizedProgress,
@@ -1673,6 +1690,7 @@ export function initPdfEditorTool({
     captureEditorSnapshot,
     setSavedSnapshot: () => {
       savedSnapshot = captureEditorSnapshot();
+      pdfEditorState.pruneImageAssets();
     }
   });
 
@@ -1725,6 +1743,7 @@ export function initPdfEditorTool({
     moveDownBtn,
     duplicateBtn,
     blankPageBtn,
+    newDocumentBtn,
     selectAllBtn,
     invertSelectionBtn,
     deleteBtn,
@@ -1779,7 +1798,7 @@ export function initPdfEditorTool({
     closeOverlay,
     closeSuccess,
     loadMainFile,
-    appendPdfBytes,
+    appendFile,
     prepareInsertImage,
     cancelInsertMode,
     showDropZone,
@@ -1842,6 +1861,7 @@ export function initPdfEditorTool({
       if (appendInput) appendInput.value = '';
       stopFitPreviewObserver();
       zoom.dispose();
+      panViewport.dispose();
       stopComponentRotate();
       if (componentRenderFrame) {
         cancelAnimationFrame(componentRenderFrame);

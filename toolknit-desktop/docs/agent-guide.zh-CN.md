@@ -25,7 +25,7 @@ C:\Users\<你的用户名>\AppData\Roaming\npm\node_modules\@toolknit\cli\toolkn
 
 基础 PDF、图片、音视频、文本和非 AI PPT 工具不需要 AI Key。使用 AI 文档、AI 表格、PPT 文本 AI 整理、AI 生成 PPT 大纲、AI 生成 PPT 草稿 / PPTX 或转写后的 `refine` 二次校对时，请在 IDE 的 MCP 环境变量/密钥设置中为 `toolknit` 添加真实的 `DEEPSEEK_API_KEY`（也支持 `TOOLKNIT_AI_API_KEY`），再重启 IDE。不要把密钥写进 Agent 对话、文档需求、输出路径或文件名；桌面端保存的密钥不会被 CLI/MCP 读取。
 
-连接成功后，Agent 会显示 46 项 ToolKnit 工具：9 项 PDF 工具、7 项 PPT 工具、8 项硬件只读工具、4 项音频工具、4 项离线模型与转写工具、3 项视频工具、1 项文本工具、2 项图像工具、4 项 AI 文档工程工具，以及 4 项 AI 表格工程工具：
+V3.2 连接成功后，Agent 会显示 77 项 ToolKnit 工具。需要 Node.js >=22.13.0；当前 npm 尚未发布 V3.2。新增能力与全部参数见 [完整能力清单](CLI_CAPABILITIES.md)，也可运行 `toolknit tools list --json`。以下保留已有工具的说明：
 
 - `toolknit_pdf_inspect`：查看页数、大小和每页概况。
 - `toolknit_pdf_merge`：把多个本地 PDF 按顺序合并成一个文件。
@@ -73,6 +73,27 @@ C:\Users\<你的用户名>\AppData\Roaming\npm\node_modules\@toolknit\cli\toolkn
 - `toolknit_hardware_storage_health`：只读查看物理磁盘、卷、容量、接口和可用的健康/可靠性计数。
 - `toolknit_hardware_network_devices`：只读查看网卡、蓝牙、音频、USB 和摄像头等设备清单。
 - `toolknit_hardware_power_sensors`：只读查看电源计划、电池状态、温区和风扇等可用传感器信息。
+
+## V3.2 新能力
+
+- 文档：`toolknit_pdf_to_word`、`toolknit_pdf_text`、`toolknit_pdf_crop`、`toolknit_pdf_page_number`、`toolknit_pdf_to_scan`、`toolknit_pdf_create`、`toolknit_pdf_ai_markdown`、`toolknit_excel_to_pdf`、`toolknit_markdown_html`。
+- 图片：`toolknit_image_to_pdf`、`toolknit_image_convert`、`toolknit_image_compress`、`toolknit_image_crop`、`toolknit_image_color_replace`、`toolknit_image_icons`。
+- 文本与开发：`toolknit_text_format`、`toolknit_ai_polish`、`toolknit_ai_translate`、`toolknit_json`、`toolknit_base64`、`toolknit_url_codec`、`toolknit_uuid`、`toolknit_jwt_decode`、`toolknit_hash`。
+- 计算与扫描：`toolknit_timestamp`、`toolknit_bmi`、`toolknit_mortgage`、`toolknit_interest`、`toolknit_color_convert`、`toolknit_files_large`、`toolknit_files_duplicates`。
+
+PDF 转 Word 默认离线；`ai_mode=true` 才把文字/区域图像交给配置的视觉 AI。PDF AI Markdown 会发送选中页图像。AI 润色/翻译会发送明确输入的文字。不要因本地提取效果不佳就擅自启用 AI；桌面端 Key 不会被读取。
+
+图像 PDF 保持输入顺序，支持多页 TIFF；动态图必须显式允许取首帧。图片压缩没有收益时不导出，检查 `results` 与 `outputs`。Excel 仅接收 XLSX 并需要 LibreOffice。PDF 裁剪不是安全涂黑。
+
+```text
+请调用 toolknit_pdf_to_word，把当前项目 report.pdf 离线转换成 Word，采用原页面排版。解析输入和输出的绝对路径，保存到 toolknit-output/report.docx，不覆盖已有结果。报告实际路径和仍以图片保留的区域信息。
+```
+
+```text
+请调用 toolknit_image_to_pdf，按我给出的顺序将 first.png、second.jpg 合成 A4 PDF，使用 faithful 模式，保存到当前项目 toolknit-output/images.pdf。不上传图片，也不覆盖已有文件。
+```
+
+大文件/重复文件只读扫描不删除任何内容；密码生成、剪贴板监控、系统清理与实时窗口交互仍在桌面使用。抠图当前没有独立 npm 原生推理适配器，不提供空壳接口。
 
 ## 配色提取器
 

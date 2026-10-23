@@ -2,6 +2,8 @@ import { spawnSync } from 'node:child_process';
 
 const releaseTests = [
   'test:source-inventory',
+  'test:dependency-lock',
+  'test:rust-toolchain',
   'test:security-release',
   'test:windows-installer',
   'test:release-version',
@@ -11,6 +13,7 @@ const releaseTests = [
   'test:theme',
   'test:startup',
   'test:architecture',
+  'test:preview-viewport',
   // Rust's generate_context! embeds frontendDist even during library tests.
   'build',
   'test:animation-policy',
@@ -26,6 +29,8 @@ const releaseTests = [
   'test:pdf-to-image-tool-contract',
   'test:pdf-to-scan',
   'test:pdf-to-scan-tool-contract',
+  'test:image-to-pdf',
+  'test:pdf-to-word',
   'test:pdf-text-markdown',
   'test:pdf-ai-markdown',
   'test:clipboard-history',
@@ -41,6 +46,7 @@ const releaseTests = [
   'test:pdf-enhance',
   'test:pdf-enhance-tool-contract',
   'test:pdf-editor',
+  'test:pdf-editor-exporter',
   'test:pdf-page-number',
   'test:pdf-page-number-tool-contract',
   'test:pdf-crop',
@@ -104,6 +110,7 @@ const releaseTests = [
   'test:cli-package',
   'test:cli-clean-worktree',
   'test:cli-agent',
+  'test:cli-v32',
   'test:release-artifacts'
 ];
 

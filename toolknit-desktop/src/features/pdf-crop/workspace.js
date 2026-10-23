@@ -1,4 +1,6 @@
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
+import { createPreviewViewport } from '../../shared/preview-viewport.js';
+import { renderPdfPreviewCanvas } from '../../shared/pdf-preview-canvas.js';
 import {
   PDF_CROP_FULL_RECT,
   PDF_CROP_LIMITS,
@@ -97,6 +99,19 @@ export function createPdfCropWorkspace({
   const currentPage = () => pages[currentIndex] || null;
   const hasDocument = () => Boolean(source && pages.length);
   const emitChange = () => onStateChange?.();
+  const viewport = createPreviewViewport({ viewport: canvasScroll, content: canvasWrap,
+    enabled: () => !disposed && isOpen() && !isBusy() && hasDocument() && !pointerState && !canvasWrap.hidden,
+    getScale: () => previewZoom, min: PREVIEW_MIN_ZOOM, max: PREVIEW_MAX_ZOOM,
+    setScale: value => {
+      const ratio = value / previewZoom; previewZoom = value; previewScale *= ratio;
+      previewRequest++; try { previewTask?.cancel(); } catch {} previewTask = null;
+      const rect = canvasWrap.getBoundingClientRect();
+      for (const element of [canvasWrap, previewCanvas]) {
+        element.style.width = rect.width * ratio + 'px'; element.style.height = rect.height * ratio + 'px';
+      }
+      renderCropOverlay(); emitChange();
+    }, render: renderPreview });
+  lifecycle.use(viewport.dispose);
 
   const releaseSource = releasePdfCropSource;
   const stageDocument = options => stagePdfCropDocument({ ...options, text });
@@ -292,17 +307,8 @@ export function createPdfCropWorkspace({
       const availableHeight = Math.max(230, canvasScroll.clientHeight - 64);
       const fitScale = Math.min(availableWidth / base.width, availableHeight / base.height, 1.6);
       previewScale = Math.max(0.08, fitScale * previewZoom);
-      const cssViewport = proxy.getViewport({ scale: previewScale });
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const renderViewport = proxy.getViewport({ scale: previewScale * dpr });
-      previewCanvas.width = Math.max(1, Math.round(renderViewport.width));
-      previewCanvas.height = Math.max(1, Math.round(renderViewport.height));
-      previewCanvas.style.width = `${Math.round(cssViewport.width)}px`;
-      previewCanvas.style.height = `${Math.round(cssViewport.height)}px`;
-      canvasWrap.style.width = `${Math.round(cssViewport.width)}px`;
-      canvasWrap.style.height = `${Math.round(cssViewport.height)}px`;
-      canvasWrap.hidden = false;
-      previewTask = proxy.render({ canvasContext: previewCanvas.getContext('2d'), viewport: renderViewport });
+      previewTask = renderPdfPreviewCanvas({ proxy, canvas: previewCanvas, wrap: canvasWrap, scale: previewScale,
+        isCurrent: () => isPreviewCurrent(request, documentHandle) });
       await previewTask.promise;
       if (!isPreviewCurrent(request, documentHandle)) return;
       previewTask = null;
@@ -318,6 +324,7 @@ export function createPdfCropWorkspace({
   }
 
   function replaceDocument(staged) {
+    viewport.reset();
     const previous = source;
     cancelPointer({ render: false });
     cancelPreview();
@@ -338,6 +345,7 @@ export function createPdfCropWorkspace({
   }
 
   async function resetDocument() {
+    viewport.reset();
     cancelPointer({ render: false });
     marginEditBefore = null;
     marginEditingInput = null;
@@ -531,17 +539,12 @@ export function createPdfCropWorkspace({
 
   function selectPage(index) {
     if (!Number.isInteger(index) || index < 0 || index >= pages.length || index === currentIndex) return;
+    viewport.reset();
     currentIndex = index;
     reframeMode = false;
     emitChange();
     updateThumbStates();
     filmstrip.querySelector(`[data-page-index="${index}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    void renderPreview();
-  }
-
-  function changeZoom(factor) {
-    previewZoom = Math.min(PREVIEW_MAX_ZOOM, Math.max(PREVIEW_MIN_ZOOM, previewZoom * factor));
-    emitChange();
     void renderPreview();
   }
 
@@ -704,6 +707,7 @@ export function createPdfCropWorkspace({
     });
     observer.observe(canvasScroll);
     owner.use(() => {
+      viewport.reset();
       window.clearTimeout(renderTimer);
       observer.disconnect();
       cancelPointer();
@@ -718,9 +722,9 @@ export function createPdfCropWorkspace({
 
   listen(prevButton, 'click', () => selectPage(currentIndex - 1));
   listen(nextButton, 'click', () => selectPage(currentIndex + 1));
-  listen(zoomOutButton, 'click', () => changeZoom(0.86));
-  listen(zoomInButton, 'click', () => changeZoom(1.16));
-  listen(fitButton, 'click', () => { previewZoom = 1; emitChange(); void renderPreview(); });
+  listen(zoomOutButton, 'click', () => viewport.zoomTo(previewZoom * 0.86));
+  listen(zoomInButton, 'click', () => viewport.zoomTo(previewZoom * 1.16));
+  listen(fitButton, 'click', () => { viewport.reset(); previewZoom = 1; emitChange(); void renderPreview(); });
   listen(resetPageButton, 'click', resetCurrentPage);
   listen(undoButton, 'click', undo);
   listen(redoButton, 'click', redo);

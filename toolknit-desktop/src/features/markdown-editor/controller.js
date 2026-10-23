@@ -11,7 +11,8 @@ import {
 } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, redo, undo } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
-import { bracketMatching, defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { bracketMatching, syntaxHighlighting } from '@codemirror/language';
+import { markdownHighlightStyle } from './syntax-theme.js';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { createModalSession, setModalInteractivity } from '../../app/modal-runtime.js';
 import { applyTranslations, onLangChange, t } from '../../i18n.js';
@@ -355,7 +356,7 @@ export function createMarkdownEditorController({
           drawSelection(),
           bracketMatching(),
           highlightActiveLine(),
-          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+          syntaxHighlighting(markdownHighlightStyle, { fallback: true }),
           markdown({ base: markdownLanguage }),
           keymap.of([...defaultKeymap, ...historyKeymap]),
           EditorView.lineWrapping,

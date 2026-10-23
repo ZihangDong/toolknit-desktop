@@ -147,8 +147,9 @@ try {
   });
 
   for (const theme of ['light', 'dark']) {
+    await page.mouse.move(1, 1);
     await page.evaluate(value => { document.documentElement.dataset.theme = value; }, theme);
-    await page.waitForTimeout(260);
+    await page.waitForFunction(() => document.getAnimations().every(animation => animation.constructor.name !== 'CSSTransition' || animation.playState !== 'running'));
     const state = await page.locator('#videoGifEditor').evaluate(node => {
       const select = selector => node.querySelector(selector);
       const style = selector => getComputedStyle(select(selector));

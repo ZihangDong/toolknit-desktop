@@ -3,11 +3,30 @@ Required Notice: Copyright 2026 Zihang Dong (https://toolknit.com)
 Copyright 2026 ToolKnit contributors
 
 From the license change on 2026-10-14, newly licensed author-owned code
-and modifications are available under PolyForm Noncommercial 1.0.0.
+and modifications, except the separately licensed Engine below, are available
+under PolyForm Noncommercial 1.0.0.
 Noncommercial use, modification and distribution must comply with LICENSE,
 including preservation of required notices. Commercial use requires a
-separate license from the author (WeChat: wunanvip6).
+separate license from the author (info@toolknit.com).
 This is source-available software, not OSI-approved open-source software.
+
+PDF-to-Word Engine exception (first published with V3.2 source):
+The author-owned code in toolknit-desktop/src/features/pdf-to-word/** and
+toolknit-desktop/src-tauri/src/native_runtime/pdf/docx_write.rs is excluded
+from the general PolyForm grant. It is available only under
+LicenseRef-ToolKnit-PDF-Word-Source-View-1.0. See the full license in
+LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md (repository/desktop roots),
+or src/features/pdf-to-word/LICENSE.md in the desktop source tree.
+Reading and necessary private viewing copies are permitted. Other commercial
+AND noncommercial use requires prior written authorization: info@toolknit.com.
+Official application use is covered by the license's explicit end-user exception.
+The official @toolknit/cli distribution includes Engine copies under
+cli/lib/core/features/pdf-to-word/ and its derived headless adapter
+cli/lib/pdf-word-engine.mjs. These retain the same Engine license and notices.
+Running the unmodified official CLI/MCP package is official application use;
+extracting or reusing its Engine code is not authorized by the general license.
+Third-party dependencies retain their own licenses; the exception covers only
+the identified author-owned Engine material, not the general ideas it describes.
 
 Previously granted Apache-2.0 rights are not withdrawn. Unchanged code
 previously distributed under Apache-2.0 remains available under that
@@ -17,6 +36,11 @@ src/features/color-space-compare/core.js and wheel.js retain Apache-2.0.
 Third-party code, dependencies, fonts, models and runtimes retain their
 own licenses and notices; PolyForm does not replace those terms.
 Contributors retain copyright in their own work.
+
+The official npm package bundles ExcelJS 4.4.0 and its locked dependency
+tree under their original licenses. For the UUID security correction,
+the bundled ExcelJS dependency metadata is patched from uuid ^8.3.0 to
+11.1.1; its source code and MIT license remain unchanged.
 
 No license grants rights to the ToolKnit name, logos, visual identity,
 domains, official website, hosted web service, service accounts, or other

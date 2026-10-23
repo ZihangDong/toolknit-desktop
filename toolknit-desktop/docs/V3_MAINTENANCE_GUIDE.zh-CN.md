@@ -1,5 +1,98 @@
 # ToolKnit Desktop V3.0 维护规范
 
+## V3.2 发布前验证补充（2026-10-23）
+
+构建前运行 `check-dependency-lock.mjs`，直接读取实际依赖包的 `package.json`，不把 npm 隐藏锁文件或 `npm ls` 当作实际安装版本的唯一证据。桌面干净安装用 `npm run test:desktop-clean-install -- --browser` 在仓库外消费当前源码和锁文件，避免沿父目录借用旧依赖。已存在的 Vite 服务不会因磁盘依赖更新自动使用新模块，浏览器专项应启动自己的受控服务。
+
+源码构建最低 Rust 版本为 1.90，与当前锁定的 Windows Tauri 依赖图及中英文 README 对齐。`test:rust-toolchain` 使用 Cargo 结构化元数据检查目标依赖的最低要求，纳入发布门禁；再用 Clippy 检查源码 API 的最低版本。单个库支持 1.88 不代表整个应用也支持，发布二进制运行不要求用户安装 Rust。
+
+Excel 全部工作表导出必须检查实际 PDF 正文。LibreOffice 在只读文档上可静默忽略 `IsVisible` 修改；原生链路先沿用只读导入，只有“全部工作表”需要展开隐藏表时重新以可编辑模式打开临时副本，保留旧 XLS 兼容、禁用宏/外链更新及源文件不变约束。变更后运行 `npm run test:excel-to-pdf-native`，实测 XLSX/XLS/ODS 的全部/可见工作表、隐藏内容、公式、纸张方向和临时文件清理。该专项需要本机真实 LibreOffice，不以接口返回的 `exportedSheetCount` 代替 PDF 内容验证。
+
+`app/settings-navigation-runtime.js` 持有设置页的 Escape 入口，复用既有关闭/过渡函数。在懒加载工具安装文档级监听前接入，只有设置为当前页面且无子弹框接管时消费事件，避免同一次按键关闭后台工具。模型弹框、下拉菜单和快捷键录入继续优先处理自身 Escape，监听由生命周期 scope 在 pagehide 释放。
+
+共享 `createModalSession` 打开时检查指定焦点是否禁用、隐藏或处于 inert 区域；不能聚焦时选可用控件，必要时临时令容器可聚焦，关闭后清理。Escape 仍限于自身焦点或事件目标，不因为 `body` 接到按键就关闭后台可见工作台。测试应包含默认安装按钮禁用、子弹框关闭、设置正文失焦以及原工作区数据保留的连续操作。
+
+持续浏览器检查使用不可变的构建目录；不能边重建 dist 边将旧页面的动态 import 失败归为产品缺陷。`test-navigation-soak-browser.mjs` 覆盖跨工具、设置、返回与 Escape，记录 GC 后堆、DOM、监听和 Worker/Object URL；它不代替原生 HWND 或实际旧机安装验收。最终范围、证据与网络限制见[发布前报告](V32_RELEASE_PREFLIGHT_20261023.zh-CN.md)。
+
+## V3.2 双主题状态审计（2026-10-21）
+
+主题覆盖以实际展开/生成的 DOM 为准。PPT 提取正文是 `div.ppt-text-detail-line`，仅覆盖 `span/p` 会漏正文；生成后的事实、页码和标签同样须实测。PPT 独立 portal 与页面是兄弟节点，主题 token 必须在两处可见；portal 的 `pointer-events:none` 也会被子编辑器继承，完整编辑层需明确接管输入，使用 `createModalSession` 和 `prepareToolPageChrome` 处理背景、焦点及导航。
+
+组合输入的外层负责底线，内层包括聚焦状态保持透明；属性存在不等于没有被覆盖，应核对输入文字列和单位列的底线像素。下拉使用现有组件，隐藏原生 select 离开 Tab 顺序，菜单 Tab/Shift+Tab 回到表单顺序，dispose 恢复原属性。不要依赖会被 `background` 简写清掉的装饰箭头。
+
+颜色巡检等待过渡稳定，识别 RGB 与 `color(srgb ...)` 的不同数值范围；渐变、透明层、文档内容和禁用状态须看截图复核。PPT 生成、真实本地 PPTX 提取、编辑导出与测试服务响应分开记录。详情见 [双主题审计记录](V32_THEME_AUDIT_20261021.zh-CN.md)。
+
+空输入另检查 `::placeholder`；正文颜色正确不代表占位文字可读。透明字段可采集截图中无字的内边距背景，与占位颜色及透明度计算对比度，避免把仅按祖先背景色估算的结果当成确定故障。保留正常输入后的正文色、光标及文档内容色。
+
+## V3.2 PDF 预览与共享输入（2026-10-21）
+
+PDF 文档画布的普通滚轮由 `shared/preview-viewport.js` 管理鼠标锚点、RAF 合并、中键/空格平移和迟到工作失效；各 feature 持有实际缩放状态与 PDF.js 任务。已有编辑器保留自己的临时变换与高清提交机制，按当前可见变换反算锚点，避免连续输入中换锚点后漂移。侧栏、缩略图和 Markdown 文本不是文档画布，不接管其滚轮。裁剪和页码使用 `shared/pdf-preview-canvas.js` 私有画布完成绘制后才提交，保留旧帧并限制像素预算。
+
+纯缩放/尺寸重绘不应调用整页 update 重建编辑选区。PDF 转 Word 保留现有 region 节点，只有文档/编辑状态变化才更新交互层；适应宽度只观察外框宽度，不能因为选择操作栏出现导致高度变化就反复重绘。浏览器测试需等待启动遮罩完成，并以命中测试排除被工具页遮挡的首页输入，避免错误统计与焦点丢失的假失败。
+
+文本输入统一接入 `styles/components/input-focus.css`；组合输入由外层拥有底线，内层不得重复绘制。该共享边界用集中且有说明的优先级覆盖历史 feature/theme 外扩轮廓，新增字段不再新增竞争样式。减少动态效果规则的选择器优先级必须覆盖基础规则；截图辅助 WebView 需要显式导入样式。按钮、复选框、色板和滑块保留原语义。
+
+上传空状态通过 `shared/upload-empty-state.js` 传入静态配置，运行时文件名不进入模板。成功提示沿用 `audio-clip-success-*` 组件与 `tk-file-result` 主题/溢出适配，`modal-runtime` 继续管理焦点、inert 和关闭。禁止将“调用 modal-runtime”作为外观已复用的证据。范围、契约和回归证据见 [本轮验证报告](V32_PDF_UI_UNIFICATION_20261021.zh-CN.md)。
+
+## V3.2 图像 PDF 与空白文档（2026-10-21）
+
+图像转 PDF 的入口、容量、格式及分层验证见 [图像 PDF 维护说明](IMAGE_TO_PDF.zh-CN.md)。共享像素算法与 Writer 位于 core/shared，旧 PDF 扫描入口保留转发；图像格式尺寸读取不应引入 PPT/ZIP 依赖。实际纸张尺寸要核对图像元数据、方向和最终 PDF 的 MediaBox；高清指标应分别记录嵌入像素与阅读器渲染，不能把渲染器重采样误判为源图被压缩。
+
+PDF 编辑器的新建空白文档走既有文件会话，初始 saved snapshot 为空；新增空白页复用不可变源字节而保留独立页面编号。图片资源的 owner 是当前、撤销历史、基线和已保存快照的引用并集，不能在用户点击删除时提前释放原图字节。新插入的多行文字通过 `core/pdf-inserted-text.js` 共用行高与选框，保留原单行编辑和 core 导出的兼容接口。
+
+文件读取必须在 operation 建立之后进行，并在每个异步边界检查是否仍有效；追加文件和原生文件选择同样适用。进入不可撤回的文档替换或文件保存阶段后禁止取消；此前的取消必须阻止后续写入。模态输入处理 Escape 时停止事件继续冒泡，中文输入法确认不能触发保存。PDF.js 6 的失败加载、迟到 getPage 和快速重开都需要独立回收验证。
+
+浏览器操作压力检查、正式构建桥接、真实 Rust 解码及 Windows 发布分开记录；它们不能替代完整安装版 WebView2 验收。测试脚本与本轮证据见 [实施与验证记录](V32_PDF_CREATION_PLAN_20261021.zh-CN.md)。
+
+## V3.2 PDF 转 Word（2026-10-18）
+
+2026-10-19 用户已将当前目标收敛为大众日常使用，验收见 [交付收尾记录](V3_2_PDF_WORD_DELIVERY.zh-CN.md)。原生公式全面兼容与更大真值语料延后，不作为本轮交付阻断，也不标为已经完成。
+
+表格背景与可编辑文字分层仅移除可独立绘制的完整文字组。`getOperatorList()` 与实际 display 列表的索引可能不同，须验证绘字内容、顺序和分组后建立映射；固定 PDF.js 内部接口不可用时保留图像回退，第二次渲染仍须核对同一 display 列表。恢复的文字不能重复进入背景，隐藏/遮盖内容仍不可输出；AI 区域规划跳过与固定背景重叠的文字，保留其他正文审查。真实优化指令夹具、背景像素、来源覆盖、取消和最终 DOCX 均有专项测试。
+
+2026-10-20常见文档适配补充：规则表格按单元格组行，来源冲突的嵌套边框不能重复建表；条纹/透明底色必须验证旧文字从背景中移除，不能把完整截图藏在可编辑文字下。`core/aligned-tables.js`仅处理有明确稳定列和数值证据的无框表格，实际Writer装不下时保留原文字。`graphic-text-layers.js`与表格恢复共用集中背景层上限16，同页只附加渲染一次；32 MiB资产和其他容量边界不变。字体笔画同时尊重PDF.js的实际绘制标记，已知字体映射及Win行度量校准须核对目标字体，不能把泛型标记当作可靠字体身份。
+
+常见文档的来源、冻结划分、真实阅读器、编辑性及阶段限制见[V3.2常见PDF适配进展](V3_2_GENERAL_PDF_WORD_PROGRESS.zh-CN.md)。测试资料留在本机忽略目录；独立样本经修补后不再算未见样本，缓存布局回放不代替原PDF重转。Node/浏览器、WPS/LibreOffice的结果分开记录，验证脚本复制PDF失败与工具转换失败分开。
+
+PDF.js在Node与浏览器的系统字体默认策略不同。PDF转Word单独关闭系统字体优先替代，使用随包标准字体提供可分析轮廓；不能将这一设置扩散到其他PDF工具，也不能据此声称特殊字体或坏编码已还原。真实UI导出后检查实际OOXML和Office渲染；字号错位的普通字既要保持正确文字顺序，也要保留独立坐标，Writer的分帧规则与预算估计同步。
+
+A4连续排版是否采用固定片段需在整个文档组行前统一决定，避免普通页先丢弃精确字形位置，随后又被强行固定排版。分析和导出复用同一纸面检查；不适合A4的文档提示改用保留原页，不扩大尺寸或图片容量。空白页保留来源书签，独立评分必须确认原页确实无可见前景，不能靠空白标记掩盖缺页。
+
+表格背景可以连着有界页尾装饰，但恢复只认完整归属的单元格和独立文字绘制组。多个恢复阶段对同一背景合并移除指令，不重复计层或互相跳过；必须回归原有图文样本，防止新增表格判定反而减少可编辑内容。白字恢复需要可证明的深色实心矩形底色和绘制次序，白底隐形字、半透明字和遮盖不能恢复成正文。复杂裁剪仅在匹配的保存/恢复范围内、没有文字/未知状态操作时局部保真，裁剪内含文字仍需完整解析或原保护策略。
+
+编辑性验证要在实际阅读器中修改、保存并重新渲染，核对旧字消失、替换字出现、其他字符及页数保持。检查原生表格删除后的像素时，单独识别并记录未变的通栏边框，不能把它当旧字重影，也不能笼统排除所有相同像素。非连续选页的原稿页码与输出页码必须分别传给图像对照工具。
+
+独立数值检查只在同一物理位置匹配重复金额/零值；别处有相同值不能直接算“移位”。源字体声明的字符边界与实际可见笔画可能不同，异常坐标需回到局部图像复核，保留原始异常记录，不能用总体视觉高分代替字段核验。
+
+文本序列对比遇到重复词时，删除/插入片段可能跨词边界。必须核对实际DOCX完整单词和前后文，再判定文字重排；不能仅凭差异片段或几何提取器的顺序修改已经正确的输出。
+
+新工具由 `features/pdf-to-word/` 独立持有。PDF.js 操作列表必须在渲染前快照，因为渲染会把数字 path 改为 Path2D；重复分析先停止预览并清理页缓存。原始来源、可见性与输出覆盖分开，AI 仅返回有界结构建议，不能改写文字。DOCX 表格使用显式 grid/cell/total 宽度；段落与换行 run 明确字体/行高，空页眉页脚不占整页高度。不同 Office 渲染结果分别报告，不能用 XML 字数替代视觉验收。容量、协议与复跑入口见 [PDF 转 Word 维护记录](PDF_TO_WORD.zh-CN.md)。
+
+内部原生公式必须分别通过整页、独立公式局部和实际OOXML语义审计；求和可用来源符号与原生上下限等价分组，但不能只改标签检查来放过主体或上下限错误。积分以括号外的明确微分项界定主体，上下限不能吞入被积函数自己的下标；来源完整但把后文并入积分的模型建议同样拒绝。根号与嵌套分数线使用有界来源几何校准，横线、底部、基线和字号共同核对；公式盒在分式参数及script中的样式行为分别验证。实验固定字号与样本ID不能进入产品。当前WPS样本通过不代表LibreOffice或手机通过，默认仍为局部公式图像，完整验收状态见专项进展。
+
+矩阵括号先验证完整字形或拼件轮廓/连接，单字形元数据不覆盖多字形文本run；先证明矩阵结构再扩张区域，保留普通分式与缺字周围的编辑性。圆括号两行单列与二项式系数有歧义，不凭外形直接接受。矩阵校验覆盖行列、单元格/括号来源各一次，原生验证同时检查局部矩阵与完整等式；只生成`m:m`或整页高分都不能证明矩阵语义、编辑性及跨阅读器通过。
+
+大彩图统一PNG可能先耗尽资产预算。可对有证据的纯彩图使用高质量JPEG，但只编码最终可见裁切，保持公式、含来源文字和不确定区域无损；编码格式须贯通Worker、DOCX媒体类型和Rust保存白名单，不能只测浏览器下载。Node画布和浏览器同名API可能使用不同参数，分别验证格式签名。阅读器探针除页数还应核对每页案例归属，节属性不得附着在最后一个公式段落；LibreOffice忽略公式字号/矩阵行距的事实不能通过修改WPS几何补偿解决。
+
+## V3.2 历史数据与悬浮窗（2026-10-16）
+
+2026-10-18 提示/菜单修补：透明辅助窗须设置共享 `--tk-window-bg`，同时验证计算背景与截图外围 alpha，不能只看原生 transparent 配置。菜单提前隐藏创建与字体加载，不创建有效会话或抢焦点；复用控制器时用 token/render revision 隔离旧选择结果与 finally。文字 OLE 载荷规范化 CRLF 但保留原有逻辑分行；不能从 DOM 视觉换行取正文。具体契约与验证见截图/剪贴板领域文档。
+
+2026-10-18 补充：当前 schema 3 的 `ordering.rs` 维护独立浮窗排序，主历史时间线和存储保留策略不变，20 条淘汰只退出视图。常用语表单仅标题/正文，旧备注兼容保留。`drag.rs` 只允许浮窗通过有限集合和 ID 读取完整文字/原图，交给 Windows OLE，临时 PNG 有 64 个/128 MiB 与过期清理边界，不在 Drop 后立即删。`history-drag.js` 区分排序柄、单击和正文外拖，处理取消、更新隔离与失败恢复；不冒充目标应用已发送。桌面胶囊提示由截图域 `feedback.rs` 和 `feedback-window.js` 持有，主屏底部、穿透、不激活、最小事件权限，主线程核对 revision 后显示/隐藏，复用真实 HWND 隐藏路径。新 action/DOM/event 和验证证据见领域文档及 V3.2 历史改进报告。
+
+2026-10-17 可见性修补：原生显示不能与仅依赖框架缓存的隐藏混用。截图域的 `window_visibility::hide` 在主线程核对实际 HWND 隐藏结果，菜单/设置关闭与截图前隐藏统一调用；状态写入失败或隐藏失败恢复先前偏好。菜单 hide/close 不恢复父窗口焦点，排队焦点动作也检查当前允许显示和实际可见性。隐藏的迟到请求返回 expired，不把正常过期当成红点错误。原生窗口回归使用屏幕外隔离进程复现缓存差异；浏览器调用计数不等于 Windows 窗口已消失。
+
+2026-10-17 补充：悬浮窗新增完整历史搜索、加密备注和独立常用语；当前细节以 `CLIPBOARD_HISTORY.zh-CN.md`、`QUICK_SCREENSHOT.zh-CN.md` 为准。`library.rs` 持有 schema 2 的新增表、容量、查询与正文去重；历史过期/清空不触碰常用语。密钥样本校验覆盖仅剩常用语的数据库。`history-editor.js` 复用辅助弹框，失败保留草稿；主历史通过无正文事件按 ID 刷新备注。菜单触发需同时验证 native blur、pointerdown/click、token 和失焦延迟；主窗导航复用托盘恢复链。新增 DOM 为 `shotHistoryTitle/Mode/SearchForm/Search`、`shotPhraseCreate`，新增 action 和事件数据见对应文档；没有新增命令名称、工具数量或 CLI/MCP 能力。
+
+- 当前开发版本 3.2.0，V3.1 已发布；`docs/desktop-update.md` 保留正式版内容，版本契约允许正式说明落后于有未发布日志的开发版本。CLI 源码版本同步，npm 未发布。
+- 历史密钥由 `clipboard_history/key.rs` 管理。打开时先检查文件、DPAPI 与数据库样本，只有验证成功才保存受当前账户保护的 `key_backup`。备份写入 SQLite 后再原子发布密钥文件；初始化锁避免并发创建。旧库缺少密钥和备份时不替换密钥，不删除数据；主窗口 `restart` 仅在可恢复提示对应的密钥故障下，经确认完整保留旧目录并建立新库。
+- 本次只读定位发现旧库仍在、密钥文件缺失；用户确认清理过且无备份。没有证据定位具体删除程序，也没有恢复旧记录的原密钥。本轮未重建用户实际历史库。
+- 悬浮窗改用 `clipboard_history` 的列表、详情、复制与置顶接口，图片只在列表读取缩略图；删除原生截图的第二份历史缓存。两窗口查询互不取消，事件仅传 revision。开启监控收录其他应用，悬浮窗本身不自动开启监控；用户明确确认的本程序截图在悬浮历史开启、监控关闭时仍写入同一库，图片分类开关及容量校验继续有效。
+- `quick_screenshot/history_actions.rs` 持有会话隐藏与边界回退；“隐藏到下次重启 ToolKnit”不修改历史偏好，关闭则写入关闭状态。截图前的可见窗口快照不覆盖当前开关；Destroyed 不修改偏好。展开/收起只调整一次原生尺寸，拖动松手后仅位置动画，必要时一次缩小到目标屏幕可用范围。
+- 自绘圆角菜单由 `shared/context-menu.js` 和 `history-menu-window.js` 渲染；原生 `history_menu.rs` 提供独立透明窗口，按 token 约束就绪、选择与关闭。菜单不读取剪贴板正文，不为菜单反复扩大悬浮球窗口。菜单位置限制在工作区，失焦、关闭、截图均清理，旧会话不能关闭新菜单。辅助窗口复用弹框时必须挂载模板、样式及焦点 owner。
+- 悬浮窗请求 `Query.limit=20`，本地筛选且不分页，不影响完整历史保留。普通列表默认 50 条保持兼容；悬浮窗权限仅允许单 ID 确认删除，删除同步主库，不触碰原文件。记录开关隔离旧状态，写入期间禁用；滚动/尺寸事件合并到 RAF，关闭释放观察器和帧回调。
+- `app/auxiliary-tool-navigation.js` 复用各页面 owner 关闭设置/帮助/反馈/密钥/捐赠层，再打开剪贴板历史。新 DOM 包括 `clipboardRestart`、`shotHistoryFilters/Recording/RecordingLabel/Scroll/Detail/DetailBody`、`shotMenu/MenuError`；移除 `shotHistoryMore`。新增截图 action 和菜单事件详见 `QUICK_SCREENSHOT.zh-CN.md`；没有新增命令名称或 CLI/MCP 能力。快速截图归创意分类，创意 4 项、AI 5 项、总计 71 项，tool ID 与用户偏好不变。
+
 ## 抠图运行库与显卡兼容（2026-10-15）
 
 - `src-tauri/src/onnx_segmenter.rs` 区分 DLL 加载、后端初始化和模型推理三个阶段。`LoadLibraryExW failed` 不能直接归因为显卡；CPU 同样依赖 ONNX Runtime 与传递 DLL。现有受控目录预加载、VC 依赖分发和进程期句柄保留继续生效，预加载失败不永久缓存失败状态。
@@ -20,6 +113,8 @@
 - 导航增加操作后用语义选择器定位控件，保留来源页返回断言。模拟平台测试不代替真实 Windows 托盘恢复、长期驻留或固定帧率验收。
 
 ## 发布源码与产物检查
+
+Windows 升级链路由 `src-tauri/windows/installer.nsi` 与 `upgrade.nsh` 维护。旧安装目录从旧卸载程序定位，不用新版 `$INSTDIR` 判断卸载结果；`ExecWait` 紧邻清错与取错，版本比较使用独立变量。传入明确安装范围，升级使用 `/UPDATE` 保留数据与自启动，文件占用失败先停止再清理注册表。验证入口为 `test:windows-installer`、`test:windows-upgrade-native` 和 `test:windows-installer-native`，说明见 [升级修复记录](WINDOWS_UPGRADE_REPAIR_20261022.zh-CN.md)。
 
 正式构建入口为 `npm run build:release-package`，默认不启用 QA feature，生产能力清单仅含
 主窗口与截图辅助窗口；`build:test-package` 保留为独立 F12 测试入口，测试安装包不能改名发布。
@@ -236,9 +331,16 @@ PDF 压缩的保结构/图像化、目标字节、写入和共享核心边界见
 ## CLI / MCP 维护
 
 - CLI 只能依赖明确导出的 core/runtime，不得导入页面或 Tauri 模块。
-- 保持 8 MB 消息限制、最多 4 个并发、重复 request id 拒绝和结构化错误。
-- 新增能力必须同时补 CLI package、MCP registry、clean-worktree 安装和调用契约。
-- 发布前必须从干净临时 worktree stage 资源并安装测试，避免依赖本机未跟踪文件。
+- V3.2 当前 77 项能力，桌面覆盖 60 项支持、6 项部分支持、7 项保留桌面。`tool-definitions.mjs` 与 `desktop-coverage.mjs` 是目录来源；`sync-cli-catalog.mjs --check` 核对全部桌面 ID、工具名和公开清单，不能只修改 README 数字。
+- 保持 8 MiB 消息/响应限制、最多 4 个 MCP 调用、2 个重计算 Worker、重复 request id 拒绝和结构化错误；取消、EOF、断流和背压统一释放任务，超大行剩余部分不能作为新请求执行。
+- 新增能力同时补 schema、CLI/MCP 调度、help/能力发现、staging、资源/许可、真实输出和失败路径验证。未知参数不默默忽略，错误不回显正文或密钥。
+- `test:cli-clean-worktree` 现为兼容名称：复制当前 tracked 与非忽略 untracked 源码到隔离目录，准备/打包并安装到独立消费项目；检查实际依赖树、audit、全部纯模块加载、CLI/MCP 真正转换。禁止用旧 HEAD 或开发仓库 node_modules 代替待发布代码。
+- CLI Node 最低 22.13.0，发布前在该版本和当前版本实跑。`prepare-cli-package.cjs` 安装 CLI shrinkwrap，捆绑 ExcelJS 及锁定依赖；库自身 overrides 不会传递给消费项目，UUID 修正必须在实际安装包内验证。NOTICE 保留第三方许可和唯一依赖元数据补丁说明。
+- `test:cli-v32` 包含官方 MCP SDK stdio 客户端互操作；AI 使用本地模拟服务的验证只能证明协议、校验、取消和错误链路，不能写成远端模型效果验收。
+- `test:cli-ai-live -- --live` 是需明确授权的远端付费验收，默认跳过，使用合成资料与环境变量密钥。覆盖十类 AI 入口、四种 PPT 文本整理以及生成工程的编辑、撤销和渲染；不纳入自动发布门禁。`test-cli-ai-failure.mjs` 则离线验证超时、取消不落盘、配置错误与目标已存在时不调用 AI。
+- Office 转换的临时 profile 不放进用户的深层输出目录；使用短工作目录、中性输入名称，并验证真实产物与页数。Windows MCP 宿主缺少 `APPDATA` 时模型发现使用当前用户 Roaming 目录兜底，不能因此要求重复下载。
+- 转写复用桌面模型，但 whisper.cpp 的 Windows 参数需映射到 ASCII 路径；独立临时目录限制当前用户 ACL，结果回到明确输出目录。真实验证使用已有模型与合成语音，不自动下载大模型。模型下载的 `.cli.part` 与桌面 `.part` 分离。
+- 注册表的 `(arguments, options)` 不能直接映射到只接收 `(options)` 的硬件函数；必须通过适配器透传 signal。旧 PDF 操作也需把 signal 传至最终原子发布；进度测试检查起点/终点和单调性，不固定为只有两个通知。
 
 ## 安全与生产门禁
 
@@ -270,10 +372,20 @@ PDF 压缩的保结构/图像化、目标字节、写入和共享核心边界见
 
 - `src/shared/pdf-workbench.js` 只管理共享导航、三栏视图、当前页/勾选状态、缩放、可见缩略图队列和画布清理。沿用编辑器 CSS 类与公共主题，不导入编辑器 feature 或编辑业务；工具通过页面模型、加载回调、文案 key 和右侧 actions 接入。
 - `features/pdf-split/preview.js` 拥有 PDF.js 文档和工作台 modal 会话。回到上传页保留输入文件，关闭工作台释放画布与文档；重开重新加载，旧异步结果不得覆盖新会话。
+- 工作台动态导航由 `createPdfWorkbench` 在最终挂载后执行 `prepareToolPageChrome`；兄弟 Workspace 不在 lazy registry 的主 overlay 准备范围内。文字刷新定位 `data-i18n` 标签，不覆盖 `.tk-nav-morph`，返回按钮的 title/aria-label 随语言同步。双主题几何、帮助/反馈/设置返回与既有导出验证见 [PDF 工作台导航维护记录](PDF_WORKBENCH_NAVIGATION.zh-CN.md)。
 - `workbench-export.js` 构建当前页 PDF、所选页合成 PDF、独立页 ZIP；`export-runtime.js` / `export-worker.js` 负责任务隔离、取消、五分钟超时及 Worker 销毁；`exporter.js` 仍走原有输出目录与 `write_unique_file_bytes` 发布结果。CLI/MCP 的 `splitPdfPages` 语义不变。
 - 当前页导出独立于勾选状态；全部页按钮在选择子集时改名为“导出所选页”。ZIP 同样以勾选页为范围，条目带顺序前缀以避免不同源文件的同名页覆盖。没有勾选时仅禁用合成/ZIP，当前预览页仍可导出。
 - 新增 DOM 契约：`pdfSplitWorkbenchActions`、`pdfSplitDownloadCurrentBtn`、`pdfSplitDownloadZipBtn`、`pdfSplitProcessCancel`；旧 Workspace/PageStrip/PageStage、返回和主导出 ID 保留。没有新增原生命令、storage 或 CLI/MCP 参数。
 - 测试入口：`npm run test:pdf-split`、`npm run test:pdf-split-tool-contract`、`node scripts/test-pdf-split-workbench-browser.mjs`。浏览器产物在忽略目录 `tmp/pdf-split-workbench/`。仅拆分迁移，旋转、转图像、合并须逐个验收后再接入，不自动批量改动。
+
+### V3.2 范围选择（2026-10-22）
+
+- 用户确认载入及重开工作台时默认空选；全选仍可手动触发。`selection.js` 按缩略图全局编号验证完整输入后才修改选择，支持单页、闭区间、重叠去重；错误输入不改变任何已选页。
+- `range-dialog.js` 使用 `createModalSession` 暂停兄弟工作台，选中后保持打开、清空输入并恢复输入焦点；完成、关闭、遮罩和 Escape 返回触发按钮。父工作台关闭、开始导出及 dispose 时先关闭子弹框，监听归属 lifecycle scope。
+- 输入说明、可选范围、错误与成功反馈均位于 `home.pdfSplit` 双语字典；语言切换有既有过渡，浏览器测试等待译文实际更新。独立弹框显式提供主题 token，输入沿用共享内收底线，不更改共享 modal/workbench 或输入样式。
+- 新增 DOM ID：`pdfSplitSelectionTitle`、`pdfSplitRangeBtn`、`pdfSplitRangeDialog`、`pdfSplitRangeTitle`、`pdfSplitRangeInput`、`pdfSplitRangeLimit`、`pdfSplitRangeHelp`、`pdfSplitRangeError`。原有选择、当前页和导出 ID 保留；原生、CLI/MCP、事件和存储契约不变。
+- `test-pdf-split-selection.mjs` 随 `test:pdf-split` 运行；契约检查同时验证中英文 key 的实际归属。浏览器以两个源文件共 26 页检验 `1-10` + `15-20` 的真实 16 页输出，覆盖跨文件范围、手动取消后的累加、空选禁用、Tab/Escape/焦点、双主题三种弹框尺寸、中英文、取消及重开；页面与控制台错误均为零。
+- 同日用户授权测试打包：`npm run build:test-package -- --bundles nsis` 成功，产物 `src-tauri/target/release/bundle/nsis/toolknit-desktop_3.2.0_x64-F12-test-20261022-232503-setup.exe`，56,861,259 字节（54.23 MiB），SHA-256 `B6647D902420985E1DCA56CA52785079DF1EEC707BFBD31A023C27FE8D93C794`，旁置校验文件。程序和安装器版本均为 3.2.0，程序为 x64，无签名，测试配置开启主窗 F12，生产配置保持关闭；版本、QA、许可与产物审计通过，私有 Skill 未进入资源。安装后交互待用户验收；未自动安装或发布。
 
 ## PPT 图片预览与压缩等级控件（2026-09-18）
 

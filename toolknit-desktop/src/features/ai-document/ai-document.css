@@ -265,6 +265,11 @@
   scrollbar-color: rgba(255, 255, 255, 0.68) transparent;
 }
 
+.ai-doc-v2 .ai-doc-chat-input::placeholder {
+  color: #a3a3a3;
+  opacity: 1;
+}
+
 .ai-doc-v2 .ai-doc-chat-input:focus {
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.045);

@@ -9,7 +9,7 @@
             <i data-lucide="arrow-left"></i>
             <span data-i18n="settings.back">返回首页</span>
           </button>
-          <span class="pdf-merge-v2-top-tag pdf-split-v2-top-tag">PDF SPLITTER · TOOL PAGE 3.1</span>
+          <span class="pdf-merge-v2-top-tag pdf-split-v2-top-tag">PDF SPLITTER · TOOL PAGE 3.2</span>
         </div>
         <div class="home-v2-top-actions pdf-merge-v2-top-actions">
           <button class="home-v2-nav-link" type="button" data-home-link="website">
@@ -164,12 +164,18 @@
   <button id="pdfSplitWorkspaceClose" type="button"></button>
   <div id="pdfSplitPageStrip" aria-live="polite"></div>
   <div class="pdf-workbench-actions" id="pdfSplitWorkbenchActions">
-    <div class="pdf-editor-filecard-meta">
-      <strong id="pdfSplitWorkspaceStatus"></strong>
-      <span class="pdf-editor-filecard-stats" id="pdfSplitWorkspaceHint"></span>
-      <span class="pdf-editor-filecard-stats" id="pdfSplitSelectedCount"></span>
-    </div>
-    <button class="pdf-editor-tool" id="pdfSplitSelectAllBtn" type="button"></button>
+    <section class="pdf-split-selection" aria-labelledby="pdfSplitSelectionTitle">
+      <div class="pdf-split-selection-heading">
+        <h3 id="pdfSplitSelectionTitle"><i data-lucide="list-checks" aria-hidden="true"></i><span data-i18n="home.pdfSplit.selectionTitle">页面选择</span></h3>
+        <span class="pdf-split-selection-count" id="pdfSplitSelectedCount" aria-live="polite"></span>
+      </div>
+      <p class="pdf-split-selection-summary"><span id="pdfSplitWorkspaceStatus"></span><span id="pdfSplitWorkspaceHint"></span></p>
+      <div class="pdf-split-selection-actions">
+        <button class="pdf-editor-tool pdf-split-range-trigger" id="pdfSplitRangeBtn" type="button" aria-haspopup="dialog" aria-controls="pdfSplitRangeDialog"><i data-lucide="list-filter" aria-hidden="true"></i><span data-i18n="home.pdfSplit.rangeSelect">范围选择</span></button>
+        <button class="pdf-editor-tool" id="pdfSplitSelectAllBtn" type="button" aria-pressed="false"><i data-lucide="check-check" aria-hidden="true"></i><span data-i18n="home.pdfSplit.selectAll">全选</span></button>
+      </div>
+      <p class="pdf-split-selection-note"><i data-lucide="info" aria-hidden="true"></i><span data-i18n="home.pdfSplit.selectionHint">勾选左侧页面，或按页码范围追加选择。</span></p>
+    </section>
     <div class="pdf-workbench-export">
       <span class="pdf-editor-filecard-stats" id="pdfSplitSelectionMeta"></span>
       <button class="pdf-editor-tool" id="pdfSplitDownloadCurrentBtn" type="button"><i data-lucide="file-down"></i><span data-i18n="home.pdfSplit.exportCurrent">导出当前页</span></button>
@@ -177,4 +183,26 @@
       <button class="pdf-editor-tool" id="pdfSplitDownloadZipBtn" type="button"><i data-lucide="archive"></i><span data-i18n="home.pdfSplit.exportZip">导出独立页（ZIP）</span></button>
     </div>
   </div>
+</section>
+
+<section id="pdfSplitRangeDialog" class="pdf-editor-v2 pdf-editor-edit-modal" role="dialog" aria-modal="true" aria-labelledby="pdfSplitRangeTitle" aria-describedby="pdfSplitRangeHelp" aria-hidden="true" inert>
+  <form class="pdf-editor-edit-modal-card" novalidate>
+    <header class="pdf-editor-edit-modal-head">
+      <h3 class="pdf-editor-edit-modal-title" id="pdfSplitRangeTitle"><i data-lucide="list-filter" aria-hidden="true"></i><span data-i18n="home.pdfSplit.rangeTitle">按范围选择页面</span></h3>
+      <button class="pdf-editor-edit-modal-close" type="button" data-range-close data-i18n-title="common.close" data-i18n-aria-label="common.close" aria-label="关闭"><i data-lucide="x" aria-hidden="true"></i></button>
+    </header>
+    <div class="pdf-editor-edit-modal-body">
+      <p class="pdf-split-range-count" data-range-count></p>
+      <label class="pdf-editor-edit-modal-label" for="pdfSplitRangeInput" data-i18n="home.pdfSplit.rangeLabel">起始页 - 最终页</label>
+      <input id="pdfSplitRangeInput" class="pdf-editor-edit-modal-input" data-range-input type="text" maxlength="32" autocomplete="off" spellcheck="false" placeholder="例如 1-10" data-i18n-placeholder="home.pdfSplit.rangePlaceholder" aria-describedby="pdfSplitRangeLimit pdfSplitRangeHelp pdfSplitRangeError" aria-invalid="false">
+      <p class="pdf-split-range-limit" id="pdfSplitRangeLimit" data-range-limit></p>
+      <p class="pdf-split-range-help" id="pdfSplitRangeHelp" data-i18n="home.pdfSplit.rangeHelp">每次输入一个范围（如 1-10），也可输入单页（如 5）。点“选中”后输入框清空，已有选择保留；再输入 15-20，只追加这六页，不会选中 11-14。页码以左侧缩略图编号为准。</p>
+      <p class="pdf-split-range-error" id="pdfSplitRangeError" data-range-error role="alert" hidden></p>
+      <p class="pdf-split-range-status" data-range-status role="status" aria-live="polite" aria-atomic="true"></p>
+    </div>
+    <footer class="pdf-editor-edit-modal-foot">
+      <button class="pdf-merge-selection-btn pdf-merge-selection-btn-secondary" type="button" data-range-close><span data-i18n="home.pdfSplit.rangeDone">完成</span></button>
+      <button class="pdf-merge-selection-btn pdf-merge-selection-btn-primary" type="submit"><i data-lucide="plus" aria-hidden="true"></i><span data-i18n="home.pdfSplit.rangeApply">选中</span></button>
+    </footer>
+  </form>
 </section>

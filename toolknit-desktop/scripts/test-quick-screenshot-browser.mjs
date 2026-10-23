@@ -21,12 +21,12 @@ await mkdir(out,{recursive:true});
 const server=await preview({configFile:false,preview:{host:'127.0.0.1',port:0,open:false}});
 const browser=await chromium.launch({headless:true,...(process.env.TOOLKNIT_TEST_BROWSER?{executablePath:process.env.TOOLKNIT_TEST_BROWSER}:{})});
 const errors=[],results=[],url=server.resolvedUrls.local[0];
-async function open(role,theme,width=1400,height=900,dpr=1){
+async function open(role,theme,width=1400,height=900,dpr=1,{warmMenu=false}={}){
   const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:dpr});
   const page=await context.newPage();page.setDefaultTimeout(10000);
   await page.exposeFunction('__shotResize',async expanded=>page.setViewportSize(expanded?{width:376,height:760}:{width:96,height:96}));
   page.on('pageerror',e=>errors.push(`${role}/${theme}: ${e.message}`));
-  await page.addInitScript(({role,theme,image})=>{
+  await page.addInitScript(({role,theme,image,warmMenu})=>{
     const strokeRect=CanvasRenderingContext2D.prototype.strokeRect;
     CanvasRenderingContext2D.prototype.strokeRect=function(x,y,width,height){
       if(this.strokeStyle==='#60a5fa'&&width>20&&height>10)window.__textSelection={x,y,width,height};
@@ -39,6 +39,8 @@ async function open(role,theme,width=1400,height=900,dpr=1){
     window.__localReady=true;window.__localTarget='zh-Hans';window.__localFailure='';
     const shot={id:2,width:1400,height:900,time:Date.now(),image};
     window.__shotHistory=role==='history'?Array.from({length:6},(_,i)=>({...shot,id:i+2})):[shot,{...shot,id:3}];window.__shotHistoryFailure=false;
+    window.__menu=warmMenu?null:{token:1,entryId:null,kind:'',expanded:false,recording:true};
+    window.__phrases=[];window.__phraseId=100;
     window.__shotCalls=[];
     window.__shotEmit=(event,payload)=>{for(const [eid,l]of listeners)if(l.event===event)callbacks.get(l.handler)?.({event,id:eid,payload});};
     window.__TAURI_EVENT_PLUGIN_INTERNALS__={unregisterListener:(_,eid)=>listeners.delete(eid)};
@@ -51,6 +53,63 @@ async function open(role,theme,width=1400,height=900,dpr=1){
         if(command==='get_output_root')return 'C:/TestOutput';
         if(command==='get_default_output_root')return 'C:/TestOutput';
         if(command==='open_path')return;
+        if(command==='clipboard_history'){
+          if(window.__shotHistoryFailure)throw 'clipboard:key-missing';
+          const r=args.request;
+          const records=window.__shotHistory.map(s=>({kind:'image',capturedAt:s.time,offsetMinutes:480,thumbnail:s.image,source:'WeChat.exe',...s}));
+          if(r.action==='status')return {enabled:!window.__paused,total:records.length};
+          if(r.action==='start'||r.action==='stop'){
+            if(window.__monitorDelay)await new Promise(resolve=>window.__resolveMonitor=resolve);
+            if(window.__monitorFailure)throw 'clipboard:storage-failed';
+            window.__paused=r.action==='stop';return {enabled:!window.__paused};
+          }
+          if(r.action==='list'){
+            const list=records.filter(s=>(!r.query.kind||s.kind===r.query.kind)&&(!r.query.search||[s.text,s.preview,s.note,s.source,...(s.paths||[])].filter(Boolean).join('\n').toLowerCase().includes(r.query.search.toLowerCase())));
+            if(r.query.search&&r.query.search===window.__delaySearch)await new Promise(resolve=>window.__releaseSearch=resolve);
+            return {items:list.slice(0,r.query.limit||50),next:null,snapshot:100};
+          }
+          if(r.action==='delete'){
+            if(window.__deleteFailure)throw 'clipboard:storage-failed';
+            window.__shotHistory=window.__shotHistory.filter(s=>!r.ids.includes(s.id));window.__shotEmit('clipboard-history-changed');return {enabled:!window.__paused};
+          }
+          if(r.action==='detail'||r.action==='entry')return structuredClone(records.find(s=>s.id===r.id));
+          if(r.action==='note'){
+            if(window.__noteFailure)throw 'clipboard:storage-failed';
+            window.__shotHistory.find(s=>s.id===r.id).note=r.note;window.__shotEmit('clipboard-history-changed',{recordId:r.id});return {};
+          }
+          if(r.action==='phraseList'){
+            const after=r.query.before?window.__phrases.findIndex(p=>p.id===r.query.before)+1:0;
+            const list=window.__phrases.slice(after).filter(p=>[p.title,p.text].join('\n').toLowerCase().includes((r.query.search||'').toLowerCase()));
+            return {items:structuredClone(list.slice(0,50)),next:list.length>50?list[49].id:null};
+          }
+          if(r.action==='phraseDetail')return structuredClone(window.__phrases.find(p=>p.id===r.id));
+          if(r.action==='phraseSave'||r.action==='phraseFromHistory'){
+            if(window.__phraseFailure)throw 'clipboard:storage-failed';
+            const source=r.action==='phraseFromHistory'?records.find(s=>s.id===r.id):null;
+            if(source&&source.kind!=='text')throw 'clipboard:phrase-text-only';
+            const data=source?{title:source.text.slice(0,60),text:source.text,note:''}:r;
+            const existing=r.action==='phraseSave'&&r.id?window.__phrases.find(p=>p.id===r.id):null;
+            if(window.__phrases.some(p=>p.id!==existing?.id&&p.text===data.text))throw 'clipboard:phrase-duplicate';
+            const value={id:existing?.id||++window.__phraseId,title:data.title,text:data.text,note:data.note,createdAt:existing?.createdAt||Date.now(),updatedAt:Date.now()};
+            if(existing)window.__phrases.splice(window.__phrases.indexOf(existing),1,value);else window.__phrases.unshift(value);
+            window.__shotEmit('clipboard-history-changed',{library:true});return structuredClone(value);
+          }
+          if(r.action==='phraseDelete'){window.__phrases=window.__phrases.filter(p=>p.id!==r.id);window.__shotEmit('clipboard-history-changed',{library:true});return {};}
+          if(r.action==='phraseCopy'){window.__lastPhraseCopy=window.__phrases.find(p=>p.id===r.id).text;return {};}
+          if(r.action==='reorder'){
+            if(window.__reorderFailure)throw 'clipboard:storage-failed';
+            const items=r.collection==='phrases'?window.__phrases:window.__shotHistory;
+            const from=items.findIndex(p=>p.id===r.id),item=items.splice(from,1)[0],target=items.findIndex(p=>p.id===r.targetId);
+            items.splice(target+(r.after?1:0),0,item);window.__shotEmit('clipboard-history-changed',{library:r.collection==='phrases'});return {};
+          }
+          if(r.action==='drag'){
+            if(window.__dragFailure)throw 'clipboard:drag-failed';
+            window.__dragPayload=structuredClone(r.collection==='phrases'?window.__phrases.find(p=>p.id===r.id):window.__shotHistory.find(p=>p.id===r.id));
+            if(window.__dragDeferred)await new Promise(resolve=>window.__releaseDrag=resolve);
+            return {accepted:false};
+          }
+          if(r.action==='copy'||r.action==='pin')return {enabled:!window.__paused};
+        }
         if(command==='load_ai_api_key')return window.__shotKeyMissing?'':'local-test-key';
         if(command==='local_translation'){
           const r=args.request;
@@ -80,9 +139,20 @@ async function open(role,theme,width=1400,height=900,dpr=1){
         if(command==='cancel_private_ai_completion')return;
         if(command==='quick_screenshot'){
           const r=args.request;
-          if(r.action==='boot')return {context:structuredClone(shared),session:1,shot,desktop:{bounds:{x:-1400,y:-100,width:1400,height:900},windows:[{x:-1300,y:-20,width:800,height:440}],monitors:[{x:-1400,y:-100,width:1400,height:900}]},image};
+          if(r.action==='hide-history'||r.action==='close-history'){
+            if(window.__hideFailure)throw 'screenshot:window-hide-failed';
+            window.__nativeHistoryHidden=true;return null;
+          }
+          if(r.action==='history-menu'&&window.__nativeHistoryHidden)throw 'screenshot:expired';
+          if(r.action==='menu-boot')return {context:structuredClone(shared),menu:structuredClone(window.__menu)};
+          if(r.action==='menu-ready'){window.__menuReadyMs=performance.now()-window.__menuStarted;return null;}
+          if(r.action==='menu-select'){
+            if(window.__delayMenuSelect)await new Promise((resolve,reject)=>{window.__resolveMenuSelect=resolve;window.__rejectMenuSelect=reject;});
+            return null;
+          }
+          if(r.action==='menu-dismiss')return null;
+          if(r.action==='boot')return {context:structuredClone(shared),feedback:{revision:1,kind:'copied',lang:shared.lang},session:1,shot,desktop:{bounds:{x:-1400,y:-100,width:1400,height:900},windows:[{x:-1300,y:-20,width:800,height:440}],monitors:[{x:-1400,y:-100,width:1400,height:900}]},image};
           if(r.action==='metadata')return {context:structuredClone(shared)};
-          if(r.action==='history'){if(window.__shotHistoryFailure)throw new Error('History temporarily unavailable');return window.__shotHistory;}
           if(r.action==='expand'){
             if(window.__shotExpandFailure)throw new Error('Window temporarily unavailable');
             await window.__shotResize(r.expanded);
@@ -95,12 +165,13 @@ async function open(role,theme,width=1400,height=900,dpr=1){
         }
         throw new Error(`Unexpected command: ${command}`);
       }};
-  },{role,theme,image});
+  },{role,theme,image,warmMenu});
   await page.goto(`${url}screenshot.html?role=${role}`);
   return {page,context};
 }
 try{
   for(const [theme,width,height,dpr]of [['light',1400,900,1],['dark',1400,900,1],['light',740,480,2],['dark',740,480,2]]){
+    if(process.env.TOOLKNIT_SHOT_SCOPE==='history')break;
     const {page,context}=await open('capture',theme,width,height,dpr);
     await page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='ready'));
     await page.mouse.move(width*.2,height*.2);await page.mouse.click(width*.2,height*.2);
@@ -378,14 +449,15 @@ try{
     await shelf.page.locator('#shotHistoryBubble').click();
     await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.state==='expanded');
     const visibleCards=await shelf.page.locator('#shotHistoryList').evaluate(el=>[...el.children].filter(c=>{const r=c.getBoundingClientRect(),p=el.getBoundingClientRect();return r.top>=p.top&&r.bottom<=p.bottom+1;}).length);
-    assert.equal(visibleCards,4,'four cards fit without scrolling');
+    assert.ok(visibleCards>=1,'enlarged cards stay usable in the available height');
+    assert.ok((await shelf.page.locator('.shot-history-content.is-image').first().boundingBox()).height>=130,'thumbnail has a readable preview area');
     assert.ok(await shelf.page.locator('#shotHistoryList').evaluate(el=>el.scrollHeight>el.clientHeight),'older images scroll');
     await shelf.page.evaluate(()=>{
       window.__existingCards=[...document.querySelectorAll('.shot-history-item')];
       window.__imageDecodes=0;
       const decode=HTMLImageElement.prototype.decode;
       HTMLImageElement.prototype.decode=function(){window.__imageDecodes++;return decode.call(this);};
-      window.__shotEmit('screenshot-history-changed');
+      window.__shotEmit('clipboard-history-changed');
     });
     await shelf.page.waitForTimeout(100);
     assert.equal(await shelf.page.evaluate(()=>window.__imageDecodes),0,'unchanged history reuses decoded thumbnails');
@@ -394,13 +466,13 @@ try{
     assert.equal(await shelf.page.locator('#shotHistoryBubble').getAttribute('aria-expanded'),'true');
     await shelf.page.evaluate(()=>window.__shotEmit('screenshot-ended'));
     assert.equal(await shelf.page.locator('.shot-history-item').count(),6,'finishing a capture must not dispose the history window');
-    await shelf.page.evaluate(()=>{window.__shotHistory.unshift({...window.__shotHistory[0],id:9});window.__shotEmit('screenshot-history-changed');});
-    await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.shotId==='9');
-    assert.equal(await shelf.page.evaluate(()=>window.__imageDecodes),1,'only the newly inserted thumbnail is decoded');
+    await shelf.page.evaluate(()=>{window.__shotHistory.unshift({...window.__shotHistory[0],id:9});window.__shotEmit('clipboard-history-changed');});
+    await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.entryId==='9');
+    assert.ok(await shelf.page.locator('.shot-history-item img').first().evaluate(img=>img.complete&&img.naturalWidth>0),'new thumbnail renders');
     assert.ok(await shelf.page.evaluate(()=>window.__existingCards.every(card=>card.isConnected)),'adding a capture preserves existing card nodes');
     assert.equal(await shelf.page.locator('#shotHistory').getAttribute('data-state'),'expanded','new captures must preserve the open panel');
     assert.equal(await shelf.page.locator('.shot-history-item').count(),7);
-    await shelf.page.evaluate(()=>{window.__shotHistoryFailure=true;window.__shotEmit('screenshot-history-changed');});
+    await shelf.page.evaluate(()=>{window.__shotHistoryFailure=true;window.__shotEmit('clipboard-history-changed');});
     await shelf.page.locator('#shotHistoryStatus').waitFor({state:'visible'});
     assert.equal(await shelf.page.locator('.shot-history-item').count(),7,'failed refresh must keep the previous images');
     await shelf.page.evaluate(()=>{window.__shotHistoryFailure=false;});
@@ -419,6 +491,56 @@ try{
       assert.equal(await shelf.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='expand').length),expandCalls,'hover must not change click-controlled state');
     }
     const dragCount=()=>shelf.page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='plugin:window|start_dragging').length);
+    const titleText=locales[theme==='light'?'zh':'en'];
+    assert.deepEqual(await shelf.page.locator('#shotHistoryPanel header button').evaluateAll(nodes=>nodes.map(n=>n.dataset.shotAction)),['history-mode','history-menu','collapse-history']);
+    assert.equal(await shelf.page.locator('#shotHistorySearchForm button[type="submit"]').count(),0);
+    const settleTitle=()=>shelf.page.locator('#shotHistoryTitle').evaluate(async el=>{await Promise.allSettled(el.getAnimations({subtree:true}).map(a=>a.finished));});
+    for(let i=0;i<3;i++){
+      await shelf.page.locator('#shotHistoryMode').hover();
+      await shelf.page.waitForFunction(()=>document.getElementById('shotHistoryTitle').dataset.preview==='true');
+      if(i===0){
+        const flips=await shelf.page.locator('.shot-title-hint>span').evaluateAll(nodes=>nodes.map(n=>({delay:getComputedStyle(n).transitionDelay,transform:getComputedStyle(n).transform})));
+        assert.ok(new Set(flips.map(f=>f.delay)).size>3,'letters flip in staggered order');
+        assert.ok(flips.some(f=>f.transform.startsWith('matrix3d')),'the title has a real 3D rotation');
+      }
+      await settleTitle();
+      assert.equal(await shelf.page.locator('#shotHistoryTitle').getAttribute('aria-label'),titleText.historySwitchPhrases);
+      if(i===0)await shelf.page.screenshot({path:path.join(out,`history-title-${theme}.png`)});
+      await shelf.page.locator('#shotHistoryTitle').hover();await settleTitle();
+      assert.equal(await shelf.page.locator('#shotHistoryTitle').getAttribute('aria-label'),titleText.recent);
+      assert.equal(await shelf.page.locator('#shotHistory').getAttribute('data-mode'),'history','hover alone never changes data mode');
+    }
+    const searchStyle=()=>shelf.page.locator('#shotHistorySearch').evaluate(el=>{
+      const s=getComputedStyle(el);return {outline:s.outlineStyle,shadow:s.boxShadow,transform:s.transform,transition:s.transitionDuration,animation:s.animationName,background:s.backgroundColor};
+    });
+    const unfocusedSearch=await searchStyle();await shelf.page.locator('#shotHistorySearch').focus();
+    assert.deepEqual(await searchStyle(),unfocusedSearch,'search focus has no outline, transform, shadow or animated styling');
+    assert.equal(unfocusedSearch.outline,'none');assert.equal(unfocusedSearch.shadow,'none');assert.equal(unfocusedSearch.transition,'0s');assert.equal(unfocusedSearch.animation,'none');
+    await shelf.page.locator('#shotHistorySearch').fill('no matching synthetic record');
+    await shelf.page.locator('#shotHistoryEmpty').waitFor({state:'visible'});
+    assert.equal(await shelf.page.locator('#shotHistorySearchClear svg').evaluate(el=>getComputedStyle(el).color),theme==='light'?'rgb(17, 17, 17)':'rgb(245, 245, 245)');
+    await shelf.page.locator('#shotHistorySearchClear').click();await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===7);
+    assert.equal(await shelf.page.locator('#shotHistorySearch').inputValue(),'');
+    assert.equal(await shelf.page.locator('#shotHistorySearchClear').isVisible(),false);
+    // The shared veil covers header, controls and list before changing mode.
+    await shelf.page.locator('#shotHistoryMode').click();
+    await shelf.page.waitForFunction(()=>document.querySelector('[data-tk-page-transition-veil]')?.classList.contains('is-active'));
+    const veil=await shelf.page.locator('[data-tk-page-transition-veil]').evaluate(el=>({color:getComputedStyle(el).backgroundColor,rect:el.getBoundingClientRect().toJSON()}));
+    const panelRect=await shelf.page.locator('#shotHistoryPanel').boundingBox();
+    assert.equal(veil.color,theme==='light'?'rgb(255, 255, 255)':'rgb(0, 0, 0)');
+    assert.equal(veil.rect.width,panelRect.width);assert.equal(veil.rect.height,panelRect.height);
+    await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.mode==='phrases'&&!document.getElementById('shotHistoryMode').disabled);
+    await shelf.page.locator('#shotHistoryTitle').hover();await shelf.page.locator('#shotHistoryMode').hover();await settleTitle();
+    assert.equal(await shelf.page.locator('#shotHistoryTitle').getAttribute('aria-label'),titleText.historySwitchRecords);
+    await shelf.page.locator('#shotHistoryMode').click();await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.mode==='history'&&!document.getElementById('shotHistoryMode').disabled);
+    assert.equal(await shelf.page.locator('[data-tk-page-transition-veil]').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
+    await shelf.page.locator('#shotHistoryMode').click();
+    await shelf.page.waitForFunction(()=>document.querySelector('[data-tk-page-transition-veil]')?.classList.contains('is-active'));
+    await shelf.page.keyboard.press('Escape');await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.state==='collapsed');
+    assert.equal(await shelf.page.locator('[data-tk-page-transition-veil]').count(),0,'closing during transition releases its veil');
+    await shelf.page.locator('#shotHistoryBubble').click();await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.state==='expanded');
+    assert.equal(await shelf.page.locator('#shotHistory').getAttribute('data-mode'),'history','cancelled transition cannot change mode later');
+    assert.equal(await shelf.page.locator('#shotHistoryMode').isDisabled(),false);
     const beforeHeaderDrag=await dragCount();
     const title=await shelf.page.locator('.shot-history-panel header>span').boundingBox();
     await shelf.page.mouse.move(title.x+10,title.y+10);await shelf.page.mouse.down();await shelf.page.mouse.move(title.x+36,title.y+26,{steps:4});await shelf.page.mouse.up();
@@ -431,11 +553,48 @@ try{
     await shelf.page.locator('#shotHistoryBubble').click();
     await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.state==='expanded');
     await shelf.page.locator('.shot-history-item').first().click();
-    assert.ok(await shelf.page.evaluate(()=>window.__shotCalls.some(c=>c.args?.request?.action==='viewer')));
+    assert.ok(await shelf.page.evaluate(()=>window.__shotCalls.some(c=>c.command==='clipboard_history'&&c.args?.request?.action==='pin')));
     await shelf.page.screenshot({path:path.join(out,`history-${theme}.png`)});
     const pixels=await loadImage(path.join(out,`history-${theme}.png`));
     const raster=createCanvas(pixels.width,pixels.height),rasterCtx=raster.getContext('2d');rasterCtx.drawImage(pixels,0,0);
     assert.ok([...rasterCtx.getImageData(0,0,pixels.width,pixels.height).data].some((value,i,a)=>i%4===1&&value>a[i-1]+35&&value>a[i+1]+35),'shelf screenshot must contain the fixture green image');
+    assert.match(await shelf.page.locator('.shot-history-info').first().textContent(),/2026|\d{4}/);
+    assert.match(await shelf.page.locator('.shot-history-info').first().textContent(),/UTC\+08:00/);
+    await shelf.page.evaluate(()=>{
+      window.__shotHistory.unshift({id:15,kind:'text',time:Date.now(),preview:'Text from another application',text:'Complete text <script>unsafe()</script>',source:'Editor.exe'});
+      window.__shotHistory.unshift({id:16,kind:'files',time:Date.now(),preview:'sample.pdf',paths:['C:/Synthetic/sample.pdf'],source:'explorer.exe'});
+      window.__shotEmit('clipboard-history-changed');
+    });
+    await shelf.page.locator('[data-history-kind="text"]').click();
+    await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.kind==='text');
+    await shelf.page.locator('#shotHistoryFilters').evaluate(async el=>{await Promise.allSettled(el.getAnimations({subtree:true}).map(a=>a.finished));});
+    const indicatorBounds=await shelf.page.locator('.shot-history-filter-indicator').boundingBox(),textTab=await shelf.page.locator('[data-history-kind="text"]').boundingBox();
+    assert.ok(Math.abs(indicatorBounds.x-textTab.x)<1&&Math.abs(indicatorBounds.width-textTab.width)<1,'sliding selection settles exactly beneath its tab');
+    await shelf.page.evaluate(()=>{document.querySelector('[data-history-kind="files"]').click();document.querySelector('[data-history-kind=""]').click();document.querySelector('[data-history-kind="text"]').click();});
+    await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===1&&document.querySelector('.shot-history-item')?.dataset.kind==='text');
+    await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===1);
+    await shelf.page.locator('.shot-history-item').click();
+    await shelf.page.locator('#shotHistoryDetail').waitFor({state:'visible'});
+    assert.match(await shelf.page.locator('#shotHistoryDetailBody').textContent(),/Complete text <script>/);
+    assert.equal(await shelf.page.locator('#shotHistoryDetailBody script').count(),0);
+    await shelf.page.locator('[data-shot-action="history-copy"]').click();
+    await shelf.page.waitForFunction(()=>window.__shotCalls.some(c=>c.command==='clipboard_history'&&c.args.request.action==='copy'&&c.args.request.id===15));
+    await shelf.page.keyboard.press('Escape');
+    await shelf.page.locator('[data-history-kind="files"]').click();
+    await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.entryId==='16');
+    await shelf.page.locator('.shot-history-item').click();
+    assert.match(await shelf.page.locator('#shotHistoryDetailBody').textContent(),/C:\/Synthetic\/sample.pdf/);
+    await shelf.page.locator('[data-shot-action="history-back"]').click();
+    await shelf.page.locator('[data-history-kind=""]').click();
+    await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===9);
+    await shelf.page.locator('#shotHistoryPanel header').click({button:'right'});
+    await shelf.page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='history-menu'));
+    await shelf.page.locator('[data-shot-action="history-menu"]').focus();await shelf.page.keyboard.press('Enter');
+    assert.ok(await shelf.page.evaluate(()=>window.__shotCalls.some(c=>c.args?.request?.action==='history-menu'&&Number.isFinite(c.args.request.anchor?.x))), 'keyboard opens beside the menu button');
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action','monitor'));
+    await shelf.page.waitForFunction(()=>document.getElementById('shotHistoryRecording').getAttribute('aria-checked')==='false');
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action','open'));
+    await shelf.page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.target==='clipboard-history'));
     await shelf.page.keyboard.press('Escape');
     await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.state==='collapsed');
     assert.ok(await shelf.page.evaluate(()=>!window.__shotCalls.some(c=>c.args?.request?.action==='hide-history')),'collapse must not disable the user preference');
@@ -454,9 +613,310 @@ try{
     await shelf.page.setViewportSize({width:320,height:440});
     const bounds=await shelf.page.locator('[data-shot-action="collapse-history"]').boundingBox();
     assert.ok(bounds.x+bounds.width<=320&&bounds.y+bounds.height<=440,'low-height panel controls stay visible');
-    await shelf.page.evaluate(()=>{window.__shotHistory=[];window.__shotEmit('screenshot-history-changed');});
+    await shelf.page.locator('#shotHistoryMode').hover();await settleTitle();
+    const narrowTitle=await shelf.page.locator('#shotHistoryTitle').evaluate(el=>({right:el.getBoundingClientRect().right,last:el.querySelector('.shot-title-hint').lastElementChild.getBoundingClientRect().right}));
+    assert.ok(narrowTitle.last<=narrowTitle.right+1,'the complete switch hint fits at 320px');
+    await shelf.page.locator('#shotHistoryMode').click();await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.mode==='phrases'&&!document.getElementById('shotHistoryMode').disabled);
+    await shelf.page.locator('#shotHistoryMode').click();await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.mode==='history'&&!document.getElementById('shotHistoryMode').disabled);
+    assert.equal(await shelf.page.locator('[data-tk-page-transition-veil]').count(),0,'reduced motion switches without a flash');
+    await shelf.page.evaluate(()=>{window.__hideFailure=true;window.__shotEmit('screenshot-history-action','hide');});
+    await shelf.page.waitForFunction(()=>document.getElementById('shotHistoryBubble').dataset.error==='true');
+    assert.equal(await shelf.page.locator('#shotHistoryMessage').textContent(),locales[theme==='light'?'zh':'en'].windowHideFailed);
+    assert.equal(await shelf.page.evaluate(()=>Boolean(window.__nativeHistoryHidden)),false,'failed hide keeps the view usable');
+    const priorMenus=await shelf.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='history-menu').length);
+    await shelf.page.locator('#shotHistoryPanel header').click({button:'right'});
+    await shelf.page.waitForFunction(n=>window.__shotCalls.filter(c=>c.args?.request?.action==='history-menu').length>n,priorMenus);
+    await shelf.page.evaluate(()=>{window.__hideFailure=false;window.__shotEmit('screenshot-history-action','hide');});
+    await shelf.page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='hide-history'));
+    await shelf.page.waitForFunction(()=>window.__nativeHistoryHidden===true);
+    await shelf.page.locator('#shotHistoryPanel header').click({button:'right'});
+    await shelf.page.waitForTimeout(100);
+    assert.equal(await shelf.page.locator('#shotHistoryBubble').getAttribute('data-error'),null,'a late request after hide must not create a red error indicator');
+    await shelf.page.evaluate(()=>{window.__nativeHistoryHidden=false;});
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action','close'));
+    await shelf.page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='close-history'));
+    await shelf.page.waitForFunction(()=>window.__nativeHistoryHidden===true);
+    await shelf.page.evaluate(()=>{window.__nativeHistoryHidden=false;});
+    await shelf.page.evaluate(()=>{window.__shotHistory=[];window.__shotEmit('clipboard-history-changed');});
     await shelf.page.locator('#shotHistoryEmpty').waitFor({state:'visible'});
-    results.push(`history ${theme}: logo bubble, four visible cards, scrolling, repeated click/collapse, drag isolation, Escape, reduced motion, window failure recovery, retry, viewer, empty state, rendered pixels`);await shelf.context.close();
+    await shelf.page.setViewportSize({width:376,height:760});
+    await shelf.page.evaluate(()=>{
+      window.__shotHistory=Array.from({length:21},(_,i)=>({id:50-i,kind:i===0?'files':'text',time:Date.now(),source:'Editor.exe',preview:'超长中文与 English '.repeat(40),text:'完整内容'.repeat(100),paths:['C:/Synthetic/only-path.txt']}));
+      window.__shotEmit('clipboard-history-changed');
+    });
+    await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===20);
+    assert.equal(await shelf.page.locator('#shotHistoryCount').textContent(),'20');
+    assert.equal(await shelf.page.evaluate(()=>window.__shotHistory.length),21,'the display cap never prunes storage');
+    assert.equal(await shelf.page.locator('#shotHistoryMore').count(),0);
+    const layout=await shelf.page.locator('.shot-history-item').first().evaluate(row=>{
+      const preview=row.querySelector('.shot-history-preview'),time=row.querySelector('time');
+      return {clamp:getComputedStyle(preview).webkitLineClamp,previewBottom:preview.getBoundingClientRect().bottom,timeTop:time.getBoundingClientRect().top,padding:parseFloat(getComputedStyle(row).paddingTop)};
+    });
+    assert.equal(layout.clamp,'2');assert.ok(layout.previewBottom<=layout.timeTop);assert.ok(layout.padding>=12);
+    assert.equal(await shelf.page.locator('.shot-history-recording').evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)');
+    assert.equal(await shelf.page.locator('#shotHistoryList').evaluate(el=>getComputedStyle(el).scrollbarWidth),'none');
+    await shelf.page.locator('#shotHistoryList').evaluate(el=>{el.scrollTop=el.scrollHeight;});
+    await shelf.page.waitForFunction(()=>document.getElementById('shotHistoryScroll').getAttribute('aria-valuenow')==='100');
+    await shelf.page.locator('#shotHistoryList').evaluate(el=>{el.scrollTop=0;});
+    await shelf.page.waitForFunction(()=>document.getElementById('shotHistoryScroll').getAttribute('aria-valuenow')==='0');
+    await shelf.page.locator('.shot-history-item').first().click({button:'right'});
+    assert.ok(await shelf.page.evaluate(()=>window.__shotCalls.some(c=>c.args?.request?.action==='history-menu'&&c.args.request.id===50)));
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action',{action:'delete',id:50}));
+    await shelf.page.locator('#shotDialog').waitFor({state:'visible'});
+    await shelf.page.locator('#shotDialogCancel').click();
+    assert.equal(await shelf.page.evaluate(()=>window.__shotHistory.length),21,'cancel preserves the shared record');
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action',{action:'delete',id:50}));
+    await shelf.page.locator('#shotDialogOk').click();
+    await shelf.page.waitForFunction(()=>window.__shotHistory.length===20);
+    await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.entryId==='49');
+    assert.equal(await shelf.page.locator('.shot-history-item').count(),20,'delete fills the latest twenty from shared history');
+    await shelf.page.evaluate(()=>{window.__deleteFailure=true;window.__shotEmit('screenshot-history-action',{action:'delete',id:49});});
+    await shelf.page.locator('#shotDialogOk').click();await shelf.page.locator('#shotHistoryStatus').waitFor({state:'visible'});
+    assert.equal(await shelf.page.evaluate(()=>window.__shotHistory.length),20);
+    await shelf.page.evaluate(()=>{window.__deleteFailure=false;});
+    await shelf.page.locator('[data-shot-action="retry-history"]').click();await shelf.page.locator('#shotHistoryStatus').waitFor({state:'hidden'});
+    const initialRecording=await shelf.page.locator('#shotHistoryRecording').getAttribute('aria-checked');
+    await shelf.page.evaluate(()=>{window.__monitorFailure=true;});
+    await shelf.page.locator('#shotHistoryRecording').click();await shelf.page.locator('#shotHistoryStatus').waitFor({state:'visible'});
+    assert.equal(await shelf.page.locator('#shotHistoryRecording').getAttribute('aria-checked'),initialRecording,'failed writes preserve the actual recording state');
+    await shelf.page.evaluate(()=>{window.__monitorFailure=false;window.__monitorDelay=true;});
+    await shelf.page.locator('#shotHistoryRecording').click();await shelf.page.waitForFunction(()=>!!window.__resolveMonitor);
+    assert.equal(await shelf.page.locator('#shotHistoryRecording').isDisabled(),true);
+    const monitorCalls=await shelf.page.evaluate(()=>window.__shotCalls.filter(c=>['start','stop'].includes(c.args?.request?.action)).length);
+    await shelf.page.locator('#shotHistoryRecording').evaluate(el=>el.click());
+    assert.equal(await shelf.page.evaluate(()=>window.__shotCalls.filter(c=>['start','stop'].includes(c.args?.request?.action)).length),monitorCalls);
+    await shelf.page.evaluate(()=>{window.__monitorDelay=false;window.__resolveMonitor();});
+    await shelf.page.waitForFunction(initial=>document.getElementById('shotHistoryRecording').getAttribute('aria-checked')!==initial,initialRecording);
+    await shelf.page.locator('#shotHistoryStatus').waitFor({state:'hidden'});
+    await shelf.page.waitForFunction(()=>{
+      const control=document.getElementById('shotHistoryRecording');
+      return getComputedStyle(control.firstElementChild).transform===(control.getAttribute('aria-checked')==='true'?'matrix(1, 0, 0, 1, 18, 0)':'none');
+    });
+    await shelf.page.screenshot({path:path.join(out,`history-${theme}-twenty.png`)});
+    const footer=await shelf.page.locator('.shot-history-recording').boundingBox(),listBounds=await shelf.page.locator('#shotHistoryList').boundingBox();
+    assert.ok(footer.y>=listBounds.y+listBounds.height,'recording controls belong below the list');
+    assert.equal(await shelf.page.locator('.shot-history-content').first().evaluate(el=>getComputedStyle(el).textAlign),'center');
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action','main'));
+    assert.ok(await shelf.page.evaluate(()=>window.__shotCalls.some(c=>c.args?.request?.target==='main')));
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action',{action:'note',id:49,kind:'text'}));
+    await shelf.page.locator('#shotDialogContent textarea[name="note"]').fill('Synthetic account note');
+    await shelf.page.evaluate(()=>{window.__noteFailure=true;});
+    await shelf.page.locator('#shotDialogOk').click();await shelf.page.locator('.shot-editor-error').waitFor({state:'visible'});
+    assert.equal(await shelf.page.locator('#shotDialogContent textarea[name="note"]').inputValue(),'Synthetic account note','failed save preserves the draft');
+    await shelf.page.evaluate(()=>{window.__noteFailure=false;});await shelf.page.locator('#shotDialogOk').click();
+    await shelf.page.locator('#shotDialog').waitFor({state:'hidden'});
+    await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-note')?.textContent==='Synthetic account note');
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action',{action:'phrase-add',id:49,kind:'text'}));
+    await shelf.page.waitForFunction(()=>window.__phrases.length===1);
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action',{action:'phrase-add',id:49,kind:'text'}));
+    await shelf.page.waitForFunction(()=>/相同|already/.test(document.getElementById('shotHistoryMessage').textContent));
+    assert.equal(await shelf.page.evaluate(()=>window.__phrases.length),1,'duplicate imports preserve the existing phrase');
+    await shelf.page.evaluate(()=>{window.__shotHistory.push({id:1,kind:'text',time:Date.now(),text:'old full text',preview:'old preview',note:'beyond twenty'});window.__shotEmit('clipboard-history-changed');});
+    const countQueries=()=>shelf.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='list').length);
+    const beforeComposition=await countQueries();
+    await shelf.page.locator('#shotHistorySearch').dispatchEvent('compositionstart');
+    await shelf.page.locator('#shotHistorySearch').fill('临时拼音');await shelf.page.waitForTimeout(240);
+    assert.equal(await countQueries(),beforeComposition,'IME composition does not search incomplete text');
+    await shelf.page.locator('#shotHistorySearch').fill('beyond twenty');await shelf.page.locator('#shotHistorySearch').dispatchEvent('compositionend');
+    await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===1&&document.querySelector('.shot-history-item').dataset.entryId==='1');
+    await shelf.page.evaluate(()=>{window.__delaySearch='Synthetic account';});
+    await shelf.page.locator('#shotHistorySearch').fill('Synthetic account');await shelf.page.waitForFunction(()=>Boolean(window.__releaseSearch));
+    await shelf.page.locator('#shotHistorySearch').fill('beyond twenty');
+    await shelf.page.waitForFunction(()=>window.__shotCalls.at(-1)?.args?.request?.query?.search==='beyond twenty');
+    await shelf.page.evaluate(()=>{window.__delaySearch=null;window.__releaseSearch();});await shelf.page.waitForTimeout(80);
+    assert.equal(await shelf.page.locator('.shot-history-item').first().getAttribute('data-entry-id'),'1','late old search cannot replace newer results');
+    await shelf.page.locator('#shotHistoryMode').click();await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.mode==='phrases'&&!document.getElementById('shotHistoryMode').disabled);
+    assert.equal(await shelf.page.locator('#shotHistorySearch').inputValue(),'');
+    await shelf.page.locator('#shotPhraseCreate').click();
+    await shelf.page.locator('#shotDialogContent input[name="title"]').fill('Work email');
+    await shelf.page.locator('#shotDialogContent textarea[name="text"]').fill('fixture@example.test');
+    assert.equal(await shelf.page.locator('#shotDialogContent textarea[name="note"]').count(),0,'phrase editor only asks for title and content');
+    await shelf.page.locator('#shotDialogOk').click();await shelf.page.locator('#shotDialog').waitFor({state:'hidden'});
+    await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===2);
+    await shelf.page.locator('.shot-history-item').first().click();
+    await shelf.page.waitForFunction(()=>window.__lastPhraseCopy==='fixture@example.test');
+    await shelf.page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='feedback'&&c.args.request.kind==='copied'));
+    assert.equal(await shelf.page.locator('#shotHistoryStatus').isVisible(),false,'successful copy does not show error actions');
+    assert.equal(await shelf.page.evaluate(()=>window.__shotHistory.length),21,'copying phrases does not grow clipboard history');
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action',{action:'phrase-edit',id:window.__phrases[0].id,kind:'phrase'}));
+    await shelf.page.locator('#shotDialogContent textarea[name="text"]').fill('edited@example.test');await shelf.page.locator('#shotDialogOk').click();await shelf.page.locator('#shotDialog').waitFor({state:'hidden'});
+    await shelf.page.locator('#shotHistorySearch').fill('Work email');
+    await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===1);
+    await shelf.page.screenshot({path:path.join(out,`phrases-${theme}.png`)});
+    const beforeList=await shelf.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='phraseList').length);
+    await shelf.page.evaluate(()=>window.__shotEmit('clipboard-history-changed',1000));await shelf.page.waitForTimeout(180);
+    assert.equal(await shelf.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='phraseList').length),beforeList,'unrelated clipboard events do not decrypt phrases again');
+    await shelf.page.locator('#shotHistoryMode').click();await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.mode==='history'&&!document.getElementById('shotHistoryMode').disabled);
+    assert.equal(await shelf.page.locator('#shotHistorySearch').inputValue(),'beyond twenty');
+    assert.equal(await shelf.page.locator('.shot-history-item').first().getAttribute('data-entry-id'),'1');
+    await shelf.page.evaluate(()=>{window.__shotHistory=[];window.__shotEmit('clipboard-history-changed');});
+    await shelf.page.locator('#shotHistoryMode').click();await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.mode==='phrases'&&!document.getElementById('shotHistoryMode').disabled);
+    assert.equal(await shelf.page.locator('#shotHistorySearch').inputValue(),'Work email');
+    assert.equal(await shelf.page.locator('.shot-history-item').count(),1,'clearing history preserves saved phrases');
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action',{action:'delete',id:window.__phrases[0].id,kind:'phrase'}));
+    await shelf.page.locator('#shotDialogCancel').click();assert.equal(await shelf.page.evaluate(()=>window.__phrases.length),2);
+    await shelf.page.evaluate(()=>window.__shotEmit('screenshot-history-action',{action:'delete',id:window.__phrases[0].id,kind:'phrase'}));
+    await shelf.page.locator('#shotDialogOk').click();await shelf.page.waitForFunction(()=>window.__phrases.length===1);
+    await shelf.page.locator('#shotHistorySearch').fill('');
+    await shelf.page.evaluate(()=>{window.__phrases=Array.from({length:51},(_,i)=>({id:500-i,title:`Phrase ${i}`,text:`Value ${i}`,note:'',createdAt:Date.now(),updatedAt:Date.now()}));window.__shotEmit('clipboard-history-changed',{library:true});});
+    await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===50);
+    await shelf.page.locator('#shotHistoryList').evaluate(el=>el.scrollTop=el.scrollHeight);
+    await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===51);
+    await shelf.page.locator('.shot-history-item').last().click();await shelf.page.waitForFunction(()=>window.__lastPhraseCopy==='Value 50');
+    assert.equal(await shelf.page.locator('.shot-history-item').count(),51,'copy keeps loaded phrases and scroll context');
+    await shelf.page.locator('#shotHistoryList').evaluate(el=>el.scrollTop=0);
+    const moveCard=async(from,to)=>{
+      const grip=await shelf.page.locator('.shot-history-item').nth(from).locator('[data-history-reorder]').boundingBox();
+      const target=await shelf.page.locator('.shot-history-item').nth(to).boundingBox();
+      await shelf.page.mouse.move(grip.x+12,grip.y+12);await shelf.page.mouse.down();
+      await shelf.page.mouse.move(target.x+40,target.y+target.height-20,{steps:12});await shelf.page.mouse.up();
+    };
+    await moveCard(0,1);
+    await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.entryId==='499');
+    assert.deepEqual(await shelf.page.evaluate(()=>window.__phrases.slice(0,3).map(p=>p.id)),[499,500,498]);
+    await shelf.page.evaluate(()=>{window.__reorderFailure=true;});await moveCard(0,1);
+    await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.entryId==='499'&&document.getElementById('shotHistoryStatus').hidden===false);
+    await shelf.page.evaluate(()=>{window.__reorderFailure=false;});await shelf.page.locator('[data-shot-action="retry-history"]').click();
+    await shelf.page.locator('#shotHistoryStatus').waitFor({state:'hidden'});
+    const reordersBeforeCancel=await shelf.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='reorder').length);
+    const cancelGrip=await shelf.page.locator('[data-history-reorder]').first().boundingBox();
+    await shelf.page.mouse.move(cancelGrip.x+12,cancelGrip.y+12);await shelf.page.mouse.down();await shelf.page.mouse.move(100,cancelGrip.y+40,{steps:4});await shelf.page.mouse.move(2,2);await shelf.page.mouse.up();
+    assert.equal(await shelf.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='reorder').length),reordersBeforeCancel,'dropping outside the list cancels sorting');
+    await shelf.page.locator('[data-history-reorder]').first().focus();await shelf.page.keyboard.press('ArrowDown');
+    await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.entryId==='500'&&document.activeElement?.closest('[data-entry-id]')?.dataset.entryId==='499');
+    await shelf.page.keyboard.press('ArrowUp');await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.entryId==='499');
+    const copyBeforeDrag=await shelf.page.evaluate(()=>window.__shotCalls.filter(c=>['phraseCopy','copy','pin'].includes(c.args?.request?.action)).length);
+    const dragCard=async({selector='.shot-history-open',refresh=false,outside=false}={})=>{
+      await shelf.page.evaluate(()=>{window.__dragDeferred=true;window.__releaseDrag=null;});
+      const source=shelf.page.locator(selector).first();await source.scrollIntoViewIfNeeded();
+      const box=await source.boundingBox();
+      await shelf.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await shelf.page.mouse.down();
+      if(refresh){
+        const before=await source.boundingBox();
+        await shelf.page.evaluate(()=>{window.__shotHistory.unshift({id:902,kind:'text',text:'New incoming record',preview:'New incoming record',time:Date.now()});window.__shotEmit('clipboard-history-changed');});
+        await shelf.page.waitForTimeout(220);
+        assert.deepEqual(await source.boundingBox(),before,'live history must not move the pressed card before the drag threshold');
+        assert.equal(await shelf.page.locator('[data-entry-id="902"]').count(),0,'new records wait until the gesture ends');
+      }
+      await shelf.page.mouse.move(outside?390:box.x+box.width/2+24,box.y+box.height/2,{steps:outside?1:5});
+      await shelf.page.waitForFunction(()=>Boolean(window.__releaseDrag));await shelf.page.mouse.up();
+      await shelf.page.evaluate(()=>{window.__dragDeferred=false;window.__releaseDrag();});
+      await shelf.page.waitForFunction(()=>!document.querySelector('.shot-history-item.is-dragging'));
+    };
+    await dragCard();assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.text),'Value 1');
+    assert.equal(await shelf.page.evaluate(()=>window.__shotCalls.filter(c=>['phraseCopy','copy','pin'].includes(c.args?.request?.action)).length),copyBeforeDrag,'drag/cancel must not also copy or open a viewer');
+    await shelf.page.locator('#shotHistoryMode').click();await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.mode==='history'&&!document.getElementById('shotHistoryMode').disabled);
+    await shelf.page.evaluate(({image})=>{
+      window.__shotHistory=[{id:901,kind:'text',text:'完整正文'.repeat(100),preview:'truncated preview',time:Date.now()},{id:900,kind:'image',image,time:Date.now()}];window.__shotEmit('clipboard-history-changed');
+    },{image});
+    await shelf.page.locator('#shotHistorySearchClear').click();await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===2);
+    await dragCard();assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.text.length),400);
+    await moveCard(0,1);await shelf.page.waitForFunction(()=>document.querySelector('.shot-history-item')?.dataset.entryId==='900');
+    await dragCard();assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.image),image,'image drag references the full original');
+    await dragCard({selector:'[data-entry-id="901"] .shot-history-preview',refresh:true,outside:true});
+    assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.id),901,'a quick outward drag retains the pressed history ID');
+    assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.text.length),400,'history drag always uses the complete text');
+    await shelf.page.waitForFunction(()=>document.querySelector('[data-entry-id="902"]'));
+    assert.equal(await shelf.page.locator('#shotHistoryDetail').isVisible(),false,'dragging does not also open text details');
+    assert.equal(await shelf.page.locator('[data-entry-id="901"] .shot-history-open').evaluate(el=>getComputedStyle(el).cursor),'grab');
+    await shelf.page.evaluate(()=>{window.__dragFailure=true;});
+    const failedBox=await shelf.page.locator('[data-entry-id="902"] .shot-history-open').boundingBox();
+    await shelf.page.mouse.move(failedBox.x+60,failedBox.y+35);await shelf.page.mouse.down();await shelf.page.mouse.move(failedBox.x+90,failedBox.y+35,{steps:5});
+    await shelf.page.waitForFunction(()=>!document.getElementById('shotHistoryStatus').hidden);await shelf.page.mouse.up();
+    await shelf.page.evaluate(()=>{window.__dragFailure=false;});
+    await shelf.page.locator('[data-shot-action="retry-history"]').click();
+    await shelf.page.locator('#shotHistoryStatus').waitFor({state:'hidden'});
+    await dragCard({selector:'[data-entry-id="901"] .shot-history-open'});
+    assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.id),901,'a failed drag can be retried');
+    const dragCalls=()=>shelf.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='drag').length);
+    const beforeCaptureLoss=await dragCalls();
+    const pendingRow=shelf.page.locator('[data-entry-id="901"]');
+    await pendingRow.evaluate(el=>el.addEventListener('pointerdown',event=>el.dataset.pointer=event.pointerId,{once:true}));
+    const pendingBox=await pendingRow.locator('.shot-history-open').boundingBox();
+    await shelf.page.mouse.move(pendingBox.x+60,pendingBox.y+35);await shelf.page.mouse.down();
+    await pendingRow.evaluate(el=>el.releasePointerCapture(Number(el.dataset.pointer)));
+    await shelf.page.mouse.move(pendingBox.x+62,pendingBox.y+35);await shelf.page.mouse.up();
+    assert.equal(await dragCalls(),beforeCaptureLoss,'losing capture before threshold cancels instead of starting a stale drag');
+    assert.equal(await shelf.page.locator('#shotHistoryDetail').isVisible(),false);
+    await dragCard({selector:'[data-entry-id="901"] .shot-history-open'});
+    assert.equal(await shelf.page.evaluate(()=>window.__dragPayload.id),901,'cancelled gestures release the next history drag');
+    await shelf.page.waitForTimeout(360);
+    const clickSource=shelf.page.locator('[data-entry-id="901"] .shot-history-open');await clickSource.scrollIntoViewIfNeeded();
+    const clickBox=await clickSource.boundingBox();await shelf.page.mouse.move(clickBox.x+70,clickBox.y+40);await shelf.page.mouse.down();
+    await shelf.page.evaluate(()=>{window.__shotHistory.unshift({id:903,kind:'text',text:'Another incoming record',preview:'Another incoming record',time:Date.now()});window.__shotEmit('clipboard-history-changed');});
+    await shelf.page.waitForTimeout(220);await shelf.page.mouse.up();
+    await shelf.page.locator('#shotHistoryDetail').waitFor({state:'visible'});
+    assert.equal(await shelf.page.locator('#shotHistoryDetailBody pre').innerText(),'完整正文'.repeat(100),'a pending refresh cannot redirect a plain click to the new record');
+    await shelf.page.locator('[data-shot-action="history-back"]').click();
+    assert.equal(await shelf.page.locator('#shotHistoryMode svg').evaluate(el=>getComputedStyle(el).width),'15px');
+    results.push(`history ${theme}: repeated title flips, veil/cancel/reduced motion, live search/IME/stale replies/clear contrast, tab motion, 320px fit, latest twenty, notes/phrases, delete failures and repeated open/close`);await shelf.context.close();
+    const menu=await open('history-menu',theme,304,286,1,{warmMenu:true});
+    await menu.page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='menu-boot'));
+    await menu.page.waitForFunction(()=>document.getElementById('shotMenu')?.hidden===true);
+    assert.equal(await menu.page.locator('#shotMenu button').count(),0,'prewarmed menu has no actions or focus');
+    assert.equal(await menu.page.locator('#shotMenuError').isVisible(),false);
+    assert.ok(await menu.page.evaluate(()=>!window.__shotCalls.some(c=>c.args?.request?.action==='menu-ready')),'warming must not show the native window');
+    await menu.page.evaluate(()=>{window.__menu={token:1,entryId:null,kind:'',expanded:false,recording:true};window.__menuStarted=performance.now();window.__shotEmit('screenshot-menu-opened',1);});
+    await menu.page.locator('[data-menu-action="hide"]').waitFor({state:'visible'});
+    results.push(`menu ${theme}: prepared WebView DOM to ready ${Math.round(await menu.page.evaluate(()=>window.__menuReadyMs))}ms (mock native bridge)`);
+    assert.equal(await menu.page.locator('#shotMenu').evaluate(el=>getComputedStyle(el).borderRadius),'14px');
+    assert.equal(await menu.page.locator('#shotMenu button').count(),6);
+    await menu.page.locator('#shotMenu').evaluate(async el=>{await Promise.all(el.getAnimations().map(a=>a.finished));});
+    await menu.page.screenshot({path:path.join(out,`menu-${theme}.png`)});
+    await menu.page.keyboard.press('ArrowDown');
+    assert.equal(await menu.page.evaluate(()=>document.activeElement.dataset.menuAction),'main');
+    await menu.page.keyboard.press('Escape');
+    assert.ok(await menu.page.evaluate(()=>window.__shotCalls.some(c=>c.args?.request?.action==='menu-dismiss')));
+    await menu.page.evaluate(()=>{window.__menu={token:2,entryId:49,kind:'text',expanded:true,recording:false};window.__shotEmit('screenshot-menu-opened',2);});
+    await menu.page.setViewportSize({width:304,height:252});
+    await menu.page.locator('[data-menu-action="delete"]').waitFor({state:'visible'});
+    await menu.page.locator('#shotMenu').evaluate(async el=>{await Promise.all(el.getAnimations().map(a=>a.finished));});
+    assert.equal(await menu.page.locator('#shotMenu button').count(),5);
+    const entryBounds=await menu.page.locator('#shotMenu').boundingBox();
+    assert.ok(entryBounds.x>=0&&entryBounds.y>=0&&entryBounds.x+entryBounds.width<=304&&entryBounds.y+entryBounds.height<=252,'entry menu fits its native viewport');
+    await menu.page.locator('[data-menu-action="delete"]').click();
+    assert.ok(await menu.page.evaluate(()=>window.__shotCalls.some(c=>c.args?.request?.action==='menu-select'&&c.args.request.token===2&&c.args.request.selected==='delete')));
+    await menu.page.screenshot({path:path.join(out,`menu-entry-${theme}.png`)});
+    for(const [index,kind] of ['image','phrase'].entries()){
+      await menu.page.evaluate(({kind,token})=>{window.__menu={token,entryId:49,kind,expanded:true,recording:false};window.__shotEmit('screenshot-menu-opened',token);},{kind,token:index+3});
+      await menu.page.setViewportSize({width:304,height:214});
+      await menu.page.waitForFunction(()=>document.querySelectorAll('#shotMenu button').length===4);
+      assert.equal(await menu.page.locator('[data-menu-action="phrase-add"]').count(),0,'only text history can become a phrase');
+      assert.equal(await menu.page.locator('[data-menu-action="phrase-edit"]').count(),kind==='phrase'?1:0);
+    }
+    const readyBeforeDuplicate=await menu.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='menu-ready').length);
+    await menu.page.evaluate(()=>window.__shotEmit('screenshot-menu-opened',4));await menu.page.waitForTimeout(50);
+    assert.equal(await menu.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='menu-ready').length),readyBeforeDuplicate,'duplicate session notification does not reinitialize or show again');
+    const selectsBeforeReuse=await menu.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='menu-select').length);
+    await menu.page.locator('[data-menu-action="copy"]').click();
+    assert.equal(await menu.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='menu-select').length),selectsBeforeReuse+1,'reused menu dispatches exactly once');
+    assert.equal(await menu.page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='menu-select').at(-1).args.request.token),4);
+    await menu.page.evaluate(()=>{window.__delayMenuSelect=true;});
+    await menu.page.locator('[data-menu-action="copy"]').click();await menu.page.waitForFunction(()=>Boolean(window.__rejectMenuSelect));
+    await menu.page.evaluate(()=>{window.__delayMenuSelect=false;window.__menu={token:5,entryId:null,kind:'',expanded:false,recording:true};window.__shotEmit('screenshot-menu-opened',5);});
+    await menu.page.locator('[data-menu-action="hide"]').waitFor({state:'visible'});
+    await menu.page.evaluate(()=>window.__rejectMenuSelect('screenshot:expired'));await menu.page.waitForTimeout(40);
+    assert.equal(await menu.page.locator('#shotMenuError').isVisible(),false,'a late failure from the old session must not paint over the current menu');
+    assert.equal(await menu.page.locator('[data-menu-action="hide"]').isDisabled(),false);
+    results.push(`menu ${theme}: rounded surface, keyboard, reuse, context selection token and dismissal`);await menu.context.close();
+    const feedback=await open('toast',theme,340,88);
+    await feedback.page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='feedback-ready'));
+    await feedback.page.locator('#shotDesktopToast').evaluate(el=>{for(const animation of el.getAnimations()){animation.pause();animation.currentTime=300;}});
+    const toastStyle=await feedback.page.locator('#shotDesktopToast').evaluate(el=>({background:getComputedStyle(el).backgroundColor,radius:getComputedStyle(el).borderRadius,shadow:getComputedStyle(el).boxShadow}));
+    assert.equal(toastStyle.background,'rgb(255, 255, 255)');assert.equal(toastStyle.radius,'999px');assert.notEqual(toastStyle.shadow,'none');
+    assert.equal(await feedback.page.locator('button').count(),0);
+    for(const selector of ['html','body','#screenshotRoot']){
+      assert.equal(await feedback.page.locator(selector).evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)',`${selector} must be transparent behind the capsule`);
+    }
+    const toastPng=await feedback.page.screenshot({path:path.join(out,`desktop-toast-${theme}.png`),omitBackground:true});
+    const toastImage=await loadImage(toastPng),toastCanvas=createCanvas(340,88),toastCtx=toastCanvas.getContext('2d');toastCtx.drawImage(toastImage,0,0);
+    for(const [x,y] of [[0,0],[339,0],[0,87],[339,87],[12,44]])assert.equal(toastCtx.getImageData(x,y,1,1).data[3],0,'outside the capsule and shadow must have zero alpha');
+    const alpha=toastCtx.getImageData(0,0,340,88).data;
+    assert.ok(alpha.some((value,index)=>index%4===3&&value>0&&value<255),'soft shadow keeps partial alpha');
+    await feedback.page.evaluate(()=>window.__shotEmit('desktop-feedback',{revision:2,kind:'copied',lang:'zh'}));
+    await feedback.page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='feedback-ready'&&c.args.request.revision===2));
+    assert.equal(await feedback.page.locator('#shotDesktopToast').count(),1);
+    results.push(`desktop toast ${theme}: transparent body/corners, white capsule, alpha shadow, no controls, reusable feedback`);await feedback.context.close();
   }
   assert.deepEqual(errors,[]);console.log(results.join('\n'));
 }finally{

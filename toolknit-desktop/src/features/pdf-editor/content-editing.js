@@ -1,4 +1,7 @@
 import { IMAGE_BATCH_LIMITS } from '../../image-batch-core.js';
+import { PDF_EDITOR_LIMITS } from '../../core/limits/pdf.js';
+import { fitInitialPdfPlacement } from './placement.js';
+import { insertedTextLayout } from '../../core/pdf-inserted-text.js';
 import {
   assertImagePixelLimit,
   readEncodedImageDimensions,
@@ -54,6 +57,9 @@ export function createPdfEditorContentEditing({
   pageSupportsContentEditing = () => true,
   pageSupportsInsertion = pageSupportsContentEditing,
   getActiveOperation = () => null,
+  isDisposed = () => false,
+  getImageAssetBytes = () => 0,
+  measureInsertedText = () => {},
   nextId = () => '',
   storeInsertedImage = () => {},
   clearPendingInsert = () => {},
@@ -74,6 +80,8 @@ export function createPdfEditorContentEditing({
   commitEditorHistory = () => {},
   showToast = () => {}
 } = {}) {
+  let imageReadRevision = 0;
+  function invalidateImageRead() { imageReadRevision++; }
   const requestFrame = callback => {
     if (typeof windowRef?.requestAnimationFrame === 'function') return windowRef.requestAnimationFrame(callback);
     callback();
@@ -94,7 +102,7 @@ export function createPdfEditorContentEditing({
     const [pdfX, pdfY] = cache.cssViewport.convertToPdfPoint(cssX, cssY);
     if (pendingInsert.type === 'text') {
       const insertedTexts = getInsertedTexts() || [];
-      insertedTexts.push({
+      const object = {
         id: nextId('text'),
         pageId: page.id,
         x: pdfX,
@@ -104,7 +112,21 @@ export function createPdfEditorContentEditing({
         bold: pendingInsert.bold,
         rotation: 0,
         color: pendingInsert.color
-      });
+      };
+      measureInsertedText(object);
+      const box = insertedTextLayout(object).box;
+      const fitted = fitInitialPdfPlacement(box, cache.cssViewport.viewBox, 2);
+      const factor = Math.min(fitted.width / box.width, fitted.height / box.height);
+      if (factor < 1) {
+        object.fontSize = Math.max(1, object.fontSize * factor);
+        if (object.visualTextWidth) object.visualTextWidth *= factor;
+        if (object.visualTextHeight) object.visualTextHeight *= factor;
+        measureInsertedText(object);
+      }
+      const scaled = insertedTextLayout(object).box;
+      object.x += fitted.x - scaled.x;
+      object.y += fitted.y - scaled.y;
+      insertedTexts.push(object);
       setInsertedTexts(insertedTexts);
     } else if (pendingInsert.type === 'image') {
       const imageId = nextId('image');
@@ -116,10 +138,8 @@ export function createPdfEditorContentEditing({
       insertedImages.push({
         id: imageId,
         pageId: page.id,
-        x: pdfX,
-        y: pdfY - pendingInsert.height,
-        width: pendingInsert.width,
-        height: pendingInsert.height,
+        ...fitInitialPdfPlacement({ x: pdfX, y: pdfY - pendingInsert.height,
+          width: pendingInsert.width, height: pendingInsert.height }, cache.cssViewport.viewBox),
         originalAspectRatio: pendingInsert.originalAspectRatio || pendingInsert.width / pendingInsert.height,
         aspectRatioLocked: true,
         rotation: 0,
@@ -134,10 +154,8 @@ export function createPdfEditorContentEditing({
         id: nextId('shape'),
         pageId: page.id,
         shapeType: pendingInsert.shapeType,
-        x: pdfX - pendingInsert.width / 2,
-        y: pdfY - pendingInsert.height / 2,
-        width: pendingInsert.width,
-        height: pendingInsert.height,
+        ...fitInitialPdfPlacement({ x: pdfX - pendingInsert.width / 2, y: pdfY - pendingInsert.height / 2,
+          width: pendingInsert.width, height: pendingInsert.height }, cache.cssViewport.viewBox, (pendingInsert.strokeWidth || 0) / 2),
         rotation: 0,
         fill: pendingInsert.fill,
         stroke: pendingInsert.stroke,
@@ -208,6 +226,7 @@ export function createPdfEditorContentEditing({
     const original = source.text || '';
     const edit = mode === 'edit' ? (getTextEdits() || new Map()).get(key) : null;
     editModalInput.value = edit ? edit.newText : original;
+    editModalInput.rows = mode === 'edit' ? 1 : 3;
     if (editModalOriginal) editModalOriginal.textContent = original;
     if (editModalTitle) editModalTitle.textContent = t('home.pdfEditor.editText');
     if (editSecurityNote) editSecurityNote.hidden = mode !== 'edit';
@@ -262,7 +281,7 @@ export function createPdfEditorContentEditing({
     if (editModalOriginal) editModalOriginal.style.display = 'none';
     if (editModalNewLabel) editModalNewLabel.textContent = t('home.pdfEditor.insertTextValue');
     if (editSecurityNote) editSecurityNote.hidden = true;
-    if (editModalInput) editModalInput.value = '';
+    if (editModalInput) { editModalInput.value = ''; editModalInput.rows = 3; }
     editModal?.classList.add('visible');
     if (editModal) {
       editModal.inert = false;
@@ -343,19 +362,31 @@ export function createPdfEditorContentEditing({
 
   async function prepareInsertImage(file) {
     if (!file) return;
+    const revision = ++imageReadRevision, pageId = getCurrentPage()?.id;
+    const current = () => !isDisposed() && revision === imageReadRevision && hasDocument()
+      && getCurrentPage()?.id === pageId && !getActiveOperation();
     try {
       const fileSize = await fileSizeFor(file);
+      if (!current()) return;
       if (!Number.isSafeInteger(fileSize) || fileSize < 1) throw new Error('图像文件大小无效');
       if (fileSize > IMAGE_BATCH_LIMITS.maxBytesPerFile) {
         throw new Error(`图像文件超过 ${Math.floor(IMAGE_BATCH_LIMITS.maxBytesPerFile / 1024 / 1024)}MB 限制`);
       }
       const bytes = await readBytes(file);
+      if (!current()) return;
+      if (!(bytes instanceof Uint8Array) || !bytes.length || bytes.length > IMAGE_BATCH_LIMITS.maxBytesPerFile) {
+        throw new Error(t('home.pdfEditor.imageReadInvalid'));
+      }
+      if (getImageAssetBytes() + bytes.length > PDF_EDITOR_LIMITS.maxImageAssetBytes) {
+        throw new Error(t('home.pdfEditor.imageMemoryLimit'));
+      }
       const declaredMime = String(file.type || '').toLowerCase();
       const mimeType = declaredMime || (/\.jpe?g$/i.test(String(file.name || '')) ? 'image/jpeg' : 'image/png');
       if (!['image/png', 'image/jpeg', 'image/jpg'].includes(mimeType)) throw new Error('仅支持 PNG 或 JPEG 图像');
       const encodedDimensions = readEncodedImageDimensions(bytes, mimeType);
       if (encodedDimensions) assertImagePixelLimit(encodedDimensions);
       const dimensions = await readImageDimensions(bytes, mimeType);
+      if (!current()) return;
       const safeDimensions = assertImagePixelLimit(dimensions);
       const cache = getCurrentTextLayerCache();
       const pageWidth = cache?.cssViewport?.width ? cache.cssViewport.width / (cache.scale || 1) : 612;
@@ -368,6 +399,7 @@ export function createPdfEditorContentEditing({
       showToast(t('home.pdfEditor.insertImageHint'), 6000);
       updateControls();
     } catch (error) {
+      if (!current()) return;
       setInsertMode(null);
       setComponentModeState(true);
       syncComponentModeClass();
@@ -431,7 +463,7 @@ export function createPdfEditorContentEditing({
       closeEditModal();
       return;
     }
-    const newText = editModalInput?.value ?? '';
+    const newText = String(editModalInput?.value ?? '').replace(/[\r\n\u2028\u2029]+/g, ' ');
     const textEdits = getTextEdits() || new Map();
     const existingEdit = textEdits.get(key);
     const baseSegment = existingEdit?.baseSegment || segment;
@@ -468,6 +500,7 @@ export function createPdfEditorContentEditing({
     openEditModal,
     openInsertTextModal,
     prepareInsertImage,
+    invalidateImageRead,
     saveEditModal,
     setEditMode
   };

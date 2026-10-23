@@ -40,8 +40,11 @@ import { generateAiDocument } from './lib/ai-document-runtime.mjs';
 import { editAiTableProject, generateAiTableProject, inspectAiTableProjectFile, renderAiTableProject } from './lib/ai-table-project-runtime.mjs';
 import { installTranscriptionModel, listTranscriptionModels, setCurrentTranscriptionModel, transcribeMedia } from './lib/transcription-runtime.mjs';
 import { TaskRunner } from './lib/shared/task-runtime.mjs';
+import { dispatchCatalogCli, extendedHelp } from './lib/catalog-cli.mjs';
+import { checkLibreOfficeAvailability } from './lib/ppt-render-runtime.mjs';
+import { TOOL_DEFINITIONS } from './lib/tool-definitions.mjs';
 
-const VERSION = '3.1.0';
+const VERSION = '3.2.0';
 const CLI_ABORT_CONTROLLER = new AbortController();
 let CLI_SIGNAL_COUNT = 0;
 
@@ -1078,7 +1081,10 @@ function requireOption(options, key) {
 async function passwordFromStdin() {
   let raw = '';
   process.stdin.setEncoding('utf8');
-  for await (const chunk of process.stdin) raw += chunk;
+  for await (const chunk of process.stdin) {
+    raw += chunk;
+    if (Buffer.byteLength(raw, 'utf8') > 4096) throw new ToolKnitError('USAGE', 'Password input exceeds the 4096-byte limit.');
+  }
   return raw.replace(/\r?\n$/, '');
 }
 
@@ -1159,18 +1165,18 @@ async function runPdfCommand(action, options, runtimeOptions = {}) {
   const overwrite = options.overwrite === true;
   if (action === 'inspect') {
     if (options.input.length !== 1) throw new ToolKnitError('USAGE', 'pdf inspect requires exactly one --input.');
-    return inspectPdf({ input_path: options.input[0] });
+    return inspectPdf({ input_path: options.input[0] }, runtimeOptions);
   }
   if (action === 'merge') {
     let pageSelections;
     if (options['page-selections']) {
       try { pageSelections = JSON.parse(options['page-selections']); } catch { throw new ToolKnitError('USAGE', '--page-selections must contain valid JSON.'); }
     }
-    return mergePdf({ input_paths: options.input, output_path: requireOption(options, 'output'), page_selections: pageSelections, overwrite });
+    return mergePdf({ input_paths: options.input, output_path: requireOption(options, 'output'), page_selections: pageSelections, overwrite }, runtimeOptions);
   }
   if (action === 'split') {
     if (options.input.length !== 1) throw new ToolKnitError('USAGE', 'pdf split requires exactly one --input.');
-    return splitPdf({ input_path: options.input[0], output_dir: requireOption(options, 'output-dir'), pages: parsePageRanges(requireOption(options, 'pages')), overwrite });
+    return splitPdf({ input_path: options.input[0], output_dir: requireOption(options, 'output-dir'), pages: parsePageRanges(requireOption(options, 'pages')), overwrite }, runtimeOptions);
   }
   if (action === 'rotate') {
     if (options.input.length !== 1) throw new ToolKnitError('USAGE', 'pdf rotate requires exactly one --input.');
@@ -1178,12 +1184,12 @@ async function runPdfCommand(action, options, runtimeOptions = {}) {
     if (options['page-rotations']) {
       try { pageRotations = JSON.parse(options['page-rotations']); } catch { throw new ToolKnitError('USAGE', '--page-rotations must contain valid JSON.'); }
     }
-    return rotatePdf({ input_path: options.input[0], output_path: requireOption(options, 'output'), rotation: options.rotation === undefined ? 90 : Number(options.rotation), page_rotations: pageRotations, overwrite });
+    return rotatePdf({ input_path: options.input[0], output_path: requireOption(options, 'output'), rotation: options.rotation === undefined ? 90 : Number(options.rotation), page_rotations: pageRotations, overwrite }, runtimeOptions);
   }
   if (action === 'encrypt') {
     if (options.input.length !== 1) throw new ToolKnitError('USAGE', 'pdf encrypt requires exactly one --input.');
     if (!options['password-stdin']) throw new ToolKnitError('USAGE', 'pdf encrypt requires --password-stdin; passwords are never accepted as command-line arguments.');
-    return encryptPdfFile({ input_path: options.input[0], output_path: requireOption(options, 'output'), password: await passwordFromStdin(), overwrite });
+    return encryptPdfFile({ input_path: options.input[0], output_path: requireOption(options, 'output'), password: await passwordFromStdin(), overwrite }, runtimeOptions);
   }
   if (action === 'decrypt') {
     if (options.input.length !== 1) throw new ToolKnitError('USAGE', 'pdf decrypt requires exactly one --input.');
@@ -1199,7 +1205,7 @@ async function runPdfCommand(action, options, runtimeOptions = {}) {
   }
   if (action === 'enhance') {
     if (options.input.length !== 1) throw new ToolKnitError('USAGE', 'pdf enhance requires exactly one --input.');
-    return enhancePdfFile({ input_path: options.input[0], output_path: requireOption(options, 'output'), strength: options.strength, overwrite });
+    return enhancePdfFile({ input_path: options.input[0], output_path: requireOption(options, 'output'), strength: options.strength, overwrite }, runtimeOptions);
   }
   if (action === 'to-image') {
     assertOnlyCommandOptions(options, new Set(['input', 'output-dir', 'pages', 'mode', 'format', 'clarity', 'output-name', 'json', 'banner']));
@@ -1702,6 +1708,7 @@ async function runTranscribeCommand(options, runtimeOptions = {}) {
 }
 
 async function main(argv = process.argv.slice(2)) {
+  if (await dispatchCatalogCli(argv, { run: runCliTask })) return EXIT_CODES.OK;
   if (argv[0] === 'mcp') {
     if (argv.length === 1 || argv[1] === '--help' || (argv[1] === 'serve' && argv[2] === '--help')) {
       process.stdout.write(`${MCP_HELP}\n`);
@@ -1715,7 +1722,7 @@ async function main(argv = process.argv.slice(2)) {
     throw new ToolKnitError('USAGE', 'Use: toolknit mcp serve');
   }
   if (argv.length === 0 || argv[0] === '--help') {
-    process.stdout.write(`${HELP}\n`);
+    process.stdout.write(`${HELP}${extendedHelp()}\n`);
     return null;
   }
   if (argv[0] === 'help') {
@@ -1798,13 +1805,16 @@ async function main(argv = process.argv.slice(2)) {
     const result = {
       version: VERSION,
       node: process.version,
+      node_supported: Number(process.versions.node.split('.')[0]) > 22 || Number(process.versions.node.split('.')[0]) === 22 && Number(process.versions.node.split('.')[1]) >= 13,
+      mcp_tools: TOOL_DEFINITIONS.length,
       qpdf: await checkQpdfAvailability(),
-      ffmpeg: await checkFfmpegAvailability()
+      ffmpeg: await checkFfmpegAvailability(),
+      libreoffice: await checkLibreOfficeAvailability()
     };
     const banner = renderToolKnitBanner({ mode: bannerMode });
     const output = options.json
       ? JSON.stringify({ ok: result.qpdf.available && result.ffmpeg.available, result })
-      : `${banner ? `${banner}\n\n` : ''}ToolKnit CLI ${VERSION}\nqpdf: ${result.qpdf.available ? 'available' : 'unavailable'}\nffmpeg: ${result.ffmpeg.available ? 'available' : 'unavailable'}`;
+      : `${banner ? `${banner}\n\n` : ''}ToolKnit CLI ${VERSION}\nNode: ${result.node} (${result.node_supported ? 'supported' : 'requires >=22.13.0'})\nMCP tools: ${result.mcp_tools}\nqpdf: ${result.qpdf.available ? 'available' : 'unavailable'}\nffmpeg: ${result.ffmpeg.available ? 'available' : 'unavailable'}\nLibreOffice (optional): ${result.libreoffice.available ? 'available' : 'unavailable'}`;
     process.stdout.write(`${output}\n`);
     return result.qpdf.available && result.ffmpeg.available ? EXIT_CODES.OK : EXIT_CODES.ENGINE;
   }

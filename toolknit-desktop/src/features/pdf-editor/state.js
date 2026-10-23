@@ -58,6 +58,7 @@ export function createPdfEditorStateController({
   hasDocument = () => false,
   getHistory = () => null,
   getSavedSnapshot = () => null,
+  getBaselineSnapshot = () => null,
   t = key => key,
   confirm = () => true
 } = {}) {
@@ -136,7 +137,7 @@ export function createPdfEditorStateController({
       setComponentMode(Boolean(snapshot.componentMode));
       setSelectedComponent(null);
       getZoom()?.setState?.(snapshot);
-      if (Number.isFinite(Number(snapshot.idCounter))) setIdCounter(Number(snapshot.idCounter));
+      if (Number.isFinite(Number(snapshot.idCounter))) setIdCounter(Math.max(getIdCounter(), Number(snapshot.idCounter)));
       setTextEdits(new Map(
         (Array.isArray(snapshot.textEdits) ? snapshot.textEdits : [])
           .map(([key, value]) => [key, normalizeEditSnapshot(value)])
@@ -185,6 +186,19 @@ export function createPdfEditorStateController({
   }
 
   let history = null;
+  function imageAssetBytes() {
+    const bytes = new Set([...getInsertedImageStore().values()].map(image => image.bytes).filter(Boolean));
+    return [...bytes].reduce((sum, image) => sum + image.byteLength, 0);
+  }
+  function pruneImageAssets() {
+    const retained = new Set((getInsertedImages() || []).map(image => image.id));
+    const collect = snapshot => { for (const image of snapshot?.insertedImages || []) retained.add(image.id); };
+    history?.forEachSnapshot(collect);
+    collect(getBaselineSnapshot()); collect(getSavedSnapshot());
+    const store = getInsertedImageStore();
+    for (const id of store.keys()) if (!retained.has(id)) store.delete(id);
+  }
+
   function setHistory(nextHistory) {
     history = nextHistory;
   }
@@ -214,6 +228,7 @@ export function createPdfEditorStateController({
   }
 
   function hasUnsavedChanges() {
+    if (hasDocument() && !getSavedSnapshot() && getSources().some(source => source.generated)) return true;
     return Boolean(history?.hasUnsavedChanges(getSavedSnapshot()));
   }
 
@@ -239,6 +254,8 @@ export function createPdfEditorStateController({
     normalizeEditSnapshot,
     normalizeInsertedImageSnapshot,
     normalizeInsertedShapeSnapshot,
-    restoreSelectedComponent
+    restoreSelectedComponent,
+    pruneImageAssets,
+    imageAssetBytes
   };
 }

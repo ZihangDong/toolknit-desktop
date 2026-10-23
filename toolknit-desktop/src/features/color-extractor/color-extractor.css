@@ -506,7 +506,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 10px;
-  opacity: 0.56;
+  opacity: 0.85;
 }
 
 .color-extractor-v2-image-mode,
@@ -997,7 +997,7 @@
 }
 
 .color-extractor-v2-detail-code small {
-  color: rgba(255, 255, 255, 0.38);
+  color: rgba(255, 255, 255, 0.68);
   font-family: var(--tk-font-display-en), var(--tk-font-display-cn), "Segoe UI Symbol", sans-serif;
   font-size: 13px;
   letter-spacing: 0.08em;
@@ -1015,7 +1015,7 @@
 .color-extractor-v2-detail-hint {
   flex: 0 0 auto;
   max-width: 118px;
-  color: rgba(255, 255, 255, 0.34);
+  color: rgba(255, 255, 255, 0.66);
   font-size: 10px;
   line-height: 1.4;
   text-align: right;

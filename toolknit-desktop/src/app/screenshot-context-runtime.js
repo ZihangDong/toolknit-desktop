@@ -19,7 +19,7 @@ export function createScreenshotContextRuntime({ isTauri, getAiPlatformConfig, g
   scope.event(document,'click',sync); scope.event(window,'storage',sync);
   runtime.listen('screenshot-error',error=>notify(translate(`home.quickScreenshot.${String(error).includes('shortcut')?'shortcutConflict':'failed'}`))).then(unlisten=>scope.use(unlisten));
   runtime.listen('screenshot-navigate',target=>{
-    if (onNavigate) { void onNavigate(target); return; }
+    if (onNavigate) { void Promise.resolve().then(()=>onNavigate(target)).catch(()=>notify(translate('home.quickScreenshot.failed'))); return; }
     const selector=target==='settings'?'#homeV2Settings, #settingsBtn':target==='support'?'#homeSupportAuthor, [data-open-support]':null;
     if(selector)document.querySelector(selector)?.click();
   }).then(unlisten=>scope.use(unlisten));

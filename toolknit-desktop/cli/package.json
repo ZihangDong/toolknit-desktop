@@ -1,7 +1,7 @@
 {
   "name": "@toolknit/cli",
-  "version": "3.1.0",
-  "license": "PolyForm-Noncommercial-1.0.0",
+  "version": "3.2.0",
+  "license": "SEE LICENSE IN NOTICE",
   "description": "Local-first file processing CLI and MCP server for ToolKnit",
   "type": "module",
   "homepage": "https://github.com/ZihangDong/toolknit-desktop#readme",
@@ -36,10 +36,10 @@
     "toolknit": "toolknit.mjs"
   },
   "engines": {
-    "node": ">=20.12.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
-    "prepack": "node ../scripts/stage-cli-resources.cjs"
+    "prepack": "node ../scripts/prepare-cli-package.cjs"
   },
   "files": [
     "README.md",
@@ -55,16 +55,27 @@
     "LICENSES"
   ],
   "dependencies": {
-    "@napi-rs/canvas": "^1.0.1",
+    "@napi-rs/canvas": "1.0.8",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "ajv": "^8.17.1",
+    "bmp-ts": "1.0.9",
     "chart.js": "^4.5.1",
+    "docx": "9.12.0",
     "exceljs": "^4.4.0",
     "fontkit": "^2.0.4",
     "jszip": "^3.10.1",
+    "katex": "^0.18.4",
+    "markdown-it": "^15.0.3",
+    "markdown-it-task-lists": "^2.1.1",
     "music-tempo": "^1.0.3",
     "pdf-lib": "^1.17.1",
     "pdf-lib-plus-encrypt": "^1.1.0",
-    "pdfjs-dist": "^6.2.108"
+    "pdfjs-dist": "6.2.108",
+    "sharp": "0.35.5",
+    "yauzl": "3.4.0",
+    "xml-js": "1.6.11"
   },
+  "bundleDependencies": ["exceljs"],
   "overrides": {
     "exceljs": {
       "uuid": "11.1.1"

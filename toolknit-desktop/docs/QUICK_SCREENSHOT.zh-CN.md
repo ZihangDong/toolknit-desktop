@@ -1,12 +1,46 @@
 # 快速截图维护说明
 
-当前测试包：2026-10-13 16:16:59 经用户授权重新生成 V3.1.0 x64 F12 安装包，包含截图剪贴板收录、翻译下载源/重试及白天管理按钮修复；版本、大小、SHA-256 与验证记录统一见根目录 [changelog.md](../../changelog.md)。下文旧包和“未重新打包”描述保留对应轮次的历史状态。
+## 桌面提示与拖放（2026-10-17）
+
+当前悬浮历史按持久排序展示 20 条，常用语仅填写标题和内容；排序、完整历史保留和原生拖放的当前契约见 `CLIPBOARD_HISTORY.zh-CN.md` 首节，下方早期“最新 20 条”描述为初始默认顺序。
+
+`quick_screenshot/feedback.rs` 持有独立 `screenshot-toast` WebView：白色胶囊、小勾号、阴影，固定 Windows 主显示器工作区底部中央；不随历史窗口移动，不激活、不参与任务栏、鼠标穿透。`feedback-window.js` 只显示白名单状态文案，无历史正文和操作按钮。成功复制及转存走此窗口，失败仍由原交互提供错误恢复；创建提示失败回落到共享 Toast，不把已成功复制误报为失败。
+
+2026-10-18 修正提示窗透明背景：共享 `window-surface.css` 的 body 背景带 `!important`，提示窗必须设置 `--tk-window-bg:transparent`，仅写普通 `background:transparent` 会被覆盖。回归同时检查 html/body/root 的计算背景与透明 PNG 的外围 alpha；白色胶囊和半透明阴影保留，不用图片查看器的黑色底判断是否透明。
+
+沿用 `quick_screenshot` 命令增加历史窗 `feedback {kind}` 和提示窗 `boot` / `feedback-ready {revision}`，新增事件 `desktop-feedback` 仅携带类型、语言及 revision。提示窗无剪贴板权限，独立 `desktop-feedback` capability 仅允许订阅/取消事件，生产和 QA 配置均显式保留。连续提示复用一个窗口和定时器，主线程核对 revision 后显示/隐藏；2.2 秒后收起。截图开始前隐藏提示且不加入恢复窗口列表。隐藏复用已修补的真实 HWND 路径。新增 DOM：`shotDesktopToast`、`shotDesktopToastText`；卡片新增 `.shot-history-open` 和 `data-history-reorder`。
+
+`history-drag.js` 使用同一历史服务的 ID 动作，窗口头部拖动仍归原窗口控制器，不与列表排序混用。切换按钮图标缩为 15px，线宽 1.8，点击范围不缩小。状态和具体验证证据见 V3.2 历史记录改进报告。
+
+## V3.2 当前历史实现（2026-10-17）
+
+以下早期 V3.1 章节中的独立历史缓存已由统一剪贴板历史取代。`history-window.js` 默认查询最新 20 条、空搜索时本地分类；搜索走原生完整历史查询，返回最新 20 条匹配项。顶部输入框实时搜索（180ms 合并输入，中文组词完成后查询），移除搜索提交按钮及聚焦动画；自绘清空按钮在白天为黑色，隐藏 WebView 原生叉号。新 DOM `shotHistorySearchClear`、前端 action `history-search-clear` 不改变原生接口。输入时使旧查询失效，切换模式保留各自搜索和缓存归属。记录开关位于底部进度条上方。图片卡片 228px（有备注 252px），列表只加载缩略图，新图片摘要上限 320×200，旧摘要仍可显示；文字内容区居中、最多两行省略，详情全文。底部 3px 横条无溢出时隐藏。
+
+右上角按钮按切换、菜单、关闭排列，切换独立常用语模式；创建、编辑、搜索、单击复制和确认删除均通过剪贴板服务，纯文字历史可导入。`history-editor.js` 持有备注/常用语表单与提交状态，保存失败保留草稿，关闭隔离迟到结果；复用已挂载的共享弹框。`history-motion.js` 持有逐字立体翻转、分类滑块与可见卡片入场；主辅助入口注入既有 `page-transition-runtime`，以 250ms 覆盖、350ms 揭开整窗，白天白色、深色黑色，不改变原生窗口尺寸。关闭/销毁取消转场与卡片动画，减少动画时直接切换；标题悬停离开恢复原文，点击后显示新模式名。两种模式分别保存搜索词和滚动位置，常用语按 50 条滚动加载，不等待慢查询才结束过渡。存储边界详见 `CLIPBOARD_HISTORY.zh-CN.md`。
+
+`history_menu.rs` 管理独立透明菜单窗口 `screenshot-history-menu`；前端 `history-menu-window.js` 复用 `shared/context-menu.js` 和双主题样式，自绘圆角菜单，避免改变 96px 悬浮球窗口尺寸。全局菜单包含展开/收起、打开剪贴板历史、记录勾选状态、隐藏到下次重启 ToolKnit、关闭悬浮窗；记录菜单提供查看/置顶、复制和确认删除。删除仅允许一个正数 ID，经共享弹框确认同步主库，不删除原文件。菜单无剪贴板读取权限，只接收 ID、类型和状态；每次打开绑定 token，旧关闭/选择动作无效，失焦、Escape、截图开始或历史窗关闭均退出。
+
+2026-10-18 首次打开优化：历史窗口初始化完成后延迟 100ms 调用 `prepare-history-menu`，仅允许 `HISTORY_LABEL`，与正式打开共用 `menu_transition` 锁及 `ensure_window`。后台只创建隐藏、不聚焦的 WebView，加载模块及菜单字体，不建立可选择会话；失败不影响正式打开的按需创建。`menu-boot` 无会话时返回 `menu:null`，前端保持空菜单且不发送 `menu-ready`。后续打开通过控制器 `update` 更新，token 去重，避免重复创建监听；共享菜单 render revision 隔离旧异步操作的 finally，旧选择失败也不能污染新会话。没有新增命令名称、事件、存储或权限。
+
+菜单新增打开主程序、备注、文字转存常用语和常用语编辑。标题按钮使用 `toggle:true`；鼠标在 pointerdown 阶段提交，键盘仍通过 click。Windows blur 若发生在同一触发按钮上，隐藏菜单并短暂保留 token，让随后的 toggle 收起，不重新弹出；超时只关闭对应 token。`anchor` 包含父窗口内的 x/y/width/height，记录动作增加 kind，区分历史与常用语 ID。菜单尺寸按动作数量调整，始终限制在当前工作区。主程序和剪贴板历史入口复用托盘的 `show_main_window`，先恢复最小化、显示并聚焦；`navigate target=main` 保留当前页面，不发页面切换事件。
+
+`history_actions.rs` 持有会话隐藏与边界回退。会话隐藏仅保存在进程状态；关闭会更新持久化开关，设置页关闭立即隐藏。截图恢复检查当前状态，Destroyed 不改设置。拖动结束后按最近显示器工作区夹取位置，约 224ms 仅移动窗口；缩小屏幕必要时一次调整窗口尺寸，减少动画模式直接定位。
+
+2026-10-17 隐藏链修复：`show_without_activation` 用 Win32 显示，不能依赖 Tao 缓存的 VISIBLE 标志判断 `.hide()` 是否实际生效。新增 `window_visibility.rs`：在主线程先同步框架隐藏，再用 `SWP_HIDEWINDOW | SWP_NOACTIVATE` 隐藏实际 HWND，核对 `IsWindowVisible` 后才报告成功；该路径覆盖菜单隐藏/关闭、工具页关闭及截图前的窗口隐藏。失败恢复会话标记与持久偏好；关闭菜单的异步焦点恢复重新检查 allowed 和实际可见性，hide/close 不回送焦点；隐藏后的迟到 expand 会再次确认隐藏并返回 expired，不恢复显示。前端忽略预期 expired，真实隐藏失败显示专用错误；操作错误与读取错误分开，后台读取成功不抹去操作失败，反馈位置避开底部开关。
+
+原生回归使用当前锁定的 Tao 0.37.1（仅新增直接 dev-dependency）在独立子进程创建屏幕外窗口，真实复现“Win32 显示后 Tao hide 被跳过”，并验证 96×96 和 376×760 两种形态各连续三轮正确隐藏、重复隐藏和无效 HWND 错误。测试不启动用户应用、不访问历史/剪贴板，子进程超时有界。浏览器 mock 只验证菜单分发与反馈，不能替代该原生证据。
+
+开启悬浮历史不自动开启全局监控。监控已开启时，截图复制由原有监听与过滤链路记录；监控关闭时，用户主动确认的本程序截图可写入同一历史库，保留图片开关与容量约束。图片记录上限 20 MiB，截图处理上限 32 MiB；置顶查看器继续最多 8 个 / 合计 64 MiB。
+
+`screenshot-history-changed` 不再作为列表数据来源；`clipboard-history-changed` 通知两个窗口重新查询。`screenshot-history-action` 兼容字符串动作及 `{action,id}`；`screenshot-menu-opened` 通知菜单重新读取上下文。`quick_screenshot` 新增 `history-menu/close-history/dismiss-history-menu` 与菜单专用 `menu-boot/menu-ready/menu-select/menu-dismiss` action；菜单命令校验窗口身份和 token。`history-menu` 可选 `anchor:{x,y}` 为父窗口逻辑坐标，标题按钮按自身位置展开，右键按光标展开，两者均限制在工作区。`hide-history` 改为会话隐藏，删除无消费者的旧 `history/viewer` action。原图查看走 `clipboard_history pin`；菜单导航复用主页面 owner 关闭流程，不叠加残留设置页。
+
+当前 V3.2 验证与测试包记录见 [历史记录改进报告](V3_2_HISTORY_IMPROVEMENT.zh-CN.md)。以下 V3.1 测试包和“未重新打包”描述保留对应轮次的历史状态，不代表当前源码已生成新包。
 
 后续源码修复：打开文件夹前退出截图、剪贴板历史图片置顶及普通文字选框贴合尚未纳入上述测试包。核心像素/输出契约、架构/构建、发布回归 100 项脚本（含安全 1329 项与 CLI/MCP）、Rust 206 passed/7 ignored、Edge 截图 8 场景及剪贴板双主题/中英文回归通过。浏览器断言先结束 capture 再调用 `open_path`，viewer 保持可用，普通文字缩短/改字号后选框重算；原生窗口及 Explorer 仍需安装后验收。
 
 ## 入口与交互
 
-V3.1 未发布版本的 AI 工作台新增 `quick-screenshot`，当前开发源码为 71 个工具、12 个分类，AI 分类 6 项，CLI/MCP 仍为 46 项。默认全局快捷键为 `Alt+Q`，可修改、重置或关闭；修改必须包含 Alt/Ctrl/Super 修饰键，冲突时反馈注册失败。关闭工具页面不等于关闭全局快捷键，退出应用后快捷键释放。
+V3.1 新增 `quick-screenshot`；V3.2 将入口移至创意分类，当前为 71 个工具、12 个分类，创意 4 项、AI 5 项，CLI/MCP 仍为 46 项。tool ID、收藏和偏好保持兼容。默认全局快捷键为 `Alt+Q`，可修改、重置或关闭；修改必须包含 Alt/Ctrl/Super 修饰键，冲突时反馈注册失败。关闭工具页面不等于关闭全局快捷键，退出应用后快捷键释放。
 
 截图时隐藏 ToolKnit 窗口，捕获桌面后打开独立编辑窗口。鼠标捕捉窗口显示绿色边框，也可拖动选择区域；放大镜显示像素位置、颜色和选区尺寸。工具条按内容收紧，按显示器可用宽度换行并保留 8px 边距。矩形、圆形、箭头绘制及文字添加后自动进入选中调整状态，支持移动及八方向缩放；双击文字编辑，删除键删除可编辑标注，方向键微调，Shift 配合方向键调整 10 像素。画笔和马赛克沿指针路径连续涂抹，绘制后固定、不参与图层选择与移动缩放，但仍可撤销/重做。马赛克使用圆头路径遮罩，未涂抹区域保留原图，像素网格按原图坐标对齐。
 

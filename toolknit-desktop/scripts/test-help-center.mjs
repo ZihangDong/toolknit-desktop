@@ -1,6 +1,7 @@
 import { readAppMarkup } from './lib/app-markup.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { TOOL_DEFINITIONS } from '../cli/lib/tool-definitions.mjs';
 
 const memoryStorage = new Map();
 globalThis.localStorage = {
@@ -89,6 +90,7 @@ const toolToHelp = new Map([
   ['pdf-crop', 'pdf-crop'],
   ['pdf-to-image', 'pdf-to-image'],
   ['pdf-to-scan', 'pdf-to-scan'],
+  ['pdf-to-word', 'pdf-to-word'],
   ['pdf-text-markdown', 'pdf-text-markdown'],
   ['pdf-ai-markdown', 'pdf-ai-markdown'],
   ['quick-screenshot', 'quick-screenshot'],
@@ -156,8 +158,9 @@ const toolToHelp = new Map([
   ['ai-table', 'ai-table'],
 ]);
 
+toolToHelp.set('image-to-pdf', 'image-to-pdf');
 const desktopTools = unique(valuesForAttribute(indexHtml, 'data-tool'));
-assert.equal(desktopTools.length, 71, 'Current desktop catalog must contain exactly 71 unique tools.');
+assert.equal(desktopTools.length, 73, 'Current desktop catalog must contain exactly 73 unique tools.');
 for (const tool of desktopTools) {
   const section = toolToHelp.get(tool);
   assert.ok(section, `Desktop tool has no help mapping: ${tool}`);
@@ -169,7 +172,10 @@ for (const content of [HELP_CONTENT, HELP_CONTENT_EN]) {
   const visibleHelp = helpSections.map((section) => `${content[section].title}\n${content[section].html}`).join('\n');
   assert.match(visibleHelp, /CLI/i, 'Visible help must explain CLI.');
   assert.match(visibleHelp, /MCP/i, 'Visible help must explain IDE Agent / MCP.');
-  assert.match(visibleHelp, /46/, 'Visible help must state the current 46 MCP capabilities.');
+  assert.match(content['agent-guide'].html, new RegExp(`${TOOL_DEFINITIONS.length}\\s*(?:项|capabilities)`), 'Agent help must match the actual MCP registry count.');
+  assert.doesNotMatch(content['agent-guide'].html, /46\s*(?:项|capabilities)/, 'Agent help must retire the previous capability count.');
+  assert.match(content['cli-guide'].html, /22\.13\.0\+/);
+  assert.match(content['agent-guide'].html, /tools describe/);
   assert.doesNotMatch(visibleHelp, /16\s*(项能力|capabilities)/i, 'Visible help must not advertise the retired 16-capability count.');
   assert.doesNotMatch(visibleHelp, /(自动检查更新|automatically checks.*update|forced update)/i, 'Visible help must not promise unsupported auto or forced updates.');
 }

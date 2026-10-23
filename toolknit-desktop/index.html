@@ -411,7 +411,7 @@
         <button class="home-v2-brand" type="button" data-home-return aria-label="ToolKnit 首页">
           <img src="/logo.png" alt="" />
           <span class="home-v2-brand-name">ToolKnit</span>
-          <span class="home-v2-brand-version">3.1</span>
+          <span class="home-v2-brand-version">3.2</span>
         </button>
         <div class="home-v2-top-actions">
           <button class="home-v2-nav-link" type="button" data-home-link="website">
@@ -505,7 +505,7 @@
               <i data-lucide="settings"></i>
             </div>
           </div>
-          <div class="version-text" id="sidebarVersion">v3.1.0</div>
+          <div class="version-text" id="sidebarVersion">v3.2.0</div>
         </div>
       </div>
       <div class="divider"></div>
@@ -604,6 +604,7 @@
 
                 <div class="category-strip" id="homeCategoryStrip" data-i18n-aria-label="home.categoriesAria" aria-label="工具分类">
                   <button class="category-chip is-active" type="button" data-home-category="all"><i data-lucide="sparkles"></i><span data-i18n="home.categoryAll">全部</span></button>
+                  <button class="category-chip" type="button" data-home-category="new" aria-pressed="false"><i data-lucide="badge-plus"></i><span data-i18n="home.categoryNew">V3.2新功能</span></button>
                   <button class="category-chip" type="button" data-home-category="pdf"><i data-lucide="file-text"></i><span>PDF</span></button>
                   <button class="category-chip" type="button" data-home-category="ppt"><i data-lucide="presentation"></i><span>PPT</span></button>
                   <button class="category-chip" type="button" data-home-category="image"><i data-lucide="image"></i><span data-i18n="home.categoryImage">图像</span></button>
@@ -666,7 +667,7 @@
               </section>
 
               <footer class="footer-note">
-                <span>TOOLKNIT DESKTOP 3.1.0 / UI CONCEPT 01</span>
+                <span>TOOLKNIT DESKTOP 3.2.0 / UI CONCEPT 01</span>
                 <span>FILES STAY ON YOUR DEVICE</span>
               </footer>
             </div>
@@ -773,6 +774,28 @@
                       <span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span>
                     </div>
                     <div class="audio-list-meta" data-i18n="home.toolNames.pdfToImageMeta">逐页图像 / 长图拼接 / 高清导出</div>
+                  </div>
+                </div>
+                <div class="audio-list-item" data-tool="pdf-to-word" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.pdfWord">
+                  <div class="audio-list-icon"><i data-lucide="file-type-2"></i></div>
+                  <div class="audio-list-info">
+                    <div class="audio-list-title" data-i18n="home.toolNames.pdfWord">PDF 转 Word</div>
+                    <div class="audio-list-desc" data-i18n="home.toolNames.pdfWordDesc">将原生 PDF 转为可编辑 Word</div>
+                  </div>
+                  <div class="audio-list-right">
+                    <div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.pdfCategoryTag">PDF工具</span><span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span></div>
+                    <div class="audio-list-meta" data-i18n="home.toolNames.pdfWordMeta">本地排版 / 可选 AI / DOCX</div>
+                  </div>
+                </div>
+                <div class="audio-list-item" data-tool="image-to-pdf" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.imagePdf">
+                  <div class="audio-list-icon"><i data-lucide="images"></i></div>
+                  <div class="audio-list-info">
+                    <div class="audio-list-title" data-i18n="home.toolNames.imagePdf">图像转 PDF</div>
+                    <div class="audio-list-desc" data-i18n="home.toolNames.imagePdfDesc">多张图像合并为 PDF 或扫描件 PDF</div>
+                  </div>
+                  <div class="audio-list-right">
+                    <div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.pdfCategoryTag">PDF工具</span><span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span></div>
+                    <div class="audio-list-meta" data-i18n="home.toolNames.imagePdfMeta">A4 适配 / 自由排序 / 扫描效果</div>
                   </div>
                 </div>
                 <div class="audio-list-item" data-tool="pdf-to-scan" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.pdfScan">
@@ -1416,6 +1439,17 @@
                     <div class="audio-list-meta" data-i18n="home.toolNames.colorSpaceCompareMeta">OKLCH / D65 Lab / RGB / CMYK</div>
                   </div>
                 </div>
+                <div class="audio-list-item" data-tool="quick-screenshot" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.quickScreenshot">
+                  <div class="audio-list-icon"><i data-lucide="scan"></i></div>
+                  <div class="audio-list-info">
+                    <div class="audio-list-title" data-i18n="home.toolNames.quickScreenshot">快速截图</div>
+                    <div class="audio-list-desc" data-i18n="home.toolNames.quickScreenshotDesc">窗口捕捉、截图标注与本地文字识别</div>
+                  </div>
+                  <div class="audio-list-right">
+                    <div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.creativeCategoryTag">创意工具</span><span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span></div>
+                    <div class="audio-list-meta" data-i18n="home.toolNames.quickScreenshotMeta">Alt+Q / AI 翻译 / 悬浮历史</div>
+                  </div>
+                </div>
                 <div class="audio-list-item" data-tool="typing-test" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.typingTest">
                   <div class="audio-list-icon"><i data-lucide="keyboard"></i></div>
                   <div class="audio-list-info">
@@ -1558,17 +1592,6 @@
                       <span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span>
                     </div>
                     <div class="audio-list-meta" data-i18n="home.toolNames.aiDocMeta">对话生成 / 自动排版 / 导出 PDF</div>
-                  </div>
-                </div>
-                <div class="audio-list-item" data-tool="quick-screenshot" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.quickScreenshot">
-                  <div class="audio-list-icon"><i data-lucide="scan"></i></div>
-                  <div class="audio-list-info">
-                    <div class="audio-list-title" data-i18n="home.toolNames.quickScreenshot">快速截图</div>
-                    <div class="audio-list-desc" data-i18n="home.toolNames.quickScreenshotDesc">窗口捕捉、截图标注与本地文字识别</div>
-                  </div>
-                  <div class="audio-list-right">
-                    <div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.aiCategoryTag">AI工具</span><span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span></div>
-                    <div class="audio-list-meta" data-i18n="home.toolNames.quickScreenshotMeta">Alt+Q / AI 翻译 / 悬浮历史</div>
                   </div>
                 </div>
                 <div class="audio-list-item" data-tool="ai-table" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.aiTable">

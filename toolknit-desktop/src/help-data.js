@@ -2,18 +2,35 @@ import { getLang } from './i18n.js';
 import { HELP_CONTENT_EN } from './help-data-en.js';
 
 export const HELP_CONTENT = {
+  'image-to-pdf': {
+    title: '图像转 PDF',
+    html: `<div class="help-doc"><h2>图像转 PDF</h2><p>将多张图像合并为一个 PDF，也可生成带扫描质感的图像型 PDF。无需 AI、Office 或额外模型，图像在本地处理。</p>
+      <h3>添加与排序</h3><p>支持 JPG、PNG、BMP、WebP、GIF 和 TIFF。按文件名自然排序；继续添加只追加，不打乱已有顺序。拖动页面卡片的小柄或聚焦小柄后按上下方向键可排序，可删除或旋转当前页。GIF、动态 WebP 仅取第一帧，桌面端将多页 TIFF 展开为多页。无法读取的文件会单独列出，移除后再生成，避免漏页。</p>
+      <h3>页面与效果</h3><p>A4 可自动选择横纵向或指定方向，等比居中、不裁切，可选无边距、8 mm 或 15 mm。原图尺寸读取 PNG、JPEG、WebP、BMP、TIFF 的有效物理分辨率，缺少元数据时按 96 DPI。透明区域铺白色。高清、均衡、小文件三档可选，清晰度始终受原图限制。原彩和灰度外，扫描件增加轻微噪点、纸色和倾斜，仍保留整张图像。结果不包含 OCR 文字层。</p>
+      <h3>保存与限制</h3><p>桌面结果保存在统一输出目录的 Image_PDF 子目录，重名另存；可打开 PDF 或在文件夹中选中结果。最多 100 页；单个输入 64 MiB、合计 256 MiB，单图最多 4000 万像素、最长边 32768 像素，输出不超过 100 MiB。处理可取消，已有图像保留；最终保存阶段不再撤回。浏览器不支持 TIFF，结果通过浏览器下载。</p></div>`
+  },
+  'pdf-to-word': {
+    title: 'PDF 转 Word',
+    html: `<div class="help-doc"><h2>PDF 转 Word</h2><p>将原生中文、英文及混排 PDF 转为可编辑 DOCX。本地模式无需密钥、Office、Python 或额外模型。原文件保留，结果存入统一输出目录的 PDF_Word 子目录，重名自动另存。</p><h3>使用方法</h3><ol class="help-steps"><li>选择一个 PDF，必要时输入打开密码</li><li>选择页面范围和保留原页或连续编辑</li><li>分析页面，查看原图上的结构标记与复杂区域提示</li><li>需要时调整当前页为单栏，或取消页眉页脚判定</li><li>导出 Word，打开文件或所在文件夹</li></ol><h3>可编辑范围</h3><p>支持段落、标题、页眉页脚、规则表格、选项网格与多栏正文。扫描页不执行 OCR；无法可靠重建的文字或图形会提示图片保留，必须确认后导出。图片区域无法像正文一样编辑。字体替换和不同 Office 软件可能改变换行与分页。</p><h3>AI 辅助</h3><p>使用设置中的图像模型。主动选择 AI 辅助并导出时，只发送局部可见图像及文字，优先当前页和疑难区域；每次导出最多请求 8 个区域、总预算 90 秒。已验证的区域在当前文件会话内可复用，结果显示已检查、未检查与复用数量。AI 只能建议结构，不能改写原文或跨越已有表格、分栏边界；未经复核的公式仍以原式图像导出。不支持图像、网络失败或无效响应会提示，可切换本地导出。预览结构不等于 Word 最终排版。</p><h3>限制与安全</h3><p>单文件最多 64 MiB，文档最多 300 页，每次最多选择 100 页，输出最多 64 MiB；图像和文字复杂度另有限制。关闭或取消会停止任务并清理未完成输出；若原子保存已经完成，已发布文件仍会保留。隐藏或被覆盖内容不应成为可编辑文字，复杂剪裁会保留可见图像；转换不恢复数字签名、活动表单、附件或外部链接。</p></div>`
+  },
   'recording-mode': {
     title: '一键记录模式',
     html: `<div class="help-doc"><h2>一键记录模式</h2><p>在首页提示或设置中打开“一键记录模式”，即可同时开启程序自启动、剪贴板实时监控与截图悬浮历史。三项实际状态全部开启时，模式才显示为已开启；单独暂停其中一项后，模式同步显示未开启。</p>
       <h3>开启、关闭与启动</h3><p>开启前会保存这三项原有设置。关闭一键模式时恢复原有设置，不会删除剪贴板记录、截图或文件。若此前没有保存的设置，则关闭三项功能。开启失败会尝试恢复本次已改动的设置，并显示失败提示，请核对实际状态。</p><p>Windows 自启动写入当前用户配置，通常不需要管理员权限；开机后常驻系统托盘。右键托盘可切换自启动和记录状态。剪贴板监控打开后会随下次启动恢复，暂停会同时取消恢复记录。一键模式不会改变截图快捷键、AI 密钥或排除应用规则。</p>
-      <h3>截图与历史</h3><p>默认按 Alt+Q 截图，可在快速截图工具页修改或关闭快捷键。悬浮历史显示可拖动的圆形 Logo，点击展开历史窗口，点击缩略图打开置顶查看器。最多保存本次运行的 10 张截图，总编码容量 64 MiB；关闭应用后这些截图历史清空。剪贴板历史另行在本机加密保存，默认保留 7 天、2000 条、256 MB。</p>
+      <h3>截图与历史</h3><p>默认按 Alt+Q 截图，可在创意分类的快速截图工具页修改或关闭快捷键。悬浮历史显示可拖动的圆形 Logo，点击展开历史窗口，点击缩略图打开置顶查看器。悬浮窗与剪贴板历史共用加密记录，支持图片、文字、文件分类和完整时间，默认保留 7 天、2000 条、256 MB。开启监控后可收录其他应用的复制内容；单独开启悬浮窗不会自动开启监控。右键可隐藏到下次重启 ToolKnit，或关闭悬浮窗。</p>
+      <p>悬浮窗展示排序最前的 20 条，空搜索时在这些记录内分类；搜索时从完整历史按内容、来源、文件路径和备注查找，按保存顺序返回前 20 条匹配记录。拖动卡片右上角的小柄可保存顺序，新记录进入队首，底部退出悬浮窗但仍保留在完整历史中。底部开关控制记录，横条表示滚动位置。右键记录可编辑加密备注、查看、复制或确认删除；手动删除同步主历史，不删除原文件。菜单可恢复主程序到前台。</p>
+      <p>右上角菜单左侧的切换按钮可进入常用语，悬停时标题会提示切换目标。常用语只填写标题和内容，输入即搜索，点击条目复制，右键编辑或删除，拖动小柄排序。复制成功在电脑主屏底部显示白色胶囊提示。常用语正文、历史文字及图片可拖到接受相应内容的其他应用；图片使用原图文件，目标应用是否接收取决于其支持，拖放不会自动发送消息。文字历史可转存常用语，相同正文会提示重复。常用语不受历史过期、清空或 20 条展示上限影响，两种模式分别保留搜索与滚动位置。常用语本机加密保存，最多 2000 条、16 MiB，单条正文最多 64 KiB；超限提示手动清理，不自动删除旧条目。</p>
       <h3>文字提取为什么不准确？</h3><p>本地 OCR 使用 Windows 的识别语言包，不需要 AI。小字号、模糊图像、复杂排版或中英混排可能产生错字；尽量捕获清晰的文字区域，并检查已安装的 Windows OCR 语言包。识别和翻译结果都应核对。</p><p>需要 AI 提取时，在设置的 AI 功能中配置服务地址、密钥和支持图像输入的模型。点击截图里的 AI 提取才发送所选区域；不支持图像的模型会给出失败提示，无需额外勾选视觉确认。</p>
       <h3>截图翻译：OCR 与 AI 两条路径</h3><p>先在设置的翻译模型管理中安装本地中英文模型，截图翻译目标仅支持中文、英文。未安装或模型不可用时，翻译会提示先完成安装。</p><p>没有配置可用 AI 时：本地 OCR 识别，再由本地模型翻译。配置 AI 和密钥后：本地 OCR 定位文字，由 AI 识别校正，再由本地模型翻译。AI 路径有助于改善识别，但仍受模型和网络影响，不保证每张图都更准确或更快。AI 失败时须由你确认是否使用原 OCR 结果，不会静默切换。</p><p>译文覆盖在截图原文字区域，可撤销；双击文字打开编辑弹框，可复制或修正。安装本地翻译模型不等于配置 AI，开启一键模式也不会自动安装模型、发送图片或调用 AI。</p>
       <h3>首页提示与隐私</h3><p>模式开启时首页不显示提示；未开启时每次启动显示。“关闭”仅关闭本次启动的提示；“永久关闭”之后不再显示，仍可随时在设置中切换一键模式。</p><p>剪贴板记录可能包含敏感信息，请在复制密码或私人内容前暂停监控，或配置排除应用；并非所有应用都会提供禁止记录标记。本地 OCR 和本地翻译不上传内容，只有主动使用 AI 时才将必要截图区域发给所配置的服务。</p></div>`
   },
   'quick-screenshot': {
     title: '快速截图',
-    html: `<div class="help-doc"><h2>快速截图</h2><p>Windows 桌面端默认使用 Alt+Q 开始截图，可在工具页修改或关闭快捷键。支持自动捕捉窗口、拖动选择区域、绿色边框、像素坐标和颜色放大镜。</p><h3>标注与输出</h3><p>支持矩形、圆形、箭头、画笔、马赛克和文字；可选择移动、八向缩放，双击编辑文字。Ctrl+Z 撤销，Ctrl+Y 或 Ctrl+Shift+Z 重做，Delete 删除，方向键微调，Shift 配合方向键调整 10 像素。Ctrl+S 保存，Ctrl+C 复制，Enter 确认，Escape 逐级取消操作或退出截图。</p><p>PNG/JPG 保存到设置的输出目录下 Screenshots 子目录，使用唯一名称，成功弹框可打开目录并选中结果。置顶查看窗口支持缩放、拖拽、保存和复制。可选悬浮历史默认关闭，点击可拖动的圆形 Logo 展开、点击缩略图查看，本次运行最多保留 10 张，退出应用后不保留。</p><h3>文字识别与 AI</h3><p>本地 OCR 使用 Windows 已安装的 OCR 语言包，不需要 Key。AI 提取需配置支持图像输入的模型，仅在主动使用时发送所选区域。截图翻译须先在设置安装本地中英文模型：配置 AI 和密钥后使用 AI 校正识别再本地翻译，未配置则使用本地 OCR 再本地翻译；AI 失败须经确认才使用 OCR。译文覆盖可撤销，双击可编辑和复制，请核对结果。</p><h3>限制</h3><p>仅 Windows 桌面端支持实际截图和全局快捷键，浏览器只提供预览。单图最多 3200 万像素、编码数据 32 MiB；历史及查看窗口各有 64 MiB 容量限制，查看窗口最多 8 个。受保护或特殊 GPU 内容可能无法捕获。OCR、保存和复制进入原生执行后无法中途撤回，关闭只隔离迟到结果。</p></div>`
+    html: `<div class="help-doc"><h2>快速截图</h2><p>入口位于创意工具。Windows 桌面端默认使用 Alt+Q 开始截图，可在工具页修改或关闭快捷键。支持自动捕捉窗口、拖动选择区域、绿色边框、像素坐标和颜色放大镜。</p>
+      <h3>标注与输出</h3><p>支持矩形、圆形、箭头、画笔、马赛克和文字；可选择移动、八向缩放，双击编辑文字。Ctrl+Z 撤销，Ctrl+Y 或 Ctrl+Shift+Z 重做，Delete 删除，方向键微调，Shift 配合方向键调整 10 像素。Ctrl+S 保存，Ctrl+C 复制，Enter 确认，Escape 逐级取消操作或退出截图。</p><p>PNG/JPG 保存到设置的输出目录下 Screenshots 子目录，使用唯一名称，成功弹框可打开目录并选中结果。置顶查看窗口支持缩放、拖拽、保存和复制。</p>
+      <h3>悬浮历史与常用语</h3><p>默认关闭；点击可拖动的圆形 Logo 展开，图片可打开原图置顶。显示保存顺序的前 20 条，拖动卡片小柄可排序；新记录进入顶部，底部退出悬浮窗但完整历史保留。搜索可查完整历史的内容、来源、文件路径和备注。右键记录可编辑备注、查看、复制或确认删除；手动删除同步主历史，不删除原文件。底部开关切换记录，横条表示滚动位置。顶部菜单可打开主程序、剪贴板历史、隐藏到下次重启或关闭悬浮窗。</p><p>常用语是独立的加密文字集合，仅标题和内容，可创建、编辑、搜索、复制、排序和删除；仅文字历史可快速转存。复制成功显示桌面底部白色胶囊提示。拖动正文或历史图片可交给支持接收的其他应用，图片使用原图 PNG；拖放不自动发送消息。常用语不随历史过期或清空而删除，复制不重复收录。两种模式分别保留搜索和滚动位置。最多 2000 条、16 MiB，单条正文 64 KiB、标题 256 字节；超限拒绝保存。历史图片备注不会自动触发 OCR。</p>
+      <h3>文字识别与 AI</h3><p>本地 OCR 使用 Windows 已安装的 OCR 语言包，不需要 Key。AI 提取需配置支持图像输入的模型，仅在主动使用时发送所选区域。截图翻译须先在设置安装本地中英文模型：配置 AI 和密钥后使用 AI 校正识别再本地翻译，未配置则使用本地 OCR 再本地翻译；AI 失败须经确认才使用 OCR。译文覆盖可撤销，双击可编辑和复制，请核对结果。</p>
+      <h3>限制</h3><p>仅 Windows 桌面端支持实际截图和全局快捷键，浏览器只提供预览。单图最多 3200 万像素、编码数据 32 MiB；查看窗口合计最多 64 MiB、8 个；历史容量使用剪贴板设置，图片记录最多 20 MiB。受保护或特殊 GPU 内容可能无法捕获。OCR、保存和复制进入原生执行后无法中途撤回，关闭只隔离迟到结果。</p></div>`
   },
   'duplicate-file-cleanup': {
     title: '清理重复文件',
@@ -31,22 +48,22 @@ export const HELP_CONTENT = {
     title: '功能概览',
     html: `<div class="help-doc">
       <h2>ToolKnit 功能概览</h2>
-      <p>ToolKnit 3.1 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前测试版本提供 12 个分类、71 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 46 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
-      <p>V3.0 正式版包含 68 个桌面工具；PDF 转扫描件、清理重复文件和快速截图为 V3.1 开发中的新增功能。</p>
+      <p>ToolKnit 3.2 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前测试版本提供 12 个分类、73 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 77 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
+      <p>V3.1 已发布，包含 PDF 转扫描件、清理重复文件和快速截图；当前为 V3.2 开发版本，npm 包计划在 V3.2 发布时同步。</p>
 
       <h3>工具分类一览</h3>
       <div class="help-tool-grid">
-        <div class="help-tool-card"><div class="help-tool-card-name">PDF 工具</div><div class="help-tool-card-desc">编辑、合并、拆分、添加页码、转图像、转扫描件、本地文本转 Markdown、AI PDF 转 Markdown、旋转、加密、解密、压缩、文字增强与 Excel 转 PDF</div></div>
+        <div class="help-tool-card"><div class="help-tool-card-name">PDF 工具</div><div class="help-tool-card-desc">新建与编辑、合并、拆分、添加页码、转图像、转 Word、转扫描件、图像转 PDF、本地文本转 Markdown、AI PDF 转 Markdown、旋转、加密、解密、压缩、文字增强与 Excel 转 PDF</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">PPT 工具</div><div class="help-tool-card-desc">转 PDF / 图像、素材与文字提取、压缩、AI 大纲和黑白极简草稿</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">图像工具</div><div class="help-tool-card-desc">格式转换、图片压缩、长图拼接、图标生成器、图像与屏幕取色</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">音频工具</div><div class="help-tool-card-desc">格式转换、BPM 测速、剪辑、从视频提取音频</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">视频工具</div><div class="help-tool-card-desc">格式转换、高清单帧图、最长 30 秒 GIF</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">文本工具</div><div class="help-tool-card-desc">音视频转文字、提词器、文本统计、文本格式化</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">计算器工具</div><div class="help-tool-card-desc">体脂率、时间戳、房贷、利息、密码生成</div></div>
-        <div class="help-tool-card"><div class="help-tool-card-name">创意工具</div><div class="help-tool-card-desc">配色提取、打字测试</div></div>
+        <div class="help-tool-card"><div class="help-tool-card-name">创意工具</div><div class="help-tool-card-desc">快速截图、配色提取、颜色空间对比、打字测试</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">清理工具</div><div class="help-tool-card-desc">扫描大文件、AI 元数据建议、移入回收站</div></div>
         <div class="help-tool-card"><div class="help-tool-card-name">硬件与系统工具</div><div class="help-tool-card-desc">只读查看整机、CPU、内存、显卡、主板、磁盘、网络和传感器；主动开启剪贴板历史监控</div></div>
-        <div class="help-tool-card"><div class="help-tool-card-name">AI 工具</div><div class="help-tool-card-desc">快速截图、AI PDF 转 Markdown、润色、翻译、可编辑文档、可编辑表格</div></div>
+        <div class="help-tool-card"><div class="help-tool-card-name">AI 工具</div><div class="help-tool-card-desc">AI PDF 转 Markdown、润色、翻译、可编辑文档、可编辑表格</div></div>
       </div>
 
       <h3>核心特性</h3>
@@ -135,7 +152,7 @@ export const HELP_CONTENT = {
 
       <h3>安装并确认 CLI 可用</h3>
       <ol class="help-steps">
-        <li>安装 Node.js <code>20.12.0+</code>，然后执行 <code>npm install --global @toolknit/cli</code></li>
+        <li>安装 Node.js <code>22.13.0+</code>，然后执行 <code>npm install --global @toolknit/cli</code>；V3.2 npm 尚未发布时，先使用对应的本地测试归档</li>
         <li>在 PowerShell 执行 <code>toolknit doctor</code> 检查环境和按需依赖</li>
         <li>看到环境状态后，执行 <code>toolknit --help</code> 查看全部命令</li>
         <li>需要某个命令的参数和示例时，执行 <code>toolknit help &lt;分类&gt; &lt;工具&gt;</code>，例如 <code>toolknit help video gif</code></li>
@@ -151,15 +168,19 @@ export const HELP_CONTENT = {
         <li><code>video</code>：格式转换、精确导出单帧图、截取最长 30 秒 GIF</li>
         <li><code>text stats</code>、<code>image colors</code>、<code>image stitch</code>：本地统计、取色、长图拼接</li>
         <li><code>ai-doc</code> 与 <code>ai-table</code>：生成、检查、编辑、撤销和重新渲染可编辑工程</li>
+        <li><code>pdf to-word</code>、<code>image to-pdf</code>、<code>excel to-pdf</code>：Word、图像 PDF 与 XLSX 转换；PDF 另有文本、裁剪、页码、扫描效果和空白页</li>
+        <li><code>image</code>、<code>text format</code>、<code>dev</code>、<code>calculate</code>、<code>color</code>：图像处理、文本整理、编码/校验和及计算工具</li>
+        <li><code>ai polish</code>、<code>ai translate</code>、<code>pdf ai-markdown</code>：主动调用的 AI 文本或图像分析；<code>files</code> 只扫描文件，<code>markdown html</code> 导出独立网页</li>
+        <li><code>tools list</code>、<code>tools describe</code>、<code>tools coverage</code>：查询能力与参数；<code>run</code> 接收明确的 JSON 参数调用同一接口</li>
       </ul>
 
       <h3>CLI 的安全默认值</h3>
       <p>所有会写文件的命令都要求明确输出位置。已有文件默认不会覆盖，只有显式传入 <code>--overwrite</code> 才会替换。密码不会作为命令行参数出现；JSON 输出、管道输出和 MCP 模式也不会混入 ASCII 横幅。</p>
 
       <h3>连接 IDE Agent</h3>
-      <p>MCP 服务命令是 <code>toolknit mcp serve</code>。把它配置到支持 MCP 的 IDE 后，Agent 可调用当前 46 项能力；桌面端不需要保持打开。</p>
+      <p>MCP 服务命令是 <code>toolknit mcp serve</code>。把 V3.2 CLI 配置到支持 MCP 的 IDE 后，Agent 可调用 77 项能力；桌面端不需要保持打开。</p>
 
-      <div class="help-note"><p>CLI 和 IDE Agent 使用的是单独的环境配置。桌面端保存的 AI 密钥不会自动交给 CLI；只有 AI 文档、AI 表格、PPT 文本 AI 整理、AI 生成 PPT 大纲、AI 生成 PPT 草稿 / PPTX 和 AI 二次润色需要在 CLI/MCP 进程中配置密钥。</p></div>
+      <div class="help-note"><p>CLI 和 IDE Agent 使用单独的环境配置，桌面密钥不会自动交给 CLI。AI 文档/表格、PPT 的 AI 操作、润色、翻译、视觉 PDF 转 Markdown，以及主动开启的 Word 布局辅助或转写润色需要密钥。普通本地工具不需要密钥，不会自动转用 AI。</p></div>
     </div>`
   },
 
@@ -439,7 +460,7 @@ export const HELP_CONTENT = {
 
       <h3>使用方法</h3>
       <ol class="help-steps">
-        <li>上传需要编辑的 PDF 文件</li>
+        <li>上传 PDF，或点击「新建空白 PDF」直接创建 A4 文档；无文件时侧栏的添加空白页也能创建文档</li>
         <li>点击「编辑文字」选中文字后修改内容，点击「插入文本 / 图像 / 形状」向页面添加内容</li>
         <li>点击「选择组件」后可单击选中任意文字、图像或形状，再拖动、缩放、旋转或删除</li>
         <li>使用底部或侧栏工具调整页面顺序、旋转、删除与提取</li>
@@ -448,7 +469,10 @@ export const HELP_CONTENT = {
 
       <h3>注意事项</h3>
       <ul>
-        <li>输入限制为 150 MB、500 页</li>
+        <li>输入限制为 150 MB、500 页；已有文档添加空白页时沿用当前页的可见尺寸</li>
+        <li>新建文档导出前属于未保存内容。撤销、重做、重置不会改动已经导出的文件；仅缩放或切换页面不会产生未保存修改</li>
+        <li>新增文字可保留多行和空行；Enter 换行，Ctrl+Enter 保存。编辑原 PDF 的文字行时仍按 Enter 保存。Escape 只关闭当前文字弹框</li>
+        <li>读取和生成阶段可取消；文档已开始替换或结果进入最终保存时，取消按钮暂时关闭，避免实际完成却提示取消</li>
         <li>文字替换依赖 PDF 自带的文字层，扫描件或纯图像型 PDF 不支持文字编辑</li>
         <li>文件全程在本地处理，不上传服务器</li>
       </ul>
@@ -987,14 +1011,22 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       <p>把 ToolKnit CLI 连接到支持 MCP 的 IDE 后，你可以直接用自然语言让 Agent 处理项目里的本地文件。Agent 调用的是真正的 ToolKnit 工具，不需要打开桌面端，也不应把“我已经处理好了”当成没有调用工具时的替代答案。</p>
 
       <h3>当前可用范围</h3>
-      <div class="help-agent-scope"><p>当前 MCP 一共提供 <strong>46 项</strong>能力。下面按你平时会说的话归类，Agent 会自己转成明确的工具参数：</p><ul><li><strong>PDF（9 项）</strong>：查看页数和大小、合并、按页拆分、旋转、加密、解密、压缩、增强扫描件文字可读性，以及把 PDF 导出为逐页图像或拼成长图。</li><li><strong>PPT（7 项）</strong>：把 PPTX 转成 PDF；把 PPTX 按页导出为图片；从 PPTX 提取内嵌图片素材；提取每页标题、正文和备注，并可选把提取出的文字交给 AI 整理成大纲、讲稿、纪要或学习笔记；安全压缩 PPTX 并保留图片质量；根据文字资料生成结构化 PPT 大纲；生成可编辑 PPTX 草稿。</li><li><strong>硬件只读（8 项）</strong>：查看整机概况、CPU 与内存、实时状态、显卡与显示器、主板与固件、磁盘与健康、网络与设备、电源与传感器；只读取本机信息，不写入文件。</li><li><strong>音频（4 项）</strong>：转格式、测 BPM、按明确起止时间剪辑、从视频提取指定音轨。</li><li><strong>音视频转文字（4 项）</strong>：查看本地模型、下载模型、切换当前模型、输出 TXT / SRT / JSON；可选把识别文字交给 AI 润色，媒体本身不会上传。</li><li><strong>视频（3 项）</strong>：转格式、按精确毫秒导出单帧 PNG/JPG、按明确起止时间截取最长 30 秒 GIF。</li><li><strong>文本和图像（3 项）</strong>：统计 UTF-8 文本文件、提取主色板、把 2-100 张图片拼成长图。</li><li><strong>AI 文档（4 项）</strong>：生成 PDF、检查可编辑工程、按编号修改控件、重新渲染 PDF 和编号图。</li><li><strong>AI 表格（4 项）</strong>：生成 CSV/XLSX/PDF/PNG、检查工程、按行列图表编号修改、重新渲染。</li></ul></div>
+      <div class="help-agent-scope"><p>V3.2 MCP 提供 <strong>77 项</strong>能力；npm 尚未发布时需使用 V3.2 本地测试包。</p><ul>
+        <li><strong>PDF 与 Office</strong>：检查、合并、拆分、旋转、加解密、压缩、增强、导出图像、转 Word、文本/Markdown、裁剪、页码、扫描效果、空白 PDF，以及 XLSX 转 PDF。Word 默认离线，复杂区域可保留图像；Excel 渲染需要 LibreOffice。</li>
+        <li><strong>PPT</strong>：转 PDF/图像、提取素材/文字、压缩、AI 大纲和可编辑草稿。</li>
+        <li><strong>图像</strong>：转 PDF、格式转换、压缩、裁剪/旋转/翻转、颜色替换、图标包、取色、长图拼接与颜色空间换算。</li>
+        <li><strong>音视频与转写</strong>：格式转换、BPM、剪辑、音轨/单帧/GIF 提取，离线模型管理及 TXT/SRT/JSON 转写。</li>
+        <li><strong>文本、开发者与计算</strong>：统计、格式化、JSON、Base64、URL、UUID、JWT 解析、校验和、时间戳、BMI、房贷和利息估算；JWT 解析不验证签名。</li>
+        <li><strong>AI</strong>：润色、原文对齐翻译、视觉 PDF 转 Markdown；AI 文档/表格支持生成、检查、编辑、撤销和重新渲染。主动启用的 PDF 转 Word AI 模式仅辅助结构。</li>
+        <li><strong>文件与硬件</strong>：大文件/重复文件只读扫描、Markdown HTML 导出，以及八项 Windows 硬件查询。</li>
+      </ul><p>用 <code>toolknit tools list --json</code> 和 <code>toolknit tools describe &lt;名称&gt; --json</code> 查看精确参数；<code>tools coverage</code> 查看桌面覆盖范围。</p></div>
 
       <h3>哪些功能不让 Agent 调用</h3>
-      <p>图片格式转换、图片压缩、图标生成、文本格式化、计算器、密码生成器、打字测试、AI 润色和 AI 翻译目前是<strong>桌面端专用</strong>。这不是漏接：其中一部分不适合在终端或 Agent 对话里传递内容、密码或交互状态。</p>
+      <p>快速截图、剪贴板监听、提词器、打字测试、密码生成、系统盘清理与抠图保留在桌面端。PDF 自由编辑和 Markdown 交互编辑仍需可视界面；文件扫描不执行删除，加密工具只开放校验和。不要把密码等秘密写进 Agent 对话。</p>
 
       <h3>首次连接</h3>
       <ol class="help-steps">
-        <li>安装 ToolKnit CLI 后，先在 PowerShell 运行 <code>toolknit doctor</code>。本地文件工具和非 AI PPT 不需要 AI 密钥；AI 文档、AI 表格、PPT 文本 AI 整理、AI 生成 PPT 大纲、AI 生成 PPT 草稿 / PPTX 和 AI 二次润色才需要配置密钥。</li>
+        <li>使用 Node.js 22.13.0 或更高版本安装 V3.2 CLI，在 PowerShell 运行 <code>toolknit doctor</code>。本地文件工具不需要 AI 密钥；只有主动调用 AI 操作或启用 AI 模式时需要独立配置，桌面密钥不会自动共享。</li>
         <li>在 IDE 设置中搜索 <code>MCP</code>，添加 Server：命令填写 <code>toolknit</code>，参数填写 <code>mcp serve</code>，保存后重启或重新连接 Agent。</li>
         <li>在 Agent 对话中说清输入文件、要执行的操作、保存位置，以及是否允许覆盖已有文件。说“保存到当前项目”时，Agent 应使用当前工作区的 <code>toolknit-output</code> 文件夹，而不是猜测路径。</li>
       </ol>
@@ -1312,7 +1344,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
   'developer-tools': {
     title: '开发者工具',
-    html: `<div class="help-doc"><h2>3.1 开发者工具</h2><p>这里集中介绍本次新增的本地工具。它们默认在需要时加载，关闭页面后会释放 Worker、Canvas 和临时任务。</p><h3>Markdown 文档编辑器</h3><p>支持 GFM、任务列表、Mermaid、数学公式、目录跳转、草稿恢复，以及 Markdown 和离线 HTML 导出。导出本地图片时会自动整理 assets 目录。</p><h3>智能颜色替换</h3><p>使用吸管选择源色和目标色，可调节感知阈值、边缘柔化、亮度保持和八连通智能保护。预览使用降采样 Worker，导出由 Rust 按原始分辨率完成。</p><h3>Hash &amp; Crypto</h3><p>覆盖常用 Hash、HMAC、国密、AES 文件加密、RSA 和 SM2。旧算法仅用于兼容，敏感输入不会写入历史或本地存储。</p></div>`
+    html: `<div class="help-doc"><h2>3.2 开发者工具</h2><p>这里集中介绍本次新增的本地工具。它们默认在需要时加载，关闭页面后会释放 Worker、Canvas 和临时任务。</p><h3>Markdown 文档编辑器</h3><p>支持 GFM、任务列表、Mermaid、数学公式、目录跳转、草稿恢复，以及 Markdown 和离线 HTML 导出。导出本地图片时会自动整理 assets 目录。</p><h3>智能颜色替换</h3><p>使用吸管选择源色和目标色，可调节感知阈值、边缘柔化、亮度保持和八连通智能保护。预览使用降采样 Worker，导出由 Rust 按原始分辨率完成。</p><h3>Hash &amp; Crypto</h3><p>覆盖常用 Hash、HMAC、国密、AES 文件加密、RSA 和 SM2。旧算法仅用于兼容，敏感输入不会写入历史或本地存储。</p></div>`
   },
   'hardware-tools': {
     title: '硬件工具总览',

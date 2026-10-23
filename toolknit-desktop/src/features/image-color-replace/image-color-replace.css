@@ -263,12 +263,14 @@
 .color-replace-stage-footer { min-width: 0; flex-wrap: wrap; gap: 8px 16px; }
 .color-replace-shell .color-replace-busy[hidden] { display: none !important; }
 .color-replace-shell .color-replace-busy span { border-top-color: #fff; }
-.color-replace-shell .color-replace-empty svg,
 .color-replace-shell .color-replace-stage-footer svg,
 .color-replace-shell .color-pair > button > svg,
 .color-replace-shell .color-pair > label > svg,
 .color-replace-shell .color-pair-arrow svg,
 .color-replace-shell .color-replace-range output { color: rgba(255,255,255,.9); }
+.color-replace-shell .color-replace-empty .tk-empty-hero-icon { color: var(--tk-empty-hero-icon-ink); }
+.color-replace-shell .color-replace-empty .tk-empty-hero-icon svg,
+.color-replace-shell .color-replace-empty em :is(svg, span) { color: inherit; }
 .color-replace-shell .color-pair > button.is-active { border-color: rgba(255,255,255,.72); }
 .color-replace-shell .color-target-picker { cursor: pointer; }
 .color-replace-shell input[type="range"] { accent-color: #fff; }

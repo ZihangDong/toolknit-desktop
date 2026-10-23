@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import { insertedTextLayout, insertedTextLines, estimateInsertedTextWidth } from '../src/core/pdf-inserted-text.js';
 import {
   buildTextLine,
   editedTextVisualBox,
   groupTextItemsIntoLines,
   insertedTextVisualBox,
+  insertedComponentViewport,
   rectToViewport,
   sourceTextBox
 } from '../src/features/pdf-editor/text-layout.js';
@@ -82,5 +84,16 @@ assert.deepEqual(insertedTextVisualBox({ x: 10, y: 20, text: 'ignored', fontSize
   width: 80,
   height: 30
 });
+
+assert.deepEqual(insertedTextLines('first\r\n\r\nlast\u2028end'), ['first', '', 'last', 'end']);
+assert.equal(estimateInsertedTextWidth('WW\nW', 16), estimateInsertedTextWidth('WW', 16), 'width follows the longest line');
+const block = insertedTextLayout({ x: 10, y: 100, text: 'first\n\nlast', fontSize: 16 });
+assert.equal(block.lineHeight, 19.2);
+assert.ok(Math.abs(block.box.height - 56.8) < 1e-9);
+assert.ok(Math.abs(block.box.y - 57.92) < 1e-9, 'bounds extend down from the first baseline');
+assert.deepEqual(insertedComponentViewport({ rotation: 90, convertToViewportPoint: (x, y) => [y * 2, x * 2] },
+  { x: 10, y: 20, width: 30, height: 40 }, 15), { left: 50, top: 10, width: 60, height: 80, rotation: 105 });
+assert.deepEqual(insertedComponentViewport(view, { x: 10, y: 20, width: 30, height: 40 }),
+  { left: 30, top: 780, width: 60, height: 80, rotation: 0 });
 
 console.log('PDF editor text layout regression checks passed');

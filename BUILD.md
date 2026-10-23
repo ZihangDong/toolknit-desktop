@@ -2,11 +2,15 @@
 
 本文档面向希望从源码运行或构建 ToolKnit 桌面端的开发者。
 
+V3.2 分支包含单独授权的 PDF 转 Word 引擎。运行、测试或编译包含该引擎的源码，须事先联系 info@toolknit.com 取得书面授权，商业和非商业用途均适用。仅阅读源码及按应用条款使用官方安装包不因此增加授权手续。范围与完整条款见 [NOTICE](NOTICE) 和[引擎许可](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md)。以下为具备相应授权后的技术步骤，不构成额外许可。
+
 ## 环境要求
 
 - Windows 10/11
-- [Node.js](https://nodejs.org/) `22.12.0` 或更高版本，建议使用 Node.js 24（与 CI 一致；满足 Vite 8 与 Mermaid 12 的构建要求）
-- [Rust](https://www.rust-lang.org/tools/install) stable
+- [Node.js](https://nodejs.org/) `22.13.0` 或更高版本，建议使用 Node.js 24（与 CI 一致；满足桌面端和 CLI/MCP 的版本要求）
+- [Rust](https://www.rust-lang.org/tools/install) stable `1.90` 或更高版本，与当前锁定的 Windows 依赖要求一致
+- Visual Studio C++ Build Tools，安装“使用 C++ 的桌面开发”及 Windows SDK
+- Microsoft Edge WebView2 Runtime，用于运行桌面窗口
 - 稳定网络连接，用于下载 npm、Rust 依赖，以及按需下载 FFmpeg/离线识别模型
 
 ## 项目位置
@@ -66,7 +70,7 @@ npm run tauri build
 
 ## FFmpeg 与离线模型
 
-v1.2 不要求把 FFmpeg 或 Whisper 模型提交进仓库。桌面端会在进入相关功能时提示用户去设置中按需下载，支持官方源和镜像源。
+ToolKnit 不要求把 FFmpeg 或 Whisper 模型提交进仓库。桌面端会在进入相关功能时提示用户去设置中按需下载，支持官方源和镜像源。
 
 如果你正在开发音视频相关能力，可先在桌面端设置页下载依赖；也可以使用 CLI 的依赖检查能力确认状态：
 

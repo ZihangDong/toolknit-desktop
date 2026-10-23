@@ -16,6 +16,7 @@
       import { createLocalTranslationSettings } from './app/local-translation-runtime.js';
       import { createHomeCustomToolsRuntime } from './app/home-custom-tools-runtime.js';
       import { createScreenshotContextRuntime } from './app/screenshot-context-runtime.js';
+      import { createAuxiliaryToolNavigation } from './app/auxiliary-tool-navigation.js';
       import { createHomeExplorerRuntime } from './app/home-explorer-runtime.js';
       import { createFontSettingsRuntime } from './app/font-settings-runtime.js';
       import { createStartupRuntime } from './app/startup-runtime.js';
@@ -52,6 +53,7 @@
       import { extractJson } from './app/json-extractor.js';
       import { createToastManager } from './app/toast-manager.js';
       import { createHelpCenterRuntime } from './app/help-center-runtime.js';
+      import { createSettingsNavigationRuntime } from './app/settings-navigation-runtime.js';
       import { bindGlobalToolPageChrome, moveFocusOutOfHiddenRegion } from './shared/tool-page-shell.js';
       import { createHomeController } from './app/home-controller.js';
       import { createScreenPickerSettingsRuntime } from './app/screen-picker-settings-runtime.js';
@@ -684,7 +686,7 @@
       const versionUpdateStatus = document.getElementById('versionUpdateStatus');
       const checkVersionUpdateBtn = document.getElementById('checkVersionUpdateBtn');
       const openReleasePageBtn = document.getElementById('openReleasePageBtn');
-      const APP_VERSION_FALLBACK = '3.1.0';
+      const APP_VERSION_FALLBACK = '3.2.0';
       let updateDialogController = null;
       const updateRuntime = createUpdateRuntime({
         isTauri,
@@ -1541,6 +1543,7 @@
       const donationController = createDonationController({ openExternalUrl });
       const currentNavigationPage = () => Array.from(document.querySelectorAll('[id$="Overlay"].visible, [id$="Workspace"].visible, [id$="Dialog"].visible'))
         .filter(page => !page.inert).sort((a, b) => (Number.parseInt(getComputedStyle(b).zIndex, 10) || 0) - (Number.parseInt(getComputedStyle(a).zIndex, 10) || 0))[0];
+      createSettingsNavigationRuntime({ root: document, settingsOverlay, getActivePage: currentNavigationPage, onClose: closeSettingsOverlay });
       const openNavigationPage = (page, overlay) => {
         overlay ||= currentNavigationPage();
         const background = overlay?.id === 'donationOverlay' ? donationController.getBackground() : overlay;
@@ -1576,7 +1579,13 @@
       createRecordingModeRuntime({ isTauri, translate: t, onLanguageChange: onLangChange, onOpenHelp: openHelpOverlay, notify: message => window.showToast?.(message) });
       createLocalTranslationSettings({ isTauri, translate: t, onLanguageChange: onLangChange, notify: message => window.showToast?.(message) });
       createHomeCustomToolsRuntime({ isTauri, tauriCorePromise, translate: t, notify: message => window.showToast?.(message) });
+      const openAuxiliaryTool = createAuxiliaryToolNavigation({ getActivePage: currentNavigationPage, openTool: toolId => lazyFeatureRegistry?.open(toolId), closePages: {
+        donationOverlay: () => donationController.close(), settingsOverlay: closeSettingsOverlay,
+        helpOverlay: helpCenterRuntime.closeHelpOverlay, feedbackOverlay: helpCenterRuntime.closeFeedbackOverlay,
+        legalOverlay: helpCenterRuntime.closeLegalOverlay, apiKeyOverlay: aiSettingsRuntime.closeApiKeySettings
+      } });
       createScreenshotContextRuntime({ isTauri, getAiPlatformConfig, getLang, onLangChange, translate: t, onNavigate: target => {
+        if (target === 'clipboard-history') return openAuxiliaryTool(target);
         if (target === 'help' || target === 'feedback') return openNavigationPage(target);
         if (target === 'support') return donationController.open({ background: currentNavigationPage() });
         if (target === 'settings') return openNavigationSettings();

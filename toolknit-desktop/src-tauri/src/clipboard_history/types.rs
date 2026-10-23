@@ -156,11 +156,14 @@ pub struct Query {
     pub to: Option<i64>,
     pub before: Option<i64>,
     pub snapshot: Option<i64>,
+    pub limit: Option<usize>,
+    pub ordered: bool,
 }
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Entry {
     pub id: i64,
+    pub note: String,
     pub captured_at: i64,
     pub offset_minutes: i32,
     pub kind: String,
@@ -205,10 +208,42 @@ pub struct Page {
     pub snapshot: i64,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Phrase {
+    pub id: i64,
+    pub title: String,
+    pub text: String,
+    pub note: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default, deny_unknown_fields)]
+pub struct PhraseQuery {
+    pub search: String,
+    pub before: Option<i64>,
+}
+
+#[derive(Serialize)]
+pub struct PhrasePage {
+    pub items: Vec<Phrase>,
+    pub next: Option<i64>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Collection {
+    History,
+    Phrases,
+}
+
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
     Status,
+    Restart,
     Start,
     Stop,
     Settings {
@@ -218,6 +253,46 @@ pub enum Request {
         query: Query,
     },
     Detail {
+        id: i64,
+    },
+    Entry {
+        id: i64,
+    },
+    Note {
+        id: i64,
+        note: String,
+    },
+    PhraseList {
+        query: PhraseQuery,
+    },
+    PhraseDetail {
+        id: i64,
+    },
+    PhraseSave {
+        id: Option<i64>,
+        title: String,
+        text: String,
+        #[serde(default)]
+        note: Option<String>,
+    },
+    PhraseFromHistory {
+        id: i64,
+    },
+    PhraseDelete {
+        id: i64,
+    },
+    PhraseCopy {
+        id: i64,
+    },
+    Reorder {
+        collection: Collection,
+        id: i64,
+        #[serde(rename = "targetId")]
+        target_id: i64,
+        after: bool,
+    },
+    Drag {
+        collection: Collection,
         id: i64,
     },
     Pin {
@@ -244,6 +319,29 @@ pub enum Request {
 #[cfg(test)]
 mod tests {
     use super::Request;
+    #[test]
+    fn drag_and_order_requests_accept_ids_not_arbitrary_external_payloads() {
+        assert!(serde_json::from_str::<Request>(
+            r#"{"action":"drag","collection":"history","id":42}"#
+        )
+        .is_ok());
+        assert!(serde_json::from_str::<Request>(
+            r#"{"action":"reorder","collection":"phrases","id":42,"targetId":2,"after":true}"#
+        )
+        .is_ok());
+        for input in [
+            r#"{"action":"drag","collection":"history","id":42,"path":"C:/private.txt"}"#,
+            r#"{"action":"drag","collection":"history","id":42,"text":"injected"}"#,
+            r#"{"action":"drag","collection":"anything","id":42}"#,
+            r#"{"action":"reorder","collection":"history","ids":[1,2]}"#,
+        ] {
+            assert!(serde_json::from_str::<Request>(input).is_err());
+        }
+        assert!(serde_json::from_str::<Request>(
+            r#"{"action":"phraseSave","id":null,"title":"Email","text":"fixture@example.test"}"#
+        )
+        .is_ok());
+    }
 
     #[test]
     fn pin_accepts_only_an_existing_record_id() {
@@ -261,7 +359,10 @@ mod tests {
         }
         assert!(matches!(
             serde_json::from_str::<Request>(r#"{"action":"copy","id":42}"#).unwrap(),
-            Request::Copy { id: 42, paths: false }
+            Request::Copy {
+                id: 42,
+                paths: false
+            }
         ));
     }
 }

@@ -42,3 +42,6 @@ pub(super) mod compression {
     include!("image/compression.rs");
 }
 pub(super) use compression::*;
+#[path = "image/image_pdf.rs"]
+pub(super) mod image_pdf;
+pub(super) use image_pdf::*;

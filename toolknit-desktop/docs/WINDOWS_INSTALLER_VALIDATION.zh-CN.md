@@ -1,5 +1,7 @@
 # Windows 安装与 WebView2 验证
 
+以下为 V3.1 的历史验收记录。V3.2 的卸载/覆盖升级修复和最新隔离验证见 [2026-10-22 升级修复记录](WINDOWS_UPGRADE_REPAIR_20261022.zh-CN.md)。
+
 日期：2026-10-14。版本：3.1.0，未发布。修补责任边界为 `src-tauri/windows/installer.nsi`，没有修改应用的 Tauri command、事件、storage key 或版本。
 
 ## 修补结果

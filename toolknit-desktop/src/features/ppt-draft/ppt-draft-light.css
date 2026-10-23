@@ -1,4 +1,4 @@
-html[data-theme="light"] .ppt-draft-v2 {
+html[data-theme="light"] :is(.ppt-draft-v2, .ppt-draft-portal) {
   --ppt-draft-panel: #ffffff;
   --ppt-draft-surface: #f8f9fb;
   --ppt-draft-border: #e1e3e7;
@@ -6,6 +6,33 @@ html[data-theme="light"] .ppt-draft-v2 {
   --ppt-draft-ink: #17181b;
   --ppt-draft-muted: #656a73;
 }
+
+html[data-theme="light"] .ppt-draft-v2 .ppt-draft-slide-card {
+  border-color: var(--ppt-draft-border);
+  background: var(--ppt-draft-panel);
+  color: var(--ppt-draft-ink);
+}
+
+html[data-theme="light"] .ppt-draft-v2 .ppt-draft-slide-card:hover {
+  border-color: var(--ppt-draft-border-strong);
+  background: var(--ppt-draft-surface);
+}
+
+html[data-theme="light"] .ppt-draft-v2 :is(.ppt-draft-summary-title, .ppt-draft-slide-head-main strong, .ppt-draft-visual-note strong) {
+  color: var(--ppt-draft-ink);
+}
+
+html[data-theme="light"] .ppt-draft-v2 :is(.ppt-draft-summary-eyebrow, .ppt-draft-summary-takeaway, .ppt-draft-slide-head-main span, .ppt-draft-visual-note) {
+  color: var(--ppt-draft-muted);
+}
+
+html[data-theme="light"] .ppt-draft-v2 :is(.ppt-draft-slide-number, .ppt-draft-slide-tags span) {
+  border-color: var(--ppt-draft-border);
+  background: var(--ppt-draft-surface);
+  color: var(--ppt-draft-muted);
+}
+
+html[data-theme="light"] .ppt-draft-v2 .ppt-draft-slide-number { color: var(--ppt-draft-ink); }
 
 html[data-theme="light"] .ppt-draft-v2 :is(.ppt-ai-preset-panel, .ppt-outline-field, .ppt-draft-preview-result, .ppt-draft-preview-summary) {
   border-color: var(--ppt-draft-border);
@@ -88,6 +115,9 @@ html[data-theme="light"] .ppt-draft-editor-overlay {
   background: #f5f6f8;
   color: var(--ppt-draft-ink);
 }
+
+html[data-theme="light"] .ppt-draft-editor-overlay > .plasma-bg { display: none; }
+html[data-theme="light"] .ppt-draft-editor-deck-title { color: var(--ppt-draft-muted); }
 
 html[data-theme="light"] .ppt-draft-editor-overlay :is(.ppt-draft-editor-preview, .ppt-draft-editor-inspector) {
   border-color: var(--ppt-draft-border);

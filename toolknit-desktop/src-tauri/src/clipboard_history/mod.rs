@@ -1,3 +1,7 @@
+mod drag;
+mod key;
+mod library;
+mod ordering;
 mod store;
 mod types;
 #[cfg(target_os = "windows")]
@@ -22,6 +26,7 @@ struct Service {
     status: Mutex<Status>,
     generation: Arc<AtomicU64>,
     query_revision: AtomicU64,
+    floating_query_revision: AtomicU64,
     closing: AtomicBool,
     last_pruned: AtomicU64,
     transition: Mutex<()>,
@@ -64,6 +69,51 @@ pub(crate) fn copy_screenshot_text(text: String) -> Result<(), String> {
     }
 }
 
+pub(crate) fn record_explicit_screenshot(
+    app: &tauri::AppHandle,
+    png: Vec<u8>,
+    width: u32,
+    height: u32,
+) -> Result<(), String> {
+    let service = app.state::<ClipboardHistoryState>().get(app)?;
+    let _transition = lock(&service.transition);
+    // Active monitoring already receives the clipboard write; do not insert it twice.
+    if lock(&service.status).enabled {
+        return Ok(());
+    }
+    let settings = lock(&service.settings).clone();
+    if !settings.images {
+        return Ok(());
+    }
+    let source = std::env::current_exe()
+        .ok()
+        .and_then(|path| {
+            path.file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+        })
+        .unwrap_or_else(|| "toolknit-desktop.exe".into());
+    if settings
+        .excluded_apps
+        .iter()
+        .any(|name| name.eq_ignore_ascii_case(&source))
+    {
+        return Ok(());
+    }
+    #[cfg(windows)]
+    let offset = windows::offset_minutes();
+    #[cfg(not(windows))]
+    let offset = 0;
+    lock(&service.store).insert(
+        &Content::Image { png, width, height },
+        Some(source),
+        now_ms(),
+        offset,
+        &settings,
+    )?;
+    service.changed();
+    Ok(())
+}
+
 pub(crate) fn tray_label(lang: &str, enabled: bool) -> &'static str {
     match (lang == "zh", enabled) {
         (true, true) => "剪贴板历史：正在记录",
@@ -95,6 +145,7 @@ impl ClipboardHistoryState {
             status: Mutex::new(Status::default()),
             generation: Arc::new(AtomicU64::new(0)),
             query_revision: AtomicU64::new(0),
+            floating_query_revision: AtomicU64::new(0),
             closing: AtomicBool::new(false),
             last_pruned: AtomicU64::new(0),
             transition: Mutex::new(()),
@@ -195,6 +246,9 @@ impl Service {
         Ok(())
     }
     fn changed(&self) {
+        self.changed_record(None, false);
+    }
+    fn changed_record(&self, record_id: Option<i64>, library: bool) {
         if self.closing.load(Ordering::Acquire) {
             return;
         }
@@ -203,9 +257,19 @@ impl Service {
             status.revision += 1;
             status.revision
         };
+        let mut payload = record_id.map_or_else(
+            || serde_json::json!(revision),
+            |id| serde_json::json!({"revision":revision,"recordId":id}),
+        );
+        if library {
+            payload = serde_json::json!({"revision":revision,"library":true});
+        }
         let _ = self
             .app
-            .emit_to("main", "clipboard-history-changed", revision);
+            .emit_to("main", "clipboard-history-changed", &payload);
+        let _ = self
+            .app
+            .emit_to("screenshot-history", "clipboard-history-changed", &payload);
         let enabled = lock(&self.status).enabled;
         self.app
             .state::<ClipboardHistoryState>()
@@ -335,12 +399,18 @@ impl Service {
         status.failed += self.dropped.load(Ordering::Relaxed);
         Ok(status)
     }
-    fn request(&self, request: Request, query_token: u64) -> Result<serde_json::Value, String> {
+    fn request(
+        &self,
+        request: Request,
+        query_token: u64,
+        query_revision: &AtomicU64,
+    ) -> Result<serde_json::Value, String> {
         let json = |value| {
             serde_json::to_value(value).map_err(|_| "clipboard:response-failed".to_string())
         };
         match request {
             Request::Status => {}
+            Request::Restart => return Err("clipboard:restart-unavailable".into()),
             Request::Start => self.start()?,
             Request::Stop => self.stop()?,
             Request::Settings { mut settings } => {
@@ -361,7 +431,7 @@ impl Service {
             }
             Request::List { query } => {
                 return serde_json::to_value(lock(&self.store).page(&query, || {
-                    self.query_revision.load(Ordering::Acquire) != query_token
+                    query_revision.load(Ordering::Acquire) != query_token
                 })?)
                 .map_err(|_| "clipboard:response-failed".into())
             }
@@ -369,6 +439,82 @@ impl Service {
                 return serde_json::to_value(lock(&self.store).detail(id)?)
                     .map_err(|_| "clipboard:response-failed".into())
             }
+            Request::Note { id, note } => {
+                lock(&self.store).save_note(id, &note)?;
+                self.changed_record(Some(id), false);
+            }
+            Request::Entry { id } => {
+                return serde_json::to_value(lock(&self.store).entry(id)?)
+                    .map_err(|_| "clipboard:response-failed".into())
+            }
+            Request::PhraseList { query } => {
+                return serde_json::to_value(lock(&self.store).phrases(&query, || {
+                    query_revision.load(Ordering::Acquire) != query_token
+                })?)
+                .map_err(|_| "clipboard:response-failed".into())
+            }
+            Request::PhraseDetail { id } => {
+                return serde_json::to_value(lock(&self.store).phrase(id)?)
+                    .map_err(|_| "clipboard:response-failed".into())
+            }
+            Request::PhraseSave {
+                id,
+                title,
+                text,
+                note,
+            } => {
+                let store = lock(&self.store);
+                let note = match note {
+                    Some(value) => value,
+                    None => match id {
+                        Some(id) => store.phrase(id)?.note,
+                        None => String::new(),
+                    },
+                };
+                let phrase = store.save_phrase(id, title, text, note)?;
+                drop(store);
+                self.changed_record(None, true);
+                return serde_json::to_value(phrase)
+                    .map_err(|_| "clipboard:response-failed".into());
+            }
+            Request::PhraseFromHistory { id } => {
+                let phrase = lock(&self.store).phrase_from_history(id)?;
+                self.changed_record(None, true);
+                return serde_json::to_value(phrase)
+                    .map_err(|_| "clipboard:response-failed".into());
+            }
+            Request::PhraseDelete { id } => {
+                lock(&self.store).delete_phrase(id)?;
+                self.changed_record(None, true);
+            }
+            Request::PhraseCopy { id } => {
+                let phrase = lock(&self.store).phrase(id)?;
+                #[cfg(windows)]
+                windows::write(
+                    &Content::Text {
+                        text: phrase.text,
+                        rich: false,
+                    },
+                    false,
+                    false,
+                )?;
+                #[cfg(not(windows))]
+                {
+                    let _ = phrase;
+                    return Err("clipboard:desktop-only".into());
+                }
+            }
+            Request::Reorder {
+                collection,
+                id,
+                target_id,
+                after,
+            } => {
+                lock(&self.store).reorder(collection, id, target_id, after)?;
+                self.floating_query_revision.fetch_add(1, Ordering::AcqRel);
+                self.changed_record(None, matches!(collection, Collection::Phrases));
+            }
+            Request::Drag { .. } => return Err("clipboard:window-denied".into()),
             Request::Pin { id } => {
                 let content = lock(&self.store).content(id)?;
                 let Content::Image { png, .. } = content else {
@@ -422,20 +568,181 @@ pub(crate) async fn clipboard_history(
     window: tauri::WebviewWindow,
     request: Request,
 ) -> Result<serde_json::Value, String> {
-    if window.label() != "main" {
+    let floating = window.label() == "screenshot-history";
+    if !allows_request(window.label(), &request) {
         return Err("clipboard:window-denied".into());
     }
+    if let Request::Drag { collection, id } = request {
+        if !floating || id <= 0 {
+            return Err("clipboard:window-denied".into());
+        }
+        let owner = app.clone();
+        let content = tauri::async_runtime::spawn_blocking(move || {
+            let service = owner.state::<ClipboardHistoryState>().get(&owner)?;
+            let store = lock(&service.store);
+            match collection {
+                Collection::Phrases => store.phrase(id).map(|phrase| Content::Text {
+                    text: phrase.text,
+                    rich: false,
+                }),
+                Collection::History => store.content(id),
+            }
+        })
+        .await
+        .map_err(|_| "clipboard:drag-failed")??;
+        let accepted = drag::start(app, window, content).await?;
+        return Ok(serde_json::json!({"accepted":accepted}));
+    }
     tauri::async_runtime::spawn_blocking(move || {
+        if matches!(request, Request::Restart) {
+            let state = app.state::<ClipboardHistoryState>();
+            let slot = lock(&state.service);
+            if slot.is_some() {
+                return Err("clipboard:restart-unavailable".into());
+            }
+            let directory = app
+                .path()
+                .app_local_data_dir()
+                .map_err(|_| "clipboard:storage-failed")?
+                .join("clipboard-history");
+            store::Store::preserve_unreadable(&directory)?;
+            drop(slot);
+            let service = state.get(&app)?;
+            service.changed();
+            return serde_json::to_value(service.status()?)
+                .map_err(|_| "clipboard:response-failed".into());
+        }
         let service = app.state::<ClipboardHistoryState>().get(&app)?;
-        let token = if matches!(request, Request::List { .. }) {
-            service.query_revision.fetch_add(1, Ordering::AcqRel) + 1
+        let query_revision = if floating {
+            &service.floating_query_revision
+        } else {
+            &service.query_revision
+        };
+        let token = if matches!(request, Request::List { .. } | Request::PhraseList { .. }) {
+            query_revision.fetch_add(1, Ordering::AcqRel) + 1
         } else {
             0
         };
-        service.request(request, token)
+        service.request(request, token, query_revision)
     })
     .await
     .map_err(|_| "clipboard:worker-failed".to_string())?
+}
+
+fn allows_request(label: &str, request: &Request) -> bool {
+    if matches!(request, Request::Drag { .. }) {
+        return label == "screenshot-history";
+    }
+    if label == "screenshot-history" {
+        if let Request::Delete { ids } = request {
+            return ids.len() == 1 && ids[0] > 0;
+        }
+    }
+    label == "main"
+        || (label == "screenshot-history"
+            && matches!(
+                request,
+                Request::Status
+                    | Request::Start
+                    | Request::Stop
+                    | Request::List { .. }
+                    | Request::Detail { .. }
+                    | Request::Pin { .. }
+                    | Request::Copy { .. }
+                    | Request::Note { .. }
+                    | Request::Entry { .. }
+                    | Request::PhraseList { .. }
+                    | Request::PhraseDetail { .. }
+                    | Request::PhraseSave { .. }
+                    | Request::PhraseFromHistory { .. }
+                    | Request::PhraseDelete { .. }
+                    | Request::PhraseCopy { .. }
+                    | Request::Reorder { .. }
+                    | Request::Drag { .. }
+            ))
+}
+
+#[cfg(test)]
+mod permission_tests {
+    use super::*;
+    #[test]
+    fn only_history_window_can_start_external_drag() {
+        let action = Request::Drag {
+            collection: Collection::History,
+            id: 1,
+        };
+        assert!(allows_request("screenshot-history", &action));
+        for label in [
+            "main",
+            "screenshot-toast",
+            "screenshot-history-menu",
+            "screenshot-capture",
+            "screenshot-viewer-1",
+        ] {
+            assert!(!allows_request(label, &action));
+        }
+    }
+    #[test]
+    fn floating_history_can_delete_one_record_but_cannot_reset_or_batch_delete() {
+        for action in [
+            Request::Status,
+            Request::Start,
+            Request::Stop,
+            Request::List {
+                query: Query::default(),
+            },
+            Request::Detail { id: 1 },
+            Request::Pin { id: 1 },
+            Request::Delete { ids: vec![1] },
+            Request::Entry { id: 1 },
+            Request::Note {
+                id: 1,
+                note: "fixture".into(),
+            },
+            Request::PhraseList {
+                query: PhraseQuery::default(),
+            },
+            Request::PhraseDetail { id: 1 },
+            Request::PhraseSave {
+                id: None,
+                title: "fixture".into(),
+                text: "value".into(),
+                note: None,
+            },
+            Request::PhraseFromHistory { id: 1 },
+            Request::PhraseCopy { id: 1 },
+            Request::PhraseDelete { id: 1 },
+            Request::Copy {
+                id: 1,
+                paths: false,
+            },
+        ] {
+            assert!(allows_request("main", &action));
+            assert!(allows_request("screenshot-history", &action));
+            assert!(!allows_request("screenshot-capture", &action));
+            assert!(!allows_request("screenshot-viewer-1", &action));
+            assert!(!allows_request("screenshot-history-menu", &action));
+        }
+        for action in [
+            Request::Restart,
+            Request::Settings {
+                settings: Settings::default(),
+            },
+            Request::Delete { ids: vec![1, 2] },
+            Request::Delete { ids: vec![] },
+            Request::Delete { ids: vec![0] },
+            Request::Clear {
+                include_favorites: true,
+            },
+            Request::Favorite {
+                id: 1,
+                favorite: true,
+            },
+        ] {
+            assert!(allows_request("main", &action));
+            assert!(!allows_request("screenshot-history", &action));
+        }
+    }
 }
 
 #[tauri::command]

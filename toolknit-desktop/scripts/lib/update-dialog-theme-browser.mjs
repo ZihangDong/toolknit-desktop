@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 export async function checkUpdateDialogTheme(browser, url, output) {
   await mkdir(output, { recursive: true });
+  const { version } = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8'));
+  const currentTag = `v${version}`;
+  const latestTag = `v${Number(version.split('.')[0]) + 1}.0.0`;
   const errors = [];
   for (const theme of ['light', 'dark']) {
     for (const language of ['zh', 'en']) {
@@ -13,7 +16,7 @@ export async function checkUpdateDialogTheme(browser, url, output) {
           const target = new URL(route.request().url());
           if (target.origin === new URL(url).origin) return route.continue();
           return route.fulfill({ status: 200, contentType: 'application/json',
-            body: target.pathname.endsWith('/tags') ? JSON.stringify([{ name: 'v4.0.0' }]) : '{}' });
+            body: target.pathname.endsWith('/tags') ? JSON.stringify([{ name: latestTag }]) : '{}' });
         });
         await context.addInitScript(({ theme, language }) => {
           localStorage.setItem('toolknit.theme.v3', theme);
@@ -29,8 +32,8 @@ export async function checkUpdateDialogTheme(browser, url, output) {
         const dialog = page.locator('#updateDialog');
         await dialog.waitFor({ state: 'visible' });
         assert.equal(await dialog.evaluate(node => node.matches(':modal')), true);
-        assert.equal(await dialog.locator('[data-update-current]').textContent(), 'v3.1.0');
-        assert.equal(await dialog.locator('[data-update-latest]').textContent(), 'v4.0.0');
+        assert.equal(await dialog.locator('[data-update-current]').textContent(), currentTag);
+        assert.equal(await dialog.locator('[data-update-latest]').textContent(), latestTag);
         assert.equal(await dialog.locator('button').count(), 1, 'Only download is available');
         assert.equal(await dialog.locator('.update-dialog-symbol svg').evaluate(node => getComputedStyle(node).color),
           theme === 'light' ? 'rgb(17, 17, 17)' : 'rgb(255, 255, 255)', 'Rocket follows the monochrome theme');

@@ -74,8 +74,8 @@ assert.deepEqual(zoom.getState(), { viewMode: 'manual', zoomPercent: 1.5 });
 assert.equal(zoom.getCurrentScale(), 1.5);
 
 zoom.setZoom('manual', 2, { clientX: 200, clientY: 200 });
-assert.equal(canvasWrap.style.transform, 'translateZ(0) scale(2)');
-assert.equal(canvasWrap.style.transformOrigin, '100px 150px');
+assert.equal(canvasWrap.style.transform, 'translate3d(-100px, -150px, 0) scale(2)');
+assert.equal(canvasWrap.style.transformOrigin, '0px 0px');
 flushFrames();
 assert.equal(renderedRequests.length, 1);
 const [previewToken, previewRequest] = renderedRequests[0];

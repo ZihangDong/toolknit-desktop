@@ -4,6 +4,7 @@ export const PDF_EDITOR_LIMITS = Object.freeze({
   maxInputBytes: 150 * MEBIBYTE,
   maxPages: 500,
   maxMergeFiles: 25,
+  maxImageAssetBytes: 128 * MEBIBYTE,
   maxMergeTotalBytes: 150 * MEBIBYTE
 });
 
@@ -46,4 +47,42 @@ export const PDF_SCAN_LIMITS = Object.freeze({
   pixels: 16_000_000,
   side: 8_192,
   timeoutMs: 10 * 60 * 1000
+});
+
+export const IMAGE_PDF_LIMITS = Object.freeze({
+  inputBytes: 64 * MEBIBYTE,
+  totalInputBytes: 256 * MEBIBYTE,
+  pages: 100,
+  inputPixels: 40_000_000,
+  inputSide: 32_768,
+  renderPixels: 16_000_000,
+  renderSide: 8_192,
+  outputBytes: 100 * MEBIBYTE,
+  timeoutMs: 10 * 60 * 1000
+});
+
+export const PDF_TO_WORD_LIMITS = Object.freeze({
+  inputBytes: 64 * MEBIBYTE,
+  outputBytes: 64 * MEBIBYTE,
+  documentPages: 300,
+  selectedPages: 100,
+  itemsPerPage: 100_000,
+  items: 400_000,
+  characters: 2_000_000,
+  operationsPerPage: 250_000,
+  operations: 5_000_000,
+  renderPixels: 16_000_000,
+  renderSide: 8_192,
+  assetBytes: 32 * MEBIBYTE,
+  backgroundLayersPerPage: 16,
+  estimatedWorkingBytes: 512 * MEBIBYTE,
+  chunkBytes: 2 * MEBIBYTE,
+  timeoutMs: 10 * 60_000,
+  aiRegions: 8,
+  aiSourceIds: 512,
+  aiRequestBytes: 6 * MEBIBYTE,
+  aiResponseBytes: 256 * 1024,
+  aiRequestMs: 45_000,
+  aiConcurrency: 2,
+  aiTotalMs: 90_000
 });

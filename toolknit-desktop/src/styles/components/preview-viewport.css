@@ -1,0 +1,2 @@
+.tk-preview-viewport { overflow-anchor: none; overscroll-behavior: contain; }
+.tk-preview-viewport.is-preview-panning, .tk-preview-viewport.is-preview-panning * { cursor: grabbing; user-select: none; }

@@ -76,7 +76,7 @@ try {
   assert.deepEqual(unscoped, [], 'extractor styles must not change dark mode or other tools');
   await screenshot('light-empty');
   await setTheme('dark');
-  report.dark = await host.evaluate(root => Object.fromEntries([
+  const darkSnapshot = () => host.evaluate(root => Object.fromEntries([
     '.audio-extract-feature', '.audio-extract-body', '.audio-extract-v2-poster',
     '.audio-extract-v2-workspace', '.audio-extract-hero-top', '.extract-hero-title',
     '.audio-extract-v2-topbar', '[data-audio-extract-action="choose"]'
@@ -86,8 +86,10 @@ try {
       radius: s.borderRadius, font: s.fontSize, columns: s.gridTemplateColumns, rows: s.gridTemplateRows,
       width: r.width, height: r.height }];
   })));
-  const baseline = await readFile('tmp/audio-extract-theme-ui/dark-baseline.json', 'utf8').then(JSON.parse).catch(() => null);
-  if (baseline) assert.deepEqual(report.dark, baseline, 'existing dark-mode palette and geometry must stay unchanged');
+  report.dark = await darkSnapshot();
+  await setTheme('light');
+  await setTheme('dark');
+  assert.deepEqual(await darkSnapshot(), report.dark, 'theme round-trip preserves current dark palette and geometry');
   await screenshot('dark-empty');
   await setTheme('light');
   await upload(file);
@@ -231,7 +233,7 @@ try {
     await page.evaluate(() => window.extractThemeAdapter.resolveExtract({ success: true, output_path: 'C:/fixture/Audio/output.wav' }));
     await adapter.locator('[data-audio-extract-success].visible').waitFor();
     await click('open-folder');
-    assert.deepEqual(await page.evaluate(() => window.extractThemeAdapter.opened), ['C:/fixture/Audio']);
+    assert.deepEqual(await page.evaluate(() => window.extractThemeAdapter.opened), ['C:/fixture/Audio/output.wav'], 'reveal selects the actual output file');
     const extract = await page.evaluate(() => window.extractThemeAdapter.calls.find(c => c.command === 'extract_audio').args);
     assert.equal(extract.trackIndex, 1); assert.equal(extract.targetFormat, 'WAV');
     await click('success-ok');

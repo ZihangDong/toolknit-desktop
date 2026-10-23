@@ -122,7 +122,7 @@ export function createPdfEditorPreview({
         scale = Math.max(zoomMin, Math.min(zoomMax, zoomState.zoomPercent));
       }
       updateZoomLabel();
-      const dpr = Math.min(2, Math.max(1, windowRef?.devicePixelRatio || 1));
+      const dpr = Math.min(2, Math.max(1, windowRef?.devicePixelRatio || 1), Math.sqrt(8000000 / (base.width * base.height * scale * scale)));
       const viewport = loadedPage.getViewport({ scale: scale * dpr, rotation: displayRotation });
       const currentWrap = ensureCanvas();
       const previousCanvas = getMainCanvas();

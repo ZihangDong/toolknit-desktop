@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { access, lstat, mkdir, mkdtemp, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { ToolKnitError, throwIfAborted } from './errors.mjs';
+import { ToolKnitError, throwIfAborted, cancellationError } from './errors.mjs';
 
 const CLI_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PROJECT_ROOT = path.resolve(CLI_ROOT, '..');
@@ -72,12 +72,14 @@ function mapPptTextError(error) {
     return new ToolKnitError('PROCESSING_FAILED', message);
   }
   if (error instanceof AiProviderError) {
+    if (error.code === 'timeout') return new ToolKnitError('PROVIDER_TIMEOUT', 'AI PPT text organization timed out.');
     if (error.code === 'invalid_config') {
       return new ToolKnitError('ENGINE_UNAVAILABLE', 'AI provider configuration is invalid or missing.');
     }
     const statusSuffix = error.code === 'http_error' && error.status ? ` (HTTP ${error.status})` : '';
     return new ToolKnitError('PROVIDER_ERROR', `The AI provider request failed${statusSuffix}.`, {
-      details: { stage: 'provider_request', providerCode: error.code, retryable: ['network_error', 'http_error', 'invalid_response'].includes(error.code) }
+      details: { stage: 'provider_request', providerCode: error.code, retryable: ['network_error', 'invalid_response'].includes(error.code)
+        || (error.code === 'http_error' && ([408, 409, 425, 429].includes(error.status) || error.status >= 500)) }
     });
   }
   return new ToolKnitError('PROCESSING_FAILED', String(error?.message || error || 'PPT text extraction failed.'));
@@ -189,11 +191,8 @@ function providerConfig(env) {
 
 async function requestAiOrganization(result, plan, options) {
   const provider = providerConfig(options.env || process.env);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  const abort = () => controller.abort();
-  options.signal?.addEventListener?.('abort', abort, { once: true });
   try {
+    throwIfAborted(options.signal);
     const { messages, source } = buildPptTextAiMessages(result, {
       ai_mode: plan.ai_mode,
       locale: result.locale || 'zh-CN'
@@ -204,7 +203,8 @@ async function requestAiOrganization(result, plan, options) {
       model: provider.model,
       messages,
       maxTokens: 4096,
-      signal: controller.signal,
+      signal: options.signal,
+      timeoutMs: REQUEST_TIMEOUT_MS,
       fetchImpl: options.fetchImpl
     });
     return {
@@ -213,9 +213,9 @@ async function requestAiOrganization(result, plan, options) {
       content: String(content || '').trim(),
       source
     };
-  } finally {
-    clearTimeout(timeout);
-    options.signal?.removeEventListener?.('abort', abort);
+  } catch (error) {
+    if (options.signal?.aborted) throw cancellationError(options.signal);
+    throw error;
   }
 }
 
@@ -246,6 +246,7 @@ export async function extractPptText(args, options = {}) {
     throwIfAborted(options.signal);
     report(options, 16, 'Extracting slide text and speaker notes.');
     const manifest = await analyzePptxText(inputBytes, { sourceName: input.name });
+    throwIfAborted(options.signal);
     if (manifest.text_characters < 1) {
       throw new PptTextExtractError('no_text', 'No extractable text was found in this PPTX.');
     }
@@ -307,6 +308,7 @@ export async function extractPptText(args, options = {}) {
       };
       report(options, 72, 'Writing PPT text outputs.');
       for (const format of outputFormats(plan.format)) {
+        throwIfAborted(options.signal);
         const fileName = outputFileName(format);
         const temporaryPath = path.join(temporaryDirectory, fileName);
         await writeFile(temporaryPath, serializeOutput(format, result), { encoding: 'utf8', flag: 'wx', mode: 0o600 });
@@ -322,6 +324,7 @@ export async function extractPptText(args, options = {}) {
       }
       await writeFile(path.join(temporaryDirectory, 'manifest.json'), `${JSON.stringify(result, null, 2)}\n`, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
       report(options, 94, 'Publishing PPT text output directory.');
+      throwIfAborted(options.signal);
       await rename(temporaryDirectory, finalDirectory);
       report(options, 100, 'Published PPT text extraction outputs.');
       return result;

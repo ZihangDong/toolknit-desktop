@@ -669,16 +669,34 @@ mod tests {
             },
             _ => panic!("expected image"),
         }
-        write(&Content::Image { png: png.clone(), width: 4, height: 3 }, false, false).unwrap();
-        assert!(matches!(rx.recv_timeout(std::time::Duration::from_secs(3)).unwrap(), Notice::Skipped));
+        write(
+            &Content::Image {
+                png: png.clone(),
+                width: 4,
+                height: 3,
+            },
+            false,
+            false,
+        )
+        .unwrap();
+        assert!(matches!(
+            rx.recv_timeout(std::time::Duration::from_secs(3)).unwrap(),
+            Notice::Skipped
+        ));
         settings.lock().unwrap().images = false;
         super::super::copy_screenshot_image(png.clone(), 4, 3).unwrap();
-        assert!(matches!(rx.recv_timeout(std::time::Duration::from_secs(3)).unwrap(), Notice::Skipped));
+        assert!(matches!(
+            rx.recv_timeout(std::time::Duration::from_secs(3)).unwrap(),
+            Notice::Skipped
+        ));
         settings.lock().unwrap().images = true;
         settings.lock().unwrap().text = true;
         super::super::copy_screenshot_text("Synthetic screenshot OCR\n中文".into()).unwrap();
         match rx.recv_timeout(std::time::Duration::from_secs(3)).unwrap() {
-            Notice::Capture(capture) => assert_eq!(normalize(capture.raw).unwrap().searchable(), "Synthetic screenshot OCR\n中文"),
+            Notice::Capture(capture) => assert_eq!(
+                normalize(capture.raw).unwrap().searchable(),
+                "Synthetic screenshot OCR\n中文"
+            ),
             _ => panic!("expected screenshot text"),
         }
         let paths = vec![std::env::current_exe()

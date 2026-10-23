@@ -1,4 +1,5 @@
 import { applyTranslations } from '../../i18n.js';
+import { prepareToolPageChrome } from '../../shared/tool-page-chrome.js';
 import '../../styles/components/ppt-workbench.css';
 import '../../styles/themes/ppt-tools-light.css';
 import { createPptDraftController } from './controller.js';
@@ -19,6 +20,7 @@ export function initPptDraftTool(context = {}) {
   if (!overlay) throw new Error('ppt-draft:missing-overlay');
   overlay.innerHTML = pptDraftPageTemplate();
   const portal = mountPortal();
+  prepareToolPageChrome(portal);
   applyTranslations();
   refreshIcons();
   const controller = createPptDraftController({ ...context, overlay });

@@ -122,6 +122,8 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
   !include MultiUser.nsh
 !endif
 
+!include "${TOOLKNIT_WINDOWS_DIR}\upgrade.nsh"
+
 !if "${INSTALLERICON}" != ""
   !define MUI_ICON "${INSTALLERICON}"
 !endif
@@ -168,6 +170,7 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 Var ReinstallPageCheck
 Page custom PageReinstall PageLeaveReinstall
 Function PageReinstall
+  StrCpy $WixMode 0
   StrCpy $0 0
   wix_loop:
     EnumRegKey $1 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" $0
@@ -187,7 +190,9 @@ Function PageReinstall
 
   ReadRegStr $R0 SHCTX "${UNINSTKEY}" ""
   ReadRegStr $R1 SHCTX "${UNINSTKEY}" "UninstallString"
-  ${IfThen} "$R0$R1" == "" ${|} Abort ${|}
+  ReadRegStr $R4 SHCTX "${UNINSTKEY}" "DisplayVersion"
+  ReadRegStr $R5 SHCTX "${UNINSTKEY}" "InstallLocation"
+  ${IfThen} "$R0$R1$R4$R5" == "" ${|} Abort ${|}
 
   compare_version:
   StrCpy $R4 "$(older)"
@@ -200,6 +205,7 @@ Function PageReinstall
 
   nsis_tauri_utils::SemverCompare "${VERSION}" $R0
   Pop $R0
+  StrCpy $PreviousVersionComparison $R0
   ${If} $R0 = 0
     StrCpy $R1 "$(alreadyInstalledLong)"
     StrCpy $R2 "$(addOrReinstall)"
@@ -263,7 +269,11 @@ Function PageReinstallUpdateSelection
   ${EndIf}
 FunctionEnd
 Function PageLeaveReinstall
-  ${NSD_GetState} $R2 $R1
+  ${If} $PassiveMode = 1
+    StrCpy $R1 1
+  ${Else}
+    ${NSD_GetState} $R2 $R1
+  ${EndIf}
 
   ${If} $WixMode = 1
     Goto reinst_uninstall
@@ -273,19 +283,19 @@ Function PageLeaveReinstall
     Goto reinst_done
   ${EndIf}
 
-  ${If} $R0 = 0
+  ${If} $PreviousVersionComparison = 0
     ${If} $R1 = 1
       Goto reinst_done
     ${Else}
       Goto reinst_uninstall
     ${EndIf}
-  ${ElseIf} $R0 = 1
+  ${ElseIf} $PreviousVersionComparison = 1
     ${If} $R1 = 1
       Goto reinst_uninstall
     ${Else}
       Goto reinst_done
     ${EndIf}
-  ${ElseIf} $R0 = -1
+  ${ElseIf} $PreviousVersionComparison = -1
     ${If} $R1 = 1
       Goto reinst_uninstall
     ${Else}
@@ -294,39 +304,54 @@ Function PageLeaveReinstall
   ${EndIf}
 
   reinst_uninstall:
-    HideWindow
-    ClearErrors
-
     ${If} $WixMode = 1
-      ReadRegStr $R1 HKLM "$R6" "UninstallString"
-      ExecWait '$R1' $0
+      StrCpy $PreviousInstallDir ""
+      ReadRegStr $PreviousUninstallCommand HKLM "$R6" "UninstallString"
     ${Else}
-      ReadRegStr $4 SHCTX "${MANUPRODUCTKEY}" ""
-      ReadRegStr $R1 SHCTX "${UNINSTKEY}" "UninstallString"
-      ${IfThen} $UpdateMode = 1 ${|} StrCpy $R1 "$R1 /UPDATE" ${|}
-      ${IfThen} $PassiveMode = 1 ${|} StrCpy $R1 "$R1 /P" ${|}
-      StrCpy $R1 "$R1 _?=$4"
-      ExecWait '$R1' $0
+      Call PreparePreviousUninstaller
+      ${If} $PreviousUninstallStatus != ""
+        Goto reinst_failed
+      ${EndIf}
+      !insertmacro CheckIfAppIsRunning "$PreviousMainBinary" "${PRODUCTNAME}"
+      StrCpy $ToolKnitFileToCheck "$PreviousInstallDir\$PreviousMainBinary"
+      Call ToolKnitWaitForFileRelease
+      ${If} $ToolKnitFileError != 0
+        StrCpy $PreviousUninstallStatus "file-busy-or-denied"
+        StrCpy $PreviousUninstallExitCode $ToolKnitFileError
+        Goto reinst_failed
+      ${EndIf}
     ${EndIf}
-
+    HideWindow
+    Call InvokePreviousUninstaller
     BringToFront
-
-    ${IfThen} ${Errors} ${|} StrCpy $0 2 ${|}
-
-    ${If} $0 <> 0
-    ${OrIf} ${FileExists} "$INSTDIR\${MAINBINARYNAME}.exe"
-      ${If} $WixMode = 1
-      ${AndIf} $0 = 1602
-        Abort
+    ${If} $PreviousUninstallStatus == ""
+      ${If} $PreviousVersionComparison = 0
+      ${AndIf} $WixMode != 1
+        SetErrorLevel 0
+        Quit
       ${EndIf}
-
-      ${If} $0 = 1
-        Abort
+      Goto reinst_done
+    ${EndIf}
+    ${If} $PreviousUninstallStatus == "cancelled"
+      ${If} $PassiveMode = 1
+        SetErrorLevel 1602
+        Quit
       ${EndIf}
-
-      MessageBox MB_ICONEXCLAMATION "$(unableToUninstall)"
       Abort
     ${EndIf}
+    ${If} $PreviousUninstallStatus == "reboot-required"
+      MessageBox MB_ICONINFORMATION "$(upgradeUninstallReboot)" /SD IDOK
+      SetErrorLevel 3010
+      Quit
+    ${EndIf}
+  reinst_failed:
+    MessageBox MB_ICONEXCLAMATION|MB_RETRYCANCEL "$(upgradeUninstallFailed)" /SD IDCANCEL IDRETRY reinst_uninstall
+    ${If} $PassiveMode = 1
+    ${OrIf} ${Silent}
+      SetErrorLevel 1603
+      Quit
+    ${EndIf}
+    Abort
   reinst_done:
 FunctionEnd
 
@@ -419,6 +444,12 @@ LangString webview2Manual ${LANG_ENGLISH} "Open Microsoft's official WebView2 do
 LangString webview2Manual ${LANG_SIMPCHINESE} "是否打开微软官方 WebView2 下载页？请安装 Evergreen 独立安装程序，再重新运行 ToolKnit 安装器。"
 LangString webview2Reboot ${LANG_ENGLISH} "WebView2 setup requires a Windows restart. ToolKnit has been installed but will not start automatically. Save your work and restart Windows before opening ToolKnit."
 LangString webview2Reboot ${LANG_SIMPCHINESE} "WebView2 安装需要重启 Windows。ToolKnit 已安装，但不会立即启动。请保存工作并自行重启电脑后再打开 ToolKnit。"
+LangString upgradeUninstallFailed ${LANG_ENGLISH} "The previous version could not be removed ($PreviousUninstallStatus / $PreviousUninstallExitCode).$\nPrevious folder: $PreviousInstallDir$\nExit ToolKnit from the system tray, check folder permissions and keep the same installation scope, then Retry. If the uninstaller is missing, repair the old installation first. Cancel stops setup without clearing user data."
+LangString upgradeUninstallFailed ${LANG_SIMPCHINESE} "旧版本处理未完成（$PreviousUninstallStatus / $PreviousUninstallExitCode）。$\n旧版目录：$PreviousInstallDir$\n请从系统托盘退出 ToolKnit，检查目录权限并保持原安装范围后重试。若卸载程序缺失，请先修复旧版安装。取消将停止安装，不会清理用户数据。"
+LangString upgradeUninstallReboot ${LANG_ENGLISH} "Removing the previous version requires a Windows restart. Setup has stopped to protect the new files. Save your work, restart Windows yourself, then run this installer again."
+LangString upgradeUninstallReboot ${LANG_SIMPCHINESE} "旧版本卸载需要重启 Windows。本次安装已停止，避免重启时误删新版文件。请保存工作、自行重启电脑后，再运行本安装包。"
+LangString appFileReleaseFailed ${LANG_ENGLISH} "Application files are still in use or access was denied (Windows code $ToolKnitFileError).$\n$ToolKnitFileToCheck$\nExit ToolKnit from the system tray and check permissions, then Retry. Cancel stops this operation."
+LangString appFileReleaseFailed ${LANG_SIMPCHINESE} "程序文件仍被占用或没有访问权限（Windows 代码 $ToolKnitFileError）。$\n$ToolKnitFileToCheck$\n请从系统托盘退出 ToolKnit 并检查权限后重试；取消将停止操作。"
 
 Function .onInit
   ; NSIS has already parsed /D= here; MultiUser initialization otherwise overwrites it.
@@ -689,6 +720,15 @@ Section Install
 
   !insertmacro CheckIfAppIsRunning "${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
 
+  install_wait_for_files:
+    StrCpy $ToolKnitFileToCheck "$INSTDIR\${MAINBINARYNAME}.exe"
+    Call ToolKnitWaitForFileRelease
+    ${If} $ToolKnitFileError != 0
+      MessageBox MB_ICONEXCLAMATION|MB_RETRYCANCEL "$(appFileReleaseFailed)" /SD IDCANCEL IDRETRY install_wait_for_files
+      SetErrorLevel 1603
+      Abort
+    ${EndIf}
+
   File "${MAINBINARYSRCPATH}"
 
   {{#each resources_dirs}}
@@ -806,14 +846,29 @@ Function un.onInit
 FunctionEnd
 
 Section Uninstall
+  !insertmacro CheckIfAppIsRunning "${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
+
+  uninstall_wait_for_files:
+    StrCpy $ToolKnitFileToCheck "$INSTDIR\${MAINBINARYNAME}.exe"
+    Call un.ToolKnitWaitForFileRelease
+    ${If} $ToolKnitFileError = 0
+      ${If} ${FileExists} "$ToolKnitFileToCheck"
+        ClearErrors
+        Delete "$ToolKnitFileToCheck"
+        ${If} ${Errors}
+          StrCpy $ToolKnitFileError 5
+        ${EndIf}
+      ${EndIf}
+    ${EndIf}
+    ${If} $ToolKnitFileError != 0
+      MessageBox MB_ICONEXCLAMATION|MB_RETRYCANCEL "$(appFileReleaseFailed)" /SD IDCANCEL IDRETRY uninstall_wait_for_files
+      SetErrorLevel 1603
+      Abort
+    ${EndIf}
 
   !ifmacrodef NSIS_HOOK_PREUNINSTALL
     !insertmacro NSIS_HOOK_PREUNINSTALL
   !endif
-
-  !insertmacro CheckIfAppIsRunning "${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
-
-  Delete "$INSTDIR\${MAINBINARYNAME}.exe"
 
   {{#each resources}}
     Delete "$INSTDIR\\{{this.[1]}}"

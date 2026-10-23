@@ -48,6 +48,7 @@ html[data-theme="light"] :is(.clipboard-history, .clipboard-modal-overlay) {
 .clipboard-toolbar { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 0 18px; align-items: center; }
 .clipboard-search { min-width: 170px; flex: 1 1 230px; display: flex; align-items: center; gap: 10px; padding: 0 12px; height: 40px; background: var(--clipboard-soft); border: 1px solid var(--clipboard-line); border-radius: 8px; }
 html[data-theme] .clipboard-history .clipboard-search input { color: var(--clipboard-ink); background: transparent; border: 0; outline: 0; box-shadow: none; min-width: 0; width: 100%; font: inherit; font-size: 13px; }
+html[data-theme] .clipboard-history .clipboard-search input::placeholder { color: var(--clipboard-muted); opacity: 1; }
 .clipboard-search:focus-within { border-color: var(--clipboard-ink); }
 .clipboard-search svg { width: 16px; height: 16px; color: var(--clipboard-muted); flex-shrink: 0; }
 .clipboard-toolbar .tool-custom-select { width: 122px; }

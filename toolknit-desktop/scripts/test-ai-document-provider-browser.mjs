@@ -4,6 +4,7 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { createServer } from 'vite';
 import { AI_DOC_EDITOR_DEMO_LAYOUT } from '../src/features/ai-document/prompts.js';
+import zh from '../src/locales/zh.json' with { type: 'json' };
 
 const require = createRequire(process.env.TOOLKNIT_TEST_MODULES
   ? path.join(process.env.TOOLKNIT_TEST_MODULES, 'package.json') : import.meta.url);
@@ -55,7 +56,7 @@ try {
   await card.evaluate(node => node.click());
   await page.waitForSelector('#aiDocOverlay.visible');
   for (const [nextMode, expected] of [['truncated', '输出长度上限'], ['empty', '未返回正文'], ['http', '429'],
-    ['json-404', '404'], ['plain-404', '404'], ['network', 'API 调用失败']]) {
+    ['json-404', '404'], ['plain-404', '404'], ['network', zh.home.aiRequestErrors.network]]) {
     mode = nextMode;
     await page.locator('#aiDocChatInput').fill('Create a synthetic one-page QA document.');
     await page.locator('#aiDocChatSend').click();

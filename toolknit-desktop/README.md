@@ -8,7 +8,7 @@
 
 - Windows 10 1803（内部版本 17134）及以上，或 Windows 11。
 - 推荐 Node.js 24；Vite 8 要求 Node.js 20.19+ 或 22.12+。
-- 构建原生应用需要 Rust stable、Visual Studio C++ Build Tools、Windows SDK 和 WebView2。
+- 构建原生应用需要 Rust stable 1.90+、Visual Studio C++ Build Tools、Windows SDK 和 WebView2。
 
 从仓库根目录进入本目录后运行：
 

@@ -1,7 +1,9 @@
 import { resizePdfBoxFromHandle, rotatePdfDeltaToLocal } from '../../pdf-editor-geometry.js';
+import { insertedTextLayout } from '../../core/pdf-inserted-text.js';
 import {
   editedTextVisualBox,
   insertedTextVisualBox,
+  insertedComponentViewport,
   rectToViewport,
   sourceTextBox
 } from './text-layout.js';
@@ -154,8 +156,12 @@ export function createPdfEditorComponentInteraction({
         aspectRatio: component.type === 'inserted-image' && baseObject.aspectRatioLocked !== false
           ? baseObject.originalAspectRatio : undefined }
     );
-    object.x = resized.x;
-    object.y = resized.y;
+    const centerX = baseObject.x + baseObject.width / 2, centerY = baseObject.y + baseObject.height / 2;
+    // Local resizing shifts the center; rotate that shift to keep the opposite handle fixed.
+    const centerShift = rotatePdfDeltaToLocal(resized.x + resized.width / 2 - centerX,
+      resized.y + resized.height / 2 - centerY, Number(baseObject.rotation) || 0);
+    object.x = centerX + centerShift.x - resized.width / 2;
+    object.y = centerY + centerShift.y - resized.height / 2;
     object.width = resized.width;
     object.height = resized.height;
     const selected = getSelectedComponent();
@@ -221,15 +227,15 @@ export function createPdfEditorComponentInteraction({
         width: Math.max(1, Number(object.width) || 1),
         height: Math.max(1, Number(object.height) || 1)
       };
-    const rect = rectToViewport(cache.cssViewport, box);
+    const rect = insertedComponentViewport(cache.cssViewport, box, object.rotation);
     element.style.left = rect.left + 'px';
     element.style.top = rect.top + 'px';
     element.style.width = Math.max(1, rect.width) + 'px';
     element.style.height = Math.max(1, rect.height) + 'px';
-    element.style.transform = `rotate(${Number(object.rotation) || 0}deg)`;
+    element.style.transform = `rotate(${rect.rotation}deg)`;
     if (component.type === 'inserted-text') {
       element.style.fontSize = Math.max(1, (Number(object.fontSize) || 16) * cache.scale) + 'px';
-      element.style.lineHeight = Math.max(1, rect.height) + 'px';
+      element.style.lineHeight = Math.max(1, insertedTextLayout(object).lineHeight * cache.scale) + 'px';
     } else if (component.type === 'inserted-shape') {
       const existing = element.querySelector('svg');
       if (existing) existing.remove();
@@ -381,7 +387,7 @@ export function createPdfEditorComponentInteraction({
       startClientX: event.clientX,
       startClientY: event.clientY,
       handle,
-      rotation: Number(liveObject?.rotation) || getComponentRotation(component),
+      rotation: Number.isFinite(Number(liveObject?.rotation)) ? Number(liveObject.rotation) : getComponentRotation(component),
       cache
     };
     const onMove = moveEvent => {
@@ -399,7 +405,7 @@ export function createPdfEditorComponentInteraction({
       const localDelta = rotatePdfDeltaToLocal(
         currentPdf[0] - startPdf[0],
         currentPdf[1] - startPdf[1],
-        dragState.rotation
+        -dragState.rotation
       );
       applyComponentResize(
         dragState.component,

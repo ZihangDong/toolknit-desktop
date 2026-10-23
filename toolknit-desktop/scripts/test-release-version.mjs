@@ -141,8 +141,15 @@ const desktopToolCount = Object.keys(LAZY_TOOL_SPECS).length;
 assert.match(repositoryReadme, new RegExp(`^${desktopToolCount} 项桌面工具 ·`, 'm'), 'Repository README must match the current desktop catalog');
 assert.match(zhHelpSource, new RegExp(`${desktopToolCount} 个桌面工具`), 'Chinese help overview must match the desktop catalog');
 assert.match(enHelpSource, new RegExp(`${desktopToolCount} desktop tools`), 'English help overview must match the desktop catalog');
-assert.match(repositoryReadme, /\*\*46 项 CLI \/ MCP 能力\*\*/, 'Repository README must state the 46-capability MCP contract');
-assert.match(releaseNotes, new RegExp(`^# ToolKnit Desktop ${escapeRegExp(fullVersion)}\\s*$`, 'm'), 'Release notes heading must match package.json version');
+assert.match(repositoryReadme, /\*\*77 项 CLI \/ MCP 能力\*\*/, 'Repository README must state the current 77-capability MCP contract');
+const publishedVersion = captureExactlyOnce(releaseNotes, /^# ToolKnit Desktop (\d+\.\d+\.\d+)\r?\n/, 'Published release version');
+const versionParts = value => value.split('.').map(Number);
+const publishedParts = versionParts(publishedVersion), currentParts = versionParts(fullVersion);
+const firstDifference = publishedParts.findIndex((part, index) => part !== currentParts[index]);
+assert.ok(firstDifference === -1 || publishedParts[firstDifference] < currentParts[firstDifference], 'Published notes cannot announce an unreleased future version');
+if (publishedVersion !== fullVersion) {
+  assert.match(await readText('../changelog.md'), new RegExp(`^## V${escapeRegExp(seriesVersion)}（未发布）`, 'm'), 'A development version must have an unreleased changelog section');
+}
 // Published notes retain their release catalog while the next version is developed.
 const releasedToolCount = Number(captureExactlyOnce(releaseNotes,
   /^- \d+ 个分类、(\d+) 项工具/m, 'Published desktop catalog'));
@@ -151,7 +158,7 @@ const publishedSeriesVersion = captureExactlyOnce(releaseNotes,
 assert.ok(releasedToolCount > 0 && releasedToolCount <= desktopToolCount,
   'Published catalog must be valid and no larger than the current catalog');
 if (releasedToolCount !== desktopToolCount) {
-  assert.match(repositoryReadme, /安装包发布状态以下载页为准/,
+  assert.match(repositoryReadme, /https:\/\/toolknit\.com\/exe\.html/,
     'Source documentation must direct readers to the download page for installer availability');
 }
 assert.match(releaseNotes, /46 项已发布能力/, 'Release notes must state the 46-capability CLI and MCP contract');
@@ -196,7 +203,7 @@ for (const [label, actual] of runtimeVersions) {
 }
 
 for (const source of [
-  'cli/lib/transcription-runtime.mjs',
+  'cli/lib/model-download.mjs',
   'src-tauri/src/ai_provider.rs',
   'src-tauri/src/onnx_segmenter.rs',
   'src-tauri/src/native_runtime/dependencies.rs',

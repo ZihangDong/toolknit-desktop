@@ -18,7 +18,23 @@ toolknit doctor --json
 npm install -g @toolknit/cli --registry=https://registry.npmjs.org
 ```
 
-需要 Node.js `>= 20.12.0`。
+需要 Node.js `>= 22.13.0`。
+
+## V3.2 能力
+
+当前源码准备 **77 项 CLI/MCP 能力**，V3.2 npm 尚未发布。完整名称、参数和桌面覆盖边界见随包提供的 [能力清单](guides/CLI_CAPABILITIES.md)。
+
+```powershell
+toolknit tools list --json
+toolknit tools coverage --json
+toolknit tools describe toolknit_pdf_to_word --json
+toolknit pdf to-word --input .\report.pdf --output .\result.docx --layout original --json
+toolknit image to-pdf --input .\first.png --input .\second.jpg --output .\images.pdf --json
+toolknit excel to-pdf --input .\book.xlsx --output .\book.pdf --json
+toolknit run toolknit_image_crop --arguments-file .\crop-request.json --json
+```
+
+新增图像扫描 PDF、PDF 转 Word/文本/页码/裁剪/空白页、图像处理与图标包、文本整理、AI 润色/翻译、开发者和计算工具、Markdown HTML、只读文件扫描。历史命令保持兼容；所有 MCP 能力也可通过 `run` 和结构化 JSON 调用。
 
 ## 适合谁
 
@@ -116,7 +132,7 @@ PDF、图片、音视频、文本和非 AI PPT 等本地工具不需要 AI Key�
 ```
 
 ```text
-请用 ToolKnit 生成一份可编辑 AI 文档，主题是“开源工具箱 V2.3 发布说明”，输出 PDF、预览图和控件编号图。生成后先检查编号图，如果版式空白或元素重叠，请继续调整工程文件并重新渲染。
+请用 ToolKnit 生成一份可编辑 AI 文档，主题是“ToolKnit 工具箱使用指南”，输出 PDF、预览图和控件编号图。生成后先检查编号图，如果版式空白或元素重叠，请继续调整工程文件并重新渲染。
 ```
 
 查看完整中英文 Agent 手册：
@@ -133,8 +149,8 @@ toolknit agent guide --lang en
 - 密码不通过命令行参数传递，避免出现在历史记录里。
 - FFmpeg 不随 npm 包内置；CLI 会依次使用 `TOOLKNIT_FFMPEG_PATH`、ToolKnit Desktop 设置页下载的共享运行时或系统 PATH。
 - PPT 转 PDF / PPT 转图片依赖 LibreOffice；可安装 LibreOffice，或设置 `TOOLKNIT_LIBREOFFICE_PATH` 指向 `soffice.com` / `soffice.exe` / `soffice`。
-- 文件处理默认本地执行；只有 AI 文档、AI 表格、PPT 文本 AI 整理、AI 生成 PPT 大纲、AI 生成 PPT 草稿 / PPTX 和转写后的可选 `refine` 校对会调用你自己配置的 AI 服务。
+- 文件处理默认本地执行；AI 文档/表格、AI 润色/翻译、PDF AI Markdown、显式开启的 Word 排版辅助、PPT AI 工作流和转写后的 `refine` 校对会调用你自己配置的 AI 服务。
 
 ## 许可证
 
-PolyForm Noncommercial 1.0.0：新授权的作者代码仅限非商业用途；商业使用需联系作者另行授权。旧 Apache-2.0 授权及第三方许可不变，详见 LICENSE、NOTICE 和 LICENSES。
+PDF 转 Word 引擎及派生适配器遵循独立源码观摩许可；普通使用官方 CLI 按官方应用例外执行，提取、集成、修改或商用授权请联系 info@toolknit.com。其余新授权自有代码遵循 PolyForm Noncommercial 1.0.0：新授权的作者代码仅限非商业用途；商业使用需联系作者另行授权。旧 Apache-2.0 授权及第三方许可不变，详见 LICENSE、NOTICE 和 LICENSES。

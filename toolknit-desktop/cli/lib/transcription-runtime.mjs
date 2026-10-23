@@ -1,22 +1,26 @@
-import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { createWriteStream } from 'node:fs';
-import { access, link, lstat, mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { finished } from 'node:stream/promises';
+import { access, copyFile, link, lstat, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { compactFfmpegError, resolveFfmpeg, runFfmpeg } from './ffmpeg-runtime.mjs';
-import { cancellationError, isCancellationError, ToolKnitError, throwIfAborted } from './errors.mjs';
+import { cancellationError, ToolKnitError, throwIfAborted } from './errors.mjs';
+import { downloadVerifiedModel } from './model-download.mjs';
+import { assertNoLinkedParents, writeOutputFile } from './safe-files.mjs';
+import { createWhisperWorkspace, stageWhisperModel } from './transcription-workspace.mjs';
 import { isPlaceholderAiApiKey, requestAiCompletion } from './core/ai-provider-core.js';
 import { simplifyChineseText, simplifyTranscriptionJson } from './core/core/chinese-text.js';
 
 const CLI_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PROJECT_ROOT = path.resolve(CLI_ROOT, '..');
-const MODEL_ROOT = path.join(process.env.APPDATA || process.env.XDG_CONFIG_HOME || path.join(process.cwd(), '.toolknit'), 'ToolKnit', 'models');
-const MODEL_CONFIG = path.join(process.env.APPDATA || process.env.XDG_CONFIG_HOME || path.join(process.cwd(), '.toolknit'), 'ToolKnit', 'transcription-model.json');
+const CONFIG_ROOT = process.env.APPDATA || process.env.XDG_CONFIG_HOME
+  || (process.platform === 'win32' ? path.join(os.homedir(), 'AppData', 'Roaming') : path.join(process.cwd(), '.toolknit'));
+const MODEL_ROOT = path.join(CONFIG_ROOT, 'ToolKnit', 'models');
+const MODEL_CONFIG = path.join(CONFIG_ROOT, 'ToolKnit', 'transcription-model.json');
 const MAX_INPUT_BYTES = 10 * 1024 * 1024 * 1024;
 const EXTENSIONS = new Set(['mp3', 'aac', 'm4a', 'wav', 'flac', 'alac', 'ogg', 'wma', 'mp4', 'mkv', 'avi', 'mov', 'webm', 'flv', 'wmv', 'ts']);
+let transcriptionActive = false;
 const MODELS = Object.freeze([
   { id: 'base', display_name: 'Base', file_name: 'ggml-base.bin', bytes: 147951465, sha256: '60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe' },
   { id: 'small', display_name: 'Small', file_name: 'ggml-small.bin', bytes: 487601967, sha256: '1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b' },
@@ -40,7 +44,7 @@ async function regularFile(filePath) {
 }
 
 async function installed(model) {
-  try { const info = await stat(modelPath(model)); return info.isFile() && info.size === model.bytes; } catch { return false; }
+  try { await assertNoLinkedParents(modelPath(model)); const info = await lstat(modelPath(model)); return info.isFile() && !info.isSymbolicLink() && info.size === model.bytes; } catch { return false; }
 }
 
 async function config() {
@@ -51,8 +55,7 @@ async function config() {
 }
 
 async function saveConfig(value) {
-  await mkdir(path.dirname(MODEL_CONFIG), { recursive: true });
-  await writeFile(MODEL_CONFIG, JSON.stringify(value, null, 2), { encoding: 'utf8', mode: 0o600 });
+  await writeOutputFile(MODEL_CONFIG, Buffer.from(JSON.stringify(value, null, 2)), { overwrite: true });
 }
 
 function sourceUrl(model, source) {
@@ -64,13 +67,6 @@ function sourceUrl(model, source) {
       : null;
   if (!base) throw new ToolKnitError('INVALID_ARGUMENT', '--source must be auto, official, or china.');
   return `${base}/${model.file_name}`;
-}
-
-async function sha256(filePath) {
-  const hash = createHash('sha256');
-  const stream = (await import('node:fs')).createReadStream(filePath);
-  for await (const chunk of stream) hash.update(chunk);
-  return hash.digest('hex');
 }
 
 export async function listTranscriptionModels() {
@@ -92,68 +88,17 @@ export async function installTranscriptionModel({ model_id, source = 'auto' }, o
     throw new ToolKnitError('INVALID_ARGUMENT', '--source must be auto, official, or china.');
   }
   throwIfAborted(options.signal);
+  await assertNoLinkedParents(MODEL_ROOT);
   await mkdir(MODEL_ROOT, { recursive: true });
   const destination = modelPath(model);
-  const partial = `${destination}.part`;
-  if (await installed(model) && await sha256(destination) === model.sha256) {
-    return { tool: 'model.install', model_id: model.id, path: destination, already_installed: true, current: (await config()).current_model === model.id };
-  }
-  await rm(destination, { force: true });
   const candidates = normalizedSource === 'auto' ? ['auto', 'china'] : [normalizedSource];
-  let lastError = null;
-  for (const candidate of candidates) {
-    throwIfAborted(options.signal);
-    let stream = null;
-    try {
-      // Re-read the .part size for every source. A connection can fail after
-      // writing more bytes, so using the original offset would corrupt a retry.
-      let start = 0;
-      try { start = (await stat(partial)).size; } catch {}
-      if (start > model.bytes) { await rm(partial, { force: true }); start = 0; }
-      const headers = { 'User-Agent': 'ToolKnit/3.1.0 offline-model-manager' };
-      if (start > 0) headers.Range = `bytes=${start}-`;
-      const response = await fetch(sourceUrl(model, candidate), { headers, redirect: 'follow', signal: options.signal });
-      if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);
-      const append = start > 0 && response.status === 206;
-      if (!append && start > 0) { await rm(partial, { force: true }); start = 0; }
-      stream = createWriteStream(partial, { flags: append ? 'a' : 'w' });
-      let downloaded = append ? start : 0;
-      report(options, 0, `Downloading ${model.display_name} model.`);
-      for await (const chunk of response.body) {
-        throwIfAborted(options.signal);
-        const nextDownloaded = downloaded + chunk.length;
-        if (!Number.isSafeInteger(nextDownloaded) || nextDownloaded > model.bytes) {
-          throw new Error('Downloaded file is larger than the expected model package.');
-        }
-        if (!stream.write(chunk)) await new Promise(resolve => stream.once('drain', resolve));
-        downloaded = nextDownloaded;
-        report(options, Math.min(94, downloaded / model.bytes * 94), `Downloading ${model.display_name}: ${Math.floor(downloaded / 1024 / 1024)} MB / ${Math.ceil(model.bytes / 1024 / 1024)} MB`);
-      }
-      stream.end(); await finished(stream);
-      if (downloaded !== model.bytes) throw new Error('Downloaded file size does not match the expected model package.');
-      report(options, 96, 'Verifying model integrity.');
-      if (await sha256(partial) !== model.sha256) throw new Error('Model integrity check failed.');
-      await rename(partial, destination);
-      const current = await config();
-      if (!current.current_model || model.id === 'small') await saveConfig({ current_model: model.id });
-      const result = { tool: 'model.install', model_id: model.id, path: destination, current: (await config()).current_model === model.id, source: candidate === 'auto' ? 'official' : candidate };
-      report(options, 100, `${model.display_name} model is ready.`);
-      return result;
-    } catch (error) {
-      if (stream) stream.destroy();
-      if (isCancellationError(error) || options.signal?.aborted) {
-        throw cancellationError(options.signal);
-      }
-      lastError = error;
-      // A complete but invalid package cannot be resumed. Remove it before
-      // trying the fallback mirror; interrupted partial files stay resumable.
-      try {
-        if ((await stat(partial)).size >= model.bytes) await rm(partial, { force: true });
-      } catch {}
-      if (candidate !== 'auto') break;
-    }
-  }
-  throw new ToolKnitError('PROCESSING_FAILED', `Model download failed: ${String(lastError?.message || lastError)}`);
+  const result = await downloadVerifiedModel({ model, destination, signal: options.signal,
+    reportProgress: (value, message) => report(options, value, message),
+    sources: candidates.map(candidate => ({ name: candidate === 'auto' ? 'official' : candidate, url: sourceUrl(model, candidate) })) });
+  const current = await config();
+  if (!result.already_installed && (!current.current_model || model.id === 'small')) await saveConfig({ current_model: model.id });
+  report(options, 100, `${model.display_name} model is ready.`);
+  return { tool: 'model.install', model_id: model.id, path: destination, current: (await config()).current_model === model.id, ...result };
 }
 
 async function resolveWhisper() {
@@ -169,6 +114,7 @@ async function resolveWhisper() {
 async function prepareOutputDir(value) {
   if (typeof value !== 'string' || !value.trim() || value.includes('\0')) throw new ToolKnitError('INVALID_ARGUMENT', 'output_dir must be a non-empty path.');
   const output = path.resolve(value);
+  await assertNoLinkedParents(output, 'OUTPUT_INVALID');
   await mkdir(output, { recursive: true });
   const metadata = await lstat(output);
   if (!metadata.isDirectory() || metadata.isSymbolicLink()) throw new ToolKnitError('OUTPUT_INVALID', 'output_dir must be a real directory, not a symbolic link.');
@@ -178,6 +124,7 @@ async function prepareOutputDir(value) {
 async function inputFile(value) {
   if (typeof value !== 'string' || !value.trim() || value.includes('\0')) throw new ToolKnitError('INVALID_ARGUMENT', 'input_path must be a non-empty path.');
   const input = path.resolve(value);
+  await assertNoLinkedParents(input);
   let metadata;
   try { metadata = await lstat(input); } catch { throw new ToolKnitError('INPUT_NOT_FOUND', `Input does not exist: ${input}`); }
   const extension = path.extname(input).slice(1).toLowerCase();
@@ -201,7 +148,6 @@ async function spawnChecked(command, args, options = {}) {
       return;
     }
     const child = spawn(command, args, { shell: false, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
-    let stderr = '';
     let settled = false;
     let aborted = false;
     let forceKillTimer = null;
@@ -224,7 +170,7 @@ async function spawnChecked(command, args, options = {}) {
         try { child.kill('SIGTERM'); } catch {}
         forceKillTimer = setTimeout(() => {
           try {
-            if (!child.killed) child.kill('SIGKILL');
+            if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
           } catch {}
         }, 2500);
         forceKillTimer.unref?.();
@@ -232,7 +178,8 @@ async function spawnChecked(command, args, options = {}) {
     };
     options.signal?.addEventListener?.('abort', onAbort, { once: true });
     if (options.signal?.aborted) onAbort();
-    child.stderr.on('data', chunk => { if (stderr.length < 65536) stderr += chunk.toString('utf8'); });
+    child.stdout.resume();
+    child.stderr.resume();
     child.once('error', () => {
       rejectOnce(aborted || options.signal?.aborted
         ? cancellationError(options.signal)
@@ -246,7 +193,7 @@ async function spawnChecked(command, args, options = {}) {
         reject(cancellationError(options.signal));
         return;
       }
-      code === 0 ? resolve() : reject(new ToolKnitError('PROCESSING_FAILED', stderr.trim().slice(-500) || 'The transcription engine failed.'));
+      code === 0 ? resolve() : reject(new ToolKnitError('PROCESSING_FAILED', 'The local speech engine could not complete recognition.', { details: { exit_code: code } }));
     });
   });
 }
@@ -292,13 +239,15 @@ async function refineSrt(rawSrt, options) {
     try {
       completion = await requestAiCompletion({
         url: process.env.TOOLKNIT_AI_API_URL || 'https://api.deepseek.com/v1/chat/completions', apiKey,
-        model: process.env.TOOLKNIT_AI_MODEL || 'deepseek-chat', maxTokens: 4000, signal: options.signal,
+        model: process.env.TOOLKNIT_AI_MODEL || 'deepseek-chat', maxTokens: 4000, signal: options.signal, timeoutMs: 120000,
         messages: [
           { role: 'system', content: 'Return JSON only: {"segments":[{"id":number,"text":string}]}. Proofread speech-recognition subtitles. Keep exactly the supplied IDs in the same order. Never add, remove, merge, or split segments; do not invent missing words, names, numbers, or facts. Correct punctuation, grammar, and only clearly contextual recognition errors.' },
           { role: 'user', content: JSON.stringify({ segments: chunk.map(({ id, text }) => ({ id, text })) }) }
         ]
       });
-    } catch {
+    } catch (error) {
+      if (options.signal?.aborted) throw cancellationError(options.signal);
+      if (error?.code === 'timeout') throw new ToolKnitError('PROVIDER_TIMEOUT', 'AI refinement timed out. Original files were kept.');
       throw new ToolKnitError('PROCESSING_FAILED', 'AI refinement request failed. Original files were kept.');
     }
     parseRefinement(completion, new Set(chunk.map(segment => segment.id))).forEach((text, id) => edits.set(id, text));
@@ -310,7 +259,15 @@ async function refineSrt(rawSrt, options) {
   };
 }
 
-export async function transcribeMedia({ input_path, output_dir, language = 'auto', refine = false }, options = {}) {
+export async function transcribeMedia(args, options = {}) {
+  throwIfAborted(options.signal);
+  if (transcriptionActive) throw new ToolKnitError('PROCESSING_FAILED', 'A local transcription job is already active. Wait for it to finish or cancel it.');
+  transcriptionActive = true;
+  try { return await performTranscription(args, options); }
+  finally { transcriptionActive = false; }
+}
+
+async function performTranscription({ input_path, output_dir, language = 'auto', refine = false }, options) {
   throwIfAborted(options.signal);
   const input = await inputFile(input_path);
   const output = await prepareOutputDir(output_dir);
@@ -323,8 +280,11 @@ export async function transcribeMedia({ input_path, output_dir, language = 'auto
   if (!await installed(model)) throw new ToolKnitError('ENGINE_UNAVAILABLE', 'No current offline transcription model is installed. Run: toolknit model install small');
   const temporary = path.join(output, `.toolknit-transcription-${process.pid}-${Date.now()}`);
   await mkdir(temporary, { recursive: false });
+  let workspace;
   try {
-    const wav = path.join(temporary, 'input.wav');
+    workspace = await createWhisperWorkspace(temporary);
+    const modelFile = await stageWhisperModel(modelPath(model), workspace.path, options.signal);
+    const wav = path.join(workspace.path, 'input.wav');
     report(options, 3, 'Preparing audio for local recognition.');
     const ffmpeg = await resolveFfmpeg();
     const converted = await runFfmpeg(ffmpeg, ['-hide_banner', '-nostdin', '-y', '-i', input, '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', wav], { signal: options.signal });
@@ -332,8 +292,11 @@ export async function transcribeMedia({ input_path, output_dir, language = 'auto
     if (converted.code !== 0 || !await regularFile(wav)) throw new ToolKnitError('PROCESSING_FAILED', compactFfmpegError(converted.stderr, 'FFmpeg could not prepare this media file.'));
     report(options, 16, `Recognizing speech with the ${model.display_name} model.`);
     const whisper = await resolveWhisper();
-    await spawnChecked(whisper, ['-m', modelPath(model), '-f', wav, '-l', normalizedLanguage, '-otxt', '-osrt', '-oj', '-ojf', '-np', '-of', path.join(temporary, 'transcript')], { signal: options.signal });
+    await spawnChecked(whisper, ['-m', modelFile, '-f', wav, '-l', normalizedLanguage, '-otxt', '-osrt', '-oj', '-ojf', '-np', '-of', path.join(workspace.path, 'transcript')], { signal: options.signal });
     throwIfAborted(options.signal);
+    if (workspace.path !== temporary) {
+      for (const extension of ['json', 'srt', 'txt']) await copyFile(path.join(workspace.path, `transcript.${extension}`), path.join(temporary, `transcript.${extension}`));
+    }
     const sources = { json: path.join(temporary, 'transcript.json'), srt: path.join(temporary, 'transcript.srt'), txt: path.join(temporary, 'transcript.txt') };
     if (!await regularFile(sources.json) || !await regularFile(sources.srt) || !await regularFile(sources.txt)) throw new ToolKnitError('PROCESSING_FAILED', 'The transcription engine did not create every expected output.');
     // Whisper sometimes answers in traditional characters; publish simplified.
@@ -399,5 +362,8 @@ export async function transcribeMedia({ input_path, output_dir, language = 'auto
     }
     report(options, 100, 'Transcription complete.');
     return { tool: 'transcribe', model_id: model.id, input_path: input, output_dir: output, language: normalizedLanguage, ...outputs, ...refined, outputs: [...Object.values(outputs), ...Object.values(refined)].map(path => ({ path })) };
-  } finally { await rm(temporary, { recursive: true, force: true }); }
+  } finally {
+    try { await workspace?.dispose(); }
+    finally { await rm(temporary, { recursive: true, force: true }); }
+  }
 }

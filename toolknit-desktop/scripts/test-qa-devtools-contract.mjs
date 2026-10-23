@@ -17,8 +17,8 @@ const releaseWindow = releaseConfig.app.windows.find(window => window.label === 
 const testWindow = testConfig.app.windows.find(window => window.label === 'main');
 
 assert.equal(releaseWindow.devtools, false, 'production package must keep DevTools disabled');
-assert.deepEqual(releaseConfig.app.security.capabilities, ['default', 'screenshot-windows'],
-  'production must only include main and screenshot window capabilities');
+assert.deepEqual(releaseConfig.app.security.capabilities, ['default', 'screenshot-windows', 'desktop-feedback'],
+  'production must retain only the explicitly scoped capabilities');
 assert.match(cargo, /^default\s*=\s*\["custom-protocol"\]/m, 'production default features must not enable QA');
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 assert.equal(pkg.scripts['build:release-package'], 'tauri build', 'production build must not use QA features or config');
@@ -36,6 +36,10 @@ const capabilityIds = testConfig.app.security.capabilities.map(capability => (
 ));
 assert.ok(capabilityIds.includes('default'), 'QA config must retain default capabilities');
 assert.ok(capabilityIds.includes('screenshot-windows'), 'QA config must retain screenshot auxiliary window capabilities');
+assert.ok(capabilityIds.includes('desktop-feedback'), 'QA config must retain desktop feedback listeners');
+const feedbackCapability=JSON.parse(await readFile(new URL('../src-tauri/capabilities/desktop-feedback.json',import.meta.url),'utf8'));
+assert.deepEqual(feedbackCapability.windows,['screenshot-toast']);
+assert.deepEqual(feedbackCapability.permissions,['core:event:allow-listen','core:event:allow-unlisten']);
 assert.ok(capabilityIds.includes('qa-devtools'), 'QA config must include the QA capability');
 
 assertReleaseFilePolicy(['dist/assets/main.js', 'dist/assets/fonts/OFL-1.1.txt', 'resources/qpdf/LICENSE.html']);

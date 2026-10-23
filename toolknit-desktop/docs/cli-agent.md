@@ -1,10 +1,10 @@
 # ToolKnit CLI and IDE Agent
 
-ToolKnit Desktop and `@toolknit/cli` are separate v2.3 deliverables. The CLI runs file operations directly and never starts, drives, or depends on the desktop UI.
+ToolKnit Desktop and `@toolknit/cli` are separate V3.2 deliverables. The V3.2 npm package is prepared in source and not published yet. The CLI runs file operations directly and never starts, drives, or depends on the desktop UI.
 
 ## Installation and checks
 
-The CLI requires Node.js 20.12 or later. The Windows release artifact carries the qpdf runtime and qpdf license notices for PDF decrypt and compress operations. On another platform, install qpdf separately or set `TOOLKNIT_QPDF_PATH` to its executable. Audio/video operations and local transcription preparation require FFmpeg. The CLI resolves, in order, an absolute `TOOLKNIT_FFMPEG_PATH`, the managed runtime downloaded by ToolKnit Desktop, the development repository fixture, and finally `ffmpeg` from `PATH`.
+The CLI requires Node.js 22.13 or later. The Windows release artifact carries the qpdf runtime and qpdf license notices for PDF decrypt and compress operations. On another platform, install qpdf separately or set `TOOLKNIT_QPDF_PATH` to its executable. Audio/video operations and local transcription preparation require FFmpeg. The CLI resolves, in order, an absolute `TOOLKNIT_FFMPEG_PATH`, the managed runtime downloaded by ToolKnit Desktop, the development repository fixture, and finally `ffmpeg` from `PATH`.
 
 ```powershell
 npm install --global @toolknit/cli
@@ -21,7 +21,7 @@ For a local release archive, install with npm's optional network checks disabled
 
 ```powershell
 npm pack .\cli
-npm install --global --no-audit --no-fund --prefer-offline .\toolknit-cli-2.3.1.tgz
+npm install --global --no-audit --no-fund --prefer-offline .\toolknit-cli-3.2.0.tgz
 ```
 
 ## Command help
@@ -45,7 +45,7 @@ Inside this repository, maintainers can use `npm run --silent cli -- doctor --js
 
 ## CLI contract
 
-Every file-writing command requires an explicit destination. ToolKnit only accepts regular `.pdf` input files (symlinks are rejected), never overwrites an existing file unless `--overwrite` is explicitly supplied, and always refuses to write over one of its input files. Each output is written to a same-directory temporary file and published atomically only after processing succeeds.
+Every file-writing command requires an explicit destination. PDF operations accept regular `.pdf` input files; other tools use their documented formats (symlinks are rejected), never overwrites an existing file unless `--overwrite` is explicitly supplied, and always refuses to write over one of its input files. Each output is written to a same-directory temporary file and published atomically only after processing succeeds.
 
 ```powershell
 toolknit pdf inspect --input .\report.pdf --json
@@ -82,7 +82,7 @@ toolknit pdf merge --input .\first.pdf --input .\second.pdf --output .\selected.
 
 End-user quick guides with copy-ready Agent prompts are available in [Simplified Chinese](agent-guide.zh-CN.md) and [English](agent-guide.en.md). The installed CLI includes both: `toolknit agent guide --lang zh` (default) and `toolknit agent guide --lang en`.
 
-The MCP server uses newline-delimited JSON-RPC over stdio. It writes no diagnostic output to stdout or stderr, so it is safe for IDE integration.
+The MCP server uses newline-delimited JSON-RPC over stdio. stdout contains protocol messages only. It negotiates supported protocol versions, bounds requests/responses to 8 MiB, limits active tool calls to four, handles cancellation, and aborts active jobs on transport EOF. Heavy new document/image operations use at most two worker threads, with bounded budgets and timeouts.
 
 ```json
 {
@@ -97,40 +97,7 @@ The MCP server uses newline-delimited JSON-RPC over stdio. It writes no diagnost
 
 Local file tools and non-AI PPT tools do not need an AI credential. AI documents, AI tables, PPT text AI organization, AI PPT outline generation, AI PPT draft/PPTX generation, and transcription with `refine=true` require a real `DEEPSEEK_API_KEY` or `TOOLKNIT_AI_API_KEY` in the IDE's MCP environment/secret settings. Restart the IDE after setting it. Never leave explanatory placeholder text or place the key in an Agent message; the desktop application's stored credential is not shared with CLI/MCP.
 
-The current MCP tools are:
-
-- `toolknit_pdf_inspect`
-- `toolknit_pdf_merge`
-- `toolknit_pdf_split`
-- `toolknit_pdf_rotate`
-- `toolknit_pdf_encrypt`
-- `toolknit_pdf_decrypt`
-- `toolknit_pdf_compress`
-- `toolknit_pdf_enhance`
-- `toolknit_pdf_to_image`
-- `toolknit_audio_convert`
-- `toolknit_audio_bpm`
-- `toolknit_audio_clip`
-- `toolknit_audio_extract`
-- `toolknit_model_list`
-- `toolknit_model_install`
-- `toolknit_model_use`
-- `toolknit_transcribe`
-- `toolknit_video_convert`
-- `toolknit_video_frame`
-- `toolknit_video_gif`
-- `toolknit_text_stats`
-- `toolknit_color_extract`
-- `toolknit_image_stitch`
-- `toolknit_ai_document`
-- `toolknit_ai_document_inspect`
-- `toolknit_ai_document_edit`
-- `toolknit_ai_document_render`
-- `toolknit_ai_table`
-- `toolknit_ai_table_inspect`
-- `toolknit_ai_table_edit`
-- `toolknit_ai_table_render`
-
+The current registry exposes **77 MCP capabilities**. The generated [complete catalog](CLI_CAPABILITIES.md) maps every desktop tool to its actual headless scope, and [JSON schemas](CLI_CAPABILITIES.json) describe exact parameters. Run `toolknit tools list --json`, `toolknit tools coverage --json`, or `toolknit tools describe <toolknit_name> --json` for the installed version. Every listed capability can also be called through `toolknit run <toolknit_name> --arguments-file request.json --json`; use `--arguments-stdin` for passwords, never command-line secrets.
 Tools reject unknown arguments and return structured success or error data. When an IDE sends `_meta.progressToken`, ToolKnit emits standard `notifications/progress` events at start and completion. An IDE Agent should first inspect a file, propose explicit output paths, and only pass `overwrite: true` after the user clearly authorizes replacement. Password parameters are in-memory secrets and must not be repeated in messages, filenames, or logs.
 
 `toolknit_pdf_enhance` is intended for scanned or image-based PDFs. It rasterizes output pages, so searchable text, links, forms, and native vector data are not preserved.
@@ -155,17 +122,13 @@ The provider is instructed with an exact JSON schema: every column is `{key,labe
 
 AI table publication is atomic across the export, editable project, preview, and revision data. If Excel, an IDE preview, or another process holds an output file open, ToolKnit leaves the previous artifacts intact and reports the exact blocked path. Close the application using that file and retry the same operation; do not delete a locked artifact to force an update.
 
-## Planned AI polish contract
+## AI polish contract
 
-AI text polish is not registered as a CLI command or MCP tool in current v2.3. Its future interface will accept one bounded UTF-8 text input, an explicit style instruction, and a separately configured provider credential; it will return polished text only and never write a file by default. It will report `analyze` and `polish` phases, reject missing credentials, inputs above 12,000 UTF-16 code units, provider timeouts, malformed direction data, malformed text responses, and responses above 30,000 characters.
+`toolknit ai polish` / `toolknit_ai_polish` accept exactly one `text` or UTF-8 `input_path` and an explicit `style`. Up to 12,000 characters are sent to the independently environment-configured AI provider. Results contain polished text, bounded to 30,000 characters; no file is written by default. Missing credentials, cancellation, timeout, invalid content and HTTP failures produce structured errors without provider bodies or credentials.
 
-The desktop application may offer provider-suggested styles, but a future headless caller must supply the chosen style explicitly. It must not read the desktop application's local storage or expose provider error bodies, prompts, API keys, or text content in diagnostics.
+## AI translation contract
 
-## Planned AI translation contract
-
-AI translation is not registered as a CLI command or MCP tool in current v2.3. Its future interface will accept one bounded UTF-8 text input, an explicit target language, and a separately configured provider credential; it will return translated text plus optional aligned sentence pairs, without writing a file by default. It will report `translate` and `validate` phases, reject missing credentials, inputs above 12,000 UTF-16 code units, unknown target languages, provider timeouts, malformed responses, and responses above 60,000 characters.
-
-A later headless implementation must treat the caller's original input as authoritative: model-supplied source sentence fields may be used only after equivalence validation and can never replace the supplied source. It must not infer a Latin-script source language as English, read desktop-local credentials, or include prompts, API keys, or provider error bodies in logs.
+`toolknit ai translate` / `toolknit_ai_translate` accept exactly one `text` or UTF-8 `input_path` plus `target_language`. The runtime validates all original sentence fields against the complete caller source before returning translated text and aligned pairs. A provider cannot silently replace or omit the original. Source input is capped at 12,000 characters; supported target codes and response bounds are in the schema. Only this explicitly requested operation sends the text to the configured provider.
 
 ## Password generator scope
 
@@ -177,25 +140,17 @@ Password generation is intentionally desktop-only and has no future CLI/MCP cont
 
 The source must be a non-symbolic regular file below 20 MB and 40 megapixels. Image headers are validated before decoding, then the image is downsampled to a 200-pixel longest edge; fully transparent pixels are excluded from fixed-initialization K-means clustering. No image bytes are uploaded, persisted, or returned. IDE Agents must resolve a unique image path from the file tree and ask rather than select an ambiguous asset.
 
-## Planned image conversion contract
+## Image conversion contract
 
-Image format conversion is being hardened for a later CLI/MCP release. It is **not** registered as a CLI command or MCP tool in the current v2.3 package, so an IDE Agent must not claim it is available yet.
+`toolknit image convert` / `toolknit_image_convert` process 1-100 regular local inputs, with an explicit `output_dir` and `format` (`png`, `jpg`, `webp`, `bmp`, `gif`, `svg`). JPEG/BMP flatten alpha onto white; SVG embeds a PNG and is not vector tracing. Displayed orientation/dimensions are preserved. Inputs are capped at 20 MiB and 40 megapixels each. Animated or multipage sources require explicit `frame_policy: "first"`; default behavior rejects them. Completed outputs get unique names; partial batches report each failure, and all-failed batches return a processing error.
 
-The future interface will accept one to 100 local JPG/JPEG, PNG, WebP, BMP, or GIF files, a validated target format, and one explicit output directory. It will reject non-regular files, files over 20 MB, images over 40 megapixels, unsupported target formats, duplicate inputs, concurrent conversion jobs, and failed writes. It will never overwrite an existing output and will report per-file success or failure, output paths, progress, cancellation, and a nonzero processing error when no file succeeds.
+## Image compression contract
 
-The current desktop encoder preserves image dimensions. JPEG output is RGB because JPEG cannot contain transparency. Static GIF sources are supported, but animated GIF inputs are rejected instead of silently discarding frames. A future headless interface must extend this explicit preservation policy to every animated source format before it accepts one; it must never promise to preserve animation unless an animation-capable encoder is explicitly added and tested.
+`toolknit image compress` / `toolknit_image_compress` accept 1-100 static PNG/JPEG/WebP files and an explicit output directory. JPEG quality high/medium/low maps to 90/75/60; PNG and WebP use lossless optimization, so quality is not a lossy knob for those formats. Only strictly smaller outputs are published. `no-reduction` creates no file; inspect `results` and `outputs`. Dimensions are preserved, source files are never overwritten, and metadata is removed.
 
-## Planned image compression contract
+## Icon generator contract
 
-Image compression is also **not** registered as a CLI command or MCP tool in the current v2.3 package. The future interface will accept one to 100 local JPG/JPEG, PNG, or WebP files, a `high`, `medium`, or `low` quality policy, and one explicit output directory. It will apply the same 20 MB per-file and 40-megapixel limits as image conversion, run one conversion job at a time, and report each file's result without overwriting an existing output.
-
-An output is published only when it is strictly smaller than its source. BMP and GIF are intentionally outside the contract: the bundled encoder cannot safely provide a smaller BMP, and GIF handling can discard animation frames. JPEG and PNG quality policies affect their encoders. WebP is explicitly lossless in the desktop implementation, so the selected quality policy has no effect on WebP files and clients must report it as lossless optimization rather than imply lossy quality control.
-
-## Planned icon generator contract
-
-The icon generator is not registered as a CLI command or MCP tool in current v2.3. Its future interface will accept one local PNG/JPEG/WebP image and one explicit ZIP output path. It will reject non-regular files, input files above 20 MB, images above 20 megapixels, generated archives above 32 MB, canceled jobs, and unsafe or pre-existing output paths. A successful archive contains fixed-size PNG icons, `icon.ico`, `favicon.ico`, and an SVG wrapper; progress covers decoding, raster generation, archive creation, and atomic publication.
-
-It intentionally excludes BMP and GIF sources because static icon output cannot preserve GIF animation and these formats do not provide a useful, deterministic headless contract. It must never reuse a desktop-local provider key or depend on the desktop application being visible.
+`toolknit image icons` / `toolknit_image_icons` take one static raster image and an explicit ZIP output. The archive contains PNG icons at 16/32/48/64/128/256/512/1024, multi-resolution ICO/favicon and an embedded PNG SVG wrapper. The source is fitted with transparent padding rather than distorted. Input and output budgets use the desktop icon core; no remote content is fetched.
 
 ## Audio conversion contract
 
@@ -235,21 +190,49 @@ The CLI processes the batch locally and independently: one failed input does not
 
 Inputs above 1,000,000 UTF-16 code units, files above the corresponding UTF-8 size bound, symbolic links, invalid UTF-8, and binary NUL content are rejected. The deterministic shared core reports Unicode code-point characters, non-whitespace characters, literal U+0020 spaces, Han-script characters, ASCII Latin letters, digits, declared punctuation, English word runs, sentences, lines, paragraphs, longest line, average line length, and estimated reading time. An Agent must resolve a unique file reference before it calls the tool and ask when a reference is ambiguous.
 
-## Planned text formatting contract
+## Text, developer and calculation contracts
 
-Text formatting is not registered as a CLI command or MCP tool in current v2.3. Its future interface will accept one explicit UTF-8 text file or UTF-8 standard input, one declared action, and one explicit UTF-8 output file. It will reject binary or undecodable input, input and output over 1,000,000 UTF-16 code units, more than 100,000 lines for line-oriented actions, unknown actions, unsafe paths, same-path writes, and unapproved output overwrites. Output is written to a temporary file and atomically published only after transformation succeeds.
+`toolknit text format` / `toolknit_text_format` apply an explicit action to `text`, a UTF-8 input file, or CLI `--stdin`, and return the transformed text without automatic file writes. Actions reuse the desktop core, including stable line deduplication, natural sorting, numbered-line removal and grapheme-aware reversal. Exact action identifiers use the schema's camelCase names.
 
-The action set is `uppercase`, `lowercase`, `titlecase`, `capitalize`, `trim-spaces`, `trim-lines`, `remove-empty-lines`, `remove-duplicate-lines`, `sort-asc`, `sort-desc`, `add-line-numbers`, `remove-line-numbers`, `reverse-lines`, `reverse-text`, `to-half-width`, and `to-full-width`. Sorting uses the fixed `zh-Hans-u-co-pinyin` collator with numeric comparison. `remove-line-numbers` only removes an initial sequence of at least two consecutive line numbers beginning at 1, preventing an ordinary year or numeric heading from being silently deleted. A headless caller must receive structured progress and errors without echoing text content into logs.
-
-Calculator-category tools and the typing test are intentionally excluded from the CLI/MCP roadmap because a headless interface would not provide useful value for their interaction model.
+JSON/Base64/URL encoding, UUID v4, JWT decode and file/text checksums are local. JWT decoding does not verify signatures; it does not return the signature. Password generation and secret-key encryption are intentionally not exposed. Timestamp conversion requires an explicit unit or ISO timezone; BMI and financial schedules are bounded estimates, not diagnoses or lender guarantees. File scans only inspect an explicit directory and never delete data.
 
 ## Release procedure
 
-Before publishing, `npm pack` automatically stages the licensed qpdf runtime, exact shared PDF core snapshot, and bilingual Agent guides. Run the staging command explicitly before the complete contract suite when reviewing release contents:
+### Optional live AI verification
+
+`npm run test:cli-ai-live -- --live` tests the configured relay/model through the CLI entry and official MCP SDK with synthetic text, PDF, PPTX and speech. Set `TOOLKNIT_AI_API_KEY`, `TOOLKNIT_AI_API_URL` and `TOOLKNIT_AI_MODEL` in the process environment; never put credentials in command arguments or files. Omit `--live` to skip all network calls. This opt-in script is outside the automatic release gate because requests can incur provider charges. Evidence and synthetic outputs stay under ignored `tmp/cli-ai-live-*` directories. `--only=<case-prefix>` selects a failed case for a focused repeat.
+
+It checks text polishing/translation, PDF vision Markdown and Word layout, all four PPT text modes, outline/draft generation, editable document/table generation-inspect-edit-undo-render workflows, and subtitle refinement using an already installed offline model. LibreOffice is needed for the generated PPTX rendering check. The script never downloads missing runtimes or models. Provider timing varies; a passing sample does not guarantee arbitrary document accuracy or latency.
+
+AI table and subtitle refinement requests have a 120-second deadline including response-body reading. Cancellation remains distinct from timeout. Document/table creation, editing and rendering check cancellation before final publication; an atomic commit already started completes or rolls back. Existing table output is checked before paid AI requests. Windows model lookup falls back to the user's Roaming directory if an MCP host omits `APPDATA`. Office conversion uses an isolated short temporary workspace so deep output directories do not break its profile.
+
+Treat the final tool result as authoritative completion. SDK 1.32.1 can drop its final `onprogress` callback when a progress notification and the result arrive in one stdio chunk; the server sends 100% before the response. Interop tests inspect wire order separately from this SDK callback limitation.
+
+### Package checks
+
+Before publishing, `npm pack` stages the licensed runtimes, exact shared engine snapshot and public guides, then installs the CLI shrinkwrap for its bundled ExcelJS tree. Library overrides do not apply in consumer projects; ExcelJS 4.4.0 is bundled with UUID 11.1.1 and its dependency metadata correction, retaining the upstream MIT license (see NOTICE). Native canvas/image optional dependencies remain platform-selected by npm. Run the complete package and behavior checks:
 
 ```powershell
-npm run stage:cli-resources
-npm run test:cli-agent
+npm run test:cli
+npm run test:cli-clean-worktree
 ```
 
 The test suite creates temporary PDFs outside the repository and validates CLI output, no-overwrite protection, encrypt/decrypt, compression behavior, MCP initialization, tool discovery, structured tool results, and rejection of undeclared arguments.
+
+## V3.2 document and packaging details
+
+- `pdf to-word`: same restricted desktop engine; original layout or A4 flow. Default offline. `ai_mode=true` sends region text/images to the configured provider and returns review counts. Complex regions may remain images; scanned OCR is excluded.
+- `image to-pdf`: ordered inputs, multipage TIFF, A4/original dimensions, faithful/grayscale/natural modes, explicit first-frame permission for animation. Output is image-only.
+- `pdf text`: local selectable-text Markdown/TXT; reports empty/scanned pages. `pdf ai-markdown` explicitly sends up to 20 selected page images and builds a reading guide. It is not a silent fallback.
+- `pdf crop`, `pdf page-number`, `pdf to-scan`, `pdf create`: explicit geometry and file output. Crop is not redaction; scan output loses searchable text and interactive document objects.
+- `pdf to-image`: supports images, vertical `long`, `long-horizontal`, and `grid` with exactly 4 or 9 pages. Pages follow source PDF order.
+- `excel to-pdf`: validated XLSX only, rejects active/external workbook content, uses an isolated LibreOffice profile and preserves workbook print setup. No WPS fallback.
+- `markdown html`: desktop Markdown tables/tasks and MathML formulas, escaped raw HTML, strict standalone CSP, no remote images/scripts. Mermaid remains code.
+
+The npm archive contains only the staged pure engines, headless runtimes, runtime resources, notices and public guides. Private Skills, test fixtures and internal maintenance reports are excluded. The PDF-to-Word engine and its headless adapter keep their scoped source-viewing license; using the unmodified official CLI follows the official-application exception. Other author-owned code retains PolyForm terms and third-party materials retain their licenses. Commercial/reuse authorization: info@toolknit.com.
+
+Validation includes the current working-source snapshot, an actual packed archive installed in an isolated consumer directory, CLI invocations, MCP calls, and real output inspection. `test:cli-clean-worktree` is a compatibility script name; it now verifies current uncommitted source as well as tracked code rather than testing an older HEAD.
+
+`doctor --json` additionally reports the supported Node version, MCP tool count and optional LibreOffice availability. Its existing exit status remains based on qpdf/FFmpeg availability for compatibility; inspect `libreoffice` before Office rendering. Model installation serializes the same destination across CLI processes, verifies resume Content-Range and SHA-256, has a 15-minute limit per source, keeps resumable partial files and preserves the previous model on failure. It does not download models during doctor or tool discovery.
+
+On Windows, transcription stages model/audio paths for whisper.cpp in an ASCII-path workspace and copies results back to the explicit destination. When a separate workspace is needed, its ACL is restricted to the current user; it is removed after success/failure/cancellation. The installed model is read only and no second model download is required. One transcription job runs per process. Native transcription regression uses synthesized test speech only when a local model is already selected; missing models are an explicit skip, not an automatic download.
