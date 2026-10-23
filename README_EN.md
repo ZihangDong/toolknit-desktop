@@ -377,13 +377,13 @@ Initial npm and Rust dependency installation requires a connection. Install usin
 ### Start the desktop app
 
 ```powershell
-git clone --branch V3.2 https://github.com/ZihangDong/toolknit-desktop.git
+git clone --branch main https://github.com/ZihangDong/toolknit-desktop.git
 Set-Location toolknit-desktop\toolknit-desktop
 npm ci
 npm run tauri dev
 ```
 
-This checks out `V3.2`. Once authorized, run `npm run dev` for a frontend preview at `http://localhost:1420/` by default.
+This checks out `main`. Once authorized, run `npm run dev` for a frontend preview at `http://localhost:1420/` by default.
 Native files, the system tray and global screenshots need the Tauri desktop environment.
 
 ### Build an installer

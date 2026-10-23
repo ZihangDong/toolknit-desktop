@@ -374,13 +374,13 @@ Windows 7 / 8 / 8.1 不受支持。
 ### 启动桌面端
 
 ```powershell
-git clone --branch V3.2 https://github.com/ZihangDong/toolknit-desktop.git
+git clone --branch main https://github.com/ZihangDong/toolknit-desktop.git
 Set-Location toolknit-desktop\toolknit-desktop
 npm ci
 npm run tauri dev
 ```
 
-以上检出 `V3.2` 分支。在已获授权的前提下，可运行 `npm run dev` 预览前端，默认访问 `http://localhost:1420/`。
+以上检出 `main` 主分支。在已获授权的前提下，可运行 `npm run dev` 预览前端，默认访问 `http://localhost:1420/`。
 原生文件、托盘和全局截图需要 Tauri 桌面环境。
 
 ### 构建安装包
