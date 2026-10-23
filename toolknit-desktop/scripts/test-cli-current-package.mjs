@@ -8,6 +8,7 @@ import JSZip from 'jszip';
 import { createCanvas } from '@napi-rs/canvas';
 import { listSourceFiles } from './lib/source-inventory.mjs';
 import { TOOL_DEFINITIONS } from '../cli/lib/tool-definitions.mjs';
+import { resolveFfmpeg, runFfmpeg } from '../cli/lib/ffmpeg-runtime.mjs';
 
 // Test current source, including local fixes, without an older HEAD snapshot or
 // any dependency resolution through the repository's node_modules directory.
@@ -129,13 +130,22 @@ try {
   assert.equal(mcp.get(4).result.isError, false, mcp.get(4).result.content[0]?.text);
   assert.equal((await PDFDocument.load(await readFile(path.join(consumer, 'images.pdf')))).getPageCount(), 1);
   const previousEntry = process.env.TOOLKNIT_CLI_ENTRY;
+  const previousFfmpeg = process.env.TOOLKNIT_FFMPEG_PATH;
   try {
     process.env.TOOLKNIT_CLI_ENTRY = entry;
+    // The isolated install cannot discover CI's repository-local FFmpeg copy.
+    // Pass the verified runtime through the same setting available to users.
+    const ffmpeg = await resolveFfmpeg();
+    const ffmpegVersion = await runFfmpeg(ffmpeg, ['-version']);
+    assert.equal(ffmpegVersion.code, 0, 'Installed-package media tests require a working FFmpeg runtime.');
+    if (path.isAbsolute(ffmpeg)) process.env.TOOLKNIT_FFMPEG_PATH = ffmpeg;
     run(process.execPath, [path.join(projectRoot, 'scripts/test-cli-mcp.mjs')], projectRoot, true);
     run(process.execPath, [path.join(projectRoot, 'scripts/test-cli-transcription-native.mjs')], consumer, true);
   } finally {
     if (previousEntry === undefined) delete process.env.TOOLKNIT_CLI_ENTRY;
     else process.env.TOOLKNIT_CLI_ENTRY = previousEntry;
+    if (previousFfmpeg === undefined) delete process.env.TOOLKNIT_FFMPEG_PATH;
+    else process.env.TOOLKNIT_FFMPEG_PATH = previousFfmpeg;
   }
   console.log(`Current-source npm package passed: ${pack.filename}; ${pack.size} bytes; ${TOOL_DEFINITIONS.length} MCP tools; installed CLI DOCX and MCP image PDF verified.`);
 } finally {
