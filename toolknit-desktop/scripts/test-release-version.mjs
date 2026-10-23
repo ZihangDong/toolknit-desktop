@@ -165,7 +165,8 @@ if (releasedToolCount !== desktopToolCount) {
 }
 if (publishedVersion === fullVersion) {
   assert.match(currentReleaseNotes, /CLI \/ MCP 源码扩展至 77 项能力/, 'Release notes must distinguish current source capabilities from npm availability');
-  assert.match(currentReleaseNotes, /npm 3\.2\.0 暂缓发布/, 'Desktop publication must not claim the deferred npm release is available');
+  assert.match(currentReleaseNotes, new RegExp(`npm CLI / MCP ${escapeRegExp(fullVersion)} 已于 \\d{4}-\\d{2}-\\d{2} 发布`), 'Release notes must record the independently verified npm publication date');
+  assert.match(currentReleaseNotes, new RegExp(`npmjs\\.com/package/@toolknit/cli/v/${escapeRegExp(fullVersion)}`), 'Release notes must link the published npm version');
 }
 
 const manifestVersions = new Map([

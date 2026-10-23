@@ -236,7 +236,7 @@ WPS / Microsoft Office is not LibreOffice and cannot replace workflows that need
 
 The V3.2 source expands from 46 to **77 CLI / MCP capabilities**, exposed through `@toolknit/cli`.
 
-> Desktop V3.2 is released; npm 3.2.0 is deferred. The installation command below still installs 2.3.1. The new capabilities require the upcoming npm 3.2.0 release.
+> Desktop V3.2 and [npm CLI / MCP 3.2.0](https://www.npmjs.com/package/@toolknit/cli/v/3.2.0) are both released. Install each independently.
 
 | Area | Examples |
 | --- | --- |

@@ -21,7 +21,7 @@
 - 系统：Windows 10 1803（内部版本 17134）及以上的 x64 系统，包括 Windows 11。安装器携带 WebView2 引导程序；缺少运行时时需联网安装。
 - 本次安装包未进行 Authenticode 签名。请从本仓库 Release 或 [ToolKnit 官网](https://toolknit.com/exe.html)下载。FFmpeg、Office 和本地模型按需安装。
 - 干净源码：`toolknit-desktop_3.2.0_source.zip`，不含私有 Skill、密钥、用户数据、依赖缓存和测试输出。构建步骤见 [README](https://github.com/ZihangDong/toolknit-desktop/blob/v3.2.0/README.md#源码运行与构建)。
-- **npm 3.2.0 暂缓发布。** 本次发布桌面端和源码；npm 当前仍为 2.3.1，不能通过 npm 安装尚未发布的 3.2.0。CLI / MCP 后续单独发布。
+- **npm CLI / MCP 3.2.0 已于 2026-10-24 发布。** 通过 `npm install -g @toolknit/cli@3.2.0` 独立安装，包含 77 项能力，需要 Node.js 22.13.0 或更高版本。[npm 包与使用说明](https://www.npmjs.com/package/@toolknit/cli/v/3.2.0)。
 - 普通工具优先本地处理；主动使用 AI 时，所选内容会发送到用户配置的服务。复杂 PDF 与不同 Office 预览器可能存在排版差异，重要文件请核对。
 
 ## 代码许可
