@@ -150,18 +150,23 @@ assert.ok(firstDifference === -1 || publishedParts[firstDifference] < currentPar
 if (publishedVersion !== fullVersion) {
   assert.match(await readText('../changelog.md'), new RegExp(`^## V${escapeRegExp(seriesVersion)}（未发布）`, 'm'), 'A development version must have an unreleased changelog section');
 }
-// Published notes retain their release catalog while the next version is developed.
-const releasedToolCount = Number(captureExactlyOnce(releaseNotes,
+// Only the current release section defines this catalog; older notes stay intact.
+const currentReleaseNotes = releaseNotes.split(/\r?\n---\s*\r?\n/, 1)[0];
+const releasedToolCount = Number(captureExactlyOnce(currentReleaseNotes,
   /^- \d+ 个分类、(\d+) 项工具/m, 'Published desktop catalog'));
-const publishedSeriesVersion = captureExactlyOnce(releaseNotes,
+const publishedSeriesVersion = captureExactlyOnce(currentReleaseNotes,
   /^## (V\d+\.\d+) 正式版记录/m, 'Published release series');
+assert.equal(publishedSeriesVersion, `V${publishedVersion.split('.').slice(0, 2).join('.')}`);
 assert.ok(releasedToolCount > 0 && releasedToolCount <= desktopToolCount,
   'Published catalog must be valid and no larger than the current catalog');
 if (releasedToolCount !== desktopToolCount) {
   assert.match(repositoryReadme, /https:\/\/toolknit\.com\/exe\.html/,
     'Source documentation must direct readers to the download page for installer availability');
 }
-assert.match(releaseNotes, /46 项已发布能力/, 'Release notes must state the 46-capability CLI and MCP contract');
+if (publishedVersion === fullVersion) {
+  assert.match(currentReleaseNotes, /CLI \/ MCP 源码扩展至 77 项能力/, 'Release notes must distinguish current source capabilities from npm availability');
+  assert.match(currentReleaseNotes, /npm 3\.2\.0 暂缓发布/, 'Desktop publication must not claim the deferred npm release is available');
+}
 
 const manifestVersions = new Map([
   ['package-lock.json version', desktopLock.version],
