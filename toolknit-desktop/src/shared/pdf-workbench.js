@@ -1,5 +1,6 @@
 import { createLifecycleScope } from '../app/tool-lifecycle.js';
 import { toolTopbarMarkup } from './tool-page-shell.js';
+import { prepareToolPageChrome } from './tool-page-chrome.js';
 import { onLangChange, t } from '../i18n.js';
 import '../styles/components/pdf-workbench.css';
 import { createPreviewViewport } from './preview-viewport.js';
@@ -49,6 +50,9 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
   }
   shell.querySelector('[data-wb-actions]').replaceWith(actionHost);
   root.replaceChildren(shell);
+  // Sibling workspaces are outside the lazy tool root. Prepare their final
+  // navigation here, after replacing the template's Back button.
+  prepareToolPageChrome(shell);
   const find = selector => shell.querySelector(selector);
   for (const [selector, id] of Object.entries(ids)) {
     if (id) find(selector)?.setAttribute('id', id);
@@ -77,8 +81,10 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
   function translate() {
     shell.querySelectorAll('[data-wb-label]').forEach(node => { node.textContent = t(node.dataset.wbLabel); });
     back.querySelector('span').textContent = t(labels.back);
-    find('[data-tool-website] span').textContent = t('home.webVersion');
-    find('[data-tool-support] span').textContent = t('home.supportAuthor');
+    back.title = t(labels.back);
+    back.setAttribute('aria-label', back.title);
+    find('[data-tool-website] [data-i18n="home.webVersion"]').textContent = t('home.webVersion');
+    find('[data-tool-support] [data-i18n="home.supportAuthor"]').textContent = t('home.supportAuthor');
     const settings = find('[data-tool-settings]');
     settings.title = t('nav.settings'); settings.setAttribute('aria-label', settings.title);
     shell.querySelectorAll('[data-tool-window]').forEach(button => {

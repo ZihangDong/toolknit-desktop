@@ -1,5 +1,19 @@
 # ToolKnit Desktop V3.0 维护规范
 
+## V3.2 发布前验证补充（2026-10-23）
+
+构建前运行 `check-dependency-lock.mjs`，直接读取实际依赖包的 `package.json`，不把 npm 隐藏锁文件或 `npm ls` 当作实际安装版本的唯一证据。桌面干净安装用 `npm run test:desktop-clean-install -- --browser` 在仓库外消费当前源码和锁文件，避免沿父目录借用旧依赖。已存在的 Vite 服务不会因磁盘依赖更新自动使用新模块，浏览器专项应启动自己的受控服务。
+
+源码构建最低 Rust 版本为 1.90，与当前锁定的 Windows Tauri 依赖图及中英文 README 对齐。`test:rust-toolchain` 使用 Cargo 结构化元数据检查目标依赖的最低要求，纳入发布门禁；再用 Clippy 检查源码 API 的最低版本。单个库支持 1.88 不代表整个应用也支持，发布二进制运行不要求用户安装 Rust。
+
+Excel 全部工作表导出必须检查实际 PDF 正文。LibreOffice 在只读文档上可静默忽略 `IsVisible` 修改；原生链路先沿用只读导入，只有“全部工作表”需要展开隐藏表时重新以可编辑模式打开临时副本，保留旧 XLS 兼容、禁用宏/外链更新及源文件不变约束。变更后运行 `npm run test:excel-to-pdf-native`，实测 XLSX/XLS/ODS 的全部/可见工作表、隐藏内容、公式、纸张方向和临时文件清理。该专项需要本机真实 LibreOffice，不以接口返回的 `exportedSheetCount` 代替 PDF 内容验证。
+
+`app/settings-navigation-runtime.js` 持有设置页的 Escape 入口，复用既有关闭/过渡函数。在懒加载工具安装文档级监听前接入，只有设置为当前页面且无子弹框接管时消费事件，避免同一次按键关闭后台工具。模型弹框、下拉菜单和快捷键录入继续优先处理自身 Escape，监听由生命周期 scope 在 pagehide 释放。
+
+共享 `createModalSession` 打开时检查指定焦点是否禁用、隐藏或处于 inert 区域；不能聚焦时选可用控件，必要时临时令容器可聚焦，关闭后清理。Escape 仍限于自身焦点或事件目标，不因为 `body` 接到按键就关闭后台可见工作台。测试应包含默认安装按钮禁用、子弹框关闭、设置正文失焦以及原工作区数据保留的连续操作。
+
+持续浏览器检查使用不可变的构建目录；不能边重建 dist 边将旧页面的动态 import 失败归为产品缺陷。`test-navigation-soak-browser.mjs` 覆盖跨工具、设置、返回与 Escape，记录 GC 后堆、DOM、监听和 Worker/Object URL；它不代替原生 HWND 或实际旧机安装验收。最终范围、证据与网络限制见[发布前报告](V32_RELEASE_PREFLIGHT_20261023.zh-CN.md)。
+
 ## V3.2 双主题状态审计（2026-10-21）
 
 主题覆盖以实际展开/生成的 DOM 为准。PPT 提取正文是 `div.ppt-text-detail-line`，仅覆盖 `span/p` 会漏正文；生成后的事实、页码和标签同样须实测。PPT 独立 portal 与页面是兄弟节点，主题 token 必须在两处可见；portal 的 `pointer-events:none` 也会被子编辑器继承，完整编辑层需明确接管输入，使用 `createModalSession` 和 `prepareToolPageChrome` 处理背景、焦点及导航。
@@ -358,10 +372,20 @@ PDF 压缩的保结构/图像化、目标字节、写入和共享核心边界见
 
 - `src/shared/pdf-workbench.js` 只管理共享导航、三栏视图、当前页/勾选状态、缩放、可见缩略图队列和画布清理。沿用编辑器 CSS 类与公共主题，不导入编辑器 feature 或编辑业务；工具通过页面模型、加载回调、文案 key 和右侧 actions 接入。
 - `features/pdf-split/preview.js` 拥有 PDF.js 文档和工作台 modal 会话。回到上传页保留输入文件，关闭工作台释放画布与文档；重开重新加载，旧异步结果不得覆盖新会话。
+- 工作台动态导航由 `createPdfWorkbench` 在最终挂载后执行 `prepareToolPageChrome`；兄弟 Workspace 不在 lazy registry 的主 overlay 准备范围内。文字刷新定位 `data-i18n` 标签，不覆盖 `.tk-nav-morph`，返回按钮的 title/aria-label 随语言同步。双主题几何、帮助/反馈/设置返回与既有导出验证见 [PDF 工作台导航维护记录](PDF_WORKBENCH_NAVIGATION.zh-CN.md)。
 - `workbench-export.js` 构建当前页 PDF、所选页合成 PDF、独立页 ZIP；`export-runtime.js` / `export-worker.js` 负责任务隔离、取消、五分钟超时及 Worker 销毁；`exporter.js` 仍走原有输出目录与 `write_unique_file_bytes` 发布结果。CLI/MCP 的 `splitPdfPages` 语义不变。
 - 当前页导出独立于勾选状态；全部页按钮在选择子集时改名为“导出所选页”。ZIP 同样以勾选页为范围，条目带顺序前缀以避免不同源文件的同名页覆盖。没有勾选时仅禁用合成/ZIP，当前预览页仍可导出。
 - 新增 DOM 契约：`pdfSplitWorkbenchActions`、`pdfSplitDownloadCurrentBtn`、`pdfSplitDownloadZipBtn`、`pdfSplitProcessCancel`；旧 Workspace/PageStrip/PageStage、返回和主导出 ID 保留。没有新增原生命令、storage 或 CLI/MCP 参数。
 - 测试入口：`npm run test:pdf-split`、`npm run test:pdf-split-tool-contract`、`node scripts/test-pdf-split-workbench-browser.mjs`。浏览器产物在忽略目录 `tmp/pdf-split-workbench/`。仅拆分迁移，旋转、转图像、合并须逐个验收后再接入，不自动批量改动。
+
+### V3.2 范围选择（2026-10-22）
+
+- 用户确认载入及重开工作台时默认空选；全选仍可手动触发。`selection.js` 按缩略图全局编号验证完整输入后才修改选择，支持单页、闭区间、重叠去重；错误输入不改变任何已选页。
+- `range-dialog.js` 使用 `createModalSession` 暂停兄弟工作台，选中后保持打开、清空输入并恢复输入焦点；完成、关闭、遮罩和 Escape 返回触发按钮。父工作台关闭、开始导出及 dispose 时先关闭子弹框，监听归属 lifecycle scope。
+- 输入说明、可选范围、错误与成功反馈均位于 `home.pdfSplit` 双语字典；语言切换有既有过渡，浏览器测试等待译文实际更新。独立弹框显式提供主题 token，输入沿用共享内收底线，不更改共享 modal/workbench 或输入样式。
+- 新增 DOM ID：`pdfSplitSelectionTitle`、`pdfSplitRangeBtn`、`pdfSplitRangeDialog`、`pdfSplitRangeTitle`、`pdfSplitRangeInput`、`pdfSplitRangeLimit`、`pdfSplitRangeHelp`、`pdfSplitRangeError`。原有选择、当前页和导出 ID 保留；原生、CLI/MCP、事件和存储契约不变。
+- `test-pdf-split-selection.mjs` 随 `test:pdf-split` 运行；契约检查同时验证中英文 key 的实际归属。浏览器以两个源文件共 26 页检验 `1-10` + `15-20` 的真实 16 页输出，覆盖跨文件范围、手动取消后的累加、空选禁用、Tab/Escape/焦点、双主题三种弹框尺寸、中英文、取消及重开；页面与控制台错误均为零。
+- 同日用户授权测试打包：`npm run build:test-package -- --bundles nsis` 成功，产物 `src-tauri/target/release/bundle/nsis/toolknit-desktop_3.2.0_x64-F12-test-20261022-232503-setup.exe`，56,861,259 字节（54.23 MiB），SHA-256 `B6647D902420985E1DCA56CA52785079DF1EEC707BFBD31A023C27FE8D93C794`，旁置校验文件。程序和安装器版本均为 3.2.0，程序为 x64，无签名，测试配置开启主窗 F12，生产配置保持关闭；版本、QA、许可与产物审计通过，私有 Skill 未进入资源。安装后交互待用户验收；未自动安装或发布。
 
 ## PPT 图片预览与压缩等级控件（2026-09-18）
 

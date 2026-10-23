@@ -105,33 +105,60 @@ pub(super) async fn translate(dir:&Path,state:&TranslationState,texts:&[String],
 #[cfg(test)] mod tests {
     use super::*;
     #[test] fn translation_preserves_already_target_text_and_numbers(){assert!(already_target("Hello", "en"));assert!(already_target("你好", "zh-Hans"));assert!(!already_target("你好世界", "en"));assert!(!already_target("Hello world", "zh-Hans"));assert!(already_target("12345", "zh-Hans"));}
+    #[tokio::test]
+    #[ignore = "Copies an explicitly supplied pinned runtime to an isolated directory; performs no downloads"]
+    async fn translation_existing_runtime_bidirectional_smoke() {
+        let source = PathBuf::from(std::env::var_os("TOOLKNIT_TRANSLATION_QA_RUNTIME").expect("explicit runtime fixture"));
+        assert!(complete(&source), "fixture must be the complete pinned runtime");
+        let directory = std::env::temp_dir().join(format!("toolknit-translation-offline-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        safe_dir(&directory).unwrap();
+        struct Cleanup(PathBuf);
+        impl Drop for Cleanup {
+            fn drop(&mut self) { let _ = std::fs::remove_dir_all(&self.0); }
+        }
+        let _cleanup = Cleanup(directory.clone());
+        std::fs::copy(source.join(ENGINE_NAME), directory.join(ENGINE_NAME)).unwrap();
+        safe_dir(&directory.join("config")).unwrap();
+        std::fs::write(directory.join("config/records.json"), RECORDS).unwrap();
+        for record in records() {
+            let file = model_path(&directory, &record);
+            safe_dir(file.parent().unwrap()).unwrap();
+            std::fs::copy(model_path(&source, &record), &file).unwrap();
+            assert_eq!(hash_file(&file).await.unwrap(), record.decompressed_hash);
+        }
+        verify_bidirectional_runtime(&directory, TranslationState::default()).await;
+    }
     #[tokio::test] #[ignore = "Downloads and executes the pinned optional local translation engine"]
     async fn translation_real_install_and_bidirectional_smoke(){
         let state=TranslationState::default();
         let root=std::env::temp_dir().join(format!("toolknit-translation-smoke-{}-{}",std::process::id(),std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
         if !complete(&installed(&root)) {
             let last=Mutex::new((String::new(),0));
-            tokio::time::timeout(Duration::from_secs(600),install::install(&root,&state,DownloadSource::Auto,|p|{
+            // Cover both bounded engine-source attempts before testing CDN models.
+            tokio::time::timeout(Duration::from_secs(1500),install::install(&root,&state,DownloadSource::Auto,|p|{
                 let mut last=last.lock().unwrap();
                 if last.0 != format!("{}:{}",p.phase,p.source) || p.received.saturating_sub(last.1)>10*1024*1024 {
                     println!("{} {} {}/{}",p.phase,p.source,p.received,p.total);
                     *last=(format!("{}:{}",p.phase,p.source),p.received);
                 }
-            })).await.expect("real install exceeded 600 seconds").unwrap();
+            })).await.expect("real install exceeded 1500 seconds").unwrap();
         }
+        verify_bidirectional_runtime(&installed(&root), state).await;
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    async fn verify_bidirectional_runtime(directory: &Path, state: TranslationState) {
         let started=Instant::now();let cancel=AtomicBool::new(false);
         let texts=vec!["This application processes your files locally.".into(),"Select a screenshot to translate the text.".into()];
-        let result=translate(&installed(&root),&state,&texts,"zh-Hans",&cancel).await.unwrap();
+        let result=translate(directory,&state,&texts,"zh-Hans",&cancel).await.unwrap();
         println!("cold English to Chinese: {:?}; {} blocks",started.elapsed(),result.len());assert!(result.iter().all(|s|s.chars().any(is_han)));
-        let started=Instant::now();let result=translate(&installed(&root),&state,&["这个应用在本地处理文件。".into()],"en",&cancel).await.unwrap();
+        let started=Instant::now();let result=translate(directory,&state,&["这个应用在本地处理文件。".into()],"en",&cancel).await.unwrap();
         println!("Chinese to English: {:?}; {} blocks",started.elapsed(),result.len());assert!(result[0].chars().any(|c|c.is_ascii_alphabetic()));
         let started=Instant::now();
         let paragraphs=vec!["The screenshot editor supports rectangles, arrows, text and undo. You can save the image or copy it to the clipboard.".into();20];
-        let result=translate(&installed(&root),&state,&paragraphs,"zh-Hans",&cancel).await.unwrap();
+        let result=translate(directory,&state,&paragraphs,"zh-Hans",&cancel).await.unwrap();
         println!("warm English to Chinese: {:?}; {} paragraphs",started.elapsed(),result.len());
         assert_eq!(result.len(),20);assert!(result.iter().all(|s|s.chars().any(is_han)));
         let endpoint=state.engine.lock().await.as_ref().unwrap().endpoint.clone();
         drop(state);assert!(reqwest::Client::builder().no_proxy().build().unwrap().post(endpoint).send().await.is_err());
-        std::fs::remove_dir_all(root).unwrap();
     }
 }

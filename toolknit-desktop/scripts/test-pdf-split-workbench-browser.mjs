@@ -60,8 +60,91 @@ try {
     return dark;
   });
   assert.ok(pixels > 50, 'preview must contain rendered text');
+  assert.equal(await wb.locator('.pdf-editor-tile.is-selected').count(), 0);
+  assert.equal(await page.locator('#pdfSplitDownloadAllBtn').isDisabled(), true);
+  assert.equal(await page.locator('#pdfSplitDownloadZipBtn').isDisabled(), true);
+  assert.equal(await page.locator('#pdfSplitDownloadCurrentBtn').isDisabled(), false);
   await page.screenshot({ path: path.join(output, 'light.png') });
   report.checks.push('26 pages / two sources / lazy thumbnails / rendered preview / complete chrome');
+
+  const range = page.locator('#pdfSplitRangeDialog');
+  const rangeInput = page.locator('#pdfSplitRangeInput');
+  const chosenPages = () => wb.locator('.pdf-editor-tile.is-selected').evaluateAll(nodes => nodes.map(node => Number(node.dataset.index) + 1));
+  async function addRange(text, enter = false) {
+    await rangeInput.fill(text);
+    if (enter) await rangeInput.press('Enter'); else await range.locator('[type="submit"]').click();
+    assert.equal(await rangeInput.inputValue(), '');
+    assert.equal(await rangeInput.evaluate(node => document.activeElement === node), true);
+  }
+  await page.locator('#pdfSplitRangeBtn').click();
+  assert.equal(await wb.evaluate(node => node.inert), true);
+  await addRange('1-10');
+  assert.equal((await chosenPages()).length, 10);
+  await addRange('15-20', true);
+  const disjoint = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16, 17, 18, 19, 20];
+  assert.deepEqual(await chosenPages(), disjoint);
+  await addRange('3-8');
+  assert.deepEqual(await chosenPages(), disjoint);
+  assert.match(await range.locator('[data-range-status]').innerText(), /没有重复/);
+  for (const invalid of ['', '20-15', '0-4', '1-27', '1-3,9', '1.5-2']) {
+    await rangeInput.fill(invalid); await range.locator('[type="submit"]').click();
+    assert.equal(await rangeInput.getAttribute('aria-invalid'), 'true');
+    assert.equal(await page.locator('#pdfSplitRangeError').isVisible(), true);
+    assert.deepEqual(await chosenPages(), disjoint);
+    assert.equal(await rangeInput.inputValue(), invalid);
+  }
+  await rangeInput.fill('1-10');
+  assert.equal(await rangeInput.getAttribute('aria-invalid'), 'false');
+  for (const theme of ['light', 'dark']) {
+    await page.evaluate(value => { document.documentElement.dataset.theme = value; }, theme);
+    for (const [width, height] of [[1400, 887], [720, 480], [390, 700]]) {
+      await page.setViewportSize({ width, height });
+      await rangeInput.focus(); await page.waitForTimeout(250);
+      const style = await rangeInput.evaluate(node => {
+        const css = getComputedStyle(node), box = node.getBoundingClientRect();
+        return { outline: css.outlineStyle, shadow: css.boxShadow, ink: css.color,
+          underline: css.getPropertyValue('--tk-field-height').trim(), fits: box.left >= 0 && box.right <= innerWidth };
+      });
+      assert.equal(style.outline, 'none'); assert.equal(style.shadow, 'none'); assert.equal(style.underline, '3px'); assert.equal(style.fits, true);
+      assert.equal(style.ink, theme === 'light' ? 'rgb(23, 23, 23)' : 'rgb(255, 255, 255)');
+      const card = await range.locator('form').boundingBox();
+      assert.ok(card && card.x >= 0 && card.y >= 0 && card.x + card.width <= width && card.y + card.height <= height);
+      const submit = await range.locator('[type="submit"]').boundingBox();
+      assert.ok(submit && submit.y + submit.height <= height, 'Modal action must remain visible.');
+      await page.screenshot({ path: path.join(output, `range-${theme}-${width}.png`) });
+    }
+  }
+  await page.setViewportSize({ width: 1400, height: 887 });
+  await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; document.querySelector('[data-lang="en"]').click(); });
+  await page.waitForFunction(() => document.querySelector('#pdfSplitRangeHelp').textContent.includes('11-14 stay unselected'));
+  assert.match(await range.locator('[data-range-limit]').innerText(), /1-26/);
+  assert.match(await page.locator('#pdfSplitRangeHelp').innerText(), /11-14 stay unselected/);
+  await page.screenshot({ path: path.join(output, 'range-english.png') });
+  await rangeInput.press('Escape');
+  assert.equal(await range.evaluate(node => node.inert && !node.classList.contains('visible')), true);
+  assert.equal(await wb.evaluate(node => !node.inert && node.classList.contains('visible')), true);
+  assert.equal(await page.locator('#pdfSplitRangeBtn').evaluate(node => document.activeElement === node), true);
+  await page.evaluate(() => document.querySelector('[data-lang="zh"]').click());
+  await page.waitForFunction(() => document.documentElement.lang === 'zh-CN');
+  const rangesPdf = await PDFDocument.load(await download('#pdfSplitDownloadAllBtn'));
+  assert.equal(rangesPdf.getPageCount(), 16);
+  assert.deepEqual(rangesPdf.getPages().map(page => page.getWidth()), disjoint.map(page => 420 + (page - 1) * 2));
+  await wb.locator('.pdf-editor-tile-select').nth(2).click();
+  await page.locator('#pdfSplitRangeBtn').click();
+  assert.equal(await rangeInput.inputValue(), '');
+  await addRange('24-26');
+  assert.deepEqual(await chosenPages(), [...disjoint.filter(page => page !== 3), 24, 25, 26]);
+  await range.locator('[data-range-close]').last().click();
+  await page.locator('#pdfSplitRangeBtn').click();
+  await rangeInput.press('Shift+Tab');
+  await page.keyboard.press('Shift+Tab');
+  assert.equal(await range.locator('[type="submit"]').evaluate(node => document.activeElement === node), true);
+  await page.keyboard.press('Tab');
+  assert.equal(await range.locator('[data-range-close]').first().evaluate(node => document.activeElement === node), true);
+  await range.locator('[data-range-close]').first().click();
+  await page.locator('#pdfSplitSelectAllBtn').click();
+  assert.equal(await wb.locator('.pdf-editor-tile.is-selected').count(), 26);
+  report.checks.push('default empty / additive 1-10 + 15-20 / actual 16-page export / overlap / validation / cross-file range / retained manual deselection / modal themes and sizes / focus and keyboard');
   await wb.locator('[data-tool-settings]').click();
   await page.waitForSelector('#settingsOverlay.visible');
   await page.locator('#settingsBack').click();
@@ -181,6 +264,7 @@ try {
   assert.equal(await wb.locator('.pdf-editor-tile').count(), 0);
   await page.locator('#pdfSplitProcessBtn').click();
   await page.waitForSelector('#pdfSplitWorkspace.visible');
+  assert.equal(await wb.locator('.pdf-editor-tile.is-selected').count(), 0, 'Reopening starts with no pages selected.');
   await page.locator('#pdfSplitWorkspaceClose').focus();
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !document.querySelector('#pdfSplitWorkspace').classList.contains('visible'));

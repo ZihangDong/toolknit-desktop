@@ -1,5 +1,11 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-10-23 发布前增量：新增 `app/settings-navigation-runtime.js` 管理设置页 Escape 消费顺序，应用组合根只注入当前页面与既有关闭函数；无新 DOM ID、事件、存储、Tauri 或 CLI/MCP 契约。Excel 原生 UNO 脚本只编辑工作副本，增加隐藏工作表可见性校验，并用实际 XLSX/XLS/ODS 导出正文验证。依赖升级和实际包文件一致性检查、原生 ZIP 读取适配及主题提示文字修补详见[发布前报告](V32_RELEASE_PREFLIGHT_20261023.zh-CN.md)。73 工具、12 分类、77 项 CLI/MCP 保持不变。
+
+> 2026-10-22 PDF 工作台导航修补：`shared/pdf-workbench.js` 在动态兄弟工作台最终挂载后调用 `prepareToolPageChrome`，沿用共享导航样式、图标和全局动作代理；翻译按 `data-i18n` 标签更新，避免覆盖动画图标容器。没有新增 DOM ID、事件、存储、原生命令或依赖；四个二级工作台和全部 16 个 PDF 工具入口的导航回归及责任边界见 [导航维护记录](PDF_WORKBENCH_NAVIGATION.zh-CN.md)。
+
+> 2026-10-22 PDF 拆分增量：`features/pdf-split/selection.js` 负责验证并累加页码范围，`range-dialog.js` 复用模态会话管理输入、焦点、双语反馈和销毁；`preview.js` 以空选状态载入，继续使用共享工作台和原有导出链路。新增八个 DOM ID（明细见维护指南），当前 HTML ID 1464 个、无重复；73 个桌面工具、12 分类和 77 项 CLI/MCP 能力不变，无新增原生命令、事件、存储或依赖。专项逻辑/契约、架构、构建和实际 PDF 浏览器导出回归通过。
+
 > 2026-10-22 V3.2 CLI/MCP 增量：77 项 MCP 能力，73 个桌面工具 / 12 分类。`cli/lib/tool-definitions.mjs` 是可独立读取的工具契约，`tool-registry.mjs` 校验并调度；新增操作按文档、图片、AI、Office、实用工具和只读扫描划分，重计算使用有容量/取消边界的 Worker。`safe-files.mjs` 统一新能力与原有 PDF 的源文件/原子写出保护。npm 归档使用当前工作源码快照独立安装验证，不再只检查旧 HEAD。Node 22.13/24.19 消费安装、官方 MCP SDK、108 项发布脚本及 Rust 260 passed / 11 ignored 通过；Windows 转写路径、模型下载与硬件兜底的修补归 CLI 原生适配，不改变 Tauri command。完整范围和证据见 [CLI/MCP 审计](V32_CLI_MCP_AUDIT_20261022.zh-CN.md) 与 [能力清单](CLI_CAPABILITIES.md)。以下历史快照保留原有计数。
 
 > 2026-10-21 预览与表单增量：新增共享 `preview-viewport.js`、`pdf-preview-canvas.js` 与 `upload-empty-state.js`，分别负责画布输入、私有画布提交和静态上传空状态；输入底线与成功弹框主题适配位于 components。业务渲染、取消、输出仍属于 feature；没有增加 Tauri command、storage key 或 CLI/MCP 能力，73 个桌面工具和 12 个分类保持不变。新增共享 CSS class 契约与验证入口见 [UI 统一报告](V32_PDF_UI_UNIFICATION_20261021.zh-CN.md)。

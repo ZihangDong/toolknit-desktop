@@ -331,7 +331,7 @@ pub(crate) fn validate_docx_file(path: &Path) -> Result<(), String> {
     let mut expanded = 0_u64;
     for index in 0..zip.len() {
         let entry = zip.by_index(index).map_err(|_| failure("output-invalid"))?;
-        let name = entry.name();
+        let name = entry.name().map_err(|_| failure("output-invalid"))?;
         let lower = name.to_ascii_lowercase();
         if name.len() > 240
             || name.contains(['\\', ':', '%'])
@@ -378,7 +378,10 @@ pub(crate) fn validate_docx_file(path: &Path) -> Result<(), String> {
         if entry.is_dir() {
             continue;
         }
-        let name = entry.name().to_string();
+        let name = entry
+            .name()
+            .map_err(|_| failure("output-invalid"))?
+            .into_owned();
         let length = entry.size();
         let mut data = Vec::with_capacity(length.min(1024 * 1024) as usize);
         (&mut entry)
@@ -605,6 +608,28 @@ mod docx_write_tests {
             writer.write_all(content.as_bytes()).unwrap();
         }
         writer.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn docx_part_names_preserve_unicode_and_reject_unsafe_paths() {
+        let mut nonce = [0_u8; 12];
+        getrandom::getrandom(&mut nonce).unwrap();
+        let folder = std::env::temp_dir().join(format!("toolknit-docx-names-{}", hex::encode(nonce)));
+        std::fs::create_dir(&folder).unwrap();
+        let file = folder.join("names.docx");
+        for (name, valid) in [
+            ("word/\u{e9}.xml", true),
+            ("../outside.xml", false),
+            ("word/%2e%2e/outside.xml", false),
+            ("word\\outside.xml", false),
+        ] {
+            let mut writer = zip::ZipWriter::new_append(std::io::Cursor::new(package(false))).unwrap();
+            writer.start_file(name, SimpleFileOptions::default()).unwrap();
+            writer.write_all(b"<part/>").unwrap();
+            std::fs::write(&file, writer.finish().unwrap().into_inner()).unwrap();
+            assert_eq!(validate_docx_file(&file).is_ok(), valid, "{name}");
+        }
+        std::fs::remove_dir_all(folder).unwrap();
     }
 
     #[test]

@@ -1,6 +1,6 @@
 # ToolKnit 桌面端更新日志
 
-> 本文件保留 V2.x 历史记录。V3.0 发布后的更新（当前为 V3.1 未发布内容）统一记录在仓库根目录 [changelog.md](../changelog.md)。
+> 本文件保留 V2.x 历史记录。V3.x 的更新与当前未发布内容统一记录在仓库根目录 [changelog.md](../changelog.md)。
 
 > 与网页端完整更新历史保持同步：
 > https://toolknit.com/changelog.html

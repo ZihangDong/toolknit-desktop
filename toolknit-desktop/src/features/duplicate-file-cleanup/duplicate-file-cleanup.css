@@ -45,6 +45,7 @@ html[data-theme="dark"] #duplicateFileCleanupOverlay input[type="checkbox"]::aft
 .duplicate-main-head span, .duplicate-status { font-size: 14px; line-height: 1.6; color: var(--dup-muted); }
 .duplicate-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 20px 12px; }
 #duplicateSearch { min-width: 140px; width: 180px; flex: 1; border: 1px solid var(--line); background: var(--dup-input); color: var(--dup-ink); border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 13px; }
+#duplicateSearch::placeholder { color: var(--dup-muted); opacity: 1; }
 .duplicate-status, #duplicateWarning, .duplicate-error { margin: 0 20px 12px; overflow-wrap: anywhere; }
 .duplicate-error { color: #d36868; font-size: 13px; }
 .duplicate-results { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px; }

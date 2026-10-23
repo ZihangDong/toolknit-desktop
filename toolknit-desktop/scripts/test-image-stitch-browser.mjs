@@ -2,10 +2,16 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
+import { createServer } from 'vite';
 
 const require = createRequire(process.env.TOOLKNIT_TEST_MODULES
   ? path.join(process.env.TOOLKNIT_TEST_MODULES, 'package.json') : import.meta.url);
 const { chromium } = require('playwright');
+const server = process.env.TOOLKNIT_TEST_URL ? null : await createServer({
+  logLevel: 'error', optimizeDeps: { entries: ['index.html', 'screenshot.html'] },
+  server: { host: '127.0.0.1', port: 0, strictPort: false, hmr: false, watch: null }
+});
+await server?.listen();
 const browser = await chromium.launch({ headless: true,
   ...(process.env.TOOLKNIT_TEST_BROWSER ? { executablePath: process.env.TOOLKNIT_TEST_BROWSER } : {}) });
 const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
@@ -97,7 +103,7 @@ async function checkNumberField(selector, theme) {
 }
 
 try {
-  await page.goto(process.env.TOOLKNIT_TEST_URL || 'http://localhost:1420/');
+  await page.goto(process.env.TOOLKNIT_TEST_URL || server.resolvedUrls.local[0]);
   await page.waitForSelector('[data-home-tool]', { state: 'attached' });
   await page.waitForFunction(() => !document.documentElement.dataset.tkStartup);
   await page.evaluate(async () => {
@@ -239,4 +245,5 @@ try {
   throw error;
 } finally {
   await browser.close();
+  await server?.close();
 }

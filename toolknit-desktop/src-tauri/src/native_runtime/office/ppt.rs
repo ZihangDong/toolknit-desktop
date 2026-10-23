@@ -1096,6 +1096,8 @@ def apply_page_setup(document, options):
             visible_before += 1
         elif options["sheetRange"] == "all":
             sheet.setPropertyValue("IsVisible", True)
+            if not bool(sheet.getPropertyValue("IsVisible")):
+                raise RuntimeError("Calc could not include a hidden worksheet in the export")
 
     page_styles = document.getStyleFamilies().getByName("PageStyles")
     configured_styles = set()
@@ -1142,6 +1144,35 @@ def apply_page_setup(document, options):
     }
 
 
+def load_workbook(desktop, input_url, input_path, read_only):
+    load_properties = [
+        prop("Hidden", True),
+        prop("ReadOnly", read_only),
+        prop("UpdateDocMode", 0),
+        prop("MacroExecutionMode", 0),
+    ]
+    try:
+        document = desktop.loadComponentFromURL(input_url, "_blank", 0, tuple(load_properties))
+    except Exception:
+        filter_name = input_filter(input_path)
+        if not filter_name:
+            raise
+        document = desktop.loadComponentFromURL(
+            input_url, "_blank", 0,
+            tuple(load_properties + [prop("FilterName", filter_name)]),
+        )
+    if document is None or not document.supportsService("com.sun.star.sheet.SpreadsheetDocument"):
+        implementation = "none" if document is None else str(document.getImplementationName())
+        services = [] if document is None else list(document.getSupportedServiceNames())
+        if document is not None:
+            document.dispose()
+        raise RuntimeError(
+            "The selected file is not a spreadsheet document "
+            "(implementation=%s, services=%s)" % (implementation, ",".join(services))
+        )
+    return document
+
+
 def main():
     pipe_name, input_path, output_path, options_json, metadata_path = sys.argv[1:6]
     options = json.loads(options_json)
@@ -1150,36 +1181,19 @@ def main():
     desktop = service_manager.createInstanceWithContext("com.sun.star.frame.Desktop", context)
     document = None
     try:
-        load_properties = [
-            prop("Hidden", True),
-            # Rendering needs no write access. Some valid XLS imports return
-            # None in headless writable mode but load directly in read-only mode.
-            prop("ReadOnly", True),
-            prop("UpdateDocMode", 0),
-            prop("MacroExecutionMode", 0),
-        ]
         input_url = uno.systemPathToFileUrl(os.path.abspath(input_path))
-        try:
-            document = desktop.loadComponentFromURL(
-                input_url, "_blank", 0, tuple(load_properties)
-            )
-        except Exception:
-            filter_name = input_filter(input_path)
-            if not filter_name:
-                raise
-            document = desktop.loadComponentFromURL(
-                input_url,
-                "_blank",
-                0,
-                tuple(load_properties + [prop("FilterName", filter_name)]),
-            )
-        if document is None or not document.supportsService("com.sun.star.sheet.SpreadsheetDocument"):
-            implementation = "none" if document is None else str(document.getImplementationName())
-            services = [] if document is None else list(document.getSupportedServiceNames())
-            raise RuntimeError(
-                "The selected file is not a spreadsheet document "
-                "(implementation=%s, services=%s)" % (implementation, ",".join(services))
-            )
+        # Preserve the read-only import path for legacy XLS compatibility.
+        document = load_workbook(desktop, input_url, input_path, True)
+        sheets = document.getSheets()
+        if options["sheetRange"] == "all" and any(
+            not bool(sheets.getByName(name).getPropertyValue("IsVisible"))
+            for name in sheets.getElementNames()
+        ):
+            # Calc ignores visibility changes in read-only mode. The caller
+            # supplies a staged copy, never the user's original workbook.
+            document.close(True)
+            document = None
+            document = load_workbook(desktop, input_url, input_path, False)
         metadata = apply_page_setup(document, options)
         try:
             document.calculateAll()

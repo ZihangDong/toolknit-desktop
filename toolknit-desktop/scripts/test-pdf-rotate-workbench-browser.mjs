@@ -40,7 +40,7 @@ try {
   await page.locator('#pdfRotateInput').setInputFiles(fixture);
   const wb = page.locator('#pdfRotateWorkspace');
   const main = wb.locator('[data-wb-canvas]');
-  const parts = ['.pdf-merge-v2-back', '.pdf-merge-v2-top-tag', '.home-v2-nav-link', '.home-v2-support-top', '.home-v2-icon-button', '.home-v2-window-button'];
+  const parts = ['.tk-nav-back', '.tk-nav-tag', '.tk-nav-web', '.tk-nav-support', '.tk-nav-help', '.tk-nav-feedback', '.tk-nav-settings', '.tk-nav-minimize', '.tk-nav-maximize', '.tk-nav-close'];
   const styles = locator => locator.first().evaluate(n => {
     const read = x => x ? Object.fromEntries(['fontSize', 'fontWeight', 'lineHeight', 'color', 'backgroundColor', 'borderRadius', 'height', 'padding'].map(k => [k, getComputedStyle(x)[k]])) : null;
     return { root: read(n), span: read(n.querySelector('span')), icon: read(n.querySelector('svg')) };

@@ -36,7 +36,7 @@ try {
   await page.waitForSelector('#pdfSplitOverlay.visible');
   const chooser = page.waitForEvent('filechooser');
   await page.locator('#pdfSplitCta').click(); await (await chooser).setFiles(fixture);
-  const parts = { header: 'header', back: '.pdf-merge-v2-back', tag: '.pdf-merge-v2-top-tag', website: '.home-v2-nav-link', support: '.home-v2-support-top', settings: '.home-v2-icon-button', minimize: '.home-v2-window-button:nth-child(1)', maximize: '.home-v2-window-button:nth-child(2)', close: '.home-v2-window-button:nth-child(3)' };
+  const parts = { header: 'header', back: '.tk-nav-back', tag: '.tk-nav-tag', website: '.tk-nav-web', support: '.tk-nav-support', help: '.tk-nav-help', feedback: '.tk-nav-feedback', settings: '.tk-nav-settings', minimize: '.tk-nav-minimize', maximize: '.tk-nav-maximize', close: '.tk-nav-close' };
   async function styles(root, selector) {
     return page.locator(`${root} ${selector}`).evaluate(node => {
       const properties = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'backgroundColor', 'borderRadius', 'borderColor', 'borderWidth', 'padding', 'gap', 'display', 'alignItems', 'justifyContent', 'transition', 'boxShadow', 'height', 'width', 'transform'];
@@ -122,8 +122,8 @@ try {
       const theme = document.documentElement.dataset.theme;
       return Boolean(label?.getBoundingClientRect().width && icon?.getBoundingClientRect().width)
         && (theme === 'light'
-          ? style.color === 'rgb(255, 255, 255)' && style.backgroundColor === 'rgb(23, 23, 23)'
-          : style.color === 'rgb(10, 10, 10)' && style.backgroundColor === 'rgb(242, 242, 239)');
+          ? style.color === 'rgb(255, 255, 255)' && style.backgroundColor === 'rgb(17, 17, 17)'
+          : style.color === 'rgb(17, 17, 17)' && style.backgroundColor === 'rgb(243, 243, 244)');
     }), true);
     assert.match(await page.locator('#pdfSplitWorkspace .pdf-merge-v2-back').innerText(), /返回首页|Back to home/);
     assert.equal(report.chrome.length, 0, 'workbench navigation must exactly match the reference tool page');

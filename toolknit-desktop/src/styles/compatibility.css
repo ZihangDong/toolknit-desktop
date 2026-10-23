@@ -139,7 +139,7 @@
 .tool-page-v2-steps > .is-active b { color: #090909; border-color: #fff; background: #fff; }
 .tool-page-v2-steps span { display: grid; gap: 3px; padding-top: 2px; }
 .tool-page-v2-steps strong { color: rgba(255,255,255,.82); font-size: 12px; }
-.tool-page-v2-steps small { color: rgba(255,255,255,.43); font-size: 10px; line-height: 1.5; }
+.tool-page-v2-steps small { color: rgba(255,255,255,.6); font-size: 10px; line-height: 1.5; }
 
 /* Markdown */
 

@@ -4,7 +4,7 @@ version = "3.2.0"
 description = "ToolKnit Desktop App"
 license-file = "../NOTICE"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.90"
 
 [lib]
 name = "toolknit_desktop_lib"
@@ -48,7 +48,7 @@ zstd = "0.13"
 getrandom = "0.2"
 zeroize = "1"
 rusqlite = { version = "0.32", features = ["bundled"] }
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "9.0.5", default-features = false, features = ["deflate"] }
 quick-xml = "0.41"
 libloading = "0.8"
 ort = { version = "=2.0.0-rc.10", default-features = false, features = ["directml", "load-dynamic"] }

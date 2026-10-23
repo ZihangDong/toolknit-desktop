@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "vite",
     "dev:debug": "vite --mode tauri-debug",
+    "prebuild": "node scripts/check-dependency-lock.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "tauri:devtools": "tauri dev --no-watch --config src-tauri/tauri.dev.conf.json",
@@ -17,8 +18,9 @@
     "build:test-package": "tauri build --features qa-devtools --config src-tauri/tauri.test.conf.json",
     "test:pdf-merge": "node scripts/test-pdf-merge-core.mjs",
     "test:pdf-merge-tool-contract": "node scripts/test-pdf-merge-tool-contract.mjs",
-    "test:pdf-split": "node scripts/test-pdf-split-core.mjs && node scripts/test-pdf-split-workbench-export.mjs",
+    "test:pdf-split": "node scripts/test-pdf-split-core.mjs && node scripts/test-pdf-split-selection.mjs && node scripts/test-pdf-split-workbench-export.mjs",
     "test:pdf-split-tool-contract": "node scripts/test-pdf-split-tool-contract.mjs",
+    "test:pdf-workbench-navigation-browser": "node scripts/test-pdf-workbench-navigation-browser.mjs",
     "test:pdf-to-image": "node scripts/test-pdf-to-image-core.mjs && node scripts/test-pdf-to-image-export-modes.mjs",
     "test:pdf-to-image-tool-contract": "node scripts/test-pdf-to-image-tool-contract.mjs",
     "test:pdf-to-scan": "node scripts/test-pdf-to-scan-core.mjs",
@@ -122,6 +124,9 @@
     "test:theme": "node scripts/test-theme-runtime.mjs",
     "test:startup": "node scripts/test-startup-runtime.mjs",
     "test:source-inventory": "node scripts/test-source-inventory.mjs",
+    "test:dependency-lock": "node scripts/test-dependency-lock.mjs && node scripts/check-dependency-lock.mjs",
+    "test:rust-toolchain": "node scripts/check-rust-toolchain.mjs",
+    "test:desktop-clean-install": "node scripts/test-desktop-clean-install.mjs",
     "test:release-artifacts": "node scripts/audit-release-artifacts.mjs",
     "test:startup-browser": "node scripts/test-startup-browser.mjs",
     "test:theme-browser": "node scripts/test-theme-browser.mjs",
@@ -143,6 +148,7 @@
     "test:duplicate-file-cleanup": "node scripts/test-duplicate-file-cleanup.mjs",
     "test:duplicate-file-cleanup-browser": "node scripts/test-duplicate-file-cleanup-browser.mjs",
     "test:excel-to-pdf": "node scripts/test-excel-to-pdf-shell.mjs && cargo test --manifest-path src-tauri/Cargo.toml excel_to_pdf --lib",
+    "test:excel-to-pdf-native": "node scripts/test-excel-to-pdf-native.mjs",
     "test:cli-package": "node scripts/prepare-cli-package.cjs && node scripts/test-cli-package.mjs",
     "test:cli-clean-worktree": "node scripts/test-cli-clean-worktree.mjs",
     "test:cli": "npm run test:cli-package && npm run test:cli-agent && npm run test:cli-v32",
@@ -169,7 +175,7 @@
   "devDependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
     "@tauri-apps/cli": "^2.0.0",
-    "vite": "^8.2.0"
+    "vite": "^8.3.5"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.0",
@@ -195,7 +201,7 @@
     "jszip": "^3.10.1",
     "katex": "^0.18.4",
     "lucide": "^0.469.0",
-    "markdown-it": "^15.0.2",
+    "markdown-it": "^15.0.3",
     "markdown-it-task-lists": "^2.1.1",
     "mermaid": "^12.2.0",
     "music-tempo": "^1.0.3",

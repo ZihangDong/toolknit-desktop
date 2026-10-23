@@ -2,6 +2,8 @@ import { spawnSync } from 'node:child_process';
 
 const releaseTests = [
   'test:source-inventory',
+  'test:dependency-lock',
+  'test:rust-toolchain',
   'test:security-release',
   'test:windows-installer',
   'test:release-version',

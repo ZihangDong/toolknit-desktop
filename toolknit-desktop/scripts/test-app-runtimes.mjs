@@ -8,6 +8,7 @@ import { createModalRuntime, createModalSession, setModalInteractivity } from '.
 import { createAutostartRuntime } from '../src/app/autostart-runtime.js';
 import { bindGlobalToolPageChrome } from '../src/shared/tool-page-shell.js';
 import { createHelpCenterRuntime } from '../src/app/help-center-runtime.js';
+import { createSettingsNavigationRuntime } from '../src/app/settings-navigation-runtime.js';
 
 class FakeElement extends EventTarget {
   constructor(id = '') {
@@ -76,6 +77,38 @@ class FakeRoot extends FakeElement {
 }
 
 const makeByIdRoot = ids => new FakeRoot(ids.map(id => new FakeElement(id)));
+
+{
+  const root = new FakeRoot(), view = new EventTarget(), settings = new FakeElement('settingsOverlay');
+  let activePage = settings, closed = 0, backgroundKeys = 0;
+  settings.classList.add('visible');
+  const navigation = createSettingsNavigationRuntime({ root, windowRef: view, settingsOverlay: settings,
+    getActivePage: () => activePage, onClose: () => { closed++; } });
+  root.addEventListener('keydown', () => { backgroundKeys++; });
+  const escape = (prevented = false) => {
+    const event = new Event('keydown', { cancelable: true });
+    Object.defineProperty(event, 'key', { value: 'Escape' });
+    if (prevented) event.preventDefault();
+    root.dispatchEvent(event);
+    return event;
+  };
+  assert.equal(escape().defaultPrevented, true);
+  await Promise.resolve();
+  assert.equal(closed, 1);
+  assert.equal(backgroundKeys, 0, 'Settings Escape must not reach background tool listeners');
+  escape(true); await Promise.resolve(); assert.equal(closed, 1, 'a child control owns a consumed Escape');
+  activePage = new FakeElement('helpOverlay');
+  escape(); await Promise.resolve(); assert.equal(closed, 1, 'foreground help or feedback owns Escape');
+  activePage = settings; settings.querySelector = () => ({ inert: false });
+  escape(); await Promise.resolve(); assert.equal(closed, 1, 'nested model managers own Escape');
+  settings.querySelector = () => null; settings.inert = true;
+  escape(); await Promise.resolve(); assert.equal(closed, 1, 'suspended Settings ignores Escape');
+  settings.inert = false; settings.classList.remove('visible');
+  escape(); await Promise.resolve(); assert.equal(closed, 1, 'closed Settings ignores Escape');
+  settings.classList.add('visible'); view.dispatchEvent(new Event('pagehide'));
+  escape(); await Promise.resolve(); assert.equal(closed, 1, 'pagehide releases the permanent listener');
+  navigation.dispose(); navigation.dispose();
+}
 
 // Optional DOM nodes must not make a runtime fail during initialization.
 const emptyRoot = new FakeRoot();
@@ -475,6 +508,26 @@ modalSession.open();
 modalSession.close();
 assert.equal(modalBackground.inert, true, 'an already suspended background must stay suspended');
 modalSession.dispose();
+
+{
+  const documentRef = new FakeRoot(), modal = new FakeElement('fallbackOverlay');
+  const disabledCommand = new FakeElement('install'), closeButton = new FakeElement('close');
+  disabledCommand.disabled = true;
+  closeButton.tabIndex = 0;
+  closeButton.focus = () => { documentRef.activeElement = closeButton; };
+  modal.querySelectorAll = () => [disabledCommand, closeButton];
+  modal.contains = node => node === closeButton || node === disabledCommand;
+  let closed = 0;
+  const session = createModalSession({ root: modal, documentRef, initialFocus: disabledCommand, onClose: () => { closed++; } });
+  session.open();
+  assert.equal(documentRef.activeElement, closeButton, 'a disabled initial command falls back to a focusable control');
+  const escape = new Event('keydown', { cancelable: true });
+  Object.defineProperty(escape, 'key', { value: 'Escape' });
+  documentRef.dispatchEvent(escape);
+  assert.equal(escape.defaultPrevented, true);
+  assert.equal(closed, 1, 'the fallback focus keeps Escape owned by the modal');
+  session.dispose();
+}
 
 // Late key reads cannot reopen a page the user already left.
 let completeKeyRead;

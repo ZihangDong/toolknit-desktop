@@ -2,3 +2,69 @@
 #pdfSplitProcessCancel svg { width: 16px; height: 16px; }
 html[data-theme="light"] #pdfSplitProcessCancel { color: #171717; background: #f5f6f7; border-color: #d7d9dd; }
 html[data-theme="light"] #pdfSplitProcessCancel:hover { background: #e9eaec; border-color: #bfc2c7; }
+
+#pdfSplitWorkspace .pdf-split-selection { display: grid; gap: 14px; min-width: 0; padding-top: 4px; }
+#pdfSplitWorkspace .pdf-split-selection-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+#pdfSplitWorkspace .pdf-split-selection-heading h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 750; line-height: 1.4; letter-spacing: 0; }
+#pdfSplitWorkspace .pdf-split-selection-heading h3 svg { width: 18px; height: 18px; flex-shrink: 0; }
+#pdfSplitWorkspace .pdf-split-selection-count { padding: 4px 8px; border-radius: 6px; color: #efefef; background: #29292d; font-size: 12px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+#pdfSplitWorkspace .pdf-split-selection-summary { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; color: #a9abb1; font-size: 12px; line-height: 1.5; }
+#pdfSplitWorkspace .pdf-split-selection-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+#pdfSplitWorkspace .pdf-split-selection-actions .pdf-editor-tool { min-width: 0; min-height: 44px; height: auto; padding: 9px 10px; justify-content: center; gap: 7px; border-radius: 999px; font-size: 13px; line-height: 1.4; white-space: normal; }
+#pdfSplitWorkspace .pdf-split-selection-actions .pdf-editor-tool svg { width: 16px; height: 16px; flex-shrink: 0; color: inherit; stroke: currentColor; }
+#pdfSplitWorkspace .pdf-split-range-trigger { background: #f5f5f5; color: #171717; border-color: #f5f5f5; }
+#pdfSplitWorkspace .pdf-split-range-trigger:hover:not(:disabled) { background: #dedee1; color: #171717; border-color: #dedee1; }
+#pdfSplitWorkspace .pdf-split-selection-note { display: grid; grid-template-columns: 15px minmax(0, 1fr); align-items: start; gap: 7px; margin: 0; color: #a9abb1; font-size: 12px; line-height: 1.65; }
+#pdfSplitWorkspace .pdf-split-selection-note svg { width: 15px; height: 15px; margin-top: 2px; }
+
+/* Reuse the editor's dialog surfaces as a sibling of the inert workbench. */
+#pdfSplitRangeDialog {
+  --ink: #f5f5f3;
+  --muted: #b8bac1;
+  --line: #303034;
+  --line-strong: #44444a;
+  position: fixed;
+  z-index: 1105;
+  visibility: hidden;
+  padding: 20px;
+  background: rgba(0, 0, 0, .5);
+  color: var(--ink);
+  font-family: var(--tk-font-display-cn), "PingFang SC", "Microsoft YaHei", sans-serif;
+  color-scheme: dark;
+}
+#pdfSplitRangeDialog.visible { visibility: visible; }
+#pdfSplitRangeDialog .pdf-editor-edit-modal-card { display: flex; flex-direction: column; width: min(460px, 100%); max-height: calc(100dvh - 40px); }
+#pdfSplitRangeDialog .pdf-editor-edit-modal-head { flex-shrink: 0; padding: 20px; }
+#pdfSplitRangeDialog .pdf-editor-edit-modal-title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 18px; line-height: 1.4; letter-spacing: 0; }
+#pdfSplitRangeDialog .pdf-editor-edit-modal-title svg { width: 20px; height: 20px; flex-shrink: 0; }
+#pdfSplitRangeDialog .pdf-editor-edit-modal-close { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; }
+#pdfSplitRangeDialog .pdf-editor-edit-modal-body { min-height: 0; overflow-y: auto; padding: 20px; gap: 10px; }
+#pdfSplitRangeDialog .pdf-editor-edit-modal-label { font-size: 13px; letter-spacing: 0; }
+#pdfSplitRangeDialog .pdf-editor-edit-modal-input { height: 48px; border-radius: 6px; background-color: #242428; font-size: 18px; font-variant-numeric: tabular-nums; }
+#pdfSplitRangeDialog .pdf-editor-edit-modal-input::placeholder { color: #8d9098; opacity: 1; }
+#pdfSplitRangeDialog p { margin: 0; }
+#pdfSplitRangeDialog .pdf-split-range-count { margin-bottom: 8px; color: var(--ink); font-size: 13px; font-weight: 650; }
+#pdfSplitRangeDialog .pdf-split-range-limit { color: var(--muted); font-size: 12px; line-height: 1.5; }
+#pdfSplitRangeDialog .pdf-split-range-help { padding-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.8; }
+#pdfSplitRangeDialog .pdf-split-range-error { color: #ffb4ac; font-size: 13px; line-height: 1.6; }
+#pdfSplitRangeDialog .pdf-split-range-error[hidden] { display: none; }
+#pdfSplitRangeDialog .pdf-split-range-status { min-height: 42px; color: var(--ink); font-size: 13px; line-height: 1.6; }
+#pdfSplitRangeDialog .pdf-editor-edit-modal-foot { flex-shrink: 0; padding: 16px 20px; gap: 10px; }
+#pdfSplitRangeDialog .pdf-merge-selection-btn { min-width: 98px; min-height: 40px; height: auto; padding: 10px 18px; border-radius: 999px; font-size: 14px; line-height: 1.4; }
+#pdfSplitRangeDialog .pdf-merge-selection-btn-primary { background: #f5f5f5; border-color: #f5f5f5; color: #171717; }
+#pdfSplitRangeDialog .pdf-merge-selection-btn-primary:hover { background: #dedee1; border-color: #dedee1; color: #171717; }
+#pdfSplitRangeDialog .pdf-merge-selection-btn > svg { width: 16px; height: 16px; color: inherit; stroke: currentColor; }
+html[data-theme="light"] #pdfSplitWorkspace .pdf-split-selection-heading { color: #171717; }
+html[data-theme="light"] #pdfSplitWorkspace .pdf-split-selection-count { background: #f0f1f3; color: #171717; }
+html[data-theme="light"] #pdfSplitWorkspace :is(.pdf-split-selection-summary, .pdf-split-selection-note) { color: #60636a; }
+html[data-theme="light"] #pdfSplitWorkspace .pdf-split-range-trigger,
+html[data-theme="light"] #pdfSplitRangeDialog .pdf-merge-selection-btn-primary { background: #171717; color: #fff; border-color: #171717; }
+html[data-theme="light"] #pdfSplitWorkspace .pdf-split-range-trigger:hover:not(:disabled),
+html[data-theme="light"] #pdfSplitRangeDialog .pdf-merge-selection-btn-primary:hover { background: #303030; color: #fff; border-color: #303030; }
+html[data-theme="light"] #pdfSplitRangeDialog { --ink: #171717; --muted: #60636a; --line: #e1e2e5; --line-strong: #cfd1d5; background: rgba(17, 17, 17, .22); color-scheme: light; }
+html[data-theme="light"] #pdfSplitRangeDialog .pdf-editor-edit-modal-input { background-color: #f5f6f7; color: #171717; }
+html[data-theme="light"] #pdfSplitRangeDialog .pdf-editor-edit-modal-input::placeholder { color: #737780; }
+html[data-theme="light"] #pdfSplitRangeDialog .pdf-split-range-error { color: #a52b24; }
+@media (prefers-reduced-motion: reduce) {
+  #pdfSplitRangeDialog { transition: none; }
+}

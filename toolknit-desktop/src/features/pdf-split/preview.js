@@ -5,6 +5,7 @@ import { createModalSession } from '../../app/modal-runtime.js';
 import { createPdfWorkbench } from '../../shared/pdf-workbench.js';
 import { assertPdfSplitPageCount } from '../../pdf-split-core.js';
 import { onLangChange, t } from '../../i18n.js';
+import { createPdfSplitRangeDialog } from './range-dialog.js';
 
 export function createPdfSplitPreview({ overlay, workspace, workspaceClose, workspaceStatus, workspaceHint,
   pageStrip, selectedCount, selectionMeta, selectAllButton, downloadAllButton,
@@ -12,6 +13,7 @@ export function createPdfSplitPreview({ overlay, workspace, workspaceClose, work
   const lifecycle = createLifecycleScope();
   const currentButton = workspace.querySelector('#pdfSplitDownloadCurrentBtn');
   const zipButton = workspace.querySelector('#pdfSplitDownloadZipBtn');
+  const rangeButton = workspace.querySelector('#pdfSplitRangeBtn');
   let loadingTask = null, documents = [], pages = [], view = null, inputFileCount = 0;
   const modal = createModalSession({ root: workspace, background: overlay, initialFocus: workspaceClose,
     onClose: () => closeWorkspace(), canClose: () => !isSaving() });
@@ -20,15 +22,16 @@ export function createPdfSplitPreview({ overlay, workspace, workspaceClose, work
     workspace.setAttribute('aria-label', t('home.pdfSplit.workspaceTitle'));
     const chosen = pages.filter(page => page.selected).length;
     workspaceStatus.textContent = t('home.pdfSplit.inputStatus', { count: inputFileCount });
-    workspaceHint.textContent = t('home.pdfSplit.workspaceTitle');
+    workspaceHint.textContent = t('home.pdfSplit.totalPages', { total: pages.length });
     selectedCount.textContent = t('home.pdfSplit.selectedCount', { count: chosen });
     selectionMeta.textContent = t('home.pdfSplit.selectionStatus', { selected: chosen, total: pages.length });
-    selectAllButton.textContent = t(chosen === pages.length ? 'home.pdfSplit.clearSelection' : 'home.pdfSplit.selectAll');
+    selectAllButton.querySelector('span').textContent = t(chosen === pages.length && pages.length ? 'home.pdfSplit.clearSelection' : 'home.pdfSplit.selectAll');
+    selectAllButton.setAttribute('aria-pressed', String(Boolean(pages.length && chosen === pages.length)));
     downloadAllButton.querySelector('span').textContent = t(chosen === pages.length ? 'home.pdfSplit.exportAll' : 'home.pdfSplit.exportSelected');
     currentButton.querySelector('span').textContent = t('home.pdfSplit.exportCurrent');
     zipButton.querySelector('span').textContent = t('home.pdfSplit.exportZip');
     for (const button of [downloadAllButton, zipButton]) button.disabled = isSaving() || !chosen;
-    for (const button of [currentButton, selectAllButton]) button.disabled = isSaving() || !pages.length;
+    for (const button of [currentButton, selectAllButton, rangeButton]) button.disabled = isSaving() || !pages.length;
     workspaceClose.disabled = isSaving();
   }
   view = createPdfWorkbench({ root: workspace, pageStrip, back: workspaceClose,
@@ -36,8 +39,11 @@ export function createPdfSplitPreview({ overlay, workspace, workspaceClose, work
     stageId: 'pdfSplitPageStage',
     labels: { back: 'home.pdfSplit.backToHome', sourcePage: 'home.pdfSplit.sourcePage', selectedCount: 'home.pdfSplit.selectedCount' },
     onChange: updateControls, refreshIcons });
+  const rangeDialog = createPdfSplitRangeDialog({ root: workspace.ownerDocument.getElementById('pdfSplitRangeDialog'), workspace,
+    trigger: rangeButton, getPages: () => pages, isLocked: isSaving, onSelect: () => view.refresh() });
 
   function releaseResources() {
+    rangeDialog.close({ restore: false });
     view.clear();
     try { loadingTask?.destroy()?.catch(() => {}); } catch {} loadingTask = null;
     for (const { doc } of documents) { try { destroyPdfDocument(doc)?.catch(() => {}); } catch {} }
@@ -62,7 +68,7 @@ export function createPdfSplitPreview({ overlay, workspace, workspaceClose, work
       catch (failure) { await destroyPdfDocument(doc); throw failure; }
       documents.push({ doc, fileData, fileName: file.name });
       for (let pageIndex = 1; pageIndex <= doc.numPages; pageIndex++) {
-        pages.push({ fileIndex, pageIndex, fileName: file.name, selected: true });
+        pages.push({ fileIndex, pageIndex, fileName: file.name, selected: false });
       }
     }
   }
@@ -74,6 +80,7 @@ export function createPdfSplitPreview({ overlay, workspace, workspaceClose, work
   }
   function closeWorkspace({ force = false } = {}) {
     if (!force && isSaving()) return false;
+    rangeDialog.close({ restore: false });
     modal.close({ restore: !force }); releaseResources(); return true;
   }
   lifecycle.event(workspaceClose, 'click', () => closeWorkspace());
@@ -88,8 +95,8 @@ export function createPdfSplitPreview({ overlay, workspace, workspaceClose, work
   lifecycle.use(onLangChange(updateControls));
   return { load, openWorkspace, closeWorkspace, releaseResources,
     close: () => closeWorkspace({ force: true }),
-    dispose() { closeWorkspace({ force: true }); view.dispose(); lifecycle.dispose(); },
-    setSaving(value) { view.setLocked(value); updateControls(); },
+    dispose() { closeWorkspace({ force: true }); rangeDialog.dispose(); view.dispose(); lifecycle.dispose(); },
+    setSaving(value) { if (value) rangeDialog.close({ restore: false }); view.setLocked(value); updateControls(); },
     getExportState({ index = null, selectedOnly = false } = {}) {
       return { documents: documents.map(({ fileData, fileName }) => ({ fileData, fileName })),
         pages: (Number.isInteger(index) ? pages.slice(index, index + 1) : selectedOnly ? pages.filter(page => page.selected) : pages)

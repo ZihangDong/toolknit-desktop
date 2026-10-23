@@ -21,6 +21,8 @@ for (const id of [
   'pdfSplitWorkspace', 'pdfSplitWorkspaceClose', 'pdfSplitPageStrip',
   'pdfSplitSelectAllBtn', 'pdfSplitDownloadAllBtn', 'pdfSplitDownloadCurrentBtn',
   'pdfSplitDownloadZipBtn', 'pdfSplitWorkbenchActions', 'pdfSplitProcessCancel', 'pdfSplitSuccessOverlay',
+  'pdfSplitRangeBtn', 'pdfSplitSelectionTitle', 'pdfSplitRangeDialog', 'pdfSplitRangeTitle', 'pdfSplitRangeInput',
+  'pdfSplitRangeLimit', 'pdfSplitRangeHelp', 'pdfSplitRangeError',
   'pdfSplitSuccessOpenFolder', 'pdfSplitSuccessOk'
 ]) {
   assert.match(html, new RegExp(`id=["']${id}["']`), `missing PDF Split DOM contract: ${id}`);
@@ -42,6 +44,20 @@ assert.doesNotMatch(tool, /\.innerHTML\s*=|\.addEventListener\(/);
 assert.match(preview, /import\('pdfjs-dist\/legacy\/build\/pdf\.mjs'\)/);
 assert.match(preview, /pdf\.worker\.mjs\?url/);
 assert.match(preview, /createPdfWorkbench/);
+assert.match(preview, /selected: false/);
+assert.match(preview, /createPdfSplitRangeDialog/);
+assert.match(preview, /rangeDialog\.close\(\{ restore: false \}\)/);
+const rangeDialog = await readFile(new URL('../src/features/pdf-split/range-dialog.js', import.meta.url), 'utf8');
+assert.match(rangeDialog, /createModalSession\(\{ root, background: workspace, initialFocus: input/);
+assert.match(rangeDialog, /selectPdfSplitRange/);
+assert.match(rangeDialog, /modal\.dispose\(\); scope\.dispose\(\)/);
+assert.doesNotMatch(rangeDialog, /\.innerHTML\s*=|\.addEventListener\(/);
+for (const language of ['zh', 'en']) {
+  const strings = JSON.parse(await readFile(new URL(`../src/locales/${language}.json`, import.meta.url), 'utf8')).home.pdfSplit;
+  for (const key of ['selectionTitle', 'totalPages', 'selectionHint', 'rangeSelect', 'rangeTitle', 'rangeLabel', 'rangePlaceholder', 'rangeLimit', 'rangeHelp', 'rangeApply', 'rangeDone', 'rangeAdded', 'rangeAlreadySelected', 'rangeEmpty', 'rangeFormat', 'rangeOrder', 'rangeBounds']) {
+    assert.equal(typeof strings[key], 'string', `Missing PDF Split ${language} message: ${key}`);
+  }
+}
 assert.match(preview, /loadingTask\?\.destroy\(\)/);
 assert.match(preview, /destroyPdfDocument\(doc\)/);
 const workbench = await readFile(new URL('../src/shared/pdf-workbench.js', import.meta.url), 'utf8');
@@ -73,6 +89,9 @@ assert.match(sortable, /scope\.event\(row, 'dragstart'/);
 
 assert.match(workbench, /styles\/components\/pdf-workbench\.css/);
 assert.match(workbench, /pdf-workbench-shell tool-page-v2-shell/);
+assert.match(workbench, /import \{ prepareToolPageChrome \} from '\.\/tool-page-chrome\.js'/);
+assert.ok(workbench.indexOf('prepareToolPageChrome(shell)') > workbench.indexOf('root.replaceChildren(shell)'),
+  'Dynamically constructed sibling workspaces prepare the final shared navigation after mounting.');
 assert.match(preview, /stageId: 'pdfSplitPageStage'/);
 assert.match(featureCss, /#pdfSplitProcessCancel/);
 const exportRuntime = await readFile(new URL('../src/features/pdf-split/export-runtime.js', import.meta.url), 'utf8');

@@ -287,7 +287,7 @@ Custom tools: WeChat **wunanvip6**. Code licensing requests, including commercia
 
 This branch includes a separately licensed PDF-to-Word Engine. Running, testing or building the complete application from source requires prior written Engine authorization. Reading the source does not. Ordinary use of official installers remains subject to the application's terms. See the [Engine license](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md).
 
-Use a supported Windows 10 / 11 system with Node.js **22.13+** (24 recommended), Rust stable **1.88+**, Visual Studio C++ Build Tools (Desktop development with C++ and Windows SDK), and Microsoft Edge WebView2 Runtime.
+Use a supported Windows 10 / 11 system with Node.js **22.13+** (24 recommended), Rust stable **1.90+**, Visual Studio C++ Build Tools (Desktop development with C++ and Windows SDK), and Microsoft Edge WebView2 Runtime.
 Initial npm and Rust dependency installation requires a connection. Install using the existing lockfiles.
 
 ### Start the desktop app

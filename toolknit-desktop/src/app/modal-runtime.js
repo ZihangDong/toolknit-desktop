@@ -21,6 +21,10 @@ export function createModalSession({ root, background, initialFocus, onClose, ca
   let scope = null;
   let returnFocus = null;
   let backgroundInteractive = false;
+  const canFocus = node => node && !node.disabled && !node.hidden
+    && !node.closest?.('[inert], [hidden]') && (!node.getClientRects || node.getClientRects().length > 0);
+  const focusableItems = () => Array.from(root.querySelectorAll('button, input, select, textarea, a[href], [tabindex]'))
+    .filter(node => node.tabIndex >= 0 && canFocus(node));
 
   function close({ restore = true } = {}) {
     if (!scope) return;
@@ -43,16 +47,25 @@ export function createModalSession({ root, background, initialFocus, onClose, ca
     setModalInteractivity(background, false);
     root.classList.add('visible');
     setModalInteractivity(root, true);
-    initialFocus?.focus({ preventScroll: true });
+    // A disabled initial command cannot receive focus (for example, install
+    // while downloading). Keep keyboard ownership inside the visible modal.
+    const focus = canFocus(initialFocus) ? initialFocus : focusableItems()[0];
+    if (focus) focus.focus({ preventScroll: true });
+    else {
+      if (!root.hasAttribute?.('tabindex')) {
+        root.setAttribute('tabindex', '-1');
+        scope.use(() => root.removeAttribute?.('tabindex'));
+      }
+      root.focus?.({ preventScroll: true });
+    }
     scope.event(documentRef, 'keydown', event => {
-      if (root.inert || (!root.contains(documentRef.activeElement) && !root.contains(event.target)) || !canClose()) return;
+      if (root.inert || !root.classList.contains('visible') || (!root.contains(documentRef.activeElement) && !root.contains(event.target)) || !canClose()) return;
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
         onClose?.();
       } else if (event.key === 'Tab') {
-        const items = Array.from(root.querySelectorAll('button, input, select, textarea, a[href], [tabindex]'))
-          .filter(node => !node.disabled && node.tabIndex >= 0 && !node.closest('[inert], [hidden]') && node.getClientRects().length);
+        const items = focusableItems();
         const index = items.indexOf(documentRef.activeElement);
         if (!items.length || (event.shiftKey ? index <= 0 : index === items.length - 1)) {
           event.preventDefault();

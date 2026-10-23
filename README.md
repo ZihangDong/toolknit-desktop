@@ -284,7 +284,7 @@ Windows 10 **1803 / build 17134 及以上**或 Windows 11；需要 Microsoft Edg
 
 本分支含单独授权的 PDF 转 Word 引擎。下述完整应用的源码运行、测试与构建须先取得该引擎的书面授权；仅阅读源码无需申请。普通用户使用官方安装包转换文件，按应用许可执行。详见[引擎许可](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md)。
 
-使用受支持的 Windows 10 / 11，安装 Node.js **22.13+**（推荐 24）、Rust stable **1.88+**、Visual Studio C++ Build Tools（含“使用 C++ 的桌面开发”和 Windows SDK），以及 Microsoft Edge WebView2 Runtime。
+使用受支持的 Windows 10 / 11，安装 Node.js **22.13+**（推荐 24）、Rust stable **1.90+**、Visual Studio C++ Build Tools（含“使用 C++ 的桌面开发”和 Windows SDK），以及 Microsoft Edge WebView2 Runtime。
 首次安装 npm 与 Rust 依赖需要联网；使用已有锁文件安装依赖。
 
 ### 启动桌面端
