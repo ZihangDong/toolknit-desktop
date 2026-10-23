@@ -235,7 +235,7 @@ WPS / Microsoft Office 不等同于 LibreOffice，不能替代需要 `soffice` �
 
 V3.2 源码从 46 项扩展至 **77 项 CLI / MCP 能力**，通过 `@toolknit/cli` 调用。
 
-> 桌面 V3.2 已发布，npm 3.2.0 暂缓发布。下面的安装命令目前仍安装 2.3.1；新增能力需等待 npm 3.2.0 发布。
+> 桌面 V3.2 与 [npm CLI / MCP 3.2.0](https://www.npmjs.com/package/@toolknit/cli/v/3.2.0) 均已发布，分别安装即可使用。
 
 | 类型 | 自动化能力举例 |
 | --- | --- |
