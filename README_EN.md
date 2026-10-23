@@ -4,8 +4,6 @@
 
 # ToolKnit Desktop 3.2
 
-V3.2 is pending release. V3.1 remains the current desktop release. Check the download page for installers; npm publication is planned with V3.2.
-
 **One toolbox for the little tasks scattered across your desktop.**
 
 73 desktop tools · 12 categories · 77 CLI / MCP capabilities · Local first

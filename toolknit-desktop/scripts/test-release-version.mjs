@@ -158,7 +158,7 @@ const publishedSeriesVersion = captureExactlyOnce(releaseNotes,
 assert.ok(releasedToolCount > 0 && releasedToolCount <= desktopToolCount,
   'Published catalog must be valid and no larger than the current catalog');
 if (releasedToolCount !== desktopToolCount) {
-  assert.match(repositoryReadme, /安装包发布状态以下载页为准/,
+  assert.match(repositoryReadme, /https:\/\/toolknit\.com\/exe\.html/,
     'Source documentation must direct readers to the download page for installer availability');
 }
 assert.match(releaseNotes, /46 项已发布能力/, 'Release notes must state the 46-capability CLI and MCP contract');
