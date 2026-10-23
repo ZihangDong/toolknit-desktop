@@ -46,7 +46,7 @@ export const HELP_CONTENT_EN = {
     html: `<div class="help-doc">
       <h2>ToolKnit Overview</h2>
       <p>ToolKnit 3.2 is a <strong>local-first</strong> Windows toolbox with 73 desktop tools in the current test catalog across 12 categories and 77 capabilities exposed to IDE Agents through CLI / MCP. Basic file processing stays local; AI tools send the necessary content to your selected provider only when explicitly invoked.</p>
-      <p>V3.1 has been released with PDF to Scanned PDF, Clean Duplicate Files and Quick Screenshot. This is the V3.2 development version; npm publication is planned with V3.2.</p>
+      <p>V3.1 has been released with PDF to Scanned PDF, Clean Duplicate Files and Quick Screenshot. This is the V3.2 development version. Desktop and CLI/MCP releases are separate; check the official download page and npm for their versions.</p>
 
       <h3>Tool Categories</h3>
       <div class="help-tool-grid">
@@ -147,7 +147,7 @@ export const HELP_CONTENT_EN = {
       <h2>CLI Basics</h2>
       <p>Use the <strong>desktop app</strong> for visual selection and preview, the <strong>CLI</strong> for PowerShell and scripts, and an <strong>IDE Agent</strong> when you prefer natural language. The CLI does not need the desktop app to stay open.</p>
       <h3>Install and check</h3>
-      <ol class="help-steps"><li>Install Node.js <code>22.13.0+</code>, then run <code>npm install --global @toolknit/cli</code>. Until V3.2 is published to npm, use its local test archive.</li><li>Run <code>toolknit doctor</code> to check the environment and optional runtimes.</li><li>Run <code>toolknit --help</code> for every command group.</li><li>Use <code>toolknit help &lt;group&gt; &lt;tool&gt;</code> for parameters and examples, such as <code>toolknit help video gif</code>.</li></ol>
+      <ol class="help-steps"><li>Install Node.js <code>22.13.0+</code>, then run <code>npm install --global @toolknit/cli</code>. The 77 capabilities below require CLI 3.2.0 or later.</li><li>Run <code>toolknit doctor</code> to check the environment and optional runtimes.</li><li>Run <code>toolknit --help</code> for every command group.</li><li>Use <code>toolknit help &lt;group&gt; &lt;tool&gt;</code> for parameters and examples, such as <code>toolknit help video gif</code>.</li></ol>
       <h3>Command groups</h3>
       <ul><li><code>pdf</code>: inspect, merge, selected-page split, export images, rotate, encrypt, decrypt, compress, and scan enhancement.</li><li><code>ppt</code>: convert to PDF or images, extract assets or text, compress, generate an AI outline, and create an editable PPTX draft.</li><li><code>hardware</code>: read-only system, CPU/memory, GPU, board, storage, network/device, and power/sensor views.</li><li><code>audio</code>: format conversion, BPM, clipping, and audio-track extraction.</li><li><code>model</code> and <code>transcribe</code>: local speech-model management plus TXT, SRT, and JSON transcription.</li><li><code>video</code>: conversion, exact frame export, and GIF clips up to 30 seconds.</li><li><code>text stats</code>, <code>image colors</code>, and <code>image stitch</code>: local analysis and long-image stitching.</li><li><code>ai-doc</code> and <code>ai-table</code>: create, inspect, edit, undo, and render editable projects.</li></ul>
       <h3>Safe defaults</h3>
@@ -981,7 +981,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       <p>After connecting ToolKnit CLI to an MCP-capable IDE, you can ask an Agent in plain language to process local files from the project. The Agent calls real ToolKnit tools; it does not need the desktop app to stay open and should not claim a result without a tool call.</p>
 
       <h3>Current scope</h3>
-      <div class="help-agent-scope"><p>V3.2 exposes <strong>77 capabilities</strong>. Use the local V3.2 test package until npm publication.</p><ul>
+      <div class="help-agent-scope"><p>V3.2 exposes <strong>77 capabilities</strong>. Use CLI 3.2.0 or later; the desktop app does not need to stay open.</p><ul>
         <li><strong>PDF and Office</strong>: inspect, merge, split, rotate, encrypt/decrypt, compress, enhance, export images, convert to Word, extract text/Markdown, crop, number pages, create scan effects or blank PDFs, and render XLSX to PDF. Word defaults to local analysis; complex regions may remain images. Excel rendering needs LibreOffice.</li>
         <li><strong>PPT</strong>: PDF/image export, asset/text extraction, compression, AI outlines and editable drafts.</li>
         <li><strong>Images</strong>: PDF creation, format conversion, compression, crop/rotate/flip, color replacement, icon archives, palette extraction, stitching and color-space conversion.</li>

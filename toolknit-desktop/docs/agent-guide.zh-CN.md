@@ -25,7 +25,7 @@ C:\Users\<你的用户名>\AppData\Roaming\npm\node_modules\@toolknit\cli\toolkn
 
 基础 PDF、图片、音视频、文本和非 AI PPT 工具不需要 AI Key。使用 AI 文档、AI 表格、PPT 文本 AI 整理、AI 生成 PPT 大纲、AI 生成 PPT 草稿 / PPTX 或转写后的 `refine` 二次校对时，请在 IDE 的 MCP 环境变量/密钥设置中为 `toolknit` 添加真实的 `DEEPSEEK_API_KEY`（也支持 `TOOLKNIT_AI_API_KEY`），再重启 IDE。不要把密钥写进 Agent 对话、文档需求、输出路径或文件名；桌面端保存的密钥不会被 CLI/MCP 读取。
 
-V3.2 连接成功后，Agent 会显示 77 项 ToolKnit 工具。需要 Node.js >=22.13.0；当前 npm 尚未发布 V3.2。新增能力与全部参数见 [完整能力清单](CLI_CAPABILITIES.md)，也可运行 `toolknit tools list --json`。以下保留已有工具的说明：
+使用 V3.2 CLI 连接后，Agent 会显示 77 项 ToolKnit 工具。需要 Node.js >=22.13.0；CLI 与桌面端独立安装。新增能力与全部参数见 [完整能力清单](CLI_CAPABILITIES.md)，也可运行 `toolknit tools list --json`。以下保留已有工具的说明：
 
 - `toolknit_pdf_inspect`：查看页数、大小和每页概况。
 - `toolknit_pdf_merge`：把多个本地 PDF 按顺序合并成一个文件。

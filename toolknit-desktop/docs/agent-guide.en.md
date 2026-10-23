@@ -25,7 +25,7 @@ C:\Users\<your-user-name>\AppData\Roaming\npm\node_modules\@toolknit\cli\toolkni
 
 Local PDF, image, audio/video, text, and non-AI PPT tools do not need an AI key. AI documents, AI tables, PPT text AI organization, AI PPT outline generation, AI PPT draft/PPTX generation, and transcription with `refine` require a real `DEEPSEEK_API_KEY` (or `TOOLKNIT_AI_API_KEY`) in the IDE's MCP environment/secret settings; restart the IDE after setting it. Never place the key in an Agent message, document brief, output path, or filename. CLI/MCP does not read the credential stored by ToolKnit Desktop.
 
-V3.2 exposes 77 ToolKnit tools and requires Node.js >=22.13.0. The V3.2 npm package is not published yet. See the [complete capability catalog](CLI_CAPABILITIES.md) or run `toolknit tools list --json`; the following list describes the existing tools.
+V3.2 CLI exposes 77 ToolKnit tools and requires Node.js >=22.13.0. Install it independently of the desktop app. See the [complete capability catalog](CLI_CAPABILITIES.md) or run `toolknit tools list --json`; the following list describes the existing tools.
 
 - `toolknit_pdf_inspect` inspects page counts, sizes, and page-by-page details.
 - `toolknit_pdf_merge` merges multiple local PDFs in order into one file.

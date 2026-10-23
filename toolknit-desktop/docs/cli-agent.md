@@ -1,6 +1,6 @@
 # ToolKnit CLI and IDE Agent
 
-ToolKnit Desktop and `@toolknit/cli` are separate V3.2 deliverables. The V3.2 npm package is prepared in source and not published yet. The CLI runs file operations directly and never starts, drives, or depends on the desktop UI.
+ToolKnit Desktop and `@toolknit/cli` are separate V3.2 deliverables. Use CLI version 3.2.0 or later for the 77-capability catalog below. The CLI runs file operations directly and never starts, drives, or depends on the desktop UI.
 
 ## Installation and checks
 

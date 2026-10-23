@@ -246,7 +246,7 @@ V3.2 从 46 项扩展至 **77 项 CLI / MCP 能力**，通过 `@toolknit/cli` �
 支持进度、取消和明确错误。保护原文件，失败保留已有输出；改进中文路径、长路径和模型下载。
 窗口、剪贴板监听和系统清理等交互能力仍在桌面端。**77 项接口不等于 73 项桌面工具逐一对应。**
 
-**V3.2 npm 包尚未发布。** 下列命令安装当前已发布版本；77 项能力见[完整清单](toolknit-desktop/docs/CLI_CAPABILITIES.md)。需要 Node.js **22.13+**。
+使用 **`@toolknit/cli` 3.2.0 或更高版本**，无需安装桌面端。77 项能力见[完整清单](toolknit-desktop/docs/CLI_CAPABILITIES.md)。需要 Node.js **22.13+**。
 
 ```powershell
 npm install --global @toolknit/cli
