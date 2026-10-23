@@ -49,7 +49,7 @@ export const HELP_CONTENT = {
     html: `<div class="help-doc">
       <h2>ToolKnit 功能概览</h2>
       <p>ToolKnit 3.2 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前测试版本提供 12 个分类、73 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 77 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
-      <p>V3.1 已发布，包含 PDF 转扫描件、清理重复文件和快速截图；当前为 V3.2 开发版本，npm 包计划在 V3.2 发布时同步。</p>
+      <p>V3.1 已发布，包含 PDF 转扫描件、清理重复文件和快速截图；当前为 V3.2 开发版本。桌面端与 CLI/MCP 分别发布，版本以官网下载页和 npm 为准。</p>
 
       <h3>工具分类一览</h3>
       <div class="help-tool-grid">
@@ -152,7 +152,7 @@ export const HELP_CONTENT = {
 
       <h3>安装并确认 CLI 可用</h3>
       <ol class="help-steps">
-        <li>安装 Node.js <code>22.13.0+</code>，然后执行 <code>npm install --global @toolknit/cli</code>；V3.2 npm 尚未发布时，先使用对应的本地测试归档</li>
+        <li>安装 Node.js <code>22.13.0+</code>，然后执行 <code>npm install --global @toolknit/cli</code>；以下 77 项能力需要 CLI 3.2.0 或更高版本</li>
         <li>在 PowerShell 执行 <code>toolknit doctor</code> 检查环境和按需依赖</li>
         <li>看到环境状态后，执行 <code>toolknit --help</code> 查看全部命令</li>
         <li>需要某个命令的参数和示例时，执行 <code>toolknit help &lt;分类&gt; &lt;工具&gt;</code>，例如 <code>toolknit help video gif</code></li>
@@ -1011,7 +1011,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       <p>把 ToolKnit CLI 连接到支持 MCP 的 IDE 后，你可以直接用自然语言让 Agent 处理项目里的本地文件。Agent 调用的是真正的 ToolKnit 工具，不需要打开桌面端，也不应把“我已经处理好了”当成没有调用工具时的替代答案。</p>
 
       <h3>当前可用范围</h3>
-      <div class="help-agent-scope"><p>V3.2 MCP 提供 <strong>77 项</strong>能力；npm 尚未发布时需使用 V3.2 本地测试包。</p><ul>
+      <div class="help-agent-scope"><p>V3.2 MCP 提供 <strong>77 项</strong>能力；使用 CLI 3.2.0 或更高版本，无需同时运行桌面端。</p><ul>
         <li><strong>PDF 与 Office</strong>：检查、合并、拆分、旋转、加解密、压缩、增强、导出图像、转 Word、文本/Markdown、裁剪、页码、扫描效果、空白 PDF，以及 XLSX 转 PDF。Word 默认离线，复杂区域可保留图像；Excel 渲染需要 LibreOffice。</li>
         <li><strong>PPT</strong>：转 PDF/图像、提取素材/文字、压缩、AI 大纲和可编辑草稿。</li>
         <li><strong>图像</strong>：转 PDF、格式转换、压缩、裁剪/旋转/翻转、颜色替换、图标包、取色、长图拼接与颜色空间换算。</li>

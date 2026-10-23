@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
 
 const read = p => readFile(p, 'utf8');
 const canonical = value => value.replace(/\r\n/g, '\n').trimEnd();
@@ -41,7 +43,7 @@ for (const file of ['../NOTICE', 'NOTICE']) {
 }
 execFileSync(process.execPath, ['scripts/sync-pdf-word-license.mjs', '--check'], { stdio: 'pipe', windowsHide: true });
 const engineLicense = await read('../LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md');
-assert.equal(await read('cli/LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md'), engineLicense,
+assert.equal(canonical(await read('cli/LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md')), canonical(engineLicense),
   'CLI NOTICE references the scoped exception, so its complete text must accompany the notice');
 assert.match(engineLicense, /Official application use/);
 assert.match(engineLicense, /commercial and noncommercial purposes/);
@@ -52,4 +54,52 @@ for (const file of ['../README.md', '../README_EN.md', 'src/legal-data.js']) {
   assert.match(await read(file), /PolyForm Noncommercial 1\.0\.0/);
   assert.match(await read(file), /info@toolknit\.com/);
 }
+
+// Git's Windows checkout changes line endings, never license ownership or text.
+const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), 'toolknit-license-eol-'));
+try {
+  const project = path.join(fixtureRoot, 'desktop');
+  const fixture = async (file, text) => {
+    const target = path.join(project, file);
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, text);
+  };
+  await mkdir(path.join(project, 'scripts'), { recursive: true });
+  await copyFile('scripts/sync-pdf-word-license.mjs', path.join(project, 'scripts/sync-pdf-word-license.mjs'));
+  const lines = ['SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0',
+    'Copyright 2026 Zihang Dong.',
+    'Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com'];
+  const jsHeader = lines.map(line => `// ${line}`).join('\n') + '\n';
+  const cssHeader = `/* ${lines.join('\n * ')}\n */\n`;
+  const sourcePaths = ['src/features/pdf-to-word/sample.js', 'src-tauri/src/native_runtime/pdf/docx_write.rs', 'cli/lib/pdf-word-engine.mjs'];
+  const licensePaths = ['../LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md',
+    'LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md', 'src/features/pdf-to-word/LICENSE.md', 'public/assets/licenses/pdf-word-engine.txt'];
+  const invoke = (...args) => spawnSync(process.execPath, ['scripts/sync-pdf-word-license.mjs', ...args],
+    { cwd: project, encoding: 'utf8', windowsHide: true, timeout: 10000 });
+  for (const eol of ['\n', '\r\n']) {
+    for (const file of sourcePaths) await fixture(file, (jsHeader + '// unchanged body\n').replaceAll('\n', eol));
+    await fixture('src/features/pdf-to-word/sample.css', (cssHeader + '.sample {}\n').replaceAll('\n', eol));
+    for (const [index, file] of licensePaths.entries()) await fixture(file,
+      (canonical(engineLicense) + '\n').replaceAll('\n', index % 2 ? '\r\n' : '\n'));
+    const checked = invoke('--check');
+    assert.equal(checked.status, 0, checked.stderr);
+    const before = await readFile(path.join(project, sourcePaths[0]));
+    const synced = invoke();
+    assert.equal(synced.status, 0, synced.stderr);
+    assert.deepEqual(await readFile(path.join(project, sourcePaths[0])), before, 'Sync must preserve a valid source header byte-for-byte.');
+    await fixture(sourcePaths[0], '// header removed\n');
+    assert.notEqual(invoke('--check').status, 0, 'Missing headers must still fail.');
+    await fixture(sourcePaths[0], jsHeader.replace('Copyright 2026 Zihang Dong.', 'Copyright changed.') + '// body\n');
+    assert.notEqual(invoke('--check').status, 0, 'Changed copyright must still fail.');
+    assert.notEqual(invoke().status, 0, 'Sync must not replace an existing different SPDX header.');
+    await fixture(sourcePaths[0], jsHeader);
+    await fixture(licensePaths[1], canonical(engineLicense).replace('info@toolknit.com', 'changed@example.invalid') + '\n');
+    assert.notEqual(invoke('--check').status, 0, 'Changed license terms must still fail.');
+  }
+} finally {
+  assert.equal(path.dirname(fixtureRoot), path.resolve(os.tmpdir()));
+  assert.ok(path.basename(fixtureRoot).startsWith('toolknit-license-eol-'));
+  await rm(fixtureRoot, { recursive: true, force: true });
+}
+console.log('License checkout regression passed: LF, CRLF, mixed copies, idempotent sync and rejected missing/changed notices.');
 console.log('License contracts passed: scoped Engine terms, source headers, metadata, official-app exception, third-party and prior grants, and package inclusion.');

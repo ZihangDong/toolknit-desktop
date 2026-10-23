@@ -22,7 +22,7 @@ npm install -g @toolknit/cli --registry=https://registry.npmjs.org
 
 ## V3.2 能力
 
-当前源码准备 **77 项 CLI/MCP 能力**，V3.2 npm 尚未发布。完整名称、参数和桌面覆盖边界见随包提供的 [能力清单](guides/CLI_CAPABILITIES.md)。
+V3.2 提供 **77 项 CLI/MCP 能力**，可独立于桌面端使用。完整名称、参数和桌面覆盖边界见随包提供的 [能力清单](guides/CLI_CAPABILITIES.md)。
 
 ```powershell
 toolknit tools list --json

@@ -29,7 +29,7 @@ const clean = text => text.replaceAll('|', '\\|').replaceAll('\n', ' ');
 const counts = Object.fromEntries(['supported', 'partial', 'desktop-only'].map(scope => [scope, DESKTOP_COVERAGE.filter(item => item.scope === scope).length]));
 const lines = [
   '# V3.2 CLI / MCP 能力清单', '',
-  `版本 ${pkg.version}，${TOOL_DEFINITIONS.length} 项 MCP 能力；CLI 可通过对应命令或通用 run 入口调用同一能力。本文由 scripts/sync-cli-catalog.mjs 从注册表生成。V3.2 尚未发布 npm。`, '',
+  `版本 ${pkg.version}，${TOOL_DEFINITIONS.length} 项 MCP 能力；CLI 可通过对应命令或通用 run 入口调用同一能力。本文由 scripts/sync-cli-catalog.mjs 从注册表生成。CLI 与桌面端独立安装和发布。`, '',
   '需要 Node.js >=22.13.0。本地工具不要求 AI Key；标有 AI 的操作仅在主动调用或明确开启 AI 模式时请求外部服务。', '',
   '## 能力目录', '',
   '| CLI（前缀 toolknit） | MCP 名称 | 参数与边界 |', '| --- | --- | --- |',

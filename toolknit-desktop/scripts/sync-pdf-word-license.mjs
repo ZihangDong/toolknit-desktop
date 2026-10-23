@@ -7,6 +7,7 @@ const identifier = 'LicenseRef-ToolKnit-PDF-Word-Source-View-1.0';
 const licenseName = 'ToolKnit-PDF-Word-Source-View-1.0.md';
 const license = await readFile(path.join(root, '..', 'LICENSES', licenseName), 'utf8');
 const check = process.argv.includes('--check');
+const canonical = value => value.replaceAll('\r\n', '\n');
 const sourceFiles = [];
 async function visit(directory) {
   for (const entry of await readdir(path.join(root, directory), { withFileTypes: true })) {
@@ -23,15 +24,16 @@ for (const file of sourceFiles) {
   const lines = [`SPDX-License-Identifier: ${identifier}`, 'Copyright 2026 Zihang Dong.',
     'Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com'];
   const header = file.endsWith('.css') ? `/* ${lines.join('\n * ')}\n */\n` : `${lines.map(line => `// ${line}`).join('\n')}\n`;
-  if (check) assert(original.startsWith(header), `Engine license header missing: ${file}`);
-  else if (!original.startsWith(header)) {
+  if (check) assert(canonical(original).startsWith(header), `Engine license header missing: ${file}`);
+  else if (!canonical(original).startsWith(header)) {
     assert(!original.includes('SPDX-License-Identifier:'), `Review existing license before changing ${file}`);
-    await writeFile(target, header + original);
+    const eol = original.includes('\r\n') ? '\r\n' : '\n';
+    await writeFile(target, header.replaceAll('\n', eol) + original);
   }
 }
 for (const file of [`LICENSES/${licenseName}`, 'src/features/pdf-to-word/LICENSE.md', 'public/assets/licenses/pdf-word-engine.txt']) {
   const target = path.join(root, file);
-  if (check) assert.equal(await readFile(target, 'utf8'), license, `Engine license copy differs: ${file}`);
+  if (check) assert.equal(canonical(await readFile(target, 'utf8')), canonical(license), `Engine license copy differs: ${file}`);
   else await writeFile(target, license);
 }
 console.log(`PDF Word license ${check ? 'verified' : 'synchronized'}: ${sourceFiles.length} source headers and 3 copies.`);

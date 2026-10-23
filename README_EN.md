@@ -247,7 +247,7 @@ V3.2 expands from 46 to **77 CLI / MCP capabilities**, available through `@toolk
 Progress, cancellation and explicit errors are supported. Originals and existing outputs stay protected. Unicode paths, long paths and model downloads are improved.
 Windows, clipboard monitoring and system cleanup remain desktop interactions. **77 interfaces do not map one-to-one to 73 desktop tools.**
 
-**V3.2 is not on npm yet.** These commands install the currently published version. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for the 77 prepared capabilities. Requires Node.js **22.13+**.
+Use **`@toolknit/cli` 3.2.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for all 77 capabilities. Requires Node.js **22.13+**.
 
 ```powershell
 npm install --global @toolknit/cli
