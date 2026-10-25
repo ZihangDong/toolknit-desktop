@@ -55,7 +55,7 @@
     "LICENSES"
   ],
   "dependencies": {
-    "@napi-rs/canvas": "1.0.8",
+    "@napi-rs/canvas": "1.0.13",
     "@pdf-lib/fontkit": "^1.1.1",
     "ajv": "^8.17.1",
     "bmp-ts": "1.0.9",

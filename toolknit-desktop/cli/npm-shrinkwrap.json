@@ -12,7 +12,7 @@
       ],
       "license": "SEE LICENSE IN NOTICE",
       "dependencies": {
-        "@napi-rs/canvas": "1.0.8",
+        "@napi-rs/canvas": "1.0.13",
         "@pdf-lib/fontkit": "^1.1.1",
         "ajv": "^8.17.1",
         "bmp-ts": "1.0.9",
@@ -40,7 +40,7 @@
       },
       "funding": {
         "type": "custom",
-        "url": "https://github.com/ZihangDong/toolknit-desktop#支持作者"
+        "url": "https://github.com/ZihangDong/toolknit-desktop#支持与反馈"
       }
     },
     "node_modules/@emnapi/runtime": {
@@ -639,9 +639,9 @@
       "license": "MIT"
     },
     "node_modules/@napi-rs/canvas": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas/-/canvas-1.0.8.tgz",
-      "integrity": "sha512-/SaLcvlqGWdm0HSCWMgHu7cjJiQXfP8/mOY+6dUyV9flQz7sPBBZ+ed2zYtoukojPmxOaL7bm+d/G4GeWWoN7g==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas/-/canvas-1.0.13.tgz",
+      "integrity": "sha512-b87ugZpQ5ViwqVBkjervxpwa0GmJPsKHLBNoZN6GpjWeHzTbDUGryriq+2DYW2XbB+xCqSIINQysC0/I87nPbw==",
       "license": "MIT",
       "workspaces": [
         "e2e/*"
@@ -654,23 +654,23 @@
         "url": "https://github.com/sponsors/Brooooooklyn"
       },
       "optionalDependencies": {
-        "@napi-rs/canvas-android-arm64": "1.0.8",
-        "@napi-rs/canvas-darwin-arm64": "1.0.8",
-        "@napi-rs/canvas-darwin-x64": "1.0.8",
-        "@napi-rs/canvas-linux-arm-gnueabihf": "1.0.8",
-        "@napi-rs/canvas-linux-arm64-gnu": "1.0.8",
-        "@napi-rs/canvas-linux-arm64-musl": "1.0.8",
-        "@napi-rs/canvas-linux-riscv64-gnu": "1.0.8",
-        "@napi-rs/canvas-linux-x64-gnu": "1.0.8",
-        "@napi-rs/canvas-linux-x64-musl": "1.0.8",
-        "@napi-rs/canvas-win32-arm64-msvc": "1.0.8",
-        "@napi-rs/canvas-win32-x64-msvc": "1.0.8"
+        "@napi-rs/canvas-android-arm64": "1.0.13",
+        "@napi-rs/canvas-darwin-arm64": "1.0.13",
+        "@napi-rs/canvas-darwin-x64": "1.0.13",
+        "@napi-rs/canvas-linux-arm-gnueabihf": "1.0.13",
+        "@napi-rs/canvas-linux-arm64-gnu": "1.0.13",
+        "@napi-rs/canvas-linux-arm64-musl": "1.0.13",
+        "@napi-rs/canvas-linux-riscv64-gnu": "1.0.13",
+        "@napi-rs/canvas-linux-x64-gnu": "1.0.13",
+        "@napi-rs/canvas-linux-x64-musl": "1.0.13",
+        "@napi-rs/canvas-win32-arm64-msvc": "1.0.13",
+        "@napi-rs/canvas-win32-x64-msvc": "1.0.13"
       }
     },
     "node_modules/@napi-rs/canvas-android-arm64": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas-android-arm64/-/canvas-android-arm64-1.0.8.tgz",
-      "integrity": "sha512-5+nkh8i3gt6lqS/d2jTZ1xAn6tdgtB4Lf1mW6T0Qm5/rXNwBuV1sAEyLEWan5o9gJPU/GuvHR3rvSeZ+FaGrbw==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas-android-arm64/-/canvas-android-arm64-1.0.13.tgz",
+      "integrity": "sha512-trn7AaDzQ+yeeA0ezhkC7cB1ZDPtp4UYk0EvB5F8qtYL9jEVWtVrU30WOpI52DszoTxaTsCgf5PP4ZVaOlOIHQ==",
       "cpu": [
         "arm64"
       ],
@@ -688,9 +688,9 @@
       }
     },
     "node_modules/@napi-rs/canvas-darwin-arm64": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas-darwin-arm64/-/canvas-darwin-arm64-1.0.8.tgz",
-      "integrity": "sha512-7jQ47gi+fZ7KJmfc/5rNyy1CYw/cu4kZ0KPIYbo9UUgSdW0bKQJpt+WihEor6s4Lyp7+xc3a+3HeyXmAEbbnPg==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas-darwin-arm64/-/canvas-darwin-arm64-1.0.13.tgz",
+      "integrity": "sha512-6Y2djEetL8copxfNK6hg7oig/xqTwOchv19hBOm+zBNdKc/02Z3kjZN5wrLzv/l5O04/bAQS6I/AlQpwBlXgPg==",
       "cpu": [
         "arm64"
       ],
@@ -708,9 +708,9 @@
       }
     },
     "node_modules/@napi-rs/canvas-darwin-x64": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas-darwin-x64/-/canvas-darwin-x64-1.0.8.tgz",
-      "integrity": "sha512-rRjDMZs9pIRKGxgijwezplKc1RnJsqUokrA9h88bbTkqQ+7ePj0ZN4ZnZDy8Vu0tXs7KRlI2tQLaK4mx9QlxHg==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas-darwin-x64/-/canvas-darwin-x64-1.0.13.tgz",
+      "integrity": "sha512-OZoPwwu4TMMg8GTCFBrg8UFExwQTU/55i3uTC/izDat6PHE+ro9dimyQoOboFf91+NY7Pnn70ScR8f8I8+eZXw==",
       "cpu": [
         "x64"
       ],
@@ -728,9 +728,9 @@
       }
     },
     "node_modules/@napi-rs/canvas-linux-arm-gnueabihf": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas-linux-arm-gnueabihf/-/canvas-linux-arm-gnueabihf-1.0.8.tgz",
-      "integrity": "sha512-jGcCd+8ra6Q61xKqZeiItujTpp9a9eRLcQ0jW6qYNku+WpupqOPFPY0SrsuSnXFviJwkpKYT9p7QrB4lsf3LNQ==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas-linux-arm-gnueabihf/-/canvas-linux-arm-gnueabihf-1.0.13.tgz",
+      "integrity": "sha512-dZSYaKROuswU2eUWG5aBKndNVe68elo1YX93xtRax7q658tj8rYE+HwduovWJgs6qwv1r1/CLR60nDeBbyjvyg==",
       "cpu": [
         "arm"
       ],
@@ -748,9 +748,9 @@
       }
     },
     "node_modules/@napi-rs/canvas-linux-arm64-gnu": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas-linux-arm64-gnu/-/canvas-linux-arm64-gnu-1.0.8.tgz",
-      "integrity": "sha512-od6I2Y7kU7i1SwZYG2EKW8rWz6JiedtPpko4WEe1DDsiikrfaotVBCRaUTM5/yeZKaZ92EatoAS+5xG+6uJlYA==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas-linux-arm64-gnu/-/canvas-linux-arm64-gnu-1.0.13.tgz",
+      "integrity": "sha512-W6FzYE8ADHI93In1vi80KBL6btDtAMuj50Ch5ptkWS8xuntyzbR4h5JDUmXoakxZn2yMInksudTEqVSWoFqFGg==",
       "cpu": [
         "arm64"
       ],
@@ -771,9 +771,9 @@
       }
     },
     "node_modules/@napi-rs/canvas-linux-arm64-musl": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas-linux-arm64-musl/-/canvas-linux-arm64-musl-1.0.8.tgz",
-      "integrity": "sha512-yYkPbJDJiWj6N0gASA3CAvRypZmVpJnxU0DQg3aBhneLDQde9TPLKADsQkobNoJUtTT/lj46aWpzT48PDb3Qcg==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas-linux-arm64-musl/-/canvas-linux-arm64-musl-1.0.13.tgz",
+      "integrity": "sha512-+6fQ+rR49hkAa4voh2stLIwQ+4t+gmoseM8Bc53/DlMXb73IKymDPWK9A/NtWeqTW4ijWppYuyuxS2hPI8tzNA==",
       "cpu": [
         "arm64"
       ],
@@ -794,9 +794,9 @@
       }
     },
     "node_modules/@napi-rs/canvas-linux-riscv64-gnu": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas-linux-riscv64-gnu/-/canvas-linux-riscv64-gnu-1.0.8.tgz",
-      "integrity": "sha512-PB00MSKAp4VwK/xwe6duKxRKmH8UH4GIl1pqHSbxng0jnU9Dr7FwaDypDiqwNFZ774N+8G7mJLGuLtg9NTcQsg==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas-linux-riscv64-gnu/-/canvas-linux-riscv64-gnu-1.0.13.tgz",
+      "integrity": "sha512-17XEMO3t9RW/TtHtSFf2AkaSWuCWdzbPeidz7zrOFawHxoLSJCnpTI1hN5aUvrZNnkNNmt/vZVJCh0ryUaik3A==",
       "cpu": [
         "riscv64"
       ],
@@ -817,9 +817,9 @@
       }
     },
     "node_modules/@napi-rs/canvas-linux-x64-gnu": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas-linux-x64-gnu/-/canvas-linux-x64-gnu-1.0.8.tgz",
-      "integrity": "sha512-TWM2XWJoitLiIPCvgJh7SriC+L/T9qkYCVzC66AidsZy0QP1hkKzBzVwshCdcA3q6fIn3yE0ISbq4lMJSy8jFw==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas-linux-x64-gnu/-/canvas-linux-x64-gnu-1.0.13.tgz",
+      "integrity": "sha512-lc48IwknVHBsNzXn9Xs5OkUsRX38Ml3Z1aOybQ51mMEzZckm8+4A0qROlyYHEoBPzr1kL3IU8ZUAqDb7wtdX8w==",
       "cpu": [
         "x64"
       ],
@@ -840,9 +840,9 @@
       }
     },
     "node_modules/@napi-rs/canvas-linux-x64-musl": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas-linux-x64-musl/-/canvas-linux-x64-musl-1.0.8.tgz",
-      "integrity": "sha512-hb20MxKXXb5IB7AAwN8UHz9WRsa2HmdZfjsDCzjElwJoeV1aotVEwFU4FrFQcYQVzsJQLeaCc/2Qdt/0Q72mMg==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas-linux-x64-musl/-/canvas-linux-x64-musl-1.0.13.tgz",
+      "integrity": "sha512-bGY1r26S2bs8UNFJcPWcCSNdCFbKep5PATsvtgtC9A5u6SRgr2/jJE/RlhHL5m9ZpixNDhVkLY/5h16Kx5V9YA==",
       "cpu": [
         "x64"
       ],
@@ -863,9 +863,9 @@
       }
     },
     "node_modules/@napi-rs/canvas-win32-arm64-msvc": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas-win32-arm64-msvc/-/canvas-win32-arm64-msvc-1.0.8.tgz",
-      "integrity": "sha512-WwPN08IXE4SkL+FhJyPz/iFnycMAUkbphFIT4cmKLlvbSU0Zfn1R7BGJ3Hqky1S89QUYc0Q4IOScXb/42Re9wQ==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas-win32-arm64-msvc/-/canvas-win32-arm64-msvc-1.0.13.tgz",
+      "integrity": "sha512-2vRPBZoaIvJrUkDhZTE2Hn0YrnpJRCWVM3EJACoBKjuWI6WgPxGtUoRMsxRviCsyks8bKTSFdyw14CellnG2qA==",
       "cpu": [
         "arm64"
       ],
@@ -883,9 +883,9 @@
       }
     },
     "node_modules/@napi-rs/canvas-win32-x64-msvc": {
-      "version": "1.0.8",
-      "resolved": "https://registry.npmmirror.com/@napi-rs/canvas-win32-x64-msvc/-/canvas-win32-x64-msvc-1.0.8.tgz",
-      "integrity": "sha512-XkrVqKb+pxyba7kjy2LJvABFVBTE0DNpEl7MrG4OYUmaWarrXH+t54z/Czj2YxCKtizYTV4mg6phNm3x24qjhQ==",
+      "version": "1.0.13",
+      "resolved": "https://registry.npmjs.org/@napi-rs/canvas-win32-x64-msvc/-/canvas-win32-x64-msvc-1.0.13.tgz",
+      "integrity": "sha512-DUlW3lZPz63kYsf8mxgyyZuevhlH0T3/BGP9l+NazhB0F1+gL6D4hqZdnhZpw24DlWmTpATDcyYSZlJOi+DdfQ==",
       "cpu": [
         "x64"
       ],
