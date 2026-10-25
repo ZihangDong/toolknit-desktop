@@ -17,7 +17,7 @@
         "ajv": "^8.17.1",
         "bmp-ts": "1.0.9",
         "chart.js": "^4.5.1",
-        "docx": "9.12.0",
+        "docx": "9.13.0",
         "exceljs": "^4.4.0",
         "fontkit": "^2.0.4",
         "jszip": "^3.10.1",
@@ -40,7 +40,7 @@
       },
       "funding": {
         "type": "custom",
-        "url": "https://github.com/ZihangDong/toolknit-desktop#支持作者"
+        "url": "https://github.com/ZihangDong/toolknit-desktop#支持与反馈"
       }
     },
     "node_modules/@emnapi/runtime": {
@@ -1332,17 +1332,15 @@
       "license": "MIT"
     },
     "node_modules/docx": {
-      "version": "9.12.0",
-      "resolved": "https://registry.npmmirror.com/docx/-/docx-9.12.0.tgz",
-      "integrity": "sha512-pRxdJP7cJpqhSxzfhlB01RToOFMAY7+QJ59zT2LowpXjS2q5fAnrvAuQIyGgkuBxTcXii0LFqM96GFjhQcTicQ==",
+      "version": "9.13.0",
+      "resolved": "https://registry.npmjs.org/docx/-/docx-9.13.0.tgz",
+      "integrity": "sha512-MofrvX7rzwCe1xUFXnwneQHzv2p1lIUIDPD01DueOnKGw+TSKxAAcK5Beo69bTyqKUYsX8d49Co03Bcntc60WQ==",
       "license": "MIT",
       "dependencies": {
         "@types/node": "^26.6.2",
         "hash.js": "^1.1.7",
         "jszip": "^3.10.1",
-        "nanoid": "^6.0.1",
-        "xml": "^1.0.1",
-        "xml-js": "^1.6.8"
+        "nanoid": "^6.0.1"
       },
       "engines": {
         "node": ">=10"
@@ -2438,12 +2436,6 @@
       "integrity": "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==",
       "inBundle": true,
       "license": "ISC"
-    },
-    "node_modules/xml": {
-      "version": "1.0.1",
-      "resolved": "https://registry.npmmirror.com/xml/-/xml-1.0.1.tgz",
-      "integrity": "sha512-huCv9IH9Tcf95zuYCsQraZtWnJvBtLVE0QHMOs8bWyZAFZNDcYjsPq1nEx8jKA9y+Beo9v+7OBPRisQTjinQMw==",
-      "license": "MIT"
     },
     "node_modules/xml-js": {
       "version": "1.6.11",
