@@ -47,7 +47,7 @@ flate2 = "1"
 zstd = "0.13"
 getrandom = "0.2"
 zeroize = "1"
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
 zip = { version = "9.0.5", default-features = false, features = ["deflate"] }
 quick-xml = "0.41"
 libloading = "0.8"
