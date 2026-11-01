@@ -24,8 +24,8 @@
   <tr>
     <td width="104" align="center" valign="middle"><img src="assets/readme/v3.1/spider-wave.svg" alt="眨眨眼、挥挥手的 ToolKnit 小蜘蛛" width="88" height="88" /></td>
     <td valign="middle">
-      <strong><a href="https://s2acf.fucksb.com/register?aff=28G79Z33FT63">🐂 作者推荐（含推广链接）：牛牛自建账号分发 Token（GPT PRO 号池，不接散户）</a></strong><br />
-      对比中转站便宜 50%，100 起充。如需试用金，请联系微信 wcnmmde。价格、体验金与服务规则以服务方页面为准。
+      <strong><a href="https://s2acf.fucksb.com/register?aff=28G79Z33FT63">🐂 作者推荐（点击注册账号）：牛牛自建账号分发 Token（GPT PRO 号池，不接散户）</a></strong><br />
+      对比中转站便宜 50%，100 起充。如需试用金，请联系微信wcnmmde 发暗号Toolknit。价格、体验金与服务规则以服务方页面为准。
     </td>
   </tr>
 </table>
