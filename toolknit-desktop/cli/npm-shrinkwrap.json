@@ -21,7 +21,7 @@
         "exceljs": "^4.4.0",
         "fontkit": "^2.0.4",
         "jszip": "^3.10.1",
-        "katex": "^0.18.4",
+        "katex": "^0.19.1",
         "markdown-it": "^15.0.3",
         "markdown-it-task-lists": "^2.1.1",
         "music-tempo": "^1.0.3",
@@ -40,7 +40,7 @@
       },
       "funding": {
         "type": "custom",
-        "url": "https://github.com/ZihangDong/toolknit-desktop#支持作者"
+        "url": "https://github.com/ZihangDong/toolknit-desktop#支持与反馈"
       }
     },
     "node_modules/@emnapi/runtime": {
@@ -1673,9 +1673,9 @@
       }
     },
     "node_modules/katex": {
-      "version": "0.18.11",
-      "resolved": "https://registry.npmmirror.com/katex/-/katex-0.18.11.tgz",
-      "integrity": "sha512-yvyz/2VMKqoho/35Hat5w37wIEdWJ5ElVMidTAlWrxr5uW4aBGsEpveTmKh18/zw08v/7lGswCPon4OhqmqrTA==",
+      "version": "0.19.1",
+      "resolved": "https://registry.npmjs.org/katex/-/katex-0.19.1.tgz",
+      "integrity": "sha512-jG8uKntjSEcm2EpQOh0XturpPuuC9r3Sq5HLHdsFdWZT27E672SF19QEi+of0/YeOy15lDgRhKvr5614uRrEfA==",
       "funding": [
         "https://opencollective.com/katex",
         "https://github.com/sponsors/katex"
