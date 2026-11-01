@@ -20,7 +20,17 @@
 
 ## 关于项目和我
 
-<p><img src="assets/readme/v3.1/spider-wave.svg" alt="眨眨眼、挥挥手的 ToolKnit 小蜘蛛" width="88" height="88" /></p>
+<table>
+  <tr>
+    <td width="104" align="center" valign="middle"><img src="assets/readme/v3.1/spider-wave.svg" alt="眨眨眼、挥挥手的 ToolKnit 小蜘蛛" width="88" height="88" /></td>
+    <td valign="middle">
+      <strong>作者推荐：牛牛中转站（GPT 拼车中转站）</strong><br />
+      服务方宣传语：“牛逼，永不降智”。<br />
+      <a href="https://s2acf.fucksb.com/register?aff=28G79Z33FT63">注册体验</a> · 注册体验金与“抄底倍率”活动是否适用、具体规则，以注册页实时说明为准。<br />
+      <sub>作者推荐链接（含推广参数）。服务能力与活动规则以服务方页面为准。</sub>
+    </td>
+  </tr>
+</table>
 
 你好，我是董子航，一个把日常麻烦做成小工具的独立开发者。
 ToolKnit 像一只不停织网的蜘蛛。每个需求牵出一根线，织成一个工具。大家发现它、使用它，也帮它变得更好。
