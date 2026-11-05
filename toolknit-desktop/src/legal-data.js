@@ -5,7 +5,7 @@ const LEGAL_CONTENT_ZH = {
     title: '程序声明',
     html: `<div class="help-doc">
       <h2>程序声明</h2>
-      <p>本声明适用于 ToolKnit Desktop 3.2.0 及本仓库发布的 CLI / MCP 组件，用于说明软件性质、数据边界、第三方依赖与责任范围。使用前请结合实际任务阅读；继续使用即表示你理解本声明所述边界。</p>
+      <p>本声明适用于 ToolKnit Desktop 3.3.0 及本仓库发布的 CLI / MCP 组件，用于说明软件性质、数据边界、第三方依赖与责任范围。使用前请结合实际任务阅读；继续使用即表示你理解本声明所述边界。</p>
 
       <h3>一、软件性质与源码许可</h3>
       <p>ToolKnit Desktop 是 Windows 10 / 11（64 位）的免费、本地优先文件工作台。除单独授权组件外，自 2026-10-14 起新授权的作者代码及修改采用 <strong>PolyForm Noncommercial 1.0.0</strong>，允许遵守许可与 <code>NOTICE</code> 的非商业使用、修改及分发；商业用途需联系 info@toolknit.com 另行授权。版权归各自作者所有。这是源码可见许可，不是 OSI 定义的开源许可。旧 Apache-2.0 授权不撤销，未改动的旧代码及第三方贡献、依赖继续遵循原许可。</p>
@@ -40,7 +40,9 @@ const LEGAL_CONTENT_ZH = {
       <p>语言、输出目录、界面偏好、收藏、快捷键、已安装依赖状态和 AI 配置保存在本机应用数据中。AI Key 不会上传给 ToolKnit，但会在用户调用 AI 时作为鉴权信息发送给所选服务；请只在可信设备上配置并妥善保管。</p>
       <p>屏幕取色仅在用户点击启动或触发已配置快捷键后工作。取色期间，程序在内存中读取准星周围的 <strong>21 × 21</strong> 像素区域用于放大预览，并返回中心像素颜色；该像素区域不会保存为文件，也不会上传。</p>
 
+      <p>文件快速搜索仅在本机保存选定范围的文件名、路径、大小与时间。托盘运行继续更新，完全退出停止；清除索引不删除原文件。可选 NTFS 加速使用按需服务，安装时由 Windows 请求管理员确认。</p>
       <h3>六、第三方组件与按需依赖</h3>
+      <p>文件搜索复用了 Win顺（WinShun）的 MIT 匹配、拼音和 NTFS 元数据模块。WinShun 与拼音数据的原许可分别保留在随附的第三方声明中；不依赖 Qt 或 Everything。</p>
       <p>本软件使用 Tauri、Rust、PDF.js、pdf-lib、FFmpeg、Whisper、LibreOffice、JSZip、ExcelJS、Chart.js、Lucide 等开源组件或运行时。相关权利归各自权利人所有，具体版本、源码与许可应以仓库依赖清单、锁文件和第三方声明为准。</p>
       <p>界面默认使用阿里巴巴普惠体 Medium / Bold（Copyright © 2019 Alibaba（中国）有限公司，字体设计：Alibaba Design、汉仪字库）及 Montserrat Regular / Bold（Montserrat Project Authors，依据 SIL Open Font License 1.1 发布）。字体权利归各自权利人所有，完整声明见安装包内 <code>assets/fonts/THIRD_PARTY_FONTS.md</code>。用户自行上传替换的字体由用户确认其使用和分发授权。</p>
       <p>FFmpeg、Whisper 模型和 LibreOffice 不随基础安装包全部内置。下载源、网络速度、磁盘空间、系统策略及第三方发布变化都可能影响安装和运行。</p>
@@ -58,7 +60,7 @@ const LEGAL_CONTENT_ZH = {
 
       <h3>十、更新与联系</h3>
       <p>本声明会随功能和数据边界变化而更新。正式安装包请从 toolknit.com/exe.html 获取；源代码和问题反馈见官方 GitHub / AtomGit 仓库；提交问题前请移除文件内容、密钥、密码、完整私人路径等敏感信息。</p>
-      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.2.0<br/>最后更新：2026 年 10 月 14 日<br/>开发者：董子航（Zihang Dong）</p></div>
+      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.3.0<br/>最后更新：2026 年 10 月 28 日<br/>开发者：董子航（Zihang Dong）</p></div>
     </div>`
   },
 
@@ -124,7 +126,7 @@ const LEGAL_CONTENT_ZH = {
 
       <h3>十、责任与规范变更</h3>
       <div class="help-note"><p>用户应对输入内容、操作授权、结果复核和最终用途负责。本规范会随当前功能边界更新；继续使用后续版本表示你理解当时版本中展示的最新说明。</p></div>
-      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.2.0<br/>最后更新：2026 年 10 月 14 日<br/>开发者：董子航（Zihang Dong）</p></div>
+      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.3.0<br/>最后更新：2026 年 10 月 28 日<br/>开发者：董子航（Zihang Dong）</p></div>
     </div>`
   }
 };
@@ -134,7 +136,7 @@ const LEGAL_CONTENT_EN = {
     title: 'Program Declaration',
     html: `<div class="help-doc">
       <h2>Program Declaration</h2>
-      <p>This declaration applies to ToolKnit Desktop 3.2.0 and the CLI / MCP components published in this repository. It explains the software's nature, data boundaries, third-party dependencies, and limits of responsibility. Please read it in the context of your intended task before use.</p>
+      <p>This declaration applies to ToolKnit Desktop 3.3.0 and the CLI / MCP components published in this repository. It explains the software's nature, data boundaries, third-party dependencies, and limits of responsibility. Please read it in the context of your intended task before use.</p>
 
       <h3>1. Software and Source License</h3>
       <p>ToolKnit Desktop is a free, local-first workspace for 64-bit Windows 10 / 11. Except for separately licensed components, newly licensed author-owned code and modifications from 2026-10-14 use <strong>PolyForm Noncommercial 1.0.0</strong>. Noncommercial use, modification and distribution must preserve LICENSE and required NOTICEs. Commercial use requires separate permission via info@toolknit.com. Copyright remains with each author. This is source-available software, not OSI-approved open source. Existing Apache-2.0 grants are not withdrawn; unchanged previously licensed code, third-party contributions and dependencies retain their original licenses.</p>
@@ -169,7 +171,9 @@ const LEGAL_CONTENT_EN = {
       <p>Language, output location, interface preferences, favorites, shortcuts, managed-runtime status, and AI configuration are stored in local application data. An AI key is not uploaded to ToolKnit, but it is sent as authentication to the selected provider when the user makes an AI request. Configure it only on a trusted device.</p>
       <p>The screen picker works only after the user starts it or invokes the configured shortcut. While active, it reads a <strong>21 × 21</strong> pixel region around the crosshair into memory for magnification and returns the center pixel color. That region is not saved as a file or uploaded.</p>
 
+      <p>Quick file search stores filename, path, size and time metadata locally for selected scopes. Indexing continues in the tray and stops on full exit. Clearing the index preserves source files. Optional NTFS acceleration uses an on-demand service installed through Windows administrator confirmation.</p>
       <h3>6. Third-Party Components and Optional Runtimes</h3>
+      <p>File search reuses MIT-licensed matching, pinyin and NTFS metadata modules from WinShun. The original WinShun and pinyin-data licenses are retained separately in the bundled notices. Qt and Everything are not required.</p>
       <p>The software uses open-source components or runtimes including Tauri, Rust, PDF.js, pdf-lib, FFmpeg, Whisper, LibreOffice, JSZip, ExcelJS, Chart.js, and Lucide. Rights remain with their respective owners. Refer to dependency manifests, lockfiles, and third-party notices for authoritative versions and licenses.</p>
       <p>The default interface uses Alibaba PuHuiTi Medium / Bold (Copyright © 2019 Alibaba (China) Co., Ltd.; font design by Alibaba Design and Hanyi Fonts) and Montserrat Regular / Bold (Montserrat Project Authors, released under the SIL Open Font License 1.1). Rights remain with their respective owners. See <code>assets/fonts/THIRD_PARTY_FONTS.md</code> in the installation for full notices. Users are responsible for confirming rights to any font they upload as a replacement.</p>
       <p>FFmpeg, Whisper models, and LibreOffice are not all bundled with the base installer. Installation can be affected by the selected source, network speed, disk space, system policy, and upstream releases.</p>
@@ -187,7 +191,7 @@ const LEGAL_CONTENT_EN = {
 
       <h3>10. Updates and Contact</h3>
       <p>This declaration may be updated when features or data boundaries change. Get installers at toolknit.com/exe.html; use the official GitHub / AtomGit repositories for source code and reports. Remove file contents, keys, passwords, and private full paths from reports before submitting them.</p>
-      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.2.0<br/>Last updated: October 14, 2026<br/>Developer: Zihang Dong</p></div>
+      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.3.0<br/>Last updated: October 28, 2026<br/>Developer: Zihang Dong</p></div>
     </div>`
   },
 
@@ -253,7 +257,7 @@ const LEGAL_CONTENT_EN = {
 
       <h3>10. Responsibility and Policy Changes</h3>
       <div class="help-note"><p>Users are responsible for input content, authorization, result review, and final use. This policy may be updated with the current feature boundary; continued use of a later release means you understand the latest policy shown for that release.</p></div>
-      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.2.0<br/>Last updated: October 14, 2026<br/>Developer: Zihang Dong</p></div>
+      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.3.0<br/>Last updated: October 28, 2026<br/>Developer: Zihang Dong</p></div>
     </div>`
   }
 };

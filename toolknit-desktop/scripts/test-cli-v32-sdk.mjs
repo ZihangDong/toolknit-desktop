@@ -7,6 +7,8 @@ import path from 'node:path';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { TOOL_DEFINITIONS } from '../cli/lib/tool-definitions.mjs';
 
+const cliPackage = JSON.parse(await readFile(new URL('../cli/package.json', import.meta.url), 'utf8'));
+
 const root = await mkdtemp(path.join(os.tmpdir(), 'toolknit-sdk-'));
 const transport = new StdioClientTransport({ command: process.execPath, args: [path.resolve('cli/toolknit.mjs'), 'mcp', 'serve'], cwd: root, stderr: 'pipe' });
 let stderr = ''; transport.stderr.on('data', data => { stderr += data; });
@@ -16,7 +18,7 @@ try {
   const wire = [];
   const deliver = transport.onmessage;
   transport.onmessage = (message, extra) => { wire.push(message); deliver(message, extra); };
-  assert.equal(client.getServerVersion().version, '3.2.0');
+  assert.equal(client.getServerVersion().version, cliPackage.version);
   const listed = await client.listTools(); assert.equal(listed.tools.length, TOOL_DEFINITIONS.length);
   const result = await client.callTool({ name: 'toolknit_text_format', arguments: { text: 'b\na\na', action: 'removeDuplicateLines' } });
   assert.equal(result.isError, false); assert.equal(result.structuredContent.result.text, 'b\na');

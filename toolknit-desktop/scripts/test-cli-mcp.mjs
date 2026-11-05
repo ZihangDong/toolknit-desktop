@@ -333,7 +333,7 @@ try {
   const agentGuide = await runCli(['agent', 'guide']);
   assert.equal(agentGuide.code, 0, agentGuide.stderr);
   assert.match(agentGuide.stdout, /ToolKnit AI Agent/);
-  assert.match(agentGuide.stdout, /77 项 ToolKnit 工具/);
+  assert.match(agentGuide.stdout, /78 项 ToolKnit 工具/);
   assert.match(agentGuide.stdout, /toolknit_pdf_to_image/);
   assert.match(agentGuide.stdout, /toolknit_ppt_images/);
   assert.match(agentGuide.stdout, /toolknit_ppt_text/);
@@ -362,7 +362,7 @@ try {
   const englishAgentGuide = await runCli(['agent', 'guide', '--lang', 'en']);
   assert.equal(englishAgentGuide.code, 0, englishAgentGuide.stderr);
   assert.match(englishAgentGuide.stdout, /ToolKnit AI Agent Quick Guide/);
-  assert.match(englishAgentGuide.stdout, /77 ToolKnit tools/);
+  assert.match(englishAgentGuide.stdout, /78 ToolKnit tools/);
   assert.match(englishAgentGuide.stdout, /toolknit_pdf_to_image/);
   assert.match(englishAgentGuide.stdout, /toolknit_ppt_images/);
   assert.match(englishAgentGuide.stdout, /toolknit_ppt_text/);
@@ -902,7 +902,7 @@ try {
   assert.match(initialize.result.instructions, /hardware inspection/i);
   client.notify('notifications/initialized');
   const listed = await client.request('tools/list', {});
-  assert.equal(listed.result.tools.length, 77);
+  assert.equal(listed.result.tools.length, 78);
   assert.ok(listed.result.tools.some(tool => tool.name === 'toolknit_pdf_to_image'));
   assert.ok(listed.result.tools.some(tool => tool.name === 'toolknit_ppt_images'));
   assert.ok(listed.result.tools.some(tool => tool.name === 'toolknit_ppt_text'));

@@ -429,6 +429,7 @@ mod image_conversion_tests {
 
     #[test]
     fn image_stitch_outputs_are_complete_unique_and_pixel_correct() {
+        let _conversion_lock = test_conversion_lock();
         let unique = format!(
             "toolknit-stitch-native-{}-{}",
             std::process::id(),
@@ -556,6 +557,7 @@ mod image_conversion_tests {
 
     #[test]
     fn image_stitch_grid_png_jpg_order_and_padding() {
+        let _conversion_lock = test_conversion_lock();
         let directory = std::env::temp_dir().join(format!("toolknit-stitch-grid-{}-{}", std::process::id(),
             std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
         let output = directory.join("out");

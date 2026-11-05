@@ -141,7 +141,7 @@ const desktopToolCount = Object.keys(LAZY_TOOL_SPECS).length;
 assert.match(repositoryReadme, new RegExp(`^${desktopToolCount} 项桌面工具 ·`, 'm'), 'Repository README must match the current desktop catalog');
 assert.match(zhHelpSource, new RegExp(`${desktopToolCount} 个桌面工具`), 'Chinese help overview must match the desktop catalog');
 assert.match(enHelpSource, new RegExp(`${desktopToolCount} desktop tools`), 'English help overview must match the desktop catalog');
-assert.match(repositoryReadme, /\*\*77 项 CLI \/ MCP 能力\*\*/, 'Repository README must state the current 77-capability MCP contract');
+assert.match(repositoryReadme, /\*\*78 项 CLI \/ MCP 能力\*\*/, 'Repository README must state the current 78-capability MCP contract');
 const publishedVersion = captureExactlyOnce(releaseNotes, /^# ToolKnit Desktop (\d+\.\d+\.\d+)\r?\n/, 'Published release version');
 const versionParts = value => value.split('.').map(Number);
 const publishedParts = versionParts(publishedVersion), currentParts = versionParts(fullVersion);
@@ -149,6 +149,10 @@ const firstDifference = publishedParts.findIndex((part, index) => part !== curre
 assert.ok(firstDifference === -1 || publishedParts[firstDifference] < currentParts[firstDifference], 'Published notes cannot announce an unreleased future version');
 if (publishedVersion !== fullVersion) {
   assert.match(await readText('../changelog.md'), new RegExp(`^## V${escapeRegExp(seriesVersion)}（未发布）`, 'm'), 'A development version must have an unreleased changelog section');
+  assert.match(repositoryReadme, new RegExp(`V${escapeRegExp(seriesVersion)} 开发中，尚未发布`), 'Development README must not present the new source version as released');
+  assert.match(await readText('../README_EN.md'), new RegExp(`V${escapeRegExp(seriesVersion)} is in development and has not been released`));
+  assert.match(zhHelpSource, new RegExp(`尚未发布的 V${escapeRegExp(seriesVersion)} 开发版本`));
+  assert.match(enHelpSource, new RegExp(`unreleased V${escapeRegExp(seriesVersion)} development version`));
 }
 // Only the current release section defines this catalog; older notes stay intact.
 const currentReleaseNotes = releaseNotes.split(/\r?\n---\s*\r?\n/, 1)[0];

@@ -11,7 +11,7 @@ const server = await preview({ configFile: false, preview: { host: '127.0.0.1', 
 const index = await readFile('index.html', 'utf8');
 const prompt = index.slice(index.indexOf('<aside class="recording-mode-prompt"'), index.indexOf('</aside>', index.indexOf('<aside class="recording-mode-prompt"')) + 8);
 assert.ok(prompt.includes('recordingModePromptToggle'));
-const fixtureServer = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true, include: [] }, server: { host: '127.0.0.1', port: 0, hmr: false, watch: null }, plugins: [{ name: 'recording-mode-fixture', configureServer(devServer) {
+const fixtureServer = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true, include: ['lucide'] }, server: { host: '127.0.0.1', port: 0, hmr: false, watch: null }, plugins: [{ name: 'recording-mode-fixture', configureServer(devServer) {
 devServer.middlewares.use('/recording-fixture', (_req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.end(`<!doctype html><html lang="zh-CN" data-theme="light"><head><meta charset="utf-8"><link rel="stylesheet" href="/src/styles/pages/settings-v2.css"></head><body>
@@ -20,12 +20,41 @@ devServer.middlewares.use('/recording-fixture', (_req, res) => {
     import { createRecordingModeRuntime } from '/src/app/recording-mode-runtime.js';
     window.nativeState = JSON.parse(sessionStorage.getItem('nativeState') || '{"autostart":true,"clipboard":false,"history":false}');
     window.notifications = []; window.helpSections = []; window.failure = false;
+    window.readFailure = new URL(location).searchParams.has('readFailure');
+    window.listenFailure = new URL(location).searchParams.has('listenFailure');
+    window.mutations = [];
     window.runtime = createRecordingModeRuntime({ adapter: { available: true,
-      read: async () => ({...window.nativeState}),
-      set: async (key, value) => { if (window.failure && key === 'history' && value) throw Error('test failure'); window.nativeState[key] = value; sessionStorage.setItem('nativeState', JSON.stringify(window.nativeState)); },
-      subscribe: async listener => { window.stateChanged = listener; return () => { window.stateChanged = null; }; }
-    }, translate: key => key, notify: message => window.notifications.push(message), onOpenHelp: section => window.helpSections.push(section) });
+      read: async () => { if (window.readFailure) throw Error('clipboard:busy'); return {...window.nativeState}; },
+      set: async (key, value) => { window.mutations.push([key,value]); if (window.failure && key === 'history' && value) throw Error('screenshot:window-failed'); window.nativeState[key] = value; sessionStorage.setItem('nativeState', JSON.stringify(window.nativeState)); },
+      subscribe: async listener => { if (window.listenFailure) throw Error('listen failed'); window.stateChanged = listener; return () => { window.stateChanged = null; }; }
+    }, translate: (key, vars) => vars ? key + ':' + vars.step + ':' + vars.code : key, notify: message => window.notifications.push(message), onOpenHelp: section => window.helpSections.push(section) });
     </script></body></html>`);
+});
+devServer.middlewares.use('/shortcut-settings-fixture', (_req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.end(`<!doctype html><html><body><script type="module">
+    import template from '/src/features/quick-screenshot/template.js';
+    import { createQuickScreenshotController } from '/src/features/quick-screenshot/controller.js';
+    import '/src/features/quick-screenshot/quick-screenshot.css';
+    document.documentElement.dataset.theme = new URL(location).searchParams.get('theme') || 'light';
+    document.body.innerHTML = template;
+    window.settings = {shortcut:'Alt+Q',history:false,registered:null,error:'screenshot:shortcut-conflict'};
+    window.shortcutAttempts = 0; window.shortcutConflict = true;
+    window.quickController = createQuickScreenshotController({overlay:document.getElementById('quickScreenshotOverlay'),screenshotRuntime:{
+      available:true, listen:async()=>()=>{}, call:async(action,payload)=>{
+        if(action==='configure'){
+          if(payload.updateShortcut || payload.preferences.shortcut !== window.settings.shortcut){
+            window.shortcutAttempts++;
+            if(window.shortcutConflict)throw Error('screenshot:shortcut-conflict');
+            window.settings.registered=payload.preferences.shortcut; window.settings.error=null;
+          }
+          Object.assign(window.settings,payload.preferences);
+        }
+        return {...window.settings};
+      }
+    }});
+    window.quickController.open();
+  </script></body></html>`);
 });
 } }] });
 await fixtureServer.listen();
@@ -129,7 +158,8 @@ try {
   assert.deepEqual(await fixture.evaluate(() => window.nativeState), { autostart: true, clipboard: false, history: false }, 'restart preserves original preferences');
   await fixture.evaluate(() => window.failure = true);
   await fixture.locator('#recordingModePromptToggle').click();
-  await fixture.waitForFunction(() => window.notifications.includes('recordingMode.error'));
+  await fixture.waitForFunction(() => window.notifications.some(message => message.startsWith('recordingMode.error ')));
+  assert.match((await fixture.evaluate(() => window.notifications)).at(-1), /steps.history:screenshot:window-failed/);
   assert.deepEqual(await fixture.evaluate(() => window.nativeState), { autostart: true, clipboard: false, history: false });
   await fixture.locator('#recordingModeDismiss').hover();
   await fixture.locator('[data-recording-mode-dismiss="session"]').focus();
@@ -143,6 +173,39 @@ try {
   await fixture.locator('[data-recording-mode-dismiss="permanent"]').click();
   await fixture.reload(); await fixture.waitForFunction(() => window.runtime && !document.querySelector('#recordingModeToggle').disabled);
   assert.equal(await fixture.locator('#recordingModePrompt').isVisible(), false);
+  await fixture.goto(url + '?readFailure&listenFailure');
+  await fixture.waitForFunction(() => document.querySelector('#recordingModeStatus').textContent === 'recordingMode.statusError');
+  assert.equal(await fixture.locator('#recordingModeToggle').isEnabled(), true, 'read failure allows explicit retry');
+  await fixture.locator('#recordingModeToggle').click();
+  assert.equal(await fixture.evaluate(() => window.mutations.length), 0, 'no write while state remains unknown');
+  await fixture.evaluate(() => { window.readFailure = false; });
+  await fixture.locator('#recordingModeToggle').click();
+  await fixture.waitForFunction(() => document.querySelector('#recordingModeToggle').getAttribute('aria-pressed') === 'true');
+  assert.deepEqual(await fixture.evaluate(() => window.nativeState), {autostart:true,clipboard:true,history:true}, 'listen failure does not disable direct setting actions');
+  for (const theme of ['light', 'dark']) {
+    await fixture.goto(`${fixtureServer.resolvedUrls.local[0]}shortcut-settings-fixture?theme=${theme}`);
+    await fixture.waitForFunction(() => document.querySelector('#screenshotShortcutStatus')?.textContent);
+    const conflictLabel = await fixture.locator('#screenshotShortcutStatus').textContent();
+    await fixture.locator('#screenshotHistoryToggle').click();
+    await fixture.waitForFunction(() => document.querySelector('#screenshotHistoryToggle').getAttribute('aria-checked') === 'true');
+    assert.equal(await fixture.evaluate(() => window.shortcutAttempts), 0);
+    assert.equal(await fixture.locator('#screenshotShortcutStatus').textContent(), conflictLabel, 'history success retains shortcut warning');
+    await fixture.locator('#screenshotHistoryToggle').click();
+    await fixture.waitForFunction(() => !window.settings.history);
+    await fixture.locator('#screenshotShortcutSave').click();
+    await fixture.waitForFunction(() => !document.querySelector('#screenshotPageError').hidden);
+    assert.equal(await fixture.evaluate(() => window.shortcutAttempts), 1, 'explicit same-key save retries');
+    await fixture.evaluate(() => { window.shortcutConflict = false; });
+    await fixture.locator('#screenshotShortcutSave').click();
+    await fixture.waitForFunction(() => window.settings.registered === 'Alt+Q');
+    await fixture.locator('#screenshotShortcutDisable').click();
+    await fixture.waitForFunction(() => window.settings.shortcut === null);
+    const attempts = await fixture.evaluate(() => window.shortcutAttempts);
+    await fixture.locator('#screenshotHistoryToggle').click();
+    await fixture.waitForFunction(() => window.settings.history);
+    assert.equal(await fixture.evaluate(() => window.shortcutAttempts), attempts);
+    assert.equal(await fixture.evaluate(() => window.settings.registered), null, 'history does not enable a disabled shortcut');
+  }
   assert.deepEqual(errors, [], 'no uncaught browser errors');
   console.log('PASS mode UI: double themes, native state verification, restart restore, failure rollback, help link, temporary/permanent dismissal');
 } catch (error) {

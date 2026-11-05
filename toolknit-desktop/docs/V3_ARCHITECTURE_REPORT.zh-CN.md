@@ -1,5 +1,18 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-11-04 文件搜索增量：`features/file-search` 持有工具页、共享结果视图与独立胶囊；`native_runtime/file_search` 持有索引、查询租约、原生窗口和可选 NTFS 服务，`filesystem_worker` 以普通权限独立进程隔离共享目录访问。复用平台调用、导航、主窗恢复、自绘菜单、阴影和截图辅助窗注册。新增一个 `file_search` 命令、限定窗口的事件监听能力及独立本机缓存；75 工具、12 分类、78 CLI/MCP，158 个 Tauri 实现 / 157 个名称。实际验证与剩余管理员/桌面验收见 [文件搜索实施记录](V33_FILE_SEARCH_IMPLEMENTATION.zh-CN.md)。
+
+> 2026-10-31 首页新功能发现：分类标签为“新功能”，按 V3.3、V3.2 分组且新版本在前；V3.2 的六项入口继续显示，搜索仅筛卡片并自动隐藏空版本组。DOM/data-home-tool、原类别和启动行为不变，无 storage、Tauri 或 CLI/MCP 契约变化；白天/深色、多窗口宽度、中英文回归见 `test:home-settings-browser.mjs`。
+
+> 2026-11-02 V3.3 Word 转 PDF：`features/word-to-pdf/{tool,template,controller,core}` 负责转换队列，移除独立 preview 模块；结果通过现有 lazy 导航与 `pdf-editor.openWithFile` 交接。复用平台调用、Office 门禁、共享导航与结果弹框；Rust `office/word.rs` 与 CLI `word-runtime.mjs` 共用 UNO/Python 驱动及不包含用户资料的扩展注册缓存。当前 74 工具、12 分类、78 CLI/MCP，157 个 Tauri 实现 / 156 个名称；本轮未增加原生命令、storage key 或依赖。首页“新功能”按 V3.3/V3.2 分组。边界与验证见 [Word 转 PDF 维护说明](WORD_TO_PDF.zh-CN.md)。
+
+> 2026-10-28 记录模式增量：原生 `quick_screenshot` 的 `configure` 按快捷键是否改变/可选 `updateShortcut` 意图决定注册，历史显示独立；返回保留 `error` 状态。`app/recording-mode-state.js` 记录失败阶段和稳定代码，runtime 支持读状态失败重试，迟到失败不覆盖成功状态。无新增 command/DOM/storage/event，工具数量不变；见[维护记录](V33_RECORDING_MODE_REPAIR_20261028.zh-CN.md)。
+
+
+> 2026-10-28 V3.3 PDF 增量：`core/pdf-page-copy.js` 统一编辑、拆分、合并、旋转、裁剪及页码工具的共享资源复制，CLI 打包显式包含该模块；`shared/pdf-page-retention.js` 管理解码页面租约，编辑器 preview 自持有界画布缓存。`platform/binary-output.js` 封装原始二进制调用，原生 media IO 新增 `write_unique_file_binary`，复用已有唯一路径保存并在阻塞线程写盘。当前 155 个 Tauri 实现 / 154 个名称，73 工具、12 分类、77 CLI/MCP 能力不变。界面保持既有 DOM/storage/event，新增 `.is-current` 编辑器当前页样式；说明和验证见 [PDF 大文件修复记录](V33_PDF_LARGE_DOCUMENT_REPAIR_20261028.zh-CN.md)。
+
+> 2026-10-28 V3.3 开发启动：从已发布 V3.2 主分支创建 `V3.3`，桌面/Tauri/Rust/CLI/MCP 源码版本统一为 3.3.0，尚未发布。仅同步版本、界面标识、当前文档和版本测试，未改变模块边界、用户存储或工具契约。仍为 73 工具、12 分类、77 项 CLI/MCP；后续增量见根目录 `changelog.md` 的 V3.3 未发布节。下方 V3.2/V3.0 条目均为历史记录。
+
 > 2026-10-23 发布前增量：新增 `app/settings-navigation-runtime.js` 管理设置页 Escape 消费顺序，应用组合根只注入当前页面与既有关闭函数；无新 DOM ID、事件、存储、Tauri 或 CLI/MCP 契约。Excel 原生 UNO 脚本只编辑工作副本，增加隐藏工作表可见性校验，并用实际 XLSX/XLS/ODS 导出正文验证。依赖升级和实际包文件一致性检查、原生 ZIP 读取适配及主题提示文字修补详见[发布前报告](V32_RELEASE_PREFLIGHT_20261023.zh-CN.md)。73 工具、12 分类、77 项 CLI/MCP 保持不变。
 
 > 2026-10-22 PDF 工作台导航修补：`shared/pdf-workbench.js` 在动态兄弟工作台最终挂载后调用 `prepareToolPageChrome`，沿用共享导航样式、图标和全局动作代理；翻译按 `data-i18n` 标签更新，避免覆盖动画图标容器。没有新增 DOM ID、事件、存储、原生命令或依赖；四个二级工作台和全部 16 个 PDF 工具入口的导航回归及责任边界见 [导航维护记录](PDF_WORKBENCH_NAVIGATION.zh-CN.md)。

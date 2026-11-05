@@ -263,6 +263,59 @@
   margin-top: 22px;
 }
 
+.tool-result-release-group {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.tool-result-release-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 5px 2px 9px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--ink);
+}
+
+.tool-result-release-heading h3 {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.tool-result-release-subtitle,
+.tool-result-release-count {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.tool-result-release-rule {
+  flex: 1 1 auto;
+  min-width: 12px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.17), transparent);
+}
+
+.tool-result-release-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+
 .tool-result-card {
   min-height: 126px;
   display: flex;
@@ -417,6 +470,7 @@
   }
 
   .tool-result-grid,
+  .tool-result-release-grid,
   .favorites-content {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -456,6 +510,7 @@
   }
 
   .tool-result-grid,
+  .tool-result-release-grid,
   .favorites-content {
     grid-template-columns: 1fr;
   }

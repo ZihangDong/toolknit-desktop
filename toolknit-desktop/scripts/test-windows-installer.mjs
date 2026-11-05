@@ -18,7 +18,7 @@ assert.match(source, /Function RestorePreviousInstallLocation\s+\$\{If\} \$Reque
 const startupName = autostart.match(/const VALUE_NAME: &str = "([^"]+)"/)[1];
 assert.ok(source.includes(`!define TOOLKNIT_AUTOSTART_VALUE_NAME "${startupName}"`));
 assert.match(source, /\$0 == '\$\\"\$INSTDIR\\\$\{MAINBINARYNAME\}\.exe\$\\" --autostart'\s+DeleteRegValue/);
-for (const label of ['webview2Recovery', 'webview2Manual', 'webview2Reboot', 'upgradeUninstallFailed', 'upgradeUninstallReboot', 'appFileReleaseFailed']) {
+for (const label of ['webview2Recovery', 'webview2Manual', 'webview2Reboot', 'upgradeUninstallFailed', 'upgradeUninstallReboot', 'appFileReleaseFailed', 'fileSearchCleanupFailed']) {
   for (const language of ['ENGLISH', 'SIMPCHINESE']) {
     assert.ok(source.includes(`LangString ${label} \${LANG_${language}}`));
   }
@@ -35,6 +35,7 @@ assert.match(reinstall, /"reboot-required"[\s\S]*SetErrorLevel 3010\s+Quit/, 'do
 assert.ok(source.indexOf('!include "${TOOLKNIT_WINDOWS_DIR}\\upgrade.nsh"') < source.indexOf('Function PageReinstall'));
 const uninstall = source.slice(source.indexOf('Section Uninstall'), source.indexOf('Function RestorePreviousInstallLocation'));
 assert.ok(uninstall.indexOf('Call un.ToolKnitWaitForFileRelease') < uninstall.indexOf('NSIS_HOOK_PREUNINSTALL'));
+assert.ok(uninstall.indexOf('TOOLKNIT_SEARCH_PREUNINSTALL') < uninstall.indexOf('Delete "$ToolKnitFileToCheck"'), 'service helper must run before the executable is removed');
 assert.ok(uninstall.indexOf('SetErrorLevel 1603') < uninstall.indexOf('DeleteRegKey SHCTX "${UNINSTKEY}"'), 'file failure must stop before registration cleanup');
 assert.match(upgrade, /CreateFileW[^\n]+\?e'\s+Pop \$ToolKnitFileError/, 'capture Windows error before another API can overwrite it');
 console.log('Windows installer upgrade, dependency, reboot, path and startup ownership contracts passed.');

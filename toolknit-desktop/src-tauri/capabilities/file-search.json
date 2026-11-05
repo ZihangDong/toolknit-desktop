@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "file-search-windows",
+  "description": "Local filename search capsule, results and entrance menu",
+  "windows": [
+    "file-search-bar",
+    "file-search-results",
+    "file-search-menu"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
+  ]
+}

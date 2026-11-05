@@ -58,15 +58,21 @@ let controlsUpdated = 0;
 let stageSynced = 0;
 let textRenders = [];
 let committedScale = null;
+let currentPage = { id: 'p1', sourceId: 'source-1', pageIndex: 0 };
+let paints = 0;
+let textGate = null;
+let renderGate = null;
 
 const pdfPage = {
   getViewport({ scale }) {
     return { width: 100 * scale, height: 200 * scale };
   },
   render() {
-    return { promise: Promise.resolve(), cancel() {} };
+    paints++;
+    return { promise: renderGate?.promise || Promise.resolve(), cancel() {} };
   },
   async getTextContent() {
+    if (textGate) await textGate.promise;
     return { items: [{ text: 'hello' }] };
   },
   cleanup() { previewCleanup += 1; }
@@ -96,7 +102,7 @@ const preview = createPdfEditorPreview({
   getLastRenderScale: () => lastRenderScale,
   setLastRenderScale: value => { lastRenderScale = value; },
   getZoom: () => zoom,
-  getCurrentPage: () => ({ id: 'p1', sourceId: 'source-1', pageIndex: 0 }),
+  getCurrentPage: () => currentPage,
   hasDocument: () => true,
   getSourceDoc: async () => ({ getPage: async () => pdfPage }),
   cacheSourceRotation() {},
@@ -125,6 +131,46 @@ assert.equal(textRenders.length, 1);
 assert.equal(controlsUpdated, 1);
 assert.equal(stageSynced, 1);
 assert.equal(previewCleanup, 1);
+
+const firstCanvas = mainCanvas;
+currentPage = { ...currentPage, id: 'p2', pageIndex: 1 };
+await preview.render(2, null);
+currentPage = { ...currentPage, id: 'p1', pageIndex: 0 };
+await preview.render(3, null);
+assert.equal(paints, 2, 'returning to a cached page skips PDF.js rasterization');
+assert.equal(mainCanvas, firstCanvas);
+
+// Slow text extraction from an old render must not zero a cached canvas after
+// a newer page has already committed.
+textGate = Promise.withResolvers();
+currentPage = { ...currentPage, id: 'p3', pageIndex: 2 };
+const pending = preview.render(4, null);
+while (mainCanvas === firstCanvas) await new Promise(resolve => setTimeout(resolve, 0));
+const pendingCanvas = mainCanvas;
+currentPage = { ...currentPage, id: 'p1', pageIndex: 0 };
+await preview.render(5, null);
+const currentTextRenders = textRenders.length;
+textGate.reject(new Error('stale page text read')); await pending; textGate = null;
+assert.ok(pendingCanvas.width > 0, 'superseded text completion leaves cache ownership intact');
+assert.equal(textRenders.length, currentTextRenders, 'late failure cannot clear the new text layer');
+for (let index = 3; index < 8; index++) {
+  currentPage = { ...currentPage, id: `p${index + 1}`, pageIndex: index };
+  await preview.render(index + 5, null);
+}
+assert.equal(firstCanvas.width, 0, 'old canvas is evicted from bounded cache');
+preview.clearCache();
+assert.equal(pendingCanvas.width, 0);
+
+renderGate = Promise.withResolvers();
+const visibleBeforeSwitch = mainCanvas;
+currentPage = { ...currentPage, id: 'p9', pageIndex: 8 };
+const delayedPaint = preview.render(20, null);
+while (!mainRenderTask) await new Promise(resolve => setTimeout(resolve, 0));
+currentPage = { ...currentPage, id: 'p10', pageIndex: 9 };
+renderGate.resolve(); await delayedPaint; renderGate = null;
+assert.equal(mainCanvas, visibleBeforeSwitch, 'page switch invalidates old paint even before the next render begins');
+await preview.render(21, null);
+assert.equal(mainCanvas.dataset.pageId, 'p10');
 
 let taskCancelled = false;
 mainRenderTask = { cancel: () => { taskCancelled = true; } };

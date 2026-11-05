@@ -1,7 +1,7 @@
 {
   "name": "toolknit-desktop",
   "private": true,
-  "version": "3.2.0",
+  "version": "3.3.0",
   "license": "SEE LICENSE IN NOTICE",
   "type": "module",
   "engines": {
@@ -41,7 +41,7 @@
     "test:pdf-compress-tool-contract": "node scripts/test-pdf-compress-tool-contract.mjs",
     "test:pdf-enhance": "node scripts/test-pdf-enhance-core.mjs",
     "test:pdf-enhance-tool-contract": "node scripts/test-pdf-enhance-tool-contract.mjs",
-    "test:pdf-editor": "node scripts/test-pdf-editor-core.mjs && node scripts/test-pdf-editor-text-layout.mjs && node scripts/test-pdf-editor-zoom.mjs && node scripts/test-pdf-editor-preview.mjs && node scripts/test-pdf-editor-geometry.mjs && node scripts/test-pdf-editor-component-model.mjs && node scripts/test-pdf-editor-component-controls.mjs && node scripts/test-pdf-editor-component-interaction.mjs && node scripts/test-pdf-editor-insert-assets.mjs && node scripts/test-pdf-editor-content-editing.mjs && node scripts/test-pdf-editor-file-session.mjs && node scripts/test-pdf-editor-page-operations.mjs && node scripts/test-pdf-editor-page-selection.mjs && node scripts/test-pdf-editor-view.mjs && node scripts/test-pdf-editor-operation.mjs && node scripts/test-pdf-editor-events.mjs && node scripts/test-pdf-editor-controls.mjs && node scripts/test-pdf-editor-state.mjs && node scripts/test-pdf-editor-history.mjs && node scripts/test-pdf-editor-focus.mjs && node scripts/test-pdf-editor-thumbnail-contract.mjs && node scripts/test-pdf-editor-documents-contract.mjs && node scripts/test-pdf-editor-documents.mjs",
+    "test:pdf-editor": "node scripts/test-pdf-page-copy.mjs && node scripts/test-pdf-editor-core.mjs && node scripts/test-pdf-editor-text-layout.mjs && node scripts/test-pdf-editor-zoom.mjs && node scripts/test-pdf-editor-preview.mjs && node scripts/test-pdf-editor-geometry.mjs && node scripts/test-pdf-editor-component-model.mjs && node scripts/test-pdf-editor-component-controls.mjs && node scripts/test-pdf-editor-component-interaction.mjs && node scripts/test-pdf-editor-insert-assets.mjs && node scripts/test-pdf-editor-content-editing.mjs && node scripts/test-pdf-editor-file-session.mjs && node scripts/test-pdf-editor-page-operations.mjs && node scripts/test-pdf-editor-page-selection.mjs && node scripts/test-pdf-editor-view.mjs && node scripts/test-pdf-editor-operation.mjs && node scripts/test-pdf-editor-events.mjs && node scripts/test-pdf-editor-controls.mjs && node scripts/test-pdf-editor-state.mjs && node scripts/test-pdf-editor-history.mjs && node scripts/test-pdf-editor-focus.mjs && node scripts/test-pdf-editor-thumbnail-contract.mjs && node scripts/test-pdf-editor-documents-contract.mjs && node scripts/test-pdf-editor-documents.mjs",
     "test:pdf-page-number": "node scripts/test-pdf-page-number-core.mjs",
     "test:pdf-page-number-tool-contract": "node scripts/test-pdf-page-number-tool-contract.mjs",
     "test:pdf-crop": "node scripts/test-pdf-crop-core.mjs",
@@ -122,7 +122,7 @@
     "test:license": "node scripts/test-license-contract.mjs",
     "test:window-radius": "node scripts/test-window-radius-rendering.mjs && node scripts/test-window-shadow.mjs && node scripts/test-window-runtime.mjs",
     "test:theme": "node scripts/test-theme-runtime.mjs",
-    "test:startup": "node scripts/test-startup-runtime.mjs",
+    "test:startup": "node scripts/test-startup-runtime.mjs && node scripts/test-ui-sound-runtime.mjs",
     "test:source-inventory": "node scripts/test-source-inventory.mjs",
     "test:dependency-lock": "node scripts/test-dependency-lock.mjs && node scripts/check-dependency-lock.mjs",
     "test:rust-toolchain": "node scripts/check-rust-toolchain.mjs",
@@ -170,7 +170,15 @@
     "qa:ai-table-agent": "node scripts/qa-ai-table-agent-workflows.mjs",
     "stage:cli-resources": "node scripts/stage-cli-resources.cjs",
     "cli": "node cli/toolknit.mjs",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test:word-to-pdf": "node scripts/test-word-to-pdf.mjs && node scripts/test-word-to-pdf-process.mjs",
+    "test:word-to-pdf-native": "node scripts/test-word-to-pdf-native.mjs",
+    "test:word-to-pdf-native-batch": "node scripts/test-word-to-pdf-native-batch.mjs",
+    "test:word-to-pdf-browser": "node scripts/test-word-to-pdf-browser.mjs",
+    "test:office-dependencies": "node scripts/test-office-archive-dependencies.mjs",
+    "postinstall": "node scripts/patch-office-glob.cjs",
+    "test:file-search": "node scripts/test-file-search.mjs && node scripts/test-file-search-context.mjs",
+    "test:native-loader": "node scripts/audit-native-loader.mjs"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
@@ -218,6 +226,12 @@
   "overrides": {
     "exceljs": {
       "uuid": "11.1.1"
+    },
+    "glob": {
+      "minimatch": "11.0.3"
+    },
+    "readdir-glob": {
+      "minimatch": "11.0.3"
     }
   }
 }

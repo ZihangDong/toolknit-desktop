@@ -1,6 +1,6 @@
 {
   "name": "@toolknit/cli",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "license": "SEE LICENSE IN NOTICE",
   "description": "Local-first file processing CLI and MCP server for ToolKnit",
   "type": "module",
@@ -50,6 +50,7 @@
     "lib",
     "guides",
     "resources/fonts",
+    "resources/office",
     "vendor/qpdf",
     "vendor/whisper",
     "LICENSES"
@@ -75,10 +76,18 @@
     "yauzl": "3.4.0",
     "xml-js": "1.6.11"
   },
-  "bundleDependencies": ["exceljs"],
+  "bundleDependencies": [
+    "exceljs"
+  ],
   "overrides": {
     "exceljs": {
       "uuid": "11.1.1"
+    },
+    "glob": {
+      "minimatch": "11.0.3"
+    },
+    "readdir-glob": {
+      "minimatch": "11.0.3"
     }
   }
 }

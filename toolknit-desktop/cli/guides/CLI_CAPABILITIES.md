@@ -1,6 +1,6 @@
-# V3.2 CLI / MCP 能力清单
+# V3.3 CLI / MCP 能力清单
 
-版本 3.2.0，77 项 MCP 能力；CLI 可通过对应命令或通用 run 入口调用同一能力。本文由 scripts/sync-cli-catalog.mjs 从注册表生成。CLI 与桌面端独立安装和发布。
+版本 3.3.0，78 项 MCP 能力；CLI 可通过对应命令或通用 run 入口调用同一能力。本文由 scripts/sync-cli-catalog.mjs 从注册表生成。CLI 与桌面端独立安装和发布。
 
 需要 Node.js >=22.13.0。本地工具不要求 AI Key；标有 AI 的操作仅在主动调用或明确开启 AI 模式时请求外部服务。
 
@@ -35,6 +35,7 @@
 | `ai polish` | `toolknit_ai_polish` | Polish up to 12000 characters using an explicitly chosen style. Sends only the supplied text/style to the AI provider configured in process environment. Returns text without writing files; never reads desktop credentials. |
 | `ai translate` | `toolknit_ai_translate` | Translate up to 12000 characters with the environment-configured AI provider. Validates aligned originals against caller input; returns translated text and pairs. Sends the supplied text to the configured endpoint. |
 | `pdf ai-markdown` | `toolknit_pdf_ai_markdown` | Use the configured vision AI to transcribe up to 20 selected PDF pages and build a Markdown reading guide. Sends rendered page images and extracted model fragments to that provider. This is an explicit network operation; use pdf text for offline extraction. |
+| `word to-pdf` | `toolknit_word_to_pdf` | Convert local DOC/DOCX documents to searchable PDF using LibreOffice with UNO/Python. Single input_path/output_path or up to 20 input_paths/output_dir; batch failures are returned per file, successful files survive cancellation. 50 MiB per input. Macro execution and external updates disabled; DOCX external resources, embedded objects and macros rejected. No ZIP input or encrypted documents; fonts/layout may differ. |
 | `excel to-pdf` | `toolknit_excel_to_pdf` | Convert an explicit .xlsx workbook to PDF with an installed LibreOffice runtime in an isolated temporary profile. Preserves workbook print layout; rejects macros, embedded objects and external data connections. WPS/Microsoft Office are not substitutes. |
 | `markdown html` | `toolknit_markdown_html` | Export local UTF-8 Markdown as standalone HTML with tables, task lists and MathML formulas. Raw HTML is escaped, images are represented by their alt text, Mermaid remains code; no browser or network is used. |
 | `files large` | `toolknit_files_large` | Read-only bounded scan of one explicit directory for large files. Never deletes, follows links or scans implicit system locations. Reports truncated/skipped counts; sizes are bytes. |
@@ -90,10 +91,12 @@
 
 ## 桌面覆盖
 
-73 个桌面工具：60 项支持、6 项按明确范围部分支持、7 项保留桌面。MCP 另有 PDF 检查、模型管理和工程编辑等辅助接口，因此数量与桌面卡片数不同。
+75 个桌面工具：61 项支持、6 项按明确范围部分支持、8 项保留桌面。MCP 另有 PDF 检查、模型管理和工程编辑等辅助接口，因此数量与桌面卡片数不同。
 
 | 桌面工具 ID | 覆盖 | MCP 接口 / 说明 |
 | --- | --- | --- |
+| `word-to-pdf` | 支持 | `toolknit_word_to_pdf` DOC/DOCX, local LibreOffice Writer, single and batch output; interactive PDF preview remains on desktop. |
+| `file-search` | 保留桌面 |  Personal persistent filename index, optional NTFS acceleration, floating windows and Explorer selection use explicit desktop scope controls. |
 | `quick-screenshot` | 保留桌面 |  Interactive selection, annotations and pinned windows require a visible desktop session. |
 | `clipboard-history` | 保留桌面 |  Background monitoring and encrypted personal history stay behind the desktop user controls. |
 | `excel-to-pdf` | 部分支持 | `toolknit_excel_to_pdf` XLSX only; uses LibreOffice and workbook print layout. Legacy XLS, desktop parameter UI and external workbook connections are excluded. |

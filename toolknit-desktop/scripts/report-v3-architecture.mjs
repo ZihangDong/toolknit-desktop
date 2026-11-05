@@ -179,12 +179,12 @@ const report = {
 
 if (process.argv.includes('--check')) {
   const failures = [];
-  if (report.desktopCatalog.count !== 73) failures.push(`expected 73 desktop tools, found ${report.desktopCatalog.count}`);
+  if (report.desktopCatalog.count !== 75) failures.push(`expected 75 desktop tools, found ${report.desktopCatalog.count}`);
   if (report.htmlContract.duplicateIds.length) failures.push(`duplicate HTML ids: ${report.htmlContract.duplicateIds.join(', ')}`);
-  if (report.rust.commandAttributeCount !== 154) failures.push(`expected 154 Tauri command implementations, found ${report.rust.commandAttributeCount}`);
-  if (report.rust.commandCount !== 153) failures.push(`expected 153 unique Tauri command names, found ${report.rust.commandCount}`);
+  if (report.rust.commandAttributeCount !== 158) failures.push(`expected 158 Tauri command implementations, found ${report.rust.commandAttributeCount}`);
+  if (report.rust.commandCount !== 157) failures.push(`expected 157 unique Tauri command names, found ${report.rust.commandCount}`);
   if (report.rust.testCount < 93) failures.push(`expected at least 93 Rust tests, found ${report.rust.testCount}`);
-  if (report.mcp.toolCount !== 77) failures.push(`expected 77 MCP tools, found ${report.mcp.toolCount}`);
+  if (report.mcp.toolCount !== 78) failures.push(`expected 78 MCP tools, found ${report.mcp.toolCount}`);
   if (failures.length) {
     failures.forEach(failure => console.error(`Architecture baseline failure: ${failure}`));
     process.exit(1);

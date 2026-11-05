@@ -49,6 +49,7 @@ const coreFiles = [
   'features/pdf-text-extract/core.js',
   'features/pdf-text-extract/table-grid.js',
   'core/pdf-scan.js',
+  'core/pdf-page-copy.js',
   'shared/scanned-pdf-writer.js',
   'text-format-core.js',
   'features/developer-toolbox/core.js',
@@ -229,5 +230,6 @@ for (const fileName of fontFiles) {
 for (const fileName of ['LICENSE', 'NOTICE', 'LICENSES/Apache-2.0.txt', 'LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md']) {
   copyFileAtomic(path.join(root, fileName), path.join(root, 'cli', fileName));
 }
+copyFileAtomic(path.join(root, 'src-tauri/resources/office/word-to-pdf.py'), path.join(root, 'cli/resources/office/word-to-pdf.py'));
 releaseStageLockOnce();
 console.log('Staged CLI runtime resources: qpdf, whisper binaries and legal notices, core modules, shared task contracts, guides, and fonts. FFmpeg is downloaded on demand by ToolKnit Desktop or resolved from PATH.');

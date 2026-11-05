@@ -1,5 +1,5 @@
 {
-  "version": "3.2.0",
+  "version": "3.3.0",
   "node": ">=22.13.0",
   "tools": [
     {
@@ -1416,6 +1416,65 @@
         "destructiveHint": true,
         "idempotentHint": false,
         "openWorldHint": true
+      }
+    },
+    {
+      "name": "toolknit_word_to_pdf",
+      "description": "Convert local DOC/DOCX documents to searchable PDF using LibreOffice with UNO/Python. Single input_path/output_path or up to 20 input_paths/output_dir; batch failures are returned per file, successful files survive cancellation. 50 MiB per input. Macro execution and external updates disabled; DOCX external resources, embedded objects and macros rejected. No ZIP input or encrypted documents; fonts/layout may differ.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Explicit regular local file; no symlinks or junctions."
+          },
+          "output_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Explicit destination. Sources are preserved; existing outputs require overwrite=true."
+          },
+          "overwrite": {
+            "type": "boolean",
+            "default": false
+          },
+          "input_paths": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Explicit regular local file; no symlinks or junctions."
+            }
+          },
+          "output_dir": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Explicit regular local file; no symlinks or junctions."
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "input_path",
+              "output_path"
+            ]
+          },
+          {
+            "required": [
+              "input_paths",
+              "output_dir"
+            ]
+          }
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
       }
     },
     {
@@ -3909,6 +3968,20 @@
     }
   ],
   "desktopCoverage": [
+    {
+      "desktop": "word-to-pdf",
+      "scope": "supported",
+      "tools": [
+        "toolknit_word_to_pdf"
+      ],
+      "note": "DOC/DOCX, local LibreOffice Writer, single and batch output; interactive PDF preview remains on desktop."
+    },
+    {
+      "desktop": "file-search",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Personal persistent filename index, optional NTFS acceleration, floating windows and Explorer selection use explicit desktop scope controls."
+    },
     {
       "desktop": "quick-screenshot",
       "scope": "desktop-only",

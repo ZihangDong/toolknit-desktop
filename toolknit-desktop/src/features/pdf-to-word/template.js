@@ -8,7 +8,7 @@ const button = (id, icon, key, attrs = '', iconOnly = false) => '<button id="pdf
 const icon = (id, name, key, attrs = '') => button(id, name, key, attrs, true);
 const modal = (id, title, contents) => '<div id="pdfWord' + id + 'Overlay" class="pdf-word-modal" role="dialog" aria-modal="true" aria-labelledby="pdfWord' + id + 'Title" aria-hidden="true" inert><div class="pdf-word-dialog"><h2 id="pdfWord' + id + 'Title" data-i18n="home.pdfWord.' + title + '"></h2>' + contents + '</div></div>';
 export default '<div id="pdfWordOverlay" class="pdf-word tool-page-v2-overlay" role="dialog" aria-modal="true" aria-hidden="true" inert><div class="pdf-word-shell">'
-  + toolTopbarMarkup({ tag: 'PDF TO WORD · TOOL PAGE 3.2', closeAttr: 'data-pdf-word-close' })
+  + toolTopbarMarkup({ tag: 'PDF TO WORD · TOOL PAGE 3.3', closeAttr: 'data-pdf-word-close' })
   + '<div class="pdf-word-toolbar"><h1 data-i18n="home.pdfWord.title"></h1><span id="pdfWordFileName" class="pdf-word-file"></span>'
   + button('Pick', 'folder-open', 'pick')
   + '<input id="pdfWordFileInput" type="file" accept="application/pdf,.pdf" hidden></div>'

@@ -20,15 +20,15 @@ export function createQuickScreenshotController({overlay,isTauri=false,screensho
     if(runtime.available) try { const p=await runtime.call('preferences');if(owner!==revision||request!==preferenceRevision||!opened)return;preferences=p;q('Shortcut').value=p.shortcut||''; }catch(e){if(owner===revision&&request===preferenceRevision&&opened)error(e);}
     render();
   }
-  async function configure(next) {
+  async function configure(next, updateShortcut = false) {
     if(busy||document.documentElement.hasAttribute('data-recording-mode-busy'))return;busy=true;preferenceRevision++;render();const owner=revision;
-    try {const p=await runtime.call('configure',{preferences:{shortcut:next.shortcut,history:next.history}});if(owner!==revision||!opened)return;preferences=p;q('Shortcut').value=p.shortcut||'';q('PageError').hidden=true;notify(tr('settingsSaved'));}
+    try {const p=await runtime.call('configure',{preferences:{shortcut:next.shortcut,history:next.history},updateShortcut});if(owner!==revision||!opened)return;preferences=p;q('Shortcut').value=p.shortcut||'';q('PageError').hidden=true;notify(tr('settingsSaved'));}
     catch(e){if(owner===revision&&opened)error(e);}finally{busy=false;if(opened)render();}
   }
   scope.event(q('Start'),'click',async()=>{if(busy)return;busy=true;render();try{await runtime.call('start');}catch(e){error(e);}finally{busy=false;render();}});
-  scope.event(q('ShortcutSave'),'click',()=>void configure({...preferences,shortcut:q('Shortcut').value.trim()||null}));
-  scope.event(q('ShortcutReset'),'click',()=>void configure({...preferences,shortcut:'Alt+Q'}));
-  scope.event(q('ShortcutDisable'),'click',()=>void configure({...preferences,shortcut:null}));
+  scope.event(q('ShortcutSave'),'click',()=>void configure({...preferences,shortcut:q('Shortcut').value.trim()||null},true));
+  scope.event(q('ShortcutReset'),'click',()=>void configure({...preferences,shortcut:'Alt+Q'},true));
+  scope.event(q('ShortcutDisable'),'click',()=>void configure({...preferences,shortcut:null},true));
   scope.event(q('HistoryToggle'),'click',()=>void configure({...preferences,history:!preferences.history}));
   scope.use(onLangChange(()=>{if(opened){applyTranslations();render();}}));
   void runtime.listen('screenshot-preferences-changed',()=>{if(opened&&!busy)void load();}).then(unlisten=>scope.use(unlisten));

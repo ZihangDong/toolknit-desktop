@@ -13,6 +13,8 @@
 /tmp/
 /output/
 *.tmp
+__pycache__/
+*.pyc
 /.codex-build/
 /.edge-radius-check/
 /radius-check-0811.png

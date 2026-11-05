@@ -1,5 +1,7 @@
 # ToolKnit AI Agent 快速手册
 
+当前分支为 V3.3 开发版本（3.3.0，未发布），功能基线沿用已发布的 V3.2。下方 npm 安装说明对应正式版 3.2.0；源码构建的 CLI/MCP 报告开发版本 3.3.0。
+
 本手册帮助普通用户在 Trae、Cursor 或其他支持 MCP 的 IDE 中，让 AI Agent 安全调用 ToolKnit 处理本地 PDF（包括转图像和拼长图）、提取 PPTX 图片素材和文本、转换音频和视频，并生成专业的多页 AI 文档与可编辑 AI 表格。
 
 ## 先完成连接
@@ -25,7 +27,7 @@ C:\Users\<你的用户名>\AppData\Roaming\npm\node_modules\@toolknit\cli\toolkn
 
 基础 PDF、图片、音视频、文本和非 AI PPT 工具不需要 AI Key。使用 AI 文档、AI 表格、PPT 文本 AI 整理、AI 生成 PPT 大纲、AI 生成 PPT 草稿 / PPTX 或转写后的 `refine` 二次校对时，请在 IDE 的 MCP 环境变量/密钥设置中为 `toolknit` 添加真实的 `DEEPSEEK_API_KEY`（也支持 `TOOLKNIT_AI_API_KEY`），再重启 IDE。不要把密钥写进 Agent 对话、文档需求、输出路径或文件名；桌面端保存的密钥不会被 CLI/MCP 读取。
 
-使用 V3.2 CLI 连接后，Agent 会显示 77 项 ToolKnit 工具。需要 Node.js >=22.13.0；CLI 与桌面端独立安装。新增能力与全部参数见 [完整能力清单](CLI_CAPABILITIES.md)，也可运行 `toolknit tools list --json`。以下保留已有工具的说明：
+V3.3 开发源码连接后，Agent 会显示 78 项 ToolKnit 工具（未发布；npm 3.2.0 为 77 项）。需要 Node.js >=22.13.0；CLI 与桌面端独立安装。新增能力与全部参数见 [完整能力清单](CLI_CAPABILITIES.md)，也可运行 `toolknit tools list --json`。以下保留已有工具的说明：
 
 - `toolknit_pdf_inspect`：查看页数、大小和每页概况。
 - `toolknit_pdf_merge`：把多个本地 PDF 按顺序合并成一个文件。
@@ -534,3 +536,9 @@ PDF 加密和解密需要密码。不要将密码粘贴到 Agent 对话、共享
 ## 遇到问题
 
 让 Agent 先检查文件路径；路径不存在、输出文件已存在、PDF 受密码保护，是最常见的失败原因。`toolknit doctor` 可检查 qpdf 引擎是否可用于压缩与解密。
+
+## Word 转 PDF（V3.3 未发布）
+
+`toolknit_word_to_pdf` 使用本地 LibreOffice Writer + UNO/Python。单文件传 `input_path`、`output_path`；批量传 `input_paths`、`output_dir`。支持 DOC/DOCX，最多 20 个，每个 50 MiB。批量逐项返回结果，保留成功文件；取消请求终止未完成转换。源文件不改动，已有输出默认不覆盖。加密文件及 DOCX 主动内容不支持。请检查字体、页眉、表格和分页，复杂布局可能与 Word 有差异。
+
+命令：`toolknit word to-pdf --input source.docx --output result.pdf --json`。正式 npm 3.2.0 尚无此命令。

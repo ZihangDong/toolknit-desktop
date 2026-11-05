@@ -1,4 +1,16 @@
 export const LAZY_TOOL_SPECS = Object.freeze({
+  'file-search': Object.freeze({
+    overlayId: 'fileSearchOverlay',
+    markup: () => import('./file-search/template.js'),
+    load: () => import('./file-search/tool.js'),
+    init: 'initFileSearchTool'
+  }),
+  'word-to-pdf': Object.freeze({
+    overlayId: 'wordToPdfOverlay',
+    markup: () => import('./word-to-pdf/template.js'),
+    load: () => import('./word-to-pdf/tool.js'),
+    init: 'initWordToPdfTool'
+  }),
   'quick-screenshot': Object.freeze({
     overlayId: 'quickScreenshotOverlay',
     markup: () => import('./quick-screenshot/template.js'),

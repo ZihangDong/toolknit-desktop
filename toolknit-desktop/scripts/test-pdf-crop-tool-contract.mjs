@@ -80,7 +80,7 @@ assert.match(exporter, /URL\.createObjectURL/);
 assert.match(exporter, /URL\.revokeObjectURL/);
 assert.match(exporter, /assertOperation\(active\)/);
 assert.match(exporter, /shouldCancel:\s*\(\) => active\.cancelled \|\| !active\.isCurrent\(\)/);
-assert.match(exporter, /write_unique_file_bytes/);
+assert.match(exporter, /writeUniqueBinaryFile/);
 assert.match(exporter, /exportCroppedPdfPage/);
 assert.match(exporter, /target === 'current'/);
 assert.match(view, /element\.inert = !visible/);

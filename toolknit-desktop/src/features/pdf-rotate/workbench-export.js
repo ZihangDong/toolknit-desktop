@@ -1,3 +1,4 @@
+import { copyPdfPages } from '../../core/pdf-page-copy.js';
 import { PDFDocument } from 'pdf-lib';
 import { createPdfRotateFileName, rotatePdfPages } from '../../pdf-rotate-core.js';
 import { flattenPdfFormForPageCopy } from '../../pdf-document-structure.js';
@@ -21,7 +22,7 @@ export async function buildPdfRotateOutput({ fileData, fileName, pages, mode, on
   flattenPdfFormForPageCopy(checked);
   for (let index = 0; index < pages.length; index++) {
     const output = await PDFDocument.create();
-    const [page] = await output.copyPages(checked, [index]);
+    const [page] = await copyPdfPages(output, checked, [index]);
     output.addPage(page);
     const single = await output.save();
     if ((await PDFDocument.load(single)).getPageCount() !== 1) throw new Error('PDF rotation ZIP validation failed');

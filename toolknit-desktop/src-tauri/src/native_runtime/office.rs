@@ -14,6 +14,8 @@ pub(super) mod excel {
     include!("office/excel.rs");
 }
 pub(super) use excel::*;
+mod word;
+pub(super) use word::*;
 pub(super) mod files {
     #[cfg(test)]
     use super::*;

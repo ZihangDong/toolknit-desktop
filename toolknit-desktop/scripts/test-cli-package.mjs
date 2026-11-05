@@ -30,6 +30,8 @@ assert.equal(parseRefinement('{"segments":[{"id":7,"text":"總有細碎的溫暖
 assert.throws(() => parseRefinement('{"segments":[]}', new Set([7])), /segment count/);
 assert.throws(() => parseRefinement('{"segments":[{"id":7,"text":"A"},{"id":7,"text":"B"}]}', new Set([7, 8])), /subtitle IDs/);
 const stagedChinese = await import('../cli/lib/core/core/chinese-text.js');
+const stagedPdfCopy = await import('../cli/lib/core/core/pdf-page-copy.js');
+assert.equal(typeof stagedPdfCopy.copyPdfPages, 'function', 'PDF copy helper is included in the independent CLI package');
 assert.equal(stagedChinese.simplifyChineseText('視頻終於開始 English'), '视频终于开始 English');
 assert.equal(stagedChinese.simplifyTranscriptionJson({ file: '聲音.wav', text: '視頻' }).file, '聲音.wav');
 
@@ -56,6 +58,7 @@ const packOutput = execFileSync(process.execPath, [npmCli, 'pack', '--dry-run', 
 });
 const pack = JSON.parse(packOutput)[0];
 const packedFiles = new Set(pack.files.map(file => file.path));
+assert.ok(packedFiles.has('resources/office/word-to-pdf.py'), 'Word UNO driver is included in npm packages');
 for (const required of ['README.md', 'LICENSE', 'NOTICE', 'LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md', 'package.json', 'npm-shrinkwrap.json', 'toolknit.mjs']) {
   assert.equal(packedFiles.has(required), true, `published CLI package must include ${required}`);
 }

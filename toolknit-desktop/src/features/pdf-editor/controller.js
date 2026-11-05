@@ -665,6 +665,7 @@ export function initPdfEditorTool({
   async function resetDocument() {
     stopTileObserver(true);
     cancelMainRender();
+    preview?.clearCache();
     zoom.reset();
     panViewport.reset();
     if (componentRenderFrame) {
@@ -745,10 +746,6 @@ export function initPdfEditorTool({
     return pdfEditorControls?.updateControls();
   }
 
-  function selectOnly(pageState) {
-    return pageSelection?.selectOnly(pageState);
-  }
-
   function toggleSelect(pageState) {
     return pageSelection?.toggleSelect(pageState);
   }
@@ -781,6 +778,7 @@ export function initPdfEditorTool({
   }
 
   const thumbnails = createPdfEditorThumbnails({
+    retainPage: page => documents.retainPage(page),
     pageStrip,
     t,
     listenerOptions,
@@ -797,7 +795,6 @@ export function initPdfEditorTool({
     getSourceDoc,
     toggleSelect,
     selectRange,
-    selectOnly,
     setCurrent,
     updateControls,
     renderMainPreview,
@@ -1283,6 +1280,7 @@ export function initPdfEditorTool({
     getScale: () => zoom.getCurrentScale(), setScale: () => {}, bindWheel: false });
 
   preview = createPdfEditorPreview({
+    retainPage: page => documents.retainPage(page),
     canvasStage,
     canvasScroll,
     getCanvasWrap: () => canvasWrap,
@@ -1662,6 +1660,7 @@ export function initPdfEditorTool({
   });
 
   const exporter = createPdfEditorExporter({
+    getSelectedIds: () => selectedIds,
     isTauri,
     getInvoke,
     getOutputDir,
@@ -1840,9 +1839,9 @@ export function initPdfEditorTool({
       return closeOverlay();
     },
     async openWithFile(file) {
-      if (disposed) return;
+      if (disposed) return false;
       openOverlay();
-      await loadMainFile(file);
+      return await loadMainFile(file) === true;
     },
     dispose() {
       if (disposed) return;

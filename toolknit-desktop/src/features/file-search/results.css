@@ -1,0 +1,11 @@
+.fs-empty .fs-empty-logo{width:44px;height:44px;flex:none;object-fit:contain;border-radius:50%;user-select:none}
+.fs-file-icon{display:grid;place-items:center;width:28px;height:28px;flex:none;border-radius:6px}
+.fs-file-icon img{display:block;width:24px;height:24px;object-fit:contain;user-select:none}
+.fs-tool .fs-file-icon{background:#ffffffeb}
+html[data-theme=light] .fs-tool .fs-file-icon{background:transparent}
+.fs-empty:has(.fs-empty-logo)>*{animation:fs-empty-arrive 260ms cubic-bezier(.2,.8,.2,1) backwards}
+.fs-empty:has(.fs-empty-logo)>strong{animation-delay:35ms}
+.fs-empty:has(.fs-empty-logo)>span{animation-delay:65ms}
+@keyframes fs-empty-arrive{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.fs-empty:has(.fs-empty-logo)>*{animation:none}}
+:root[data-reduced-motion=true] .fs-empty:has(.fs-empty-logo)>*{animation:none}

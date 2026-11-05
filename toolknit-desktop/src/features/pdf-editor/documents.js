@@ -1,11 +1,13 @@
 import { PdfEditorCancelledError } from './errors.js';
 import { pdfjsDocumentOptions, destroyPdfDocument } from '../../shared/pdfjs-options.js';
+import { createPdfPageRetention } from '../../shared/pdf-page-retention.js';
 
 export function createPdfEditorDocumentStore({ pdfWorkerUrl, getSources, isDisposed,
   loadPdfjs = () => import('pdfjs-dist/legacy/build/pdf.mjs') }) {
   const documents = new Map();
   const pending = new Map();
   const loadingTasks = new Set();
+  const pageRetention = createPdfPageRetention();
   let generation = 0;
   let disposed = false;
 
@@ -66,6 +68,7 @@ export function createPdfEditorDocumentStore({ pdfWorkerUrl, getSources, isDispo
 
   async function destroyAll() {
     generation += 1;
+    pageRetention.clear();
     const tasks = Array.from(loadingTasks);
     for (const task of tasks) loadingTasks.delete(task);
     const values = Array.from(documents.values());
@@ -79,6 +82,7 @@ export function createPdfEditorDocumentStore({ pdfWorkerUrl, getSources, isDispo
   }
 
   return {
+    retainPage: page => pageRetention.retain(page),
     get,
     loadBytes,
     set,

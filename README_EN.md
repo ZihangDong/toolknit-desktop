@@ -2,11 +2,13 @@
 
 <img src="assets/readme/v3.1/01-hero.webp" alt="ToolKnit Desktop: a boy and his head-perched spider make everyday desktop work simpler" width="100%" />
 
-# ToolKnit Desktop 3.2
+# ToolKnit Desktop 3.3
+
+> V3.3 is in development and has not been released. The current stable desktop app and npm CLI / MCP are both 3.2.0.
 
 **One toolbox for the little tasks scattered across your desktop.**
 
-73 desktop tools · 12 categories · 77 CLI / MCP capabilities · Local first
+75 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
 
 [Source licenses and separate PDF-to-Word authorization](#source-license)
 
@@ -164,6 +166,8 @@ A Windows-account-protected backup can restore a missing key file. Without a usa
 | --- | --- |
 | PDF | Merge, split, crop, page numbers, rotate, export images / Word, compress, encrypt, decrypt, edit and extract text / Markdown |
 | PPT | Export PDF / images, extract pictures and text, compress, generate AI outlines or editable PPTX drafts |
+| File search (unreleased V3.3) | Local filename / pinyin search, extension filters, sorting, Explorer reveal and a desktop capsule |
+| Word (unreleased V3.3) | Local DOC / DOCX to PDF; batches, cancellation, retry and handoff to PDF Editor |
 | Excel | Convert XLSX / XLS / ODS to PDF; select all or visible sheets, paper size, orientation and scaling |
 | Cleanup | Analyze large files, clean C drive and scan duplicates by file type |
 
@@ -234,7 +238,7 @@ WPS / Microsoft Office is not LibreOffice and cannot replace workflows that need
 
 **Desktop for visual interaction. CLI for batches. Agents for orchestration.**
 
-The V3.2 source expands from 46 to **77 CLI / MCP capabilities**, exposed through `@toolknit/cli`.
+V3.3 development source exposes **78 CLI / MCP capabilities**, adding Word to PDF. Published npm 3.2.0 still has 77.
 
 > Desktop V3.2 and [npm CLI / MCP 3.2.0](https://www.npmjs.com/package/@toolknit/cli/v/3.2.0) are both released. Install each independently.
 
@@ -247,9 +251,9 @@ The V3.2 source expands from 46 to **77 CLI / MCP capabilities**, exposed throug
 | File inspection | Read-only scanning, dependency checks and structured JSON results |
 
 Progress, cancellation and explicit errors are supported. Originals and existing outputs stay protected. Unicode paths, long paths and model downloads are improved.
-Windows, clipboard monitoring and system cleanup remain desktop interactions. **77 interfaces do not map one-to-one to 73 desktop tools.**
+Windows, clipboard monitoring and system cleanup remain desktop interactions. **The development catalog has 78 interfaces and 75 desktop tools; these do not map one-to-one.**
 
-Use **`@toolknit/cli` 3.2.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for all 77 capabilities. Requires Node.js **22.13+**.
+Use **`@toolknit/cli` 3.2.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for the 78 development capabilities. Requires Node.js **22.13+**.
 
 ```powershell
 npm install --global @toolknit/cli
@@ -332,11 +336,11 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 ## Complete tool catalog
 
 <details>
-<summary><strong>Expand 73 desktop tools / 12 categories</strong></summary>
+<summary><strong>Expand 75 development desktop tools / 12 categories</strong></summary>
 
 | Category | Count | Tools |
 | --- | ---: | --- |
-| PDF | 16 | Merge, split, page numbers, crop, export images, export Word, scanned-style PDF, images to PDF, text / Markdown extraction, editor with blank PDF creation, rotate, encrypt, decrypt, compress, text enhancement, Excel to PDF |
+| PDF | 17 | Merge, split, page numbers, crop, export images, export Word, scanned-style PDF, images to PDF, text / Markdown extraction, editor with blank PDF creation, rotate, encrypt, decrypt, compress, text enhancement, Excel to PDF, Word to PDF |
 | PPT | 7 | Export PDF, export images, extract images, AI text extraction, compress, AI outline, AI draft / PPTX |
 | Image | 7 | Crop, smart color replacement, background removal, format conversion, compress, stitch, icon generator |
 | Audio | 4 | Format conversion, BPM measurement, trim, extract audio |
@@ -344,7 +348,7 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 | Text | 5 | Markdown editor, media transcription, teleprompter, text statistics, text formatting |
 | Calculator | 5 | Body fat, timestamp, mortgage, interest, password generator |
 | Creative | 4 | Palette extraction, color-space comparison, quick screenshot, typing test |
-| Cleanup | 3 | AI large-file cleanup, C drive cleanup, duplicate files |
+| Cleanup | 4 | Quick file search, AI large-file cleanup, C drive cleanup, duplicate files |
 | AI | 5 | PDF to Markdown, text polishing, translation, document generation, spreadsheet generation |
 | Hardware | 8 | System overview, CPU / memory, GPU / displays, motherboard / firmware, storage / health, network / devices, power / sensors, clipboard history |
 | Developer | 6 | JSON formatting, Base64, URL encoding / decoding, UUID, JWT viewer, Hash & Crypto |

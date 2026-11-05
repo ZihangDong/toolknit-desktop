@@ -411,7 +411,7 @@
         <button class="home-v2-brand" type="button" data-home-return aria-label="ToolKnit 首页">
           <img src="/logo.png" alt="" />
           <span class="home-v2-brand-name">ToolKnit</span>
-          <span class="home-v2-brand-version">3.2</span>
+          <span class="home-v2-brand-version">3.3</span>
         </button>
         <div class="home-v2-top-actions">
           <button class="home-v2-nav-link" type="button" data-home-link="website">
@@ -505,7 +505,7 @@
               <i data-lucide="settings"></i>
             </div>
           </div>
-          <div class="version-text" id="sidebarVersion">v3.2.0</div>
+          <div class="version-text" id="sidebarVersion">v3.3.0</div>
         </div>
       </div>
       <div class="divider"></div>
@@ -604,7 +604,7 @@
 
                 <div class="category-strip" id="homeCategoryStrip" data-i18n-aria-label="home.categoriesAria" aria-label="工具分类">
                   <button class="category-chip is-active" type="button" data-home-category="all"><i data-lucide="sparkles"></i><span data-i18n="home.categoryAll">全部</span></button>
-                  <button class="category-chip" type="button" data-home-category="new" aria-pressed="false"><i data-lucide="badge-plus"></i><span data-i18n="home.categoryNew">V3.2新功能</span></button>
+                  <button class="category-chip" type="button" data-home-category="new" aria-pressed="false"><i data-lucide="badge-plus"></i><span data-i18n="home.categoryNew">新功能</span></button>
                   <button class="category-chip" type="button" data-home-category="pdf"><i data-lucide="file-text"></i><span>PDF</span></button>
                   <button class="category-chip" type="button" data-home-category="ppt"><i data-lucide="presentation"></i><span>PPT</span></button>
                   <button class="category-chip" type="button" data-home-category="image"><i data-lucide="image"></i><span data-i18n="home.categoryImage">图像</span></button>
@@ -667,7 +667,7 @@
               </section>
 
               <footer class="footer-note">
-                <span>TOOLKNIT DESKTOP 3.2.0 / UI CONCEPT 01</span>
+                <span>TOOLKNIT DESKTOP 3.3.0 / UI CONCEPT 01</span>
                 <span>FILES STAY ON YOUR DEVICE</span>
               </footer>
             </div>
@@ -894,6 +894,20 @@
                       <span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span>
                     </div>
                     <div class="audio-list-meta" data-i18n="home.toolNames.pdfEnhanceMeta">去噪锐化 / 对比增强 / 纯本地处理</div>
+                  </div>
+                </div>
+                <div class="audio-list-item" data-tool="word-to-pdf" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.wordToPdf">
+                  <div class="audio-list-icon"><i data-lucide="file-type-2"></i></div>
+                  <div class="audio-list-info">
+                    <div class="audio-list-title" data-i18n="home.toolNames.wordToPdf">Word 转 PDF</div>
+                    <div class="audio-list-desc" data-i18n="home.toolNames.wordToPdfDesc">把 DOC / DOCX 批量转换为可搜索的 PDF</div>
+                  </div>
+                  <div class="audio-list-right">
+                    <div class="audio-list-tags">
+                      <span class="audio-tag" data-i18n="home.toolNames.pdfCategoryTag">PDF工具</span>
+                      <span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span>
+                    </div>
+                    <div class="audio-list-meta" data-i18n="home.toolNames.wordToPdfMeta">批量转换 / 转入编辑器 / 取消重试</div>
                   </div>
                 </div>
                 <div class="audio-list-item" data-tool="excel-to-pdf" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.excelToPdf">
@@ -1483,6 +1497,11 @@
                 <button class="audio-clear-btn tools-clear-btn" data-i18n="home.clearSearch" style="display:none;">清除搜索结果</button>
               </div>
               <div class="audio-list">
+                <div class="audio-list-item" data-tool="file-search" role="button" tabindex="0" data-i18n-aria-label="fileSearch.title">
+                  <div class="audio-list-icon"><i data-lucide="folder-search"></i></div>
+                  <div class="audio-list-info"><div class="audio-list-title" data-i18n="fileSearch.title">文件快速搜索</div><div class="audio-list-desc" data-i18n="fileSearch.description">输入名字、筛选后缀，快速找到文件所在位置。</div></div>
+                  <div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.cleanupCategoryTag">清理工具</span><span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span></div><div class="audio-list-meta" data-i18n="fileSearch.cardMeta">本地索引 / 中文拼音 / 桌面胶囊</div></div>
+                </div>
                 <div class="audio-list-item" data-tool="large-file-cleanup" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.largeFileCleanup">
                   <div class="audio-list-icon"><i data-lucide="trash-2"></i></div>
                   <div class="audio-list-info">

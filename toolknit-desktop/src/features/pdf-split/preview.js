@@ -35,7 +35,7 @@ export function createPdfSplitPreview({ overlay, workspace, workspaceClose, work
     workspaceClose.disabled = isSaving();
   }
   view = createPdfWorkbench({ root: workspace, pageStrip, back: workspaceClose,
-    actions: workspace.querySelector('#pdfSplitWorkbenchActions'), tag: 'PDF SPLITTER · TOOL PAGE 3.2',
+    actions: workspace.querySelector('#pdfSplitWorkbenchActions'), tag: 'PDF SPLITTER · TOOL PAGE 3.3',
     stageId: 'pdfSplitPageStage',
     labels: { back: 'home.pdfSplit.backToHome', sourcePage: 'home.pdfSplit.sourcePage', selectedCount: 'home.pdfSplit.selectedCount' },
     onChange: updateControls, refreshIcons });

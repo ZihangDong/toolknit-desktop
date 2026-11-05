@@ -92,6 +92,7 @@ try {
     await page.waitForFunction(() => document.querySelectorAll('#pdfEditorPageStrip .pdf-editor-tile').length === 2);
     await ready();
     await insertText('第二页：空白文档编辑测试');
+    await page.locator('#pdfEditorSelectAll').click();
     const download = page.waitForEvent('download');
     await page.locator('#pdfEditorExport').click();
     const result = await download, file = path.join(output, `${theme}-created.pdf`);
@@ -187,6 +188,7 @@ try {
     appendedPage.setRotation(degrees(90)); appendedPage.drawText('Appended rotated source', { x: 30, y: 200, size: 14 });
     await page.locator('#pdfEditorAppendInput').setInputFiles({ name: 'rotated-source.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await appended.save()) });
     await page.waitForFunction(() => document.querySelectorAll('#pdfEditorPageStrip .pdf-editor-tile').length === 4); await ready();
+    await page.locator('#pdfEditorSelectAll').click();
     const mixedDownload = page.waitForEvent('download'); await page.locator('#pdfEditorExport').click();
     const mixedFile = path.join(output, `${theme}-mixed.pdf`); await (await mixedDownload).saveAs(mixedFile);
     await page.locator('#pdfEditorSuccessOk').click();
@@ -219,6 +221,24 @@ try {
     assert.equal(await page.locator('#pdfEditorOverlay').isVisible(), false);
     checks.push(`${theme}/${lang}: create without input, A4, insertion, undo/redo, real export, reset/dirty/close/reopen`);
     checks.push(`${theme}/${lang}: image/shape insertion, page duplication, component delete undo/redo, rotated blank-page size, append rotated PDF, rendered output, saved-view close`);
+    await page.locator('.audio-list-item[data-tool="pdf-editor"]').evaluate(node => node.click()); await settle();
+    const selectionSource = await PDFDocument.create();
+    for (let i = 0; i < 4; i++) selectionSource.addPage([240 + i, 300]);
+    await page.locator('#pdfEditorFileInput').setInputFiles({ name: 'selection.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await selectionSource.save()) });
+    await ready();
+    assert.equal(await page.locator('#pdfEditorPageStrip .pdf-editor-tile-select[aria-pressed="true"]').count(), 4);
+    await page.locator('#pdfEditorPageStrip .pdf-editor-tile').nth(2).click();
+    assert.equal(await page.locator('#pdfEditorPageStrip .pdf-editor-tile-select[aria-pressed="true"]').count(), 4, 'navigation leaves export selection intact');
+    assert.equal(await page.locator('#pdfEditorPageStrip .pdf-editor-tile.is-current').count(), 1);
+    await page.locator('#pdfEditorInvertSelection').click();
+    assert.equal(await page.locator('#pdfEditorExport').isDisabled(), true);
+    for (const index of [3, 1]) await page.locator('#pdfEditorPageStrip .pdf-editor-tile-select').nth(index).click();
+    const selectedDownload = page.waitForEvent('download'); await page.locator('#pdfEditorExport').click();
+    const selectedFile = path.join(output, `${theme}-selected.pdf`); await (await selectedDownload).saveAs(selectedFile);
+    const selectedPdf = await PDFDocument.load(await readFile(selectedFile));
+    assert.deepEqual(selectedPdf.getPages().map(p => p.getWidth()), [241, 243], 'export follows document order, not checkbox click order');
+    await page.locator('#pdfEditorSuccessOk').click();
+    checks.push(`${theme}/${lang}: import selects all, navigation preserves selection, empty selection disables export, subset download preserves document order`);
     await context.close();
   }
   assert.deepEqual(errors, []);

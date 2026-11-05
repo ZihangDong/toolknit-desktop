@@ -80,7 +80,7 @@ export async function downloadVerifiedModel({ model, destination, sources, signa
           }
           await unlink(partial); start = 0;
         }
-        const headers = { 'User-Agent': 'ToolKnit/3.2.0 offline-model-manager' };
+        const headers = { 'User-Agent': 'ToolKnit/3.3.0 offline-model-manager' };
         if (start) headers.Range = `bytes=${start}-`;
         response = await fetchImpl(source.url, { headers, redirect: 'follow', signal: requestSignal });
         if (![200, 206].includes(response.status) || !response.body) throw new Error('http-status');

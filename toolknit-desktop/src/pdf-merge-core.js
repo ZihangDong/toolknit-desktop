@@ -1,3 +1,4 @@
+import { copyPdfPages } from './core/pdf-page-copy.js';
 import { PDFDocument, degrees } from 'pdf-lib';
 import { flattenPdfFormForPageCopy } from './pdf-document-structure.js';
 
@@ -53,7 +54,7 @@ export async function mergePdfPages({ documents, pages }) {
       throw new Error(`Page ${pageIndex} is outside file index ${fileIndex}`);
     }
 
-    const [copiedPage] = await mergedPdf.copyPages(sourcePdf, [pageIndex - 1]);
+    const [copiedPage] = await copyPdfPages(mergedPdf, sourcePdf, [pageIndex - 1]);
     copiedPage.setRotation(degrees(copiedPage.getRotation().angle + rotation));
     mergedPdf.addPage(copiedPage);
   }

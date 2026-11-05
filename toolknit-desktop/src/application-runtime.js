@@ -17,6 +17,7 @@
       import { createHomeCustomToolsRuntime } from './app/home-custom-tools-runtime.js';
       import { createScreenshotContextRuntime } from './app/screenshot-context-runtime.js';
       import { createAuxiliaryToolNavigation } from './app/auxiliary-tool-navigation.js';
+      import { createFileSearchContextRuntime } from './app/file-search-context-runtime.js';
       import { createHomeExplorerRuntime } from './app/home-explorer-runtime.js';
       import { createFontSettingsRuntime } from './app/font-settings-runtime.js';
       import { createStartupRuntime } from './app/startup-runtime.js';
@@ -686,7 +687,7 @@
       const versionUpdateStatus = document.getElementById('versionUpdateStatus');
       const checkVersionUpdateBtn = document.getElementById('checkVersionUpdateBtn');
       const openReleasePageBtn = document.getElementById('openReleasePageBtn');
-      const APP_VERSION_FALLBACK = '3.2.0';
+      const APP_VERSION_FALLBACK = '3.3.0';
       let updateDialogController = null;
       const updateRuntime = createUpdateRuntime({
         isTauri,
@@ -1590,6 +1591,7 @@
         if (target === 'support') return donationController.open({ background: currentNavigationPage() });
         if (target === 'settings') return openNavigationSettings();
       }, notify: message => window.showToast?.(message) });
+      createFileSearchContextRuntime({ isTauri, getLang, onLangChange, translate: t, onNavigate: () => openAuxiliaryTool('file-search'), notify: message => window.showToast?.(message) });
 
 
       const callDeepSeek = createAiRequestRuntime({

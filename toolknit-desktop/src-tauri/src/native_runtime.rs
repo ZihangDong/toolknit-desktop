@@ -42,6 +42,7 @@ use system_runtime::*;
 mod office;
 use office::LibreOfficeRuntimeInfo;
 mod quick_screenshot;
+mod file_search;
 pub(crate) use quick_screenshot::open_clipboard_image;
 mod local_translation;
 mod runner;

@@ -44,7 +44,7 @@ import { dispatchCatalogCli, extendedHelp } from './lib/catalog-cli.mjs';
 import { checkLibreOfficeAvailability } from './lib/ppt-render-runtime.mjs';
 import { TOOL_DEFINITIONS } from './lib/tool-definitions.mjs';
 
-const VERSION = '3.2.0';
+const VERSION = '3.3.0';
 const CLI_ABORT_CONTROLLER = new AbortController();
 let CLI_SIGNAL_COUNT = 0;
 

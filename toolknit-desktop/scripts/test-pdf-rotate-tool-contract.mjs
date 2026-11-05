@@ -53,7 +53,7 @@ for (const attribute of ['data-rotate-actions', 'data-rotate-scope', 'data-rotat
 }
 assert.doesNotMatch(preview, /\.innerHTML\s*=|\.addEventListener\(/);
 
-assert.match(exporter, /write_unique_file_bytes/);
+assert.match(exporter, /writeUniqueBinaryFile/);
 assert.match(exporter, /URL\.revokeObjectURL/);
 assert.match(exporter, /assertCurrent\(owner, id\)/);
 assert.match(exporter, /function close\(\)/);

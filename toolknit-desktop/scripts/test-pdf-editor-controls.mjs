@@ -96,6 +96,7 @@ assert.equal(refs.pageIndicator.textContent, 'home.pdfEditor.pageIndicator:1');
 assert.equal(refs.footerHint.textContent, 'home.pdfEditor.footerHint:file.pdf');
 assert.equal(refs.insertTextBtn.classList.contains('is-active'), true);
 assert.equal(pageState.selectButton.attributes['aria-pressed'], 'true');
+assert.equal(pageState.tile.classList.contains('is-current'), true);
 assert.equal(refs.undoBtn.disabled, false);
 assert.equal(refs.redoBtn.disabled, false);
 

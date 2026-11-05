@@ -1,5 +1,7 @@
 # ToolKnit AI Agent Quick Guide
 
+This branch develops V3.3 (3.3.0, unreleased) using the released V3.2 capability baseline. npm installation below installs stable 3.2.0; a CLI/MCP built from this source reports development version 3.3.0.
+
 This guide helps users connect ToolKnit to Trae, Cursor, or another MCP-capable IDE so an AI Agent can safely process local PDFs, convert them into images or stitched long images, extract embedded PPTX image assets and text, convert audio and video, and generate polished multi-page AI documents and editable AI tables.
 
 ## Connect once
@@ -25,7 +27,7 @@ C:\Users\<your-user-name>\AppData\Roaming\npm\node_modules\@toolknit\cli\toolkni
 
 Local PDF, image, audio/video, text, and non-AI PPT tools do not need an AI key. AI documents, AI tables, PPT text AI organization, AI PPT outline generation, AI PPT draft/PPTX generation, and transcription with `refine` require a real `DEEPSEEK_API_KEY` (or `TOOLKNIT_AI_API_KEY`) in the IDE's MCP environment/secret settings; restart the IDE after setting it. Never place the key in an Agent message, document brief, output path, or filename. CLI/MCP does not read the credential stored by ToolKnit Desktop.
 
-V3.2 CLI exposes 77 ToolKnit tools and requires Node.js >=22.13.0. Install it independently of the desktop app. See the [complete capability catalog](CLI_CAPABILITIES.md) or run `toolknit tools list --json`; the following list describes the existing tools.
+Unreleased V3.3 source exposes 78 ToolKnit tools (published npm 3.2.0 has 77) and requires Node.js >=22.13.0. Install it independently of the desktop app. See the [complete capability catalog](CLI_CAPABILITIES.md) or run `toolknit tools list --json`; the following list describes the existing tools.
 
 - `toolknit_pdf_inspect` inspects page counts, sizes, and page-by-page details.
 - `toolknit_pdf_merge` merges multiple local PDFs in order into one file.
@@ -527,3 +529,9 @@ PDF encryption and decryption require a password. Do not paste passwords into Ag
 ## When a task fails
 
 Ask the Agent to inspect the file path first. The most common causes are a missing input path, an existing output file, or a password-protected PDF. Run `toolknit doctor` to verify the qpdf engine used by compression and decryption.
+
+## Word to PDF (unreleased V3.3)
+
+`toolknit_word_to_pdf` uses local LibreOffice Writer with UNO/Python. Pass `input_path` and `output_path` for one document, or `input_paths` and `output_dir` for a batch. Supports up to 20 DOC/DOCX files, 50 MiB each. Batch responses report each file; completed outputs survive failures and cancellation. Originals stay unchanged and existing outputs are not overwritten by default. Encrypted documents and DOCX active content are unsupported. Check fonts, headers, tables and pagination; complex layouts may differ from Word.
+
+Command: `toolknit word to-pdf --input source.docx --output result.pdf --json`. Published npm 3.2.0 does not include this command.

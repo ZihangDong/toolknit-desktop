@@ -303,6 +303,16 @@
         pointer-events: auto;
       }
 
+      /* Opacity and inert do not suspend CSS timelines, including pseudo-elements. */
+      .feedback-overlay:not(.visible) *,
+      .feedback-overlay:not(.visible) *::before,
+      .feedback-overlay:not(.visible) *::after,
+      .feedback-overlay[inert] *,
+      .feedback-overlay[inert] *::before,
+      .feedback-overlay[inert] *::after {
+        animation-play-state: paused;
+      }
+
       .lightrays-bg {
         position: absolute;
         inset: 0;
@@ -514,10 +524,15 @@
         gap: 16px;
         width: max-content;
         animation: marqueeScroll 40s linear infinite;
+        animation-play-state: paused;
+      }
+
+      .feedback-overlay.visible:not([inert]) .marquee-track {
+        animation-play-state: running;
         will-change: transform;
       }
 
-      .marquee-track:hover {
+      .feedback-overlay.visible .marquee-track:hover {
         animation-play-state: paused;
       }
 

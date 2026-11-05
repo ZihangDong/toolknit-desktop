@@ -24,6 +24,7 @@ export default defineConfig(async ({ mode }) => ({
       input: {
         main: "index.html",
         screenshot: "screenshot.html",
+        fileSearch: "file-search.html",
       },
     },
   },

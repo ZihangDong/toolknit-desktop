@@ -58,6 +58,7 @@ struct Session {
     desktop: Desktop,
     png: Vec<u8>,
     restore: Vec<HiddenWindow>,
+    _auxiliary: Option<crate::platform::auxiliary_windows::Suspension>,
     ready: bool,
 }
 #[derive(Default)]
@@ -197,6 +198,33 @@ fn validate_shortcut(value: &str) -> Result<Shortcut, String> {
     }
     Ok(shortcut)
 }
+
+// History visibility is independent of the screenshot hotkey. Only an actual
+// hotkey edit (or an explicit Save/Retry) may attempt global registration.
+fn apply_shortcut_preference(
+    old: &Preferences,
+    next: &Preferences,
+    retry: bool,
+    register: impl FnOnce(Option<&str>) -> Result<(), String>,
+) -> Result<bool, String> {
+    if old.shortcut == next.shortcut && !retry {
+        return Ok(false);
+    }
+    if let Some(shortcut) = &next.shortcut {
+        if shortcut.len() > 64 {
+            return Err("screenshot:shortcut-invalid".into());
+        }
+    }
+    register(next.shortcut.as_deref())?;
+    Ok(true)
+}
+
+fn preference_status(preferences: &Preferences, inner: &Inner) -> serde_json::Value {
+    serde_json::json!({
+        "shortcut": preferences.shortcut, "history": preferences.history,
+        "registered": inner.registered, "error": inner.shortcut_error
+    })
+}
 pub(crate) fn register_shortcut(app: &tauri::AppHandle, value: Option<&str>) -> Result<(), String> {
     let state = app.state::<ScreenshotState>();
     let previous = lock(&state.inner).registered.clone();
@@ -257,22 +285,7 @@ pub(crate) async fn begin(app: &tauri::AppHandle) -> Result<(), String> {
             }
             return Ok(());
         }
-        let mut restore = RestoreWindows {
-            app: app.clone(),
-            labels: Vec::new(),
-        };
-        for (label, w) in app.webview_windows() {
-            if label == "main"
-                || label.starts_with("screenshot-")
-                || label == "color-picker-overlay"
-            {
-                if w.is_visible().unwrap_or(false) {
-                    let minimized = w.is_minimized().map_err(|_| "screenshot:window-failed")?;
-                    window_visibility::hide(&w).await?;
-                    restore.labels.push(HiddenWindow { label, minimized });
-                }
-            }
-        }
+        let mut restore = hide_for_capture(app).await?;
         // Let the desktop compositor remove our surfaces before freezing pixels.
         tokio::time::sleep(std::time::Duration::from_millis(160)).await;
         let captured = tauri::async_runtime::spawn_blocking(capture::capture)
@@ -303,6 +316,7 @@ pub(crate) async fn begin(app: &tauri::AppHandle) -> Result<(), String> {
             desktop,
             png,
             restore: std::mem::take(&mut restore.labels),
+            _auxiliary: restore.auxiliary.take(),
             ready: false,
         });
         let opened = (|| {
@@ -376,10 +390,45 @@ pub(crate) fn finish(app: &tauri::AppHandle) {
 struct RestoreWindows {
     app: tauri::AppHandle,
     labels: Vec<HiddenWindow>,
+    auxiliary: Option<crate::platform::auxiliary_windows::Suspension>,
 }
 struct HiddenWindow {
     label: String,
     minimized: bool,
+}
+async fn hide_for_capture(app: &tauri::AppHandle) -> Result<RestoreWindows, String> {
+    let mut restore = RestoreWindows {
+        app: app.clone(),
+        labels: Vec::new(),
+        auxiliary: Some(crate::platform::auxiliary_windows::Suspension::begin(app)),
+    };
+    for (label, window) in app.webview_windows() {
+        if restore
+            .auxiliary
+            .as_ref()
+            .is_some_and(|group| group.owns(&label))
+        {
+            // Native no-activation show may differ from the framework cache.
+            window_visibility::hide(&window).await?;
+        } else if (label == "main"
+            || label.starts_with("screenshot-")
+            || label == "color-picker-overlay")
+            && window.is_visible().unwrap_or(false)
+        {
+            let minimized = window
+                .is_minimized()
+                .map_err(|_| "screenshot:window-failed")?;
+            window_visibility::hide(&window).await?;
+            restore.labels.push(HiddenWindow { label, minimized });
+        }
+    }
+    Ok(restore)
+}
+// Exercise the production visibility guard without capturing private desktop
+// pixels, registering shortcuts, or opening a full-screen capture surface.
+#[cfg(test)]
+pub(crate) async fn test_capture_visibility(app: &tauri::AppHandle) -> Result<impl Drop, String> {
+    hide_for_capture(app).await
 }
 fn show_without_activation(window: &tauri::WebviewWindow, minimized: bool) -> Result<(), String> {
     #[cfg(windows)]
@@ -748,9 +797,7 @@ pub(crate) async fn quick_screenshot(
         "preferences" if main => {
             let p = preferences();
             let inner = lock(&state.inner);
-            Ok(
-                serde_json::json!({"shortcut":p.shortcut,"history":p.history,"registered":inner.registered,"error":inner.shortcut_error}),
-            )
+            Ok(preference_status(&p, &inner))
         }
         "configure" if main => {
             history_menu::dismiss(&app, false);
@@ -759,15 +806,17 @@ pub(crate) async fn quick_screenshot(
             let old = preferences();
             let mut p: Preferences = serde_json::from_value(request["preferences"].clone())
                 .map_err(|_| "screenshot:invalid-request")?;
-            if let Some(s) = &p.shortcut {
-                if s.len() > 64 {
-                    return Err("screenshot:shortcut-invalid".into());
-                }
-            }
             p.shortcut = p.shortcut.filter(|v| !v.trim().is_empty());
-            register_shortcut(&app, p.shortcut.as_deref())?;
+            let shortcut_applied = apply_shortcut_preference(
+                &old,
+                &p,
+                request["updateShortcut"].as_bool().unwrap_or(false),
+                |value| register_shortcut(&app, value),
+            )?;
             if let Err(e) = store_preferences(&p) {
-                let _ = register_shortcut(&app, old.shortcut.as_deref());
+                if shortcut_applied {
+                    let _ = register_shortcut(&app, old.shortcut.as_deref());
+                }
                 return Err(e);
             }
             state.history_hidden.store(false, Ordering::Release);
@@ -781,7 +830,9 @@ pub(crate) async fn quick_screenshot(
             if let Err(e) = updated {
                 state.history_hidden.store(old_hidden, Ordering::Release);
                 let _ = store_preferences(&old);
-                let _ = register_shortcut(&app, old.shortcut.as_deref());
+                if shortcut_applied {
+                    let _ = register_shortcut(&app, old.shortcut.as_deref());
+                }
                 if !old.history {
                     if let Some(w) = app.get_webview_window(HISTORY_LABEL) {
                         let _ = window_visibility::hide(&w).await;
@@ -790,9 +841,7 @@ pub(crate) async fn quick_screenshot(
                 return Err(e);
             }
             let _ = app.emit_to("main", "screenshot-preferences-changed", ());
-            Ok(
-                serde_json::json!({"shortcut":p.shortcut,"history":p.history,"registered":lock(&state.inner).registered}),
-            )
+            Ok(preference_status(&p, &lock(&state.inner)))
         }
         "context" if main => {
             let context = request["context"].clone();
@@ -1158,6 +1207,65 @@ mod tests {
         let p = Preferences::default();
         assert_eq!(p.shortcut.as_deref(), Some("Alt+Q"));
         assert!(!p.history);
+    }
+    #[test]
+    fn screenshot_history_changes_do_not_retry_conflicting_shortcuts() {
+        let off = Preferences::default();
+        let on = Preferences {
+            history: true,
+            ..off.clone()
+        };
+        for (old, next) in [(&off, &on), (&on, &off)] {
+            assert!(!apply_shortcut_preference(old, next, false, |_| {
+                panic!("history toggle must not register Alt+Q")
+            })
+            .unwrap());
+        }
+        let inner = Inner {
+            shortcut_error: Some("screenshot:shortcut-conflict".into()),
+            ..Inner::default()
+        };
+        let status = preference_status(&on, &inner);
+        assert_eq!(status["history"], true);
+        assert_eq!(status["error"], "screenshot:shortcut-conflict");
+        assert!(status["registered"].is_null());
+        assert_eq!(status["shortcut"], "Alt+Q");
+    }
+    #[test]
+    fn screenshot_explicit_shortcut_save_retries_and_propagates_conflicts() {
+        let old = Preferences::default();
+        assert_eq!(
+            apply_shortcut_preference(&old, &old, true, |_| {
+                Err("screenshot:shortcut-conflict".into())
+            })
+            .unwrap_err(),
+            "screenshot:shortcut-conflict"
+        );
+        assert!(apply_shortcut_preference(&old, &old, true, |value| {
+            assert_eq!(value, Some("Alt+Q"));
+            Ok(())
+        })
+        .unwrap());
+        for shortcut in [Some("Ctrl+Shift+Q".into()), None] {
+            let next = Preferences {
+                shortcut: shortcut.clone(),
+                ..old.clone()
+            };
+            assert!(apply_shortcut_preference(&old, &next, false, |value| {
+                assert_eq!(value, shortcut.as_deref());
+                Ok(())
+            })
+            .unwrap());
+        }
+        let next = Preferences {
+            shortcut: Some("x".repeat(65)),
+            ..old.clone()
+        };
+        assert_eq!(
+            apply_shortcut_preference(&old, &next, false, |_| panic!("invalid shortcut"))
+                .unwrap_err(),
+            "screenshot:shortcut-invalid"
+        );
     }
     #[test]
     fn screenshot_history_returns_to_dragged_anchor() {

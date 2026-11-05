@@ -5,6 +5,8 @@ import {
 
 const DEFAULT_ZOOM_MIN = 0.08;
 const DEFAULT_ZOOM_MAX = 8;
+const MAX_CACHED_FRAMES = 3;
+const MAX_CACHED_PIXELS = 16000000;
 
 /**
  * Owns the PDF Editor's main-page render session. PDF.js tasks and candidate
@@ -30,6 +32,7 @@ export function createPdfEditorPreview({
   getCurrentPage = () => null,
   hasDocument = () => false,
   getSourceDoc,
+  retainPage = page => () => { try { page.cleanup(); } catch {} },
   cacheSourceRotation,
   effectivePageRotation,
   pageSupportsContentEditing,
@@ -53,6 +56,30 @@ export function createPdfEditorPreview({
   zoomMax = DEFAULT_ZOOM_MAX
 } = {}) {
   if (!canvasStage) throw new TypeError('PDF editor preview requires a canvas stage');
+
+  const frames = new Map();
+  let currentFrameKey = null;
+  function clearCache() {
+    for (const canvas of frames.values()) releasePdfEditorCanvas(canvas);
+    frames.clear();
+    currentFrameKey = null;
+  }
+  function keepFrame(key, canvas) {
+    if (!key || !canvas) {
+      if (canvas) releasePdfEditorCanvas(canvas);
+      return;
+    }
+    if (frames.has(key)) releasePdfEditorCanvas(frames.get(key));
+    frames.delete(key);
+    frames.set(key, canvas);
+    let pixels = [...frames.values()].reduce((sum, item) => sum + item.width * item.height, 0);
+    while (frames.size > MAX_CACHED_FRAMES || pixels > MAX_CACHED_PIXELS) {
+      const [oldKey, oldCanvas] = frames.entries().next().value;
+      pixels -= oldCanvas.width * oldCanvas.height;
+      frames.delete(oldKey);
+      releasePdfEditorCanvas(oldCanvas);
+    }
+  }
 
   function cancel() {
     setMainEpoch(Number(getMainEpoch()) + 1);
@@ -99,14 +126,19 @@ export function createPdfEditorPreview({
     }
 
     const epoch = Number(getMainEpoch());
+    const isCurrent = () => epoch === Number(getMainEpoch()) && !isDisposed()
+      && getCurrentPage()?.id === page.id && zoom.isCurrentRequest(zoomRequest);
     let loadedPage = null;
+    let releasePage = null;
     let renderTask = null;
     let nextCanvas = null;
+    let committed = false;
     try {
       const doc = await getSourceDoc(page.sourceId);
-      if (epoch !== Number(getMainEpoch()) || isDisposed()) return;
+      if (!isCurrent()) return;
       loadedPage = await doc.getPage(page.pageIndex + 1);
-      if (epoch !== Number(getMainEpoch()) || isDisposed()) return;
+      if (!isCurrent()) return;
+      releasePage = retainPage(loadedPage);
       cacheSourceRotation(page, loadedPage);
       // Source rotation is cached outside history; refresh controls once it is
       // known so content-editing guards reflect the actual page orientation.
@@ -128,39 +160,50 @@ export function createPdfEditorPreview({
       const previousCanvas = getMainCanvas();
       const cssWidth = Math.max(1, Math.round(viewport.width / dpr));
       const cssHeight = Math.max(1, Math.round(viewport.height / dpr));
+      const frameKey = [page.sourceId, page.pageIndex, displayRotation, scale, dpr].join(':');
 
       // Paint off-DOM so the currently visible frame remains stable while
       // PDF.js renders the candidate page.
-      nextCanvas = documentRef.createElement('canvas');
+      nextCanvas = frames.get(frameKey) || null;
+      frames.delete(frameKey);
+      const cached = Boolean(nextCanvas);
+      nextCanvas ||= documentRef.createElement('canvas');
       nextCanvas.className = 'pdf-editor-main-canvas';
       nextCanvas.style.visibility = 'hidden';
-      nextCanvas.width = Math.max(1, Math.round(viewport.width));
-      nextCanvas.height = Math.max(1, Math.round(viewport.height));
+      if (!cached) {
+        nextCanvas.width = Math.max(1, Math.round(viewport.width));
+        nextCanvas.height = Math.max(1, Math.round(viewport.height));
+      }
       nextCanvas.style.width = cssWidth + 'px';
       nextCanvas.style.height = cssHeight + 'px';
       currentWrap.style.display = '';
-      const context = nextCanvas.getContext('2d', { alpha: false });
-      if (!context) throw new Error('Cannot create preview canvas');
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
-      renderTask = loadedPage.render({ canvasContext: context, viewport, background: '#ffffff' });
-      setMainRenderTask(renderTask);
-      await renderTask.promise;
-      if (getMainRenderTask() === renderTask) setMainRenderTask(null);
-      if (epoch !== Number(getMainEpoch()) || isDisposed() || !zoom.isCurrentRequest(zoomRequest)) {
+      if (!cached) {
+        const context = nextCanvas.getContext('2d', { alpha: false });
+        if (!context) throw new Error('Cannot create preview canvas');
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+        renderTask = loadedPage.render({ canvasContext: context, viewport, background: '#ffffff' });
+        setMainRenderTask(renderTask);
+        await renderTask.promise;
+        if (getMainRenderTask() === renderTask) setMainRenderTask(null);
+      }
+      if (!isCurrent()) {
         releasePdfEditorCanvas(nextCanvas);
         nextCanvas = null;
         return;
       }
 
       nextCanvas.style.visibility = '';
+      nextCanvas.dataset.pageId = page.id;
       if (previousCanvas?.isConnected) {
         previousCanvas.replaceWith(nextCanvas);
       } else {
         currentWrap.appendChild(nextCanvas);
       }
-      if (previousCanvas && previousCanvas !== nextCanvas) releasePdfEditorCanvas(previousCanvas);
+      if (previousCanvas && previousCanvas !== nextCanvas) keepFrame(currentFrameKey, previousCanvas);
+      currentFrameKey = frameKey;
       setMainCanvas(nextCanvas);
+      committed = true;
       currentWrap.style.width = cssWidth + 'px';
       currentWrap.style.height = cssHeight + 'px';
       setLastRenderScale(scale);
@@ -173,7 +216,7 @@ export function createPdfEditorPreview({
         const family = windowRef?.getComputedStyle(getTextLayer())
           .getPropertyValue('--tk-font-pdf').trim() || 'ToolKnitNotoSansSC';
         await documentRef.fonts.load(`500 16px ${family}`).catch(() => {});
-        if (epoch !== Number(getMainEpoch()) || isDisposed() || !zoom.isCurrentRequest(zoomRequest)) return;
+        if (!isCurrent()) return;
       }
       const editable = pageSupportsContentEditing(page);
       const textLinesCache = getTextLinesCache() || new Map();
@@ -185,16 +228,15 @@ export function createPdfEditorPreview({
             : null;
           if (!lines) {
             const content = await loadedPage.getTextContent();
-            if (epoch !== Number(getMainEpoch()) || isDisposed()) return;
+            if (!isCurrent()) return;
             lines = groupTextItemsIntoLines(content.items).map(buildTextLine);
           }
           textLinesCache.set(page.id, { lines, scale, cssViewport, rotation: displayRotation, epoch });
           setTextLinesCache(textLinesCache);
           renderTextLayer(lines, cssViewport, scale, page.id);
         } catch (error) {
-          if (epoch === Number(getMainEpoch()) && !isDisposed()) {
-            console.error('[PDF Editor] text layer failed:', error);
-          }
+          if (!isCurrent()) return;
+          console.error('[PDF Editor] text layer failed:', error);
           textLinesCache.delete(page.id);
           setTextLinesCache(textLinesCache);
           renderTextLayer([], cssViewport, scale, page.id);
@@ -208,21 +250,22 @@ export function createPdfEditorPreview({
     } catch (error) {
       if (getMainRenderTask() === renderTask) setMainRenderTask(null);
       if (!isPdfEditorRenderCancellation(error)
-        && epoch === Number(getMainEpoch())
-        && !isDisposed()) {
+        && isCurrent()) {
         console.error('[PDF Editor] preview render failed:', error);
       }
     } finally {
       zoom.clearPreviewHint(zoomToken);
       if (getMainRenderTask() === renderTask) setMainRenderTask(null);
-      const currentCanvas = getMainCanvas();
-      if (nextCanvas && nextCanvas !== currentCanvas) releasePdfEditorCanvas(nextCanvas);
-      try { loadedPage?.cleanup(); } catch (_) {}
+      // A subsequent render may have moved this committed frame into the cache
+      // while text extraction was pending. Its owner is now the cache/preview.
+      if (nextCanvas && !committed) releasePdfEditorCanvas(nextCanvas);
+      releasePage?.();
     }
   }
 
   function dispose() {
     cancel();
+    clearCache();
     const canvas = getMainCanvas();
     if (canvas) {
       releasePdfEditorCanvas(canvas);
@@ -237,6 +280,7 @@ export function createPdfEditorPreview({
 
   return {
     cancel,
+    clearCache,
     dispose,
     ensureCanvas,
     render

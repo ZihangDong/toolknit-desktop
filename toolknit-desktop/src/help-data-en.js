@@ -1,4 +1,11 @@
 export const HELP_CONTENT_EN = {
+  'file-search': {
+    title: 'Quick file search',
+    html: `<div class="help-doc"><h2>Quick file search</h2><p>Find local files by name or path, including Chinese and pinyin matching. Filter extensions and sort by name, size or modification time. Everything is not required.</p>
+      <ol class="help-steps"><li>Choose Enable quick search and approve the initial administrator request. Accessible disks, connected mapped drives and conservative exclusions are managed automatically. Available results remain searchable while indexing continues.</li><li>Type keywords or select an extension. Space-separated terms are combined. Colored icons identify file types. The single row action reveals and selects the file in Explorer without executing it.</li><li>Enable the desktop capsule for quick access. Escape or an outside click collapses it. Its context menu opens the tool page, hides the capsule until restart, or disables it.</li></ol>
+      <p>Supported NTFS volumes use acceleration automatically; other locations use standard indexing. Routine restarts normally need no new elevation, while service upgrades, repairs or a different account may need approval. Indexing continues in the tray, stops when ToolKnit fully exits, and catches up next launch. The more menu pauses, resumes or rebuilds the index without deleting source files.</p>
+      <p>Only file metadata stays in the local cache; document contents are neither read nor uploaded, and cloud placeholders are not downloaded. Internal system data and known caches are excluded, while ordinary documents and project deliverables remain searchable. Disconnected locations do not block other drives. Network neighbours are not discovered automatically. This feature is desktop-only.</p></div>`
+  },
   'image-to-pdf': {
     title: 'Images to PDF',
     html: `<div class="help-doc"><h2>Images to PDF</h2><p>Combine images into one PDF, with optional scanned appearance. Processing stays local and requires no AI, Office or extra model.</p>
@@ -14,6 +21,7 @@ export const HELP_CONTENT_EN = {
     title: 'One-click Recording Mode',
     html: `<div class="help-doc"><h2>One-click Recording Mode</h2><p>Enable this mode from the home prompt or Settings to turn on Windows startup, live clipboard monitoring and floating screenshot history together. The mode is on only when all three actual settings are on. Pausing any one of them updates the mode status.</p>
       <h3>Enable, disable and launch</h3><p>Enabling saves your previous three settings. Disabling restores them without deleting clipboard records, screenshots or files. Without a saved snapshot, disabling turns all three off. If enabling fails, the app attempts to restore settings changed by that operation and reports the failure; check the actual state.</p><p>Windows startup uses the current user's configuration and normally needs no administrator access. Startup launches into the system tray; its menu can toggle startup and recording. Enabling clipboard monitoring also resumes it at the next launch; pausing disables resume. This mode does not change screenshot shortcuts, AI credentials or excluded applications.</p>
+      <h3>Shortcut conflicts and setup failures</h3><p>Screenshot hotkeys are independent of recording mode. If another app owns Alt+Q, recording mode, clipboard monitoring and floating history can still be enabled. Only hotkey capture is affected. Choose another combination in Quick Screenshot, or close the conflicting app and save the shortcut again. Registry edits, disabling antivirus and administrator access are not required for this conflict.</p><p>Other setup failures show the failed step and a stable error code. Click the switch to retry a failed status read. The saved snapshot contains settings from before enabling the mode; it is neither current status nor history data and should not be deleted as a troubleshooting shortcut.</p>
       <h3>Screenshots and history</h3><p>Alt+Q starts capture by default; change or disable it on the Quick Screenshot page in Creative tools. Floating history has a draggable round Logo: click to expand, then click a thumbnail to open a pinned viewer. The floating window shares encrypted clipboard history, with image, text and file filters and full timestamps. Defaults are 7 days, 2000 records and 256 MB. Monitoring captures copies from other applications; enabling the window alone does not enable monitoring. Right-click to hide until ToolKnit restarts or turn off the window.</p>
       <p>The floating window shows the first 20 records in its saved order. Search scans all retained content, sources, file paths and notes, returning the first 20 matches. Drag a card's small grip to save its position. New records enter at the top; the bottom record leaves the floating view but stays in full history. The bottom switch controls recording and the bar tracks scrolling. Right-click to edit a history note, view, copy or confirm deletion from shared history, never original files. The menu can restore the main app.</p>
       <p>Use the top-right switch beside the menu to open saved phrases. A phrase only needs a title and content. Search updates as you type; click to copy, right-click to edit or delete, and use the grip to reorder. Successful copies show a white capsule at the bottom center of the primary display. Phrase content, history text and original images can be dragged to applications that accept them. Image dragging supplies the original PNG file; acceptance depends on the target application and never sends a message automatically. Text history can be saved as a phrase, with duplicates detected. Phrases remain independent of history expiry, clearing and the 20-item view. Each mode keeps its search and scroll position. Phrases are encrypted locally, limited to 2000 items and 16 MiB, with 64 KiB per text. Capacity limits ask for manual cleanup instead of deleting old phrases.</p>
@@ -45,8 +53,8 @@ export const HELP_CONTENT_EN = {
     title: 'Overview',
     html: `<div class="help-doc">
       <h2>ToolKnit Overview</h2>
-      <p>ToolKnit 3.2 is a <strong>local-first</strong> Windows toolbox with 73 desktop tools in the current test catalog across 12 categories and 77 capabilities exposed to IDE Agents through CLI / MCP. Basic file processing stays local; AI tools send the necessary content to your selected provider only when explicitly invoked.</p>
-      <p>V3.1 has been released with PDF to Scanned PDF, Clean Duplicate Files and Quick Screenshot. This is the V3.2 development version. Desktop and CLI/MCP releases are separate; check the official download page and npm for their versions.</p>
+      <p>ToolKnit 3.3 is a <strong>local-first</strong> Windows toolbox with 75 desktop tools in the current development catalog across 12 categories and 78 capabilities exposed to IDE Agents through CLI / MCP. Basic file processing stays local; AI tools send the necessary content to your selected provider only when explicitly invoked.</p>
+      <p>This is the unreleased V3.3 development version. The V3.2 desktop app and CLI/MCP are both released, including PDF to Word, Images to PDF and recording workflows. Check the official download page and npm for stable versions.</p>
 
       <h3>Tool Categories</h3>
       <div class="help-tool-grid">
@@ -104,7 +112,7 @@ export const HELP_CONTENT_EN = {
       <p>No optional component is forced on first launch. Related tools prompt for an on-demand install: FFmpeg is about 29 MB, the recommended Whisper Small model about 465 MB, and the LibreOffice download about 356 MB. After download reaches 100%, verification, extraction, or installation may still be running.</p>
 
       <div class="help-note">
-        <p>FFmpeg, Whisper, and LibreOffice support Auto, Official, or China mirror sources. LibreOffice powers Excel to PDF, PPT to PDF, and PPT to Image. A rare offline Windows installation without WebView2 must go online once to install Microsoft Edge WebView2 Runtime.</p>
+        <p>FFmpeg, Whisper, and LibreOffice support Auto, Official, or China mirror sources. LibreOffice powers Word to PDF, Excel to PDF, PPT to PDF, and PPT to Image. A rare offline Windows installation without WebView2 must go online once to install Microsoft Edge WebView2 Runtime.</p>
       </div>
     </div>`
   },
@@ -128,7 +136,7 @@ export const HELP_CONTENT_EN = {
       <p>Audio conversion, clipping, audio extraction, video conversion, frame export, GIF export, and transcription preparation require FFmpeg. It is no longer bundled into the installer. Install it from Auto, Official, or China mirror here, or accept the dependency prompt when entering a supported tool.</p>
 
       <h3>LibreOffice Runtime</h3>
-      <p>LibreOffice powers Excel to PDF, PPT to PDF, and PPT to Image. Choose Auto, Official, or China mirror; after download, allow verification and extraction to finish. Conversion then works offline.</p>
+      <p>LibreOffice powers Word to PDF, Excel to PDF, PPT to PDF, and PPT to Image. Choose Auto, Official, or China mirror; after download, allow verification and extraction to finish. Conversion then works offline.</p>
 
       <h3>Window, Sound, and Shortcut</h3>
       <p>Configure resize behavior and small, large, or custom corner radius. Maximized windows remove rounding and cover the screen; rounding returns after restore. Global sounds have a master switch and three styles. Screen Color Picker defaults to <code>Ctrl+Shift+C</code>, can be customized or reset, minimizes the main window while picking, and returns the selected color to the Color Extractor.</p>
@@ -446,6 +454,20 @@ export const HELP_CONTENT_EN = {
         <li>Text replacement requires an embedded text layer; scanned or image-only PDFs are not supported</li>
         <li>Files are processed locally and never uploaded</li>
       </ul>
+    </div>`
+  },
+
+  'word-to-pdf': {
+    title: 'Word to PDF',
+    html: `<div class="help-doc"><h2>Word to PDF</h2>
+      <p>New in V3.3. Local LibreOffice Writer converts DOC / DOCX to PDF with selectable text. Files stay local and originals stay unchanged.</p>
+      <ol class="help-steps"><li>Select or drop up to 20 Word documents, each at most 50 MiB.</li>
+      <li>Start conversion. Install the Office runtime when prompted, then convert offline. WPS or Microsoft Office cannot replace this runtime.</li>
+      <li>Choose Show in folder to select the saved PDF, or Import into PDF Editor to view and edit it. Choose a file from the result selector for a batch.</li>
+      <li>Close clears the queue for the next conversion without deleting saved files. A partial batch stays in the queue so you can retry unfinished files without repeating successful conversions.</li></ol>
+      <p>Each PDF keeps its source name inside a unique folder. Existing outputs are never overwritten. Cancel or return to stop unfinished work.</p>
+      <p>Macros are disabled and external links or indexes are not explicitly refreshed. DOCX macros, embedded objects and external resources are rejected. Save password-protected documents as unprotected copies first. Missing fonts or complex layouts can differ from Word; preview before sharing.</p>
+      <p>Development CLI: <code>toolknit word to-pdf --input source.docx --output result.pdf --json</code>. MCP: <code>toolknit_word_to_pdf</code>. Published npm 3.2.0 does not include this tool.</p>
     </div>`
   },
 
@@ -981,7 +1003,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       <p>After connecting ToolKnit CLI to an MCP-capable IDE, you can ask an Agent in plain language to process local files from the project. The Agent calls real ToolKnit tools; it does not need the desktop app to stay open and should not claim a result without a tool call.</p>
 
       <h3>Current scope</h3>
-      <div class="help-agent-scope"><p>V3.2 exposes <strong>77 capabilities</strong>. Use CLI 3.2.0 or later; the desktop app does not need to stay open.</p><ul>
+      <div class="help-agent-scope"><p>V3.3 development exposes <strong>78 capabilities</strong>, adding Word to PDF. Published npm 3.2.0 provides 77. The CLI runs independently of the desktop app.</p><ul>
         <li><strong>PDF and Office</strong>: inspect, merge, split, rotate, encrypt/decrypt, compress, enhance, export images, convert to Word, extract text/Markdown, crop, number pages, create scan effects or blank PDFs, and render XLSX to PDF. Word defaults to local analysis; complex regions may remain images. Excel rendering needs LibreOffice.</li>
         <li><strong>PPT</strong>: PDF/image export, asset/text extraction, compression, AI outlines and editable drafts.</li>
         <li><strong>Images</strong>: PDF creation, format conversion, compression, crop/rotate/flip, color replacement, icon archives, palette extraction, stitching and color-space conversion.</li>
@@ -1193,7 +1215,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
       <div class="help-faq-item">
         <div class="help-faq-q">Q: What are Whisper and LibreOffice used for?</div>
-        <div class="help-faq-a">A: Whisper models run local audio/video transcription; the recommended Small model is about 465 MB. LibreOffice powers Excel to PDF, PPT to PDF, and PPT to Image; its download is about 356 MB. Both are optional.</div>
+        <div class="help-faq-a">A: Whisper models run local audio/video transcription; the recommended Small model is about 465 MB. LibreOffice powers Word to PDF, Excel to PDF, PPT to PDF, and PPT to Image; its download is about 356 MB. Both are optional.</div>
       </div>
 
       <div class="help-faq-item">
@@ -1314,7 +1336,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
   'developer-tools': {
     title: 'Developer Tools',
-    html: `<div class="help-doc"><h2>Developer Tools in 3.2</h2><p>This release adds local-first tools that load on demand and release Workers, canvases, and temporary jobs when closed.</p><h3>Markdown Document Editor</h3><p>GFM, task lists, Mermaid, math, outline navigation, draft recovery, and offline Markdown/HTML export are supported. Local images are organized into an assets folder during export.</p><h3>Smart Color Replacement</h3><p>Sample source and target colors, tune perceptual tolerance, feathering, luminance preservation, and 8-connected smart protection. Preview work runs in a Worker; Rust exports at original resolution.</p><h3>Hash &amp; Crypto</h3><p>Includes common hashes, HMAC, SM algorithms, AES file encryption, RSA, and SM2. Legacy algorithms are compatibility-only, and sensitive inputs are not persisted.</p></div>`
+    html: `<div class="help-doc"><h2>Developer Tools in 3.3</h2><p>These local-first tools load on demand and release Workers, canvases, and temporary jobs when closed.</p><h3>Markdown Document Editor</h3><p>GFM, task lists, Mermaid, math, outline navigation, draft recovery, and offline Markdown/HTML export are supported. Local images are organized into an assets folder during export.</p><h3>Smart Color Replacement</h3><p>Sample source and target colors, tune perceptual tolerance, feathering, luminance preservation, and 8-connected smart protection. Preview work runs in a Worker; Rust exports at original resolution.</p><h3>Hash &amp; Crypto</h3><p>Includes common hashes, HMAC, SM algorithms, AES file encryption, RSA, and SM2. Legacy algorithms are compatibility-only, and sensitive inputs are not persisted.</p></div>`
   },
   'hardware-tools': {
     title: 'Hardware Tools Overview',

@@ -51,6 +51,14 @@ const documentRef = {
   removeEventListener(name) { this.listeners.delete(name); }
 };
 const windowRef = { requestAnimationFrame: callback => { callback(); return 1; } };
+editModal.ownerDocument = documentRef;
+editModal.contains = element => element === editModalInput;
+editModalInput.blur = () => { documentRef.activeElement = null; };
+const setModalAttribute = editModal.setAttribute.bind(editModal);
+editModal.setAttribute = (name, value) => {
+  if (name === 'aria-hidden' && value === 'true') assert.notEqual(documentRef.activeElement, editModalInput);
+  setModalAttribute(name, value);
+};
 let editMode = false;
 let componentMode = false;
 let insertMode = null;
@@ -128,7 +136,9 @@ editing.openInsertTextModal();
 assert.equal(insertMode, 'text');
 assert.equal(modalMode, 'insert-text');
 editModalInput.value = '  placed text  ';
+documentRef.activeElement = editModalInput;
 editing.saveEditModal();
+assert.equal(documentRef.activeElement, null, 'modal releases focus before aria-hidden/inert');
 assert.deepEqual(pendingInsert, {
   type: 'text', text: 'placed text', fontSize: 16, bold: false, color: [0, 0, 0]
 });

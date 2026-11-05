@@ -1,4 +1,9 @@
 ToolKnit Desktop
+File-search file-type SVGs are selected from Material Icon Theme, commit
+f368264282ef14ee7feb012fd54e825181eff9c3, Copyright (c) 2025 Material Extensions.
+They retain the MIT License in LICENSES/Material-Icon-Theme.txt. Source mapping:
+src/features/file-search/icons/SOURCE.json. Third-party marks identify file types.
+
 Required Notice: Copyright 2026 Zihang Dong (https://toolknit.com)
 Copyright 2026 ToolKnit contributors
 
@@ -41,7 +46,27 @@ The official npm package bundles ExcelJS 4.4.0 and its locked dependency
 tree under their original licenses. For the UUID security correction,
 the bundled ExcelJS dependency metadata is patched from uuid ^8.3.0 to
 11.1.1; its source code and MIT license remain unchanged.
+For GHSA-g3hv-75wg-m249, glob 7.2.3 and readdir-glob 1.1.3 resolve
+minimatch 11.0.3; their bundled dependency metadata reflects that version.
+glob 7 also receives a compatibility correction to read minimatch 11
+Matcher.pattern metadata and call Matcher.test in its sync/callback paths.
+This patch
+does not change minimatch matching or its security limits. These upstream
+packages retain their original ISC/MIT license notices.
+
+File search includes selected WinShun matching components (Copyright 2026
+LingCore, MIT) and generated pinyin data (Copyright 2016 mozillazg, MIT),
+fixed at WinShun commit 7e47148a8300bf019d969ad523ec8cbe3c7eae07.
+Their unmodified source and full licenses are in
+src-tauri/vendor/winshun-search/. These components retain their original
+MIT rights, including commercial reuse; ToolKnit's own license and the
+separate PDF-to-Word terms do not replace those rights.
 
 No license grants rights to the ToolKnit name, logos, visual identity,
 domains, official website, hosted web service, service accounts, or other
 brand identifiers. Those rights remain with their respective owners.
+
+Tauri runtime compatibility patch
+The vendored tauri-runtime-wry 2.12.1 retains Copyright (c) 2017 - Present
+Tauri Apps Contributors and its MIT OR Apache-2.0 licenses. Source and patch
+notes: src-tauri/vendor/tauri-runtime-wry/TOOLKNIT-PATCH.md.

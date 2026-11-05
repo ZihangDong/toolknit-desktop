@@ -25,11 +25,16 @@
         "default",
         "screenshot-windows",
         "desktop-feedback",
+        "file-search-windows",
         {
           "identifier": "qa-devtools",
           "description": "Local DevTools shortcut for explicitly requested test installers.",
-          "windows": ["main"],
-          "permissions": ["core:webview:allow-internal-toggle-devtools"]
+          "windows": [
+            "main"
+          ],
+          "permissions": [
+            "core:webview:allow-internal-toggle-devtools"
+          ]
         }
       ]
     }

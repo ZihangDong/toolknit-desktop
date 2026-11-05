@@ -3,6 +3,8 @@ use super::*;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(windows)]
+    if let Some(code)=file_search::dispatch_accelerator(){std::process::exit(code);}
     system_cleanup::await_previous_instance_for_elevated_relaunch();
     let mut context = tauri::generate_context!();
     if is_autostart_launch(std::env::args()) {
@@ -22,12 +24,15 @@ pub fn run() {
         .manage(WindowCornerRadiusState::default())
         .manage(AutostartState::default())
         .manage(quick_screenshot::ScreenshotState::default())
+        .manage(file_search::FileSearchState::default())
+        .manage(platform::auxiliary_windows::Registry::default())
         .manage(local_translation::TranslationState::default())
         .manage(crate::clipboard_history::ClipboardHistoryState::default())
         .manage(onnx_segmenter::MattingState::default())
         .manage(TeleprompterRecognitionState::default())
         .invoke_handler(tauri::generate_handler![
             quick_screenshot::quick_screenshot,
+            file_search::file_search,
             local_translation::local_translation,
             crate::clipboard_history::clipboard_history,
             crate::clipboard_history::copy_sensitive_text,
@@ -82,6 +87,7 @@ pub fn run() {
             prepare_icon_source_image,
             write_file_bytes,
             write_unique_file_bytes,
+            write_unique_file_binary,
             write_unique_file_pair,
             export_markdown_bundle,
             write_file_chunk,
@@ -166,6 +172,8 @@ pub fn run() {
             office::convert_ppt_to_pdf,
             office::discard_ppt_to_image_preview,
             office::convert_excel_to_pdf,
+            office::convert_word_to_pdf,
+            office::cancel_word_to_pdf,
             convert_video_batch,
             set_tray_lang,
             get_autostart,
@@ -310,12 +318,14 @@ pub fn run() {
             }
 
             quick_screenshot::initialize(app.handle());
+            file_search::initialize(app.handle());
             Ok(())
         })
         .build(context)
         .expect("error while building tauri application")
         .run(|app, event| {
             if matches!(event, tauri::RunEvent::Exit) {
+                file_search::shutdown(app);
                 local_translation::shutdown(app);
             }
             if let tauri::RunEvent::ExitRequested { api, code, .. } = event {

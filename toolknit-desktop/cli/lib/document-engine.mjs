@@ -103,6 +103,11 @@ async function create(args) {
   return { bytes: await pdf.save(), meta: { page_count: pdf.getPageCount(), width: dimensions[0], height: dimensions[1] } };
 }
 export async function processDocument(job, args, options) {
+  if (job === 'pdf_validate') {
+    const pdf = await PDFDocument.load(args.bytes);
+    if (!pdf.getPageCount()) throw new ToolKnitError('PROCESSING_FAILED', 'Empty PDF output.');
+    return { page_count: pdf.getPageCount() };
+  }
   if (job === 'workbook_inspect') return (await import('./office-archive.mjs')).inspectWorkbookArchive(args.bytes);
   if (job.startsWith('image_')) return (await import('./image-engine.mjs')).processImage(job, args, options);
   const operations = { pdf_to_word: word, pdf_text: text, pdf_crop: crop, pdf_page_number: pageNumber, pdf_to_scan: scan, pdf_create: create };

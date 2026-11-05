@@ -2,6 +2,13 @@ import { getLang } from './i18n.js';
 import { HELP_CONTENT_EN } from './help-data-en.js';
 
 export const HELP_CONTENT = {
+  'file-search': {
+    title: '文件快速搜索',
+    html: `<div class="help-doc"><h2>文件快速搜索</h2><p>按文件名和路径查找本机文件，支持中文、拼音、后缀筛选及名称、大小、时间排序。无需安装 Everything。</p>
+      <ol class="help-steps"><li>首次点击「启用快速搜索」并完成管理员确认。程序自动管理可访问磁盘、已连接的映射网络盘及固定排除规则，无需逐项配置。已有结果可在后台整理期间搜索。</li><li>输入关键词；空格分隔多个条件。只选择后缀也能浏览该类型。彩色图标区分文件类型，结果右侧按钮在资源管理器中选中文件，不执行文件。</li><li>开启「桌面胶囊」可随时展开搜索。点击外部或按 Esc 收起；右键可打开工具页、隐藏到下次启动或停用。输入法组词不触发定位。</li></ol>
+      <p>可用 NTFS 卷自动加速，其他位置使用普通索引。日常重新打开通常无需再次授权；服务更新、修复或更换账户时可能需要确认。托盘运行继续维护索引；完全退出停止，下次启动补齐变化。</p>
+      <p>文件名、路径、大小和时间只保存在本机，不读取正文、不上传，不主动下载云文件。系统内部数据和明确缓存默认排除，微信文件、普通文档和项目交付物保留。更多菜单可暂停、继续或重新整理索引，原文件不变。离线或无权限位置不会阻断其他磁盘；不自动发现局域网共享。本功能暂为桌面专属。</p></div>`
+  },
   'image-to-pdf': {
     title: '图像转 PDF',
     html: `<div class="help-doc"><h2>图像转 PDF</h2><p>将多张图像合并为一个 PDF，也可生成带扫描质感的图像型 PDF。无需 AI、Office 或额外模型，图像在本地处理。</p>
@@ -17,6 +24,7 @@ export const HELP_CONTENT = {
     title: '一键记录模式',
     html: `<div class="help-doc"><h2>一键记录模式</h2><p>在首页提示或设置中打开“一键记录模式”，即可同时开启程序自启动、剪贴板实时监控与截图悬浮历史。三项实际状态全部开启时，模式才显示为已开启；单独暂停其中一项后，模式同步显示未开启。</p>
       <h3>开启、关闭与启动</h3><p>开启前会保存这三项原有设置。关闭一键模式时恢复原有设置，不会删除剪贴板记录、截图或文件。若此前没有保存的设置，则关闭三项功能。开启失败会尝试恢复本次已改动的设置，并显示失败提示，请核对实际状态。</p><p>Windows 自启动写入当前用户配置，通常不需要管理员权限；开机后常驻系统托盘。右键托盘可切换自启动和记录状态。剪贴板监控打开后会随下次启动恢复，暂停会同时取消恢复记录。一键模式不会改变截图快捷键、AI 密钥或排除应用规则。</p>
+      <h3>快捷键冲突与开启失败</h3><p>截图快捷键与记录模式独立。Alt+Q 被其他软件占用时，仍可开启记录模式、剪贴板监控和悬浮历史；仅快捷键截图受影响，可在“快速截图”中改用其他组合，或关闭占用软件后再次点击保存。无需为此修改注册表、关闭杀毒软件或使用管理员身份。</p><p>若开启仍失败，提示会给出失败步骤与错误代码；状态读取失败可点击开关重试。开启前的设置快照用于关闭或失败时恢复，不代表当前状态，也不是历史记录数据，请勿为排障随意删除。</p>
       <h3>截图与历史</h3><p>默认按 Alt+Q 截图，可在创意分类的快速截图工具页修改或关闭快捷键。悬浮历史显示可拖动的圆形 Logo，点击展开历史窗口，点击缩略图打开置顶查看器。悬浮窗与剪贴板历史共用加密记录，支持图片、文字、文件分类和完整时间，默认保留 7 天、2000 条、256 MB。开启监控后可收录其他应用的复制内容；单独开启悬浮窗不会自动开启监控。右键可隐藏到下次重启 ToolKnit，或关闭悬浮窗。</p>
       <p>悬浮窗展示排序最前的 20 条，空搜索时在这些记录内分类；搜索时从完整历史按内容、来源、文件路径和备注查找，按保存顺序返回前 20 条匹配记录。拖动卡片右上角的小柄可保存顺序，新记录进入队首，底部退出悬浮窗但仍保留在完整历史中。底部开关控制记录，横条表示滚动位置。右键记录可编辑加密备注、查看、复制或确认删除；手动删除同步主历史，不删除原文件。菜单可恢复主程序到前台。</p>
       <p>右上角菜单左侧的切换按钮可进入常用语，悬停时标题会提示切换目标。常用语只填写标题和内容，输入即搜索，点击条目复制，右键编辑或删除，拖动小柄排序。复制成功在电脑主屏底部显示白色胶囊提示。常用语正文、历史文字及图片可拖到接受相应内容的其他应用；图片使用原图文件，目标应用是否接收取决于其支持，拖放不会自动发送消息。文字历史可转存常用语，相同正文会提示重复。常用语不受历史过期、清空或 20 条展示上限影响，两种模式分别保留搜索与滚动位置。常用语本机加密保存，最多 2000 条、16 MiB，单条正文最多 64 KiB；超限提示手动清理，不自动删除旧条目。</p>
@@ -48,8 +56,8 @@ export const HELP_CONTENT = {
     title: '功能概览',
     html: `<div class="help-doc">
       <h2>ToolKnit 功能概览</h2>
-      <p>ToolKnit 3.2 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前测试版本提供 12 个分类、73 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 77 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
-      <p>V3.1 已发布，包含 PDF 转扫描件、清理重复文件和快速截图；当前为 V3.2 开发版本。桌面端与 CLI/MCP 分别发布，版本以官网下载页和 npm 为准。</p>
+      <p>ToolKnit 3.3 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前开发版本提供 12 个分类、75 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 78 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
+      <p>当前为尚未发布的 V3.3 开发版本。V3.2 桌面端与 CLI/MCP 均已发布，包含 PDF 转 Word、图像转 PDF 和记录模式等功能；正式版本以官网下载页和 npm 为准。</p>
 
       <h3>工具分类一览</h3>
       <div class="help-tool-grid">
@@ -107,7 +115,7 @@ export const HELP_CONTENT = {
       <p>首次启动不强制下载附加组件。进入相关功能时，程序会检查并提示按需安装：FFmpeg 下载约 29 MB，推荐的 Whisper Small 模型约 465 MB，LibreOffice 下载包约 356 MB。下载进度到 100% 后仍可能继续进行校验、解压或安装，请等待完成提示。</p>
 
       <div class="help-note">
-        <p>FFmpeg、Whisper 和 LibreOffice 均可在设置中选择自动、官方或国内镜像源。LibreOffice 用于 Excel 转 PDF、PPT 转 PDF 和 PPT 转图像。极少数没有 WebView2 的离线 Windows 设备，需要先联网安装 WebView2 Runtime 才能启动应用。</p>
+        <p>FFmpeg、Whisper 和 LibreOffice 均可在设置中选择自动、官方或国内镜像源。LibreOffice 用于 Word 转 PDF、Excel 转 PDF、PPT 转 PDF 和 PPT 转图像。极少数没有 WebView2 的离线 Windows 设备，需要先联网安装 WebView2 Runtime 才能启动应用。</p>
       </div>
     </div>`
   },
@@ -131,7 +139,7 @@ export const HELP_CONTENT = {
       <p>音频转换、音频剪辑、音频提取、视频转换、单帧图、GIF 和转写预处理都需要 FFmpeg。安装包不再内置它：可在这里选择自动、官方或国内镜像下载。进入相关工具时若未安装，也会弹出依赖安装窗口。</p>
 
       <h3>LibreOffice 运行时</h3>
-      <p>供 Excel 转 PDF、PPT 转 PDF 和 PPT 转图像使用。可选择自动、官方或国内镜像；下载完成后还需校验和解压，安装完成后可离线转换。</p>
+      <p>供 Word 转 PDF、Excel 转 PDF、PPT 转 PDF 和 PPT 转图像使用。可选择自动、官方或国内镜像；下载完成后还需校验和解压，安装完成后可离线转换。</p>
 
       <h3>窗口、音效与快捷键</h3>
       <p>可调整窗口拉伸与小圆角 / 大圆角 / 自定义圆角；窗口最大化时会自动取消圆角并贴合屏幕，恢复窗口后重新应用。全局音效提供总开关和三套风格。屏幕取色默认快捷键为 <code>Ctrl+Shift+C</code>，可自定义或恢复默认；启动取色时主窗口会自动最小化，选中颜色后返回配色提取器。</p>
@@ -476,6 +484,20 @@ export const HELP_CONTENT = {
         <li>文字替换依赖 PDF 自带的文字层，扫描件或纯图像型 PDF 不支持文字编辑</li>
         <li>文件全程在本地处理，不上传服务器</li>
       </ul>
+    </div>`
+  },
+
+  'word-to-pdf': {
+    title: 'Word 转 PDF',
+    html: `<div class="help-doc"><h2>Word 转 PDF</h2>
+      <p>V3.3 新增。使用本机 LibreOffice Writer，把 DOC / DOCX 转为保留文字层的 PDF。文件不会上传，源文件不改动。</p>
+      <ol class="help-steps"><li>选择或拖入 Word 文档；一次最多 20 个，每个不超过 50 MiB。</li>
+      <li>点击「开始转换」。缺少 Office 运行时时按提示安装，之后可离线使用；WPS 或 Microsoft Office 不能代替该运行时。</li>
+      <li>完成后可「打开所在文件夹」并选中 PDF，或「导入到 PDF 编辑器」继续查看和修改。批量结果可在弹框中选择。</li>
+      <li>点击「关闭」会清空本轮列表，准备下一次转换，不删除已保存文件。部分失败时在队列中重试未完成项目，成功结果不重复转换。</li></ol>
+      <p>每个结果使用独立目录保留原名称，不覆盖旧结果。取消或返回会停止未完成转换。</p>
+      <p>不执行宏、不主动刷新外部链接或目录。DOCX 中的宏、嵌入对象和外部资源会被拒绝；加密文档请先另存无密码副本。缺少字体或复杂版式可能与 Word 有差异，请预览后再分享。</p>
+      <p>开发版 CLI：<code>toolknit word to-pdf --input source.docx --output result.pdf --json</code>；MCP：<code>toolknit_word_to_pdf</code>。正式 npm 3.2.0 尚不包含此功能。</p>
     </div>`
   },
 
@@ -1011,7 +1033,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       <p>把 ToolKnit CLI 连接到支持 MCP 的 IDE 后，你可以直接用自然语言让 Agent 处理项目里的本地文件。Agent 调用的是真正的 ToolKnit 工具，不需要打开桌面端，也不应把“我已经处理好了”当成没有调用工具时的替代答案。</p>
 
       <h3>当前可用范围</h3>
-      <div class="help-agent-scope"><p>V3.2 MCP 提供 <strong>77 项</strong>能力；使用 CLI 3.2.0 或更高版本，无需同时运行桌面端。</p><ul>
+      <div class="help-agent-scope"><p>V3.3 开发版 MCP 提供 <strong>78 项</strong>能力，新增 Word 转 PDF；正式 npm 3.2.0 提供 77 项。CLI 独立运行，无需打开桌面端。</p><ul>
         <li><strong>PDF 与 Office</strong>：检查、合并、拆分、旋转、加解密、压缩、增强、导出图像、转 Word、文本/Markdown、裁剪、页码、扫描效果、空白 PDF，以及 XLSX 转 PDF。Word 默认离线，复杂区域可保留图像；Excel 渲染需要 LibreOffice。</li>
         <li><strong>PPT</strong>：转 PDF/图像、提取素材/文字、压缩、AI 大纲和可编辑草稿。</li>
         <li><strong>图像</strong>：转 PDF、格式转换、压缩、裁剪/旋转/翻转、颜色替换、图标包、取色、长图拼接与颜色空间换算。</li>
@@ -1223,7 +1245,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
       <div class="help-faq-item">
         <div class="help-faq-q">Q：Whisper 和 LibreOffice 分别做什么？</div>
-        <div class="help-faq-a">A：Whisper 模型用于本地音视频转写，推荐的 Small 约 465 MB；LibreOffice 用于 Excel 转 PDF、PPT 转 PDF 和 PPT 转图像，下载包约 356 MB。两者都按需安装。</div>
+        <div class="help-faq-a">A：Whisper 模型用于本地音视频转写，推荐的 Small 约 465 MB；LibreOffice 用于 Word 转 PDF、Excel 转 PDF、PPT 转 PDF 和 PPT 转图像，下载包约 356 MB。两者都按需安装。</div>
       </div>
 
       <div class="help-faq-item">
@@ -1344,7 +1366,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
   'developer-tools': {
     title: '开发者工具',
-    html: `<div class="help-doc"><h2>3.2 开发者工具</h2><p>这里集中介绍本次新增的本地工具。它们默认在需要时加载，关闭页面后会释放 Worker、Canvas 和临时任务。</p><h3>Markdown 文档编辑器</h3><p>支持 GFM、任务列表、Mermaid、数学公式、目录跳转、草稿恢复，以及 Markdown 和离线 HTML 导出。导出本地图片时会自动整理 assets 目录。</p><h3>智能颜色替换</h3><p>使用吸管选择源色和目标色，可调节感知阈值、边缘柔化、亮度保持和八连通智能保护。预览使用降采样 Worker，导出由 Rust 按原始分辨率完成。</p><h3>Hash &amp; Crypto</h3><p>覆盖常用 Hash、HMAC、国密、AES 文件加密、RSA 和 SM2。旧算法仅用于兼容，敏感输入不会写入历史或本地存储。</p></div>`
+    html: `<div class="help-doc"><h2>3.3 开发者工具</h2><p>这里集中介绍现有的本地工具。它们默认在需要时加载，关闭页面后会释放 Worker、Canvas 和临时任务。</p><h3>Markdown 文档编辑器</h3><p>支持 GFM、任务列表、Mermaid、数学公式、目录跳转、草稿恢复，以及 Markdown 和离线 HTML 导出。导出本地图片时会自动整理 assets 目录。</p><h3>智能颜色替换</h3><p>使用吸管选择源色和目标色，可调节感知阈值、边缘柔化、亮度保持和八连通智能保护。预览使用降采样 Worker，导出由 Rust 按原始分辨率完成。</p><h3>Hash &amp; Crypto</h3><p>覆盖常用 Hash、HMAC、国密、AES 文件加密、RSA 和 SM2。旧算法仅用于兼容，敏感输入不会写入历史或本地存储。</p></div>`
   },
   'hardware-tools': {
     title: '硬件工具总览',

@@ -1,3 +1,4 @@
+import { writeUniqueBinaryFile } from '../../platform/binary-output.js';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { createModalSession, setModalInteractivity } from '../../app/modal-runtime.js';
 import { mergePdfPages } from '../../pdf-merge-core.js';
@@ -83,10 +84,10 @@ export function createPdfMergeExporter({
       const { invoke } = await tauriCorePromise;
       const directory = await getOutputDir('PDF_Merge');
       assertCurrent(owner, id);
-      const path = await invoke('write_unique_file_bytes', {
+      const path = await writeUniqueBinaryFile(invoke, {
         directory,
         fileName: 'merged.pdf',
-        bytes: Array.from(bytes)
+        bytes
       });
       assertCurrent(owner, id);
       return path;

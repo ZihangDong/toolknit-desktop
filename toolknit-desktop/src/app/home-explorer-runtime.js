@@ -4,8 +4,22 @@ import { createSettingsController } from './settings-controller.js';
 const FAVORITES_KEY = 'toolknit_favorites';
 const MAX_FAVORITES = 6;
 const PAGE_SIZE = 12;
-// V3.1/V3.2 discoveries include the expanded clipboard workflow without changing tool categories.
-const NEW_FEATURE_TOOLS = new Set(['quick-screenshot', 'pdf-to-scan', 'duplicate-file-cleanup', 'pdf-to-word', 'clipboard-history', 'image-to-pdf']);
+// Keep the release attached to each card so new-feature discovery remains
+// browsable after the current release is no longer the newest one.
+const NEW_FEATURE_VERSIONS = new Map([
+  ['file-search', '3.3'],
+  ['word-to-pdf', '3.3'],
+  ['pdf-to-word', '3.2'],
+  ['image-to-pdf', '3.2'],
+  ['pdf-to-scan', '3.2'],
+  ['quick-screenshot', '3.2'],
+  ['duplicate-file-cleanup', '3.2'],
+  ['clipboard-history', '3.2']
+]);
+const compareVersionsDescending = (left, right) => {
+  const a = left.split('.').map(Number), b = right.split('.').map(Number);
+  return (b[0] - a[0]) || (b[1] - a[1]);
+};
 
 const categoryGroup = category => ({ audio: 'media', video: 'media', calculator: 'calc', cleanup: 'clean' }[category] || category || '');
 const CATEGORY_LABEL_KEYS = Object.freeze({
@@ -180,12 +194,31 @@ export function createHomeExplorerRuntime({
     if (resetPagination) visibleToolCount = PAGE_SIZE;
     const query = homeToolSearch.value.trim().toLowerCase();
     const tools = collectTools().filter(item => {
-      const matchesCategory = activeCategory === 'new' ? NEW_FEATURE_TOOLS.has(item.toolId)
+      const matchesCategory = activeCategory === 'new' ? NEW_FEATURE_VERSIONS.has(item.toolId)
         : activeCategory === 'all' || item.homeCategory === activeCategory;
       return matchesCategory && (!query || item.searchable.includes(query));
     });
+    if (activeCategory === 'new') {
+      tools.sort((left, right) => compareVersionsDescending(
+        NEW_FEATURE_VERSIONS.get(left.toolId), NEW_FEATURE_VERSIONS.get(right.toolId)
+      ));
+    }
     const shown = lazyLoadEnabled ? tools.slice(0, visibleToolCount) : tools;
-    homeToolGrid.innerHTML = shown.length ? shown.map(item => `<button class="tool-result-card" type="button" data-home-tool="${escapeHtml(item.toolId)}" data-tool-category="${escapeHtml(item.homeCategory)}"><span class="card-water-layer" aria-hidden="true"><span class="card-water-ripple"></span></span><span class="tool-result-top"><span class="tool-result-icon">${item.iconHtml || '<i data-lucide="sparkles"></i>'}</span><span class="tool-result-tag">${escapeHtml(item.tag)}</span></span><span><span class="tool-result-name">${escapeHtml(item.name)}</span><span class="tool-result-desc">${escapeHtml(item.desc)}</span></span></button>`).join('') : `<div class="tool-result-empty">${escapeHtml(translate('home.noToolsFound'))}</div>`;
+    const cardMarkup = item => `<button class="tool-result-card" type="button" data-home-tool="${escapeHtml(item.toolId)}" data-tool-category="${escapeHtml(item.homeCategory)}"><span class="card-water-layer" aria-hidden="true"><span class="card-water-ripple"></span></span><span class="tool-result-top"><span class="tool-result-icon">${item.iconHtml || '<i data-lucide="sparkles"></i>'}</span><span class="tool-result-tag">${escapeHtml(item.tag)}</span></span><span><span class="tool-result-name">${escapeHtml(item.name)}</span><span class="tool-result-desc">${escapeHtml(item.desc)}</span></span></button>`;
+    if (!shown.length) {
+      homeToolGrid.innerHTML = `<div class="tool-result-empty">${escapeHtml(translate('home.noToolsFound'))}</div>`;
+    } else if (activeCategory === 'new') {
+      const versions = [...new Set(shown.map(item => NEW_FEATURE_VERSIONS.get(item.toolId)))];
+      homeToolGrid.innerHTML = versions.map(version => {
+        const group = shown.filter(item => NEW_FEATURE_VERSIONS.get(item.toolId) === version);
+        const newest = version === versions[0];
+        const subtitle = translate(newest ? 'home.newFeatureCurrentRelease' : 'home.newFeaturePreviousRelease');
+        const count = translate(group.length === 1 ? 'home.newFeatureToolsCountOne' : 'home.newFeatureToolsCount', { count: group.length });
+        return `<section class="tool-result-release-group" data-release-version="${escapeHtml(version)}" aria-labelledby="homeRelease${escapeHtml(version.replaceAll('.', ''))}"><header class="tool-result-release-heading"><h3 id="homeRelease${escapeHtml(version.replaceAll('.', ''))}">V${escapeHtml(version)}</h3><span class="tool-result-release-subtitle">${escapeHtml(subtitle)}</span><span class="tool-result-release-rule" aria-hidden="true"></span><span class="tool-result-release-count">${escapeHtml(count)}</span></header><div class="tool-result-release-grid">${group.map(cardMarkup).join('')}</div></section>`;
+      }).join('');
+    } else {
+      homeToolGrid.innerHTML = shown.map(cardMarkup).join('');
+    }
     const remaining = Math.max(0, tools.length - shown.length);
     if (homeToolLoadMore) homeToolLoadMore.hidden = remaining === 0;
     if (homeToolLoadMoreSummary) homeToolLoadMoreSummary.textContent = remaining ? `${translate('home.loadMoreSummary', { shown: shown.length, total: tools.length })} · ${translate('home.loadMoreRemaining', { remaining })}` : translate('home.loadMoreSummary', { shown: shown.length, total: tools.length });

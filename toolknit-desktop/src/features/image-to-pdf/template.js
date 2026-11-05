@@ -4,7 +4,7 @@ const tr = key => `data-i18n="home.imagePdf.${key}"`;
 const button = (id, icon, key, extra = '', iconOnly = false) => `<button id="imagePdf${id}" type="button" class="image-pdf-button" ${extra} data-i18n-title="home.imagePdf.${key}" data-i18n-aria-label="home.imagePdf.${key}"><i data-lucide="${icon}"></i>${iconOnly ? '' : `<span ${tr(key)}></span>`}</button>`;
 const segment = (name, values) => `<div class="image-pdf-segments" role="group" data-i18n-aria-label="home.imagePdf.${name}">${values.map(([value, key]) => `<button type="button" class="image-pdf-button" data-image-setting="${name}" data-value="${value}" aria-pressed="false" ${tr(key)}></button>`).join('')}</div>`;
 export default `<div id="imagePdfOverlay" class="image-pdf tool-page-v2-overlay" role="dialog" aria-modal="true" aria-hidden="true" inert>
-<div class="image-pdf-shell">${toolTopbarMarkup({ tag: 'IMAGE TO PDF · TOOL PAGE 3.2', closeAttr: 'data-image-pdf-close' })}
+<div class="image-pdf-shell">${toolTopbarMarkup({ tag: 'IMAGE TO PDF · TOOL PAGE 3.3', closeAttr: 'data-image-pdf-close' })}
 <header class="image-pdf-toolbar"><h1 ${tr('title')}></h1><span id="imagePdfSummary"></span>${button('Add', 'images', 'add')}${button('Clear', 'rotate-ccw', 'clear', '', true)}</header>
 <input id="imagePdfInput" type="file" accept="image/jpeg,image/png,image/bmp,image/webp,image/gif,image/tiff,.tif,.tiff" multiple hidden>
 ${uploadEmptyStateMarkup({ id: 'imagePdfEmpty', icon: 'images', title: 'home.imagePdf.emptyTitle', description: 'home.imagePdf.formats', pickId: 'imagePdfPick', pick: 'home.imagePdf.pick', limit: 'home.imagePdf.limits' })}

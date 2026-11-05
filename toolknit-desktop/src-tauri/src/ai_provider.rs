@@ -329,7 +329,7 @@ async fn request_impl(
     }
 
     let client = reqwest::Client::builder()
-        .user_agent("ToolKnit/3.2.0 local-ai-provider")
+        .user_agent("ToolKnit/3.3.0 local-ai-provider")
         .connect_timeout(std::time::Duration::from_secs(8))
         .timeout(std::time::Duration::from_millis(
             request.timeout_ms.unwrap_or(45_000),

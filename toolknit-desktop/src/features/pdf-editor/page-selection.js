@@ -94,6 +94,7 @@ export function createPdfEditorPageSelection({
 
   function setCurrent(pageState) {
     if (!pageState?.id) return;
+    if (getCurrentId() === pageState.id) return;
     setCurrentId(pageState.id);
     const selectedComponent = getSelectedComponent();
     if (selectedComponent && selectedComponent.pageId !== pageState.id) {

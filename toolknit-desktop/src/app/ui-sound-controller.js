@@ -22,6 +22,8 @@ const UI_SOUND_STYLES = Object.freeze({
   })
 });
 const UI_SOUND_MIN_INTERVALS = Object.freeze({ touch: 55, slide: 42, hover: 115 });
+const MAX_UI_SOUND_VOICES = 8;
+const UI_SOUND_RETRY_MS = 5000;
 
 function readUiSoundState() {
   let parsed = null;
@@ -37,6 +39,10 @@ let uiSoundContext = null;
 let uiSoundMaster = null;
 let uiSoundLastPlayed = Object.create(null);
 let uiSoundDragState = null;
+let uiSoundResume = null;
+let uiSoundRetryAfter = 0;
+let uiSoundStateListener = null;
+let uiSoundActivityRevision = 0;
 const uiSoundVoices = new Set();
 
 function saveUiSoundState() {
@@ -61,7 +67,8 @@ function setUiSoundState(patch = {}) {
 }
 
 function ensureUiSoundContext({ userGesture = false } = {}) {
-  if (!uiSoundState.enabled || isScreenPickerWindow) return null;
+  if (lifecycle.disposed || document.hidden || !uiSoundState.enabled || isScreenPickerWindow
+    || performance.now() < uiSoundRetryAfter) return null;
   if (uiSoundContext?.state === 'closed') disposeUiSoundContext();
   if (!userGesture && !uiSoundContext) return null;
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -74,40 +81,70 @@ function ensureUiSoundContext({ userGesture = false } = {}) {
       uiSoundMaster = uiSoundContext.createGain();
       uiSoundMaster.gain.value = 0.6;
       uiSoundMaster.connect(uiSoundContext.destination);
+      uiSoundStateListener = () => {
+        if (candidateContext === uiSoundContext && candidateContext.state !== 'running') clearUiSoundVoices();
+      };
+      candidateContext.addEventListener('statechange', uiSoundStateListener);
     } catch {
       try { candidateContext?.close().catch(() => {}); } catch { /* context creation failed */ }
       uiSoundContext = null;
       uiSoundMaster = null;
+      uiSoundRetryAfter = performance.now() + UI_SOUND_RETRY_MS;
       return null;
     }
   }
-  if (userGesture && uiSoundContext.state === 'suspended') uiSoundContext.resume().catch(() => {});
+  if (userGesture && ['suspended', 'interrupted'].includes(uiSoundContext.state) && !uiSoundResume) {
+    const context = uiSoundContext;
+    const revision = uiSoundActivityRevision;
+    // One request per device recovery. Never enqueue sounds against a stopped
+    // audio clock: ended events cannot release those nodes until it runs.
+    const pending = Promise.resolve().then(() => {
+      if (!lifecycle.disposed && context === uiSoundContext && !document.hidden && revision === uiSoundActivityRevision) return context.resume();
+    }).then(() => {
+      if (context === uiSoundContext && context.state === 'running'
+        && (document.hidden || revision !== uiSoundActivityRevision)) return context.suspend();
+    }).catch(() => {
+      if (context !== uiSoundContext) return;
+      uiSoundRetryAfter = performance.now() + UI_SOUND_RETRY_MS;
+      disposeUiSoundContext();
+    }).finally(() => { if (uiSoundResume === pending) uiSoundResume = null; });
+    uiSoundResume = pending;
+  }
   return uiSoundContext;
 }
 
 function playUiSound(kind = 'hover', { userGesture = false, styleOverride = null, force = false } = {}) {
-  if ((!uiSoundState.enabled && !force) || !UI_SOUND_STYLES[styleOverride || uiSoundState.style]?.[kind]) return false;
+  if (lifecycle.disposed || document.hidden || (!uiSoundState.enabled && !force) || !UI_SOUND_STYLES[styleOverride || uiSoundState.style]?.[kind]) return false;
   const now = performance.now();
   const minInterval = UI_SOUND_MIN_INTERVALS[kind] || 40;
   if (!force && now - (uiSoundLastPlayed[kind] || 0) < minInterval) return false;
   const context = ensureUiSoundContext({ userGesture });
-  if (!context || !uiSoundMaster || context.state === 'closed') return false;
+  if (!context || !uiSoundMaster || context.state !== 'running') return false;
   uiSoundLastPlayed[kind] = now;
   const profile = UI_SOUND_STYLES[styleOverride || uiSoundState.style][kind];
   const start = context.currentTime + 0.004;
   profile.forEach(tone => {
+    while (uiSoundVoices.size >= MAX_UI_SOUND_VOICES) uiSoundVoices.values().next().value.release(true);
     let oscillator = null;
     let gain = null;
     let voice = null;
-    const releaseVoice = () => {
+    let releaseTimer = null;
+    let released = false;
+    const releaseVoice = (stop = false) => {
+      if (released) return;
+      released = true;
+      clearTimeout(releaseTimer);
       if (voice) uiSoundVoices.delete(voice);
+      oscillator?.removeEventListener('ended', onEnded);
+      if (stop) { try { oscillator?.stop(); } catch { /* already stopped */ } }
       try { oscillator?.disconnect(); } catch { /* already disconnected */ }
       try { gain?.disconnect(); } catch { /* already disconnected */ }
     };
+    const onEnded = () => releaseVoice();
     try {
       oscillator = context.createOscillator();
       gain = context.createGain();
-      voice = { oscillator, gain };
+      voice = { release: releaseVoice };
       const duration = Math.max(0.025, Number(tone.duration) || 0.06);
       const volume = Math.max(0.001, Number(tone.volume) || 0.02);
       oscillator.type = tone.waveform || 'sine';
@@ -119,24 +156,30 @@ function playUiSound(kind = 'hover', { userGesture = false, styleOverride = null
       oscillator.connect(gain);
       gain.connect(uiSoundMaster);
       uiSoundVoices.add(voice);
-      oscillator.addEventListener('ended', releaseVoice, { once: true });
+      oscillator.addEventListener('ended', onEnded, { once: true });
       oscillator.start(start);
       oscillator.stop(start + duration + 0.012);
+      // Audio device failures can stall the clock without delivering ended.
+      // UI tones are transient, so release them by wall clock as a fallback.
+      releaseTimer = setTimeout(() => releaseVoice(true), Math.ceil(duration * 1000) + 250);
     } catch {
-      releaseVoice();
+      releaseVoice(true);
     }
   });
   return true;
 }
 
+function clearUiSoundVoices() {
+  for (const voice of [...uiSoundVoices]) voice.release(true);
+}
+
 function disposeUiSoundContext() {
+  uiSoundActivityRevision++;
   const context = uiSoundContext;
-  uiSoundVoices.forEach(({ oscillator, gain }) => {
-    try { oscillator.stop(); } catch { /* voice may already be stopped */ }
-    try { oscillator.disconnect(); } catch { /* already disconnected */ }
-    try { gain.disconnect(); } catch { /* already disconnected */ }
-  });
-  uiSoundVoices.clear();
+  if (context && uiSoundStateListener) context.removeEventListener('statechange', uiSoundStateListener);
+  uiSoundStateListener = null;
+  uiSoundResume = null;
+  clearUiSoundVoices();
   try { uiSoundMaster?.disconnect(); } catch { /* already disconnected */ }
   uiSoundMaster = null;
   uiSoundContext = null;
@@ -190,7 +233,9 @@ function initUiSoundEvents() {
     if (event.target instanceof Element && !event.target.closest('.no-ui-sound')) playUiSound('touch', { userGesture: true });
   }, { passive: true });
   const suspendUiSound = () => {
+    uiSoundActivityRevision++;
     uiSoundDragState = null;
+    clearUiSoundVoices();
     if (uiSoundContext?.state === 'running') uiSoundContext.suspend().catch(() => {});
   };
   lifecycle.event(document, 'visibilitychange', () => { if (document.hidden) suspendUiSound(); });
@@ -210,5 +255,6 @@ window.toolknitUiSound = Object.freeze({
   preview: style => playUiSound('hover', { styleOverride: String(style || uiSoundState.style), userGesture: true, force: true })
 });
 initUiSoundEvents();
+lifecycle.use(disposeUiSoundContext);
 return Object.freeze({ dispose: () => lifecycle.dispose() });
 }

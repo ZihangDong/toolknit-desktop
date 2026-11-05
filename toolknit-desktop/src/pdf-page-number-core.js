@@ -1,3 +1,4 @@
+import { copyPdfPages } from './core/pdf-page-copy.js';
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
 import fontkit from './pdf-lib-fontkit.js';
 import { flattenPdfFormForPageCopy } from './pdf-document-structure.js';
@@ -502,7 +503,7 @@ export async function exportPdfWithPageNumbers({
     if (!Number.isSafeInteger(sourcePageIndex) || sourcePageIndex < 0 || sourcePageIndex >= sourceDocument.getPageCount()) {
       throw new Error(`Invalid PDF page reference at output page ${index + 1}`);
     }
-    const [copiedPage] = await output.copyPages(sourceDocument, [sourcePageIndex]);
+    const [copiedPage] = await copyPdfPages(output, sourceDocument, [sourcePageIndex]);
     output.addPage(copiedPage);
     if (plan[index]?.applied) drawPdfPageNumber(copiedPage, font, plan[index].text, normalized);
     onProgress?.({ phase: 'pages', completed: index + 1, total: pages.length, percent: Math.round(((index + 1) / pages.length) * 92) });
@@ -524,7 +525,7 @@ export async function splitNumberedPdfPages({ bytes, baseName = 'document', onPr
   for (let index = 0; index < source.getPageCount(); index += 1) {
     assertNotCancelled(shouldCancel);
     const output = await PDFDocument.create();
-    const [page] = await output.copyPages(source, [index]);
+    const [page] = await copyPdfPages(output, source, [index]);
     output.addPage(page);
     outputs.push({
       fileName: `${sanitizePdfPageNumberBaseName(baseName)}_page-${String(index + 1).padStart(width, '0')}.pdf`,

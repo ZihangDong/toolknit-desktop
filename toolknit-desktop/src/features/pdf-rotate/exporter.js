@@ -1,3 +1,4 @@
+import { writeUniqueBinaryFile } from '../../platform/binary-output.js';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { createPdfRotateExportJob } from './export-runtime.js';
 import { createModalSession } from '../../app/modal-runtime.js';
@@ -68,10 +69,10 @@ export function createPdfRotateExporter({
       const { invoke } = await tauriCorePromise;
       const directory = await getOutputDir('PDF_Rotate');
       assertCurrent(owner, id);
-      return invoke('write_unique_file_bytes', {
+      return writeUniqueBinaryFile(invoke, {
         directory,
         fileName,
-        bytes: Array.from(bytes)
+        bytes
       });
     }
 

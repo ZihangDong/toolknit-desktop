@@ -28,9 +28,9 @@ export function createPdfEditorThumbnails({
   cacheSourceRotation,
   effectivePageRotation,
   getSourceDoc,
+  retainPage = page => () => { try { page.cleanup(); } catch {} },
   toggleSelect,
   selectRange,
-  selectOnly,
   setCurrent,
   updateControls,
   renderMainPreview,
@@ -215,7 +215,6 @@ export function createPdfEditorThumbnails({
         if (event.metaKey || event.ctrlKey) toggleSelect?.(pageState);
         else if (event.shiftKey) selectRange?.(pageState);
         else {
-          selectOnly?.(pageState);
           setCurrent?.(pageState);
         }
       }, listenerOptions);
@@ -248,6 +247,7 @@ export function createPdfEditorThumbnails({
 
   async function renderPreview(pageState, epoch) {
     let page = null;
+    let releasePage = null;
     let canvas = null;
     let renderTask = null;
     try {
@@ -256,6 +256,7 @@ export function createPdfEditorThumbnails({
       if (epoch !== tileEpoch || !pageState.nearby || isInactive()) return;
       page = await doc.getPage(pageState.model.pageIndex + 1);
       if (epoch !== tileEpoch || !pageState.nearby || isInactive()) return;
+      releasePage = retainPage(page);
       cacheSourceRotation?.(pageState.model, page);
       const displayRotation = effectivePageRotation(pageState.model);
       const baseViewport = page.getViewport({ scale: 1, rotation: displayRotation });
@@ -296,7 +297,7 @@ export function createPdfEditorThumbnails({
     } finally {
       if (pageState.renderTask === renderTask) pageState.renderTask = null;
       if (canvas) releasePdfEditorCanvas(canvas);
-      try { page?.cleanup(); } catch (_) {}
+      releasePage?.();
       if (epoch === tileEpoch && !isInactive() && pageState.nearby && !pageState.canvas && !pageState.error) {
         queueMicrotask(() => {
           if (!isInactive() && epoch === tileEpoch && pageState.nearby) queuePreview(pageState);

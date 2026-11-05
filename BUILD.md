@@ -61,7 +61,10 @@ Set-Location toolknit-desktop\toolknit-desktop
 npm ci
 npm run build
 npm run tauri build
+npm run test:native-loader
 ```
+
+Windows 构建后检查实际 EXE 的普通与延迟导入，防止文件搜索的 C++ 核心额外依赖 `MSVCP140.dll` 等运行库，导致干净系统无法启动。搜索桥接使用静态 CRT；内存的分配和释放留在同一 FFI 侧。
 
 构建产物位于：
 

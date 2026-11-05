@@ -1,0 +1,72 @@
+{
+  "repository": "https://github.com/material-extensions/vscode-material-icon-theme",
+  "commit": "f368264282ef14ee7feb012fd54e825181eff9c3",
+  "license": "MIT",
+  "modifications": "None; original assets selected for local file-type identification.",
+  "assets": [
+    {
+      "name": "audio.svg",
+      "sha256": "d4dc1adb8cb99055cb8ad0c2428d6d73ebd94435b575084af1b2e0d1f82f6cf2"
+    },
+    {
+      "name": "database.svg",
+      "sha256": "e0679294defea90793f4107d6783fe7b25978d43c57035ae6c21e5c1ae8d7367"
+    },
+    {
+      "name": "document.svg",
+      "sha256": "64f5da56de591d5f429d2c7f5f5733388b3ce704762631ba0b487a08475f9452"
+    },
+    {
+      "name": "exe.svg",
+      "sha256": "423e33947323264bcfccb2574a222c816589bf2a02cda0f731fa7167162cb9c8"
+    },
+    {
+      "name": "font.svg",
+      "sha256": "092850724e8e29ff1ad8afc53a87185d6fb8c7b8287174dd7783f8531d2acccd"
+    },
+    {
+      "name": "image.svg",
+      "sha256": "838e1953a3a2ebf5c6a06b662892ba17e1c605c4379a77c61737639e51fb4f0a"
+    },
+    {
+      "name": "javascript.svg",
+      "sha256": "00eb9422f451901565f2eb8cbaf07718b2da03f9a866fae7f68cdc3807290d6b"
+    },
+    {
+      "name": "markdown.svg",
+      "sha256": "42f95867350ed1f349ab29b3f254405f84ae65e6d42972d74b01442027eddfcd"
+    },
+    {
+      "name": "pdf.svg",
+      "sha256": "c14c66a3914b894da40778a6dcd00f0daa134426521aaddbd8ccea86ba4f5ffc"
+    },
+    {
+      "name": "powerpoint.svg",
+      "sha256": "40468deea73e07067459c0c3b0bbef0697e93afbc4533e961d1b441f5294871e"
+    },
+    {
+      "name": "python.svg",
+      "sha256": "798fcd59653af34e5b8124d3fe45412eef79f9c1925e286dadd94f923486fd1f"
+    },
+    {
+      "name": "settings.svg",
+      "sha256": "8fbcaf6c132a8eef0b23ca597ae35ec362a35510f3e3961950a0f5b2527b75e9"
+    },
+    {
+      "name": "table.svg",
+      "sha256": "1714898c0d538648edb0f8dd041d97435aa8cbac078c5897f9fa8103b36f029a"
+    },
+    {
+      "name": "video.svg",
+      "sha256": "4d5d50b0f1fe5cb7aaa4892356fabffb54f8629c9f600069dd0aadd251b3c83e"
+    },
+    {
+      "name": "word.svg",
+      "sha256": "9f12a8d98f292c34f73181c49ce79dd378decfb82f760cd9c4aa9900e2d7b2d6"
+    },
+    {
+      "name": "zip.svg",
+      "sha256": "dad79a45f756542d37abd422502ecfbea15720b92ea1c9d80ef0439ab6b9448a"
+    }
+  ]
+}

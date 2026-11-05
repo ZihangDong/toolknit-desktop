@@ -1,5 +1,25 @@
 # ToolKnit Desktop V3.0 维护规范
 
+## V3.3 Word 转 PDF（2026-11-02）
+
+新增 `word-to-pdf` 入口，开发目录为 74 工具 / 12 分类 / 78 CLI/MCP。首页「新功能」按版本分组，V3.3 排在 V3.2 前；V3.2 六项原入口继续保留，后续版本在版本映射中新增分组。Word 渲染复用 Office 依赖门禁，完整 LibreOffice + UNO/Python；不得用浏览器图片化 DOCX 结果替代真实 PDF。原生和 CLI 共享 `src-tauri/resources/office/word-to-pdf.py`，CLI stage 必须在持有锁时复制此驱动。新增命令、事件、边界和测试见 [维护说明](WORD_TO_PDF.zh-CN.md)。
+
+转换页不再预览 PDF，点击后先显示遮罩，结果可定位文件、交接 PDF 编辑器或关闭重置。编辑器 `openWithFile` 返回导入结果；交接清理原页，关闭/重开隔离迟到结果。运行时仅缓存生成的扩展注册，保留每批独立配置、禁用宏和外链更新，不缓存用户资料。
+
+## 当前开发版本：V3.3（2026-10-28）
+
+记录模式的三个功能独立于截图快捷键注册。原生 `quick_screenshot/configure` 默认只在快捷键值改变时注册，前端快捷键保存/重置/禁用传可选 `updateShortcut: true` 支持原值重试，历史开关与记录模式不传该意图。快照是进入模式前的恢复目标，不是实时状态；不能仅凭快照全 false 判断当前三个功能均关闭。失败反馈只输出稳定错误代码与步骤，不回显原生异常里的路径或私人数据。
+
+PDF 多页派生输出使用 `core/pdf-page-copy.js`：按目标/来源复用资源复制器，页面本地可变容器单独克隆，移除页面级 `PieceInfo` 私有编辑数据；来源文档在复制期间视为只读。新增模块必须同步 CLI staging 清单。桌面 PDF/ZIP 保存通过 `platform/binary-output.js` 发送 Uint8Array，使用 `write_unique_file_binary`（原始 body + `x-toolknit-output` Base64 UTF-8 JSON 路径头），原生限制 512 MiB 非空输出、8,000 字符元数据头并复用既有路径及唯一文件名校验。旧 JSON 命令保留兼容，禁止恢复大文件 `Array.from(bytes)` 传输。
+
+编辑器预览与导出选择互相独立：首次载入全选，点击缩略图切页，勾选/反选控制导出；部分导出不标记整个文档已保存。最近画布最多 3 张、合计 1,600 万像素；解码页面默认保留 6 个，进行中的租约不提前清理。重置和销毁必须释放缓存，过期文本提取不得清理或覆盖新画面。回归入口为 `test:pdf-editor`、`test:pdf-editor-exporter` 和 `test:pdf-editor-creation-browser`。
+
+当前工作分支为 `V3.3`，源码内部版本 3.3.0，尚未发布；正式桌面版与 npm CLI/MCP 均为 3.2.0。73 个工具、12 个分类、77 项 CLI/MCP 是 V3.3 的继承基线；新增 Word 转 PDF 后，当前开发目录为 74 个桌面工具、12 个分类、78 项 CLI/MCP。只有本轮新增能力进入首页「V3.3 新功能」。后续变化写入根目录 `changelog.md` 的 V3.3 未发布节；`docs/desktop-update.md` 保持 V3.2 正式内容。
+
+升版同步 package/锁文件、Tauri/Cargo、运行时回退、CLI/MCP 版本、网络 User-Agent、界面与法律版本；CLI 目录标题由 package 版本生成，官方 SDK 测试从 manifest 核对版本。用户数据、存储键、模型、许可正文和旧发布记录不变；下方均为既有维护规范或历史验证。
+
+启动验证：版本与双语帮助契约、架构及前端构建通过；后续 Word 转 PDF 增量的完整发布回归为 112 项 npm 脚本，包含 1690 项安全检查、隔离安装后的 3.3.0 CLI/MCP 和真实文件转换。完整 Rust 为 267 passed、13 ignored。浏览器通过白天/深色、英文切换、设置往返、导航、焦点和首页多宽度检查；Word 工具另外通过真实 PDF.js 预览、批量失败/重试/取消和低高度窗口回归。现有大 chunk、crypto externalization、Windows linker 与上游依赖弃用提示保留。本轮没有生成安装器、推送或发布；日志位于忽略目录 `tmp/v33-start/`。
+
 ## V3.2 发布前验证补充（2026-10-23）
 
 构建前运行 `check-dependency-lock.mjs`，直接读取实际依赖包的 `package.json`，不把 npm 隐藏锁文件或 `npm ls` 当作实际安装版本的唯一证据。桌面干净安装用 `npm run test:desktop-clean-install -- --browser` 在仓库外消费当前源码和锁文件，避免沿父目录借用旧依赖。已存在的 Vite 服务不会因磁盘依赖更新自动使用新模块，浏览器专项应启动自己的受控服务。
