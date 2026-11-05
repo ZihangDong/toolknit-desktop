@@ -71,7 +71,6 @@ struct Inner {
     pub context: Value,
     pub query: Value,
     pub menu_token: Option<u64>,
-    pub handoff: Option<Value>,
 }
 #[derive(Default)]
 pub(crate) struct FileSearchState {
@@ -385,7 +384,8 @@ pub(crate) async fn file_search(
             }
         }
         "take-handoff" if label == "main" => {
-            return Ok(lock(&state.inner).handoff.take().unwrap_or(Value::Null))
+            // Compatibility for older callers; each surface now owns its draft.
+            return Ok(Value::Null)
         }
         "open-tool" if label == RESULTS => windows::open_tool(&app).await?,
         "expand" if label == BAR => windows::set_expanded(&app, true, true).await?,

@@ -1,5 +1,10 @@
 import { defineConfig } from "vite";
+import { fileURLToPath } from 'node:url';
 import { pdfjsAssets } from './scripts/lib/pdfjs-assets.mjs';
+
+const desktopRoot = fileURLToPath(new URL('.', import.meta.url)).replaceAll('\\', '/');
+const generatedPaths = ['cli/lib/core', 'cli/lib/shared', 'tmp', 'output', '.cache', '.codex-build']
+  .map(directory => desktopRoot + directory + '/**');
 
 export default defineConfig(async ({ mode }) => ({
   plugins: [pdfjsAssets()],
@@ -13,9 +18,12 @@ export default defineConfig(async ({ mode }) => ({
     strictPort: true,
     hmr: mode !== 'tauri-debug',
     watch: {
-      // CLI staging replaces bundled binaries and fonts. Watching those output
-      // directories can crash chokidar with EBUSY on Windows while Tauri is running.
-      ignored: ["**/src-tauri/**", "**/cli/vendor/**", "**/cli/resources/**", "**/cli/*.tgz"],
+      // Generated files are replaced or locked by conversion/build tasks.
+      // Keep them out of HMR to avoid redundant reloads and Windows EBUSY.
+      ignored: [
+        "**/src-tauri/**", "**/cli/vendor/**", "**/cli/resources/**", "**/cli/*.tgz",
+        ...generatedPaths,
+      ],
     },
   },
   build: {

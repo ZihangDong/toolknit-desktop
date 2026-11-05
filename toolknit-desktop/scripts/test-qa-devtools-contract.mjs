@@ -46,6 +46,7 @@ assert.ok(capabilityIds.includes('qa-devtools'), 'QA config must include the QA 
 assertReleaseFilePolicy(['dist/assets/main.js', 'dist/assets/fonts/OFL-1.1.txt', 'resources/qpdf/LICENSE.html']);
 for (const file of ['dist/SKILL.md', 'public/skills/guide.md', 'dist\\.codex\\skills\\guide.md',
   'dist/.codex-backups/changelog.md', 'dist/docs/V3_STABILITY_REVIEW.zh-CN.md',
+  'dist/.github-outreach/submission.json', 'dist/docs/V33_FILE_SEARCH_MODES_STATUS_20261105.zh-CN.md',
   'dist/AGENTS.md', 'dist/tauri.test.conf.json', 'dist/scripts/check.mjs', 'dist/assets/main.js.map']) {
   assert.throws(() => assertReleaseFilePolicy([file]), /must not ship/, `${file} must be excluded`);
 }

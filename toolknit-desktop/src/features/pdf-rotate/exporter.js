@@ -5,10 +5,6 @@ import { createModalSession } from '../../app/modal-runtime.js';
 import { tauriCorePromise } from '../../platform/tauri-runtime.js';
 import { t } from '../../i18n.js';
 
-function outputParent(path) {
-  return String(path || '').replace(/[/\\][^/\\]+$/, '').replace(/\//g, '\\');
-}
-
 export function createPdfRotateExporter({
   isTauri = false,
   preview,

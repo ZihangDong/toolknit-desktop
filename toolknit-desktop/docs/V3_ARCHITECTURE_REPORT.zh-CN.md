@@ -1,5 +1,7 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-11-05 冗余清理：组合根移除迁移遗留的 PPT 导入与未调用包装；六处输出路径旧函数移除。搜索页不再请求空交接，原生旧 action 保留 null 兼容；开发监听及发布审计隔离生成物/外联草稿。75 工具、12 分类、78 CLI/MCP 与公开契约不变；见[清理记录](V33_REDUNDANCY_CLEANUP_20261105.zh-CN.md)。
+
 > 2026-11-04 文件搜索增量：`features/file-search` 持有工具页、共享结果视图与独立胶囊；`native_runtime/file_search` 持有索引、查询租约、原生窗口和可选 NTFS 服务，`filesystem_worker` 以普通权限独立进程隔离共享目录访问。复用平台调用、导航、主窗恢复、自绘菜单、阴影和截图辅助窗注册。新增一个 `file_search` 命令、限定窗口的事件监听能力及独立本机缓存；75 工具、12 分类、78 CLI/MCP，158 个 Tauri 实现 / 157 个名称。实际验证与剩余管理员/桌面验收见 [文件搜索实施记录](V33_FILE_SEARCH_IMPLEMENTATION.zh-CN.md)。
 
 > 2026-10-31 首页新功能发现：分类标签为“新功能”，按 V3.3、V3.2 分组且新版本在前；V3.2 的六项入口继续显示，搜索仅筛卡片并自动隐藏空版本组。DOM/data-home-tool、原类别和启动行为不变，无 storage、Tauri 或 CLI/MCP 契约变化；白天/深色、多窗口宽度、中英文回归见 `test:home-settings-browser.mjs`。

@@ -124,6 +124,7 @@
     "test:theme": "node scripts/test-theme-runtime.mjs",
     "test:startup": "node scripts/test-startup-runtime.mjs && node scripts/test-ui-sound-runtime.mjs",
     "test:source-inventory": "node scripts/test-source-inventory.mjs",
+    "test:generated-artifacts": "node scripts/test-generated-artifacts.mjs",
     "test:dependency-lock": "node scripts/test-dependency-lock.mjs && node scripts/check-dependency-lock.mjs",
     "test:rust-toolchain": "node scripts/check-rust-toolchain.mjs",
     "test:desktop-clean-install": "node scripts/test-desktop-clean-install.mjs",

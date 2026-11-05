@@ -133,8 +133,6 @@ export function createFileSearchController({ overlay, isTauri = false, fileSearc
     try {
       await context(); if (owner !== session) return;
       await readStatus(); if (owner !== session) return;
-      const handoff = await runtime.call('take-handoff'); if (owner !== session) return;
-      if (handoff) { q('Query').value = handoff.text || ''; q('Clear').hidden = !q('Query').value; results.session.set(handoff, { immediate: true }); }
       session.interval(() => { if (!doc.hidden) void readStatus(); }, 1500);
       session.event(doc, 'visibilitychange', () => { if (!doc.hidden) void readStatus(); });
       const unlisten = await runtime.listen(next => {

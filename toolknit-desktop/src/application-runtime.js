@@ -41,15 +41,14 @@
         CUSTOM_BACKGROUND_STORAGE_KEY
       } from './app/background-runtime.js';
       import { LAZY_TOOL_SPECS } from './features/lazy-tools.js';
-      import { joinPath, normalizeDesktopBytes, uniqueOutputDirectory, writeUniqueFile } from './features/ppt-workflows/shared.js';
+      import { normalizeDesktopBytes } from './features/ppt-workflows/shared.js';
       import { currentMonitor, getCurrentWindow, LogicalSize, tauriCorePromise, tauriEventPromise, loadTauriApp } from './platform/tauri-runtime.js';
       import { readTextDocument } from './shared/text-document-reader.js';
       import { formatFileSize } from './shared/file-size.js';
-      import { escapeHtml, escapeAttr } from './shared/html.js';
-      import { HELP_CONTENT, getHelpContent } from './help-data.js';
+      import { escapeHtml } from './shared/html.js';
+      import { getHelpContent } from './help-data.js';
       import { createDonationController } from './app/donation-controller.js';
       import { getLegalContent } from './legal-data.js';
-      import { normalizeAiProviderConfig } from './ai-provider-core.js';
       import { createAiRequestRuntime } from './app/ai-request-runtime.js';
       import { extractJson } from './app/json-extractor.js';
       import { createToastManager } from './app/toast-manager.js';
@@ -59,25 +58,6 @@
       import { createHomeController } from './app/home-controller.js';
       import { createScreenPickerSettingsRuntime } from './app/screen-picker-settings-runtime.js';
       import { createCustomBackgroundSettingsRuntime } from './app/custom-background-settings-runtime.js';
-      import {
-        PPT_TEXT_EXTRACT_LIMITS,
-        analyzePptxText,
-        buildPptTextAiMessages,
-        createPptTextMarkdown,
-        createPptTextJson,
-        createPptTextTxt,
-        normalizePptTextAiMode,
-        normalizePptTextFormat,
-        normalizePptTextPageSelection,
-        planPptTextExport,
-        sanitizePptTextBaseName
-      } from './ppt-text-extract-core.js';
-      import {
-        PPT_COMPRESS_LIMITS,
-        compressPptxBytes,
-        createPptCompressManifest,
-        sanitizePptCompressBaseName
-      } from './ppt-compress-core.js';
       import { TaskRunner } from '../shared/task-runtime.mjs';
       // Keep custom tool menus, but preserve native editing menus in text fields.
       document.addEventListener('contextmenu', (e) => {
@@ -561,13 +541,6 @@
           console.error('FFmpeg check failed:', e);
           return false;
         }
-      }
-
-      // Intercept tool entry: check ffmpeg before opening the tool overlay
-      async function openToolWithFfmpegCheck(openFn) {
-        const ready = await ensureFfmpegAvailable();
-        if (ready) { openFn(); return; }
-        showDependencyGate({ openFn, needsFfmpeg: true, needsModel: false });
       }
 
       // Storage path display + open folder
@@ -1636,10 +1609,6 @@
             }
           }))
           .catch(error => console.error('Cannot listen for matting model progress:', error));
-      }
-
-      function settingsOverlayVisible() {
-        return Boolean(settingsOverlay?.classList.contains('visible'));
       }
 
       function queueMattingManagerRender() {

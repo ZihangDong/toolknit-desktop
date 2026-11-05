@@ -19,10 +19,6 @@ function fileName(file) {
   return String(file?.name || file?.fileName || file?.path?.split(/[\\/]/).pop() || 'document.pdf');
 }
 
-function outputFolder(path) {
-  return String(path || '').replace(/[/\\][^/\\]+$/, '').replace(/\//g, '\\');
-}
-
 export function createPdfSecurityShell({
   kind,
   overlay,

@@ -3,6 +3,7 @@
 /cli/lib/core/
 /cli/lib/shared/
 /cli/resources/fonts/
+/cli/resources/office/
 /cli/.stage-cli-resources.lock
 /cli/*.tgz
 /src-tauri/resources/ffmpeg/

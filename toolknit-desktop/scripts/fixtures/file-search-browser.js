@@ -25,7 +25,7 @@ const runtime = { available: true, listen: async cb => { callbacks.add(cb); retu
       automatic = true; configuredRoots = ['C:\\','D:\\']; return status();
     }
     if (action === 'automatic-resume' || action === 'automatic-rebuild') { nativeIndex.phase = 'ready'; nativeIndex.generation++; return status(); }
-    if (action === 'context' || action === 'query-invalidate' || action === 'take-handoff') return null;
+    if (action === 'context' || action === 'query-invalidate') return null;
     if (action === 'query-check') return {changed:fingerprint(matching(lastQuery))!==lastFingerprint,generation:nativeIndex.generation,extensions:['pdf','docx']};
     if (action === 'acceleration-status') return { supported: true, installed: false, enabled: false, volumes: ['C:\\', 'D:\\'] };
     if (action === 'configure') { windowState.enabled = payload.enabled; callbacks.forEach(cb => cb()); return structuredClone(windowState); }
