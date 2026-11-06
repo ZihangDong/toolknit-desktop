@@ -31,6 +31,23 @@ assert.ok(cli.files.includes('NOTICE'));
 assert.ok(cli.files.includes('LICENSES'));
 const resources = JSON.parse(await read('src-tauri/tauri.conf.json')).bundle.resources;
 for (const file of ['../LICENSE', '../NOTICE', '../LICENSES/Apache-2.0.txt', '../LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md']) assert.ok(resources.includes(file));
+for (const file of ['Download-FFmpeg-GPL-3.0.txt', 'Download-FFmpeg-6.1.1-README.txt', 'Download-FFmpeg-ToolKnit-README.txt', 'Download-FFmpeg-Third-Party.txt', 'Download-FFmpeg-Toolchain.txt', 'Download-Mozilla-MPL-2.0.txt', 'Download-Whisper-MIT.txt', 'Download-Models-Notice.txt']) {
+  assert.ok(resources.includes(`../LICENSES/${file}`), `${file} must be bundled`);
+  assert.ok((await read(`LICENSES/${file}`)).trim(), `${file} must not be empty`);
+}
+const modelNotices = await read('LICENSES/Download-Models-Notice.txt');
+assert.match(modelNotices, /Xenova\/modnet[\s\S]*Apache-2\.0/);
+assert.match(modelNotices, /ggerganov\/whisper\.cpp[\s\S]*MIT/);
+assert.match(modelNotices, /https:\/\/github\.com\/ZihangDong\/toolknit-ffmpeg-sources/);
+assert.match(modelNotices, /6\.1\.6-toolknit-r3[\s\S]*GNU GPL version 3 or later/);
+assert.match(modelNotices, /ffmpeg-6\.1\.6-toolknit-3/);
+assert.match(modelNotices, /Legacy Gyan 6\.1\.1[\s\S]*unresolved/);
+const ffmpegNotice = await read('LICENSES/Download-FFmpeg-ToolKnit-README.txt');
+assert.match(ffmpegNotice, /x264, x265, LAME, Ogg, Vorbis, Opus, libvpx, WebP/);
+assert.match(ffmpegNotice, /zlib, dav1d and NVIDIA/);
+assert.match(ffmpegNotice, /ffmpeg-6\.1\.6-toolknit-3/);
+assert.match(await read('LICENSES/Download-FFmpeg-Third-Party.txt'), /NVIDIA[\s\S]*Permission is hereby granted/);
+assert.match(await read('LICENSES/Download-FFmpeg-Toolchain.txt'), /GCC Runtime Library Exception/);
 const cargo = await read('src-tauri/Cargo.toml');
 assert.match(cargo, /^license-file = "\.\.\/NOTICE"$/m);
 assert.doesNotMatch(cargo, /^license =/m);

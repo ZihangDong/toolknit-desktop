@@ -34,7 +34,7 @@ export function createQuickScreenshotController({overlay,isTauri=false,screensho
   void runtime.listen('screenshot-preferences-changed',()=>{if(opened&&!busy)void load();}).then(unlisten=>scope.use(unlisten));
   scope.event(overlay,'click',e=>{if(e.target.closest('[data-screenshot-close]'))close();});
   scope.event(document,'keydown',e=>{if(opened&&e.key==='Escape'){e.preventDefault();close();}});
-  function open(){if(disposed)return;opened=true;revision++;overlay.classList.add('visible');overlay.inert=false;overlay.setAttribute('aria-hidden','false');applyTranslations();refreshIcons();void load();q('Start').focus();}
+  function open(){if(disposed)return;opened=true;revision++;overlay.classList.add('visible');overlay.inert=false;overlay.setAttribute('aria-hidden','false');applyTranslations();refreshIcons();void load();if(runtime.available)void runtime.call('prepare').catch(()=>{});q('Start').focus();}
   function close(){opened=false;revision++;moveFocusOutOfHiddenRegion(overlay);overlay.inert=true;overlay.setAttribute('aria-hidden','true');overlay.classList.remove('visible');}
   return {open,close,dispose(){if(disposed)return;close();disposed=true;scope.dispose();}};
 }

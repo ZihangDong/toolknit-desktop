@@ -4,6 +4,7 @@ import { mkdtemp, readFile, writeFile, readdir, rm, link } from 'node:fs/promise
 import path from 'node:path';
 import os from 'node:os';
 import { downloadVerifiedModel } from '../cli/lib/model-download.mjs';
+import { transcriptionModelSource } from '../cli/lib/transcription-runtime.mjs';
 
 const root = await mkdtemp(path.join(os.tmpdir(), 'toolknit-model-contract-'));
 const bytes = Buffer.from('Only a local deterministic model fixture.'), model = { display_name: 'Fixture', bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') };
@@ -12,6 +13,10 @@ const file = name => path.join(root, name);
 const install = (name, extra = {}) => downloadVerifiedModel({ model, destination: file(name), sources: [source], ...extra });
 const noLock = async () => assert.ok(!(await readdir(root)).some(name => name.endsWith('.download.lock')));
 try {
+  for (const legacySource of ['auto', 'official', 'china']) {
+    assert.equal(transcriptionModelSource({ file_name: 'ggml-small.bin' }, legacySource), 'https://toolknit-downloads-u1ll6equ.cdn.7caiyun.com/models/whisper/ggml-small.bin');
+  }
+  assert.throws(() => transcriptionModelSource({ file_name: 'ggml-small.bin' }, 'https://example.invalid'));
   await install('success.bin', { fetchImpl: async () => new Response(bytes) });
   assert.deepEqual(await readFile(file('success.bin')), bytes);
   assert.equal((await install('success.bin', { fetchImpl: () => assert.fail('Verified model must not download twice.') })).already_installed, true);
@@ -52,6 +57,17 @@ try {
   try {
     await assert.rejects(install('timeout.bin', { timeoutMs: 30, fetchImpl: async (url, { signal }) => new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(signal.reason), { once: true })) }), error => error.details.reason === 'timeout');
   } finally { clearInterval(timer); }
+  await install('slow-active.bin', { timeoutMs: 200, fetchImpl: async (url, options) => {
+    assert.equal(options.redirect, 'error');
+    let index = 0;
+    return new Response(new ReadableStream({
+      async pull(controller) {
+        await new Promise(resolve => setTimeout(resolve, 80));
+        if (index < 5) controller.enqueue(bytes.subarray(index++ * 8, index * 8));
+        else { controller.enqueue(bytes.subarray(40)); controller.close(); }
+      }
+    }));
+  } });
   await writeFile(file('private.txt'), 'preserve unrelated file');
   await link(file('private.txt'), file('linked.bin.cli.part'));
   await assert.rejects(install('linked.bin', { fetchImpl: () => assert.fail('Hard-link must be rejected before network.') }));

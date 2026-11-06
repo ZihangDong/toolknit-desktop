@@ -59,7 +59,7 @@ try{
         if(action==='cancel-install'){window.__finish(false,'translation:cancelled');return null;}
         if(action==='install'){
           if(window.__failure)throw window.__failure;
-          window.__emit('local-translation-progress',{phase:'download',received:100,total:200,source:args.request.source==='accelerated'?'accelerated':'official'});
+          window.__emit('local-translation-progress',{phase:'download',received:100,total:200,source:'7caiyun'});
           return new Promise((resolve,reject)=>{window.__finish=(ready,error)=>{window.__ready=ready;window.__emit('local-translation-changed',status());error?reject(error):resolve(status());};});
         }
         throw Error(action);
@@ -97,9 +97,8 @@ try{
       await page.waitForFunction(()=>getComputedStyle(document.getElementById('localTranslationInstall')).backgroundColor==='rgb(17, 17, 17)');
     }
     const source=page.locator('#localTranslationSourceOptions');
-    assert.equal(await source.locator('[aria-pressed="true"]').getAttribute('data-source'),'auto');
-    await source.locator('[data-source="accelerated"]').click();
-    assert.equal(await source.locator('[aria-pressed="true"]').getAttribute('data-source'),'accelerated');
+    assert.equal(await source.locator('[data-source]').count(),0);
+    assert.match(await source.textContent(),theme==='light'?/七彩云/:/7Caiyun/);
     await page.evaluate(()=>{window.__deferStatus=true;void window.__manager.refresh();});
     await page.waitForFunction(()=>Boolean(window.__finishStatus));
     await page.locator('#localTranslationInstall').click();
@@ -107,9 +106,8 @@ try{
     await page.evaluate(()=>{window.__deferStatus=false;window.__finishStatus();});
     await page.waitForTimeout(30);
     assert.ok(await page.locator('#localTranslationCancel').isVisible(),'late idle status must not erase installation progress');
-    assert.equal(await page.evaluate(()=>window.__requests.find(r=>r.action==='install').source),'accelerated');
-    assert.match(await page.locator('#localTranslationStatus').textContent(),/GitHub/);
-    assert.equal(await source.locator('button:disabled').count(),3,'source cannot change mid-install');
+    assert.equal(await page.evaluate(()=>window.__requests.find(r=>r.action==='install').source),'auto');
+    assert.match(await page.locator('#localTranslationStatus').textContent(),theme==='light'?/七彩云/:/7Caiyun/);
     assert.ok(await page.locator('#localTranslationInstall').isDisabled());
     await page.locator('#localTranslationClose').click();assert.ok(!await visible());
     assert.ok(await page.locator('#localTranslationManage').evaluate(el=>el===document.activeElement));
@@ -123,11 +121,9 @@ try{
     await page.waitForFunction(()=>window.__notices.length===2);
     assert.match(await page.locator('#localTranslationStatus').textContent(),theme==='light'?/校验/:/verification/);
     await page.evaluate(()=>{window.__failure='translation:download';});
-    await source.locator('[data-source="official"]').click();
     await install.click();
     await page.waitForFunction(()=>window.__notices.length===3);
-    assert.match(await page.locator('#localTranslationStatus').textContent(),/Mozilla/);
-    await source.locator('[data-source="auto"]').click();
+    assert.match(await page.locator('#localTranslationStatus').textContent(),theme==='light'?/下载失败/:/Download failed/);
     await page.evaluate(()=>{window.__failure='';});
     await page.locator('#localTranslationInstall').click();
     await page.waitForFunction(()=>!document.getElementById('localTranslationCancel').hidden);
@@ -151,7 +147,7 @@ try{
     await page.locator('#localTranslationManage').click();await page.locator('#localTranslationClose').click();
     await page.evaluate(()=>{window.__manager.dispose();window.__manager.dispose();});
     assert.equal((await page.evaluate(()=>window.__calls.filter(a=>a==='install').length)),5);
-    assert.deepEqual(await page.evaluate(()=>window.__requests.filter(r=>r.action==='install').map(r=>r.source)),['accelerated','accelerated','official','auto','auto']);
+    assert.deepEqual(await page.evaluate(()=>window.__requests.filter(r=>r.action==='install').map(r=>r.source)),['auto','auto','auto','auto','auto']);
     console.log(`translation settings ${theme} ${width}x${height}: layout/buttons/sources/install/progress/cancel/checksum/network/repair/remove/language/focus/reopen passed`);
     await page.close();
   }

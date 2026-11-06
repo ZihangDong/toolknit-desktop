@@ -112,10 +112,10 @@ export const HELP_CONTENT = {
       </ol>
 
       <h3>首次启动</h3>
-      <p>首次启动不强制下载附加组件。进入相关功能时，程序会检查并提示按需安装：FFmpeg 下载约 29 MB，推荐的 Whisper Small 模型约 465 MB，LibreOffice 下载包约 356 MB。下载进度到 100% 后仍可能继续进行校验、解压或安装，请等待完成提示。</p>
+      <p>首次启动不强制下载附加组件。进入相关功能时，程序会检查并提示按需安装：FFmpeg 下载约 14 MB，推荐的 Whisper Small 模型约 465 MB，LibreOffice 下载包约 356 MB。下载进度到 100% 后仍可能继续进行校验、解压或安装，请等待完成提示。</p>
 
       <div class="help-note">
-        <p>FFmpeg、Whisper 和 LibreOffice 均可在设置中选择自动、官方或国内镜像源。LibreOffice 用于 Word 转 PDF、Excel 转 PDF、PPT 转 PDF 和 PPT 转图像。极少数没有 WebView2 的离线 Windows 设备，需要先联网安装 WebView2 Runtime 才能启动应用。</p>
+        <p>FFmpeg、Whisper 和 LibreOffice 可在设置中按需从七彩云下载，并在本机校验。LibreOffice 用于 Word 转 PDF、Excel 转 PDF、PPT 转 PDF 和 PPT 转图像。极少数没有 WebView2 的离线 Windows 设备，需要先联网安装 WebView2 Runtime 才能启动应用。</p>
       </div>
     </div>`
   },
@@ -136,10 +136,10 @@ export const HELP_CONTENT = {
       <p>“音视频提取文字”首次使用前需要下载一个本地模型。<strong>Small</strong> 是默认推荐项；Base 更小更快，Medium 更偏向质量。下载完成后，语音识别可离线运行；只有你主动开启“AI 二次润色”时，识别出的文字才会发送给所配置的 AI 平台。</p>
 
       <h3>FFmpeg 运行时</h3>
-      <p>音频转换、音频剪辑、音频提取、视频转换、单帧图、GIF 和转写预处理都需要 FFmpeg。安装包不再内置它：可在这里选择自动、官方或国内镜像下载。进入相关工具时若未安装，也会弹出依赖安装窗口。</p>
+      <p>音频转换、音频剪辑、音频提取、视频转换、单帧图、GIF 和转写预处理都需要 FFmpeg。安装包不再内置它：可在这里按需下载。进入相关工具时若未安装，也会弹出依赖安装窗口。</p>
 
       <h3>LibreOffice 运行时</h3>
-      <p>供 Word 转 PDF、Excel 转 PDF、PPT 转 PDF 和 PPT 转图像使用。可选择自动、官方或国内镜像；下载完成后还需校验和解压，安装完成后可离线转换。</p>
+      <p>供 Word 转 PDF、Excel 转 PDF、PPT 转 PDF 和 PPT 转图像使用。下载完成后还需校验和解压，安装完成后可离线转换。</p>
 
       <h3>窗口、音效与快捷键</h3>
       <p>可调整窗口拉伸与小圆角 / 大圆角 / 自定义圆角；窗口最大化时会自动取消圆角并贴合屏幕，恢复窗口后重新应用。全局音效提供总开关和三套风格。屏幕取色默认快捷键为 <code>Ctrl+Shift+C</code>，可自定义或恢复默认；启动取色时主窗口会自动最小化，选中颜色后返回配色提取器。</p>
@@ -733,7 +733,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       </ol>
 
       <div class="help-note">
-        <p>首次使用音频转换需要按提示下载 FFmpeg 运行时（约 29 MB），完成校验与安装后即可离线使用。</p>
+        <p>首次使用音频转换需要按提示下载 FFmpeg 运行时（约 14 MB），完成校验与安装后即可离线使用。</p>
       </div>
 
       <h3>格式说明</h3>
@@ -815,7 +815,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       </ol>
 
       <div class="help-note">
-        <p>视频转换仅在桌面版运行，使用内置 FFmpeg 在本地处理。每个文件最大 10 GB，单次最多可处理 30 个文件。</p>
+        <p>视频转换仅在桌面版运行，使用按需安装的 FFmpeg 在本地处理。每个文件最大 10 GB，单次最多可处理 30 个文件。</p>
       </div>
     </div>`
   },
@@ -1230,12 +1230,12 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
       <div class="help-faq-item">
         <div class="help-faq-q">Q：FFmpeg 下载需要多大空间？</div>
-        <div class="help-faq-a">A：当前 Windows 运行时下载包约 29 MB。它安装在 ToolKnit 的本机应用数据目录，不占用默认输出目录；安装后可离线使用。</div>
+        <div class="help-faq-a">A：当前 Windows 运行时下载包约 14 MB。它安装在 ToolKnit 的本机应用数据目录，不占用默认输出目录；安装后可离线使用。</div>
       </div>
 
       <div class="help-faq-item">
         <div class="help-faq-q">Q：下载 FFmpeg 失败怎么办？</div>
-        <div class="help-faq-a">A：在设置的“FFmpeg 运行时”里切换自动、官方或国内镜像后重试。下载会校验完整性；不要从不明网站手动替换可执行文件。</div>
+        <div class="help-faq-a">A：检查网络后在设置的“FFmpeg 运行时”里重试。下载会校验完整性；不要从不明网站手动替换可执行文件。</div>
       </div>
 
       <div class="help-faq-item">
@@ -1294,7 +1294,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
   'transcription': {
     title: '音视频提取文字',
-    html: `<div class="help-doc"><h2>音视频提取文字</h2><p>使用内置的离线 Whisper 引擎识别本机音频或视频中的中文和英文。媒体文件不会上传。</p><h3>首次使用</h3><ol class="help-steps"><li>进入设置，打开“离线识别模型”</li><li>推荐下载 Small；Base 更快且更小，Medium 质量更高但占用更多空间</li><li>选择自动、官方或国内镜像下载源，完成校验后模型可离线使用</li></ol><h3>输出与润色</h3><p>每次识别都会保留原始 JSON、SRT、TXT。开启 AI 二次润色后，仅识别出的字幕文字会提交给已配置的 AI 平台；字幕段编号和时间轴不会被增加、删除、拆分或合并。</p><div class="help-note"><p>AI 只能修正标点、语法和明显的上下文识别错误，不能听见原音频。涉及专有名词、数字或不清晰发音时，请以原始字幕和音频为准。</p></div></div>`
+    html: `<div class="help-doc"><h2>音视频提取文字</h2><p>使用内置的离线 Whisper 引擎识别本机音频或视频中的中文和英文。媒体文件不会上传。</p><h3>首次使用</h3><ol class="help-steps"><li>进入设置，打开“离线识别模型”</li><li>推荐下载 Small；Base 更快且更小，Medium 质量更高但占用更多空间</li><li>从七彩云下载模型，完成校验后可离线使用</li></ol><h3>输出与润色</h3><p>每次识别都会保留原始 JSON、SRT、TXT。开启 AI 二次润色后，仅识别出的字幕文字会提交给已配置的 AI 平台；字幕段编号和时间轴不会被增加、删除、拆分或合并。</p><div class="help-note"><p>AI 只能修正标点、语法和明显的上下文识别错误，不能听见原音频。涉及专有名词、数字或不清晰发音时，请以原始字幕和音频为准。</p></div></div>`
   },
 
   'large-file-cleanup': {

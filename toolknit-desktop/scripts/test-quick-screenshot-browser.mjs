@@ -111,6 +111,7 @@ async function open(role,theme,width=1400,height=900,dpr=1,{warmMenu=false}={}){
           if(r.action==='copy'||r.action==='pin')return {enabled:!window.__paused};
         }
         if(command==='load_ai_api_key')return window.__shotKeyMissing?'':'local-test-key';
+        if(command==='quick_screenshot_image')return Uint8Array.from(atob(image.split(',')[1]),value=>value.charCodeAt(0)).buffer;
         if(command==='local_translation'){
           const r=args.request;
           if(r.action==='status')return {ready:window.__localReady,targetLanguage:window.__localTarget};
@@ -151,7 +152,7 @@ async function open(role,theme,width=1400,height=900,dpr=1,{warmMenu=false}={}){
             return null;
           }
           if(r.action==='menu-dismiss')return null;
-          if(r.action==='boot')return {context:structuredClone(shared),feedback:{revision:1,kind:'copied',lang:shared.lang},session:1,shot,desktop:{bounds:{x:-1400,y:-100,width:1400,height:900},windows:[{x:-1300,y:-20,width:800,height:440}],monitors:[{x:-1400,y:-100,width:1400,height:900}]},image};
+          if(r.action==='boot')return {context:structuredClone(shared),feedback:{revision:1,kind:'copied',lang:shared.lang},session:1,shot,desktop:{bounds:{x:-1400,y:-100,width:1400,height:900},windows:[{x:-1300,y:-20,width:800,height:440}],monitors:[{x:-1400,y:-100,width:1400,height:900}]},...(role==='capture'&&r.binary?{}:{image})};
           if(r.action==='metadata')return {context:structuredClone(shared)};
           if(r.action==='expand'){
             if(window.__shotExpandFailure)throw new Error('Window temporarily unavailable');

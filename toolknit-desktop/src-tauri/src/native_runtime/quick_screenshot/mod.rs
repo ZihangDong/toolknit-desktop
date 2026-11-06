@@ -11,6 +11,11 @@ mod history_actions;
 mod history_menu;
 mod ocr;
 mod window_visibility;
+mod startup;
+#[cfg(test)]
+mod latency_tests;
+#[cfg(all(test, windows))]
+mod native_startup_tests;
 
 const MAX_PIXELS: u64 = 32_000_000;
 const MAX_BYTES: usize = 32 * 1024 * 1024;
@@ -56,10 +61,11 @@ struct Shot {
 struct Session {
     id: u64,
     desktop: Desktop,
-    png: Vec<u8>,
+    png: Arc<Vec<u8>>,
     restore: Vec<HiddenWindow>,
     _auxiliary: Option<crate::platform::auxiliary_windows::Suspension>,
     ready: bool,
+    trace: startup::Trace,
 }
 #[derive(Default)]
 pub(crate) struct ScreenshotState {
@@ -67,6 +73,8 @@ pub(crate) struct ScreenshotState {
     starting: AtomicBool,
     sequence: AtomicU64,
     work: AtomicBool,
+    capture_transition: tokio::sync::Mutex<()>,
+    capture_prepared: AtomicBool,
     history_hidden: AtomicBool,
     history_adjusting: AtomicBool,
     history_reduced_motion: AtomicBool,
@@ -272,6 +280,8 @@ pub(crate) fn initialize(app: &tauri::AppHandle) {
     // The main renderer supplies theme/language context before restoring the shelf.
 }
 pub(crate) async fn begin(app: &tauri::AppHandle) -> Result<(), String> {
+    let mut trace = startup::Trace::new();
+    let had_surfaces = app.webview_windows().values().any(startup::is_visible);
     feedback::dismiss(app).await?;
     history_menu::dismiss(app, false);
     let state = app.state::<ScreenshotState>();
@@ -279,19 +289,22 @@ pub(crate) async fn begin(app: &tauri::AppHandle) -> Result<(), String> {
         return Ok(());
     }
     let result = async {
-        if lock(&state.inner).session.is_some() {
-            if let Some(window) = app.get_webview_window(CAPTURE_LABEL) {
-                let _ = window.set_focus();
-            }
+        if let Some(ready) = lock(&state.inner).session.as_ref().map(|session|session.ready) {
+            if ready { if let Some(window) = app.get_webview_window(CAPTURE_LABEL) {
+                if startup::is_visible(&window) { let _ = window.set_focus(); }
+            } }
             return Ok(());
         }
         let mut restore = hide_for_capture(app).await?;
-        // Let the desktop compositor remove our surfaces before freezing pixels.
-        tokio::time::sleep(std::time::Duration::from_millis(160)).await;
-        let captured = tauri::async_runtime::spawn_blocking(capture::capture)
+        trace.mark("hidden");
+        startup::settle_desktop(restore.changed || had_surfaces).await;
+        trace.mark("settled");
+        let capture_app = app.clone();
+        let captured = tauri::async_runtime::spawn_blocking(move || startup::capture_frame(&capture_app))
             .await
             .map_err(|_| "screenshot:capture-failed")?;
         let (mut desktop, png) = captured?;
+        trace.mark("captured");
         if png.len() > MAX_BYTES {
             return Err("screenshot:image-too-large".into());
         }
@@ -310,41 +323,22 @@ pub(crate) async fn begin(app: &tauri::AppHandle) -> Result<(), String> {
             })
             .collect();
         let bounds = desktop.bounds.clone();
+        startup::ensure_window(app).await?;
+        let window = app.get_webview_window(CAPTURE_LABEL).ok_or("screenshot:window-failed")?;
+        window.set_position(Position::Physical(PhysicalPosition::new(bounds.x,bounds.y))).map_err(|_|"screenshot:window-failed")?;
+        window.set_size(Size::Physical(PhysicalSize::new(bounds.width,bounds.height))).map_err(|_|"screenshot:window-failed")?;
+        trace.mark("window");
         let session = state.sequence.fetch_add(1, Ordering::SeqCst) + 1;
         lock(&state.inner).session = Some(Session {
             id: session,
             desktop,
-            png,
+            png: Arc::new(png),
             restore: std::mem::take(&mut restore.labels),
             _auxiliary: restore.auxiliary.take(),
             ready: false,
+            trace,
         });
-        let opened = (|| {
-            let window = if let Some(window) = app.get_webview_window(CAPTURE_LABEL) {
-                window
-            } else {
-                window_builder(app, CAPTURE_LABEL, "capture")?
-                    .always_on_top(true)
-                    .skip_taskbar(true)
-                    .shadow(false)
-                    .resizable(false)
-                    .build()
-                    .map_err(|_| "screenshot:window-failed")?
-            };
-            window
-                .set_position(Position::Physical(PhysicalPosition::new(
-                    bounds.x, bounds.y,
-                )))
-                .map_err(|_| "screenshot:window-failed")?;
-            window
-                .set_size(Size::Physical(PhysicalSize::new(
-                    bounds.width,
-                    bounds.height,
-                )))
-                .map_err(|_| "screenshot:window-failed")?;
-            let _ = window.emit("screenshot-opened", session);
-            Ok(())
-        })();
+        let opened = window.emit("screenshot-opened", session).map_err(|_|"screenshot:window-failed".to_string());
         if opened.is_err() {
             finish(app);
         } else {
@@ -356,7 +350,7 @@ pub(crate) async fn begin(app: &tauri::AppHandle) -> Result<(), String> {
                     .as_ref()
                     .is_some_and(|s| s.id == session && !s.ready);
                 if expired {
-                    finish(&app);
+                    finish_session(&app,Some(session));
                     if let Some(main) = app.get_webview_window("main") {
                         let _ = main.emit("screenshot-error", "screenshot:window-failed");
                     }
@@ -370,12 +364,19 @@ pub(crate) async fn begin(app: &tauri::AppHandle) -> Result<(), String> {
     result
 }
 pub(crate) fn finish(app: &tauri::AppHandle) {
+    finish_session(app,None);
+}
+fn finish_session(app: &tauri::AppHandle, expected:Option<u64>) {
     let state = app.state::<ScreenshotState>();
+    let previous = {
+        let mut inner=lock(&state.inner);
+        if expected.is_some_and(|id|!inner.session.as_ref().is_some_and(|session|session.id==id)){return;}
+        inner.session.take()
+    };
     if let Some(window) = app.get_webview_window(CAPTURE_LABEL) {
         let _ = window.emit("screenshot-ended", ());
         let _ = window.hide();
     }
-    let previous = lock(&state.inner).session.take();
     if let Some(session) = previous {
         for hidden in session.restore {
             if hidden.label == HISTORY_LABEL && !history_actions::allowed(app) {
@@ -391,6 +392,7 @@ struct RestoreWindows {
     app: tauri::AppHandle,
     labels: Vec<HiddenWindow>,
     auxiliary: Option<crate::platform::auxiliary_windows::Suspension>,
+    changed: bool,
 }
 struct HiddenWindow {
     label: String,
@@ -401,6 +403,7 @@ async fn hide_for_capture(app: &tauri::AppHandle) -> Result<RestoreWindows, Stri
         app: app.clone(),
         labels: Vec::new(),
         auxiliary: Some(crate::platform::auxiliary_windows::Suspension::begin(app)),
+        changed: false,
     };
     for (label, window) in app.webview_windows() {
         if restore
@@ -409,6 +412,7 @@ async fn hide_for_capture(app: &tauri::AppHandle) -> Result<RestoreWindows, Stri
             .is_some_and(|group| group.owns(&label))
         {
             // Native no-activation show may differ from the framework cache.
+            restore.changed |= startup::is_visible(&window);
             window_visibility::hide(&window).await?;
         } else if (label == "main"
             || label.starts_with("screenshot-")
@@ -420,6 +424,7 @@ async fn hide_for_capture(app: &tauri::AppHandle) -> Result<RestoreWindows, Stri
                 .map_err(|_| "screenshot:window-failed")?;
             window_visibility::hide(&window).await?;
             restore.labels.push(HiddenWindow { label, minimized });
+            restore.changed |= !minimized;
         }
     }
     Ok(restore)
@@ -729,6 +734,25 @@ pub(crate) fn closed(app: &tauri::AppHandle, label: &str) {
 }
 
 #[tauri::command]
+pub(crate) async fn quick_screenshot_image(
+    app: tauri::AppHandle,
+    window: tauri::WebviewWindow,
+    session: u64,
+) -> Result<tauri::ipc::Response, String> {
+    if window.label() != CAPTURE_LABEL { return Err("screenshot:forbidden".into()); }
+    let state=app.state::<ScreenshotState>();
+    let image={
+        let inner=lock(&state.inner);
+        let active=inner.session.as_ref().filter(|active|active.id==session).ok_or("screenshot:expired")?;
+        active.png.clone()
+    };
+    // Copy outside the state lock and revalidate after potentially expensive work.
+    let bytes=tauri::async_runtime::spawn_blocking(move||image.as_ref().clone()).await.map_err(|_|"screenshot:capture-failed")?;
+    require_session(&state,&serde_json::json!({"session":session}))?;
+    Ok(tauri::ipc::Response::new(bytes))
+}
+
+#[tauri::command]
 pub(crate) async fn quick_screenshot(
     app: tauri::AppHandle,
     window: tauri::WebviewWindow,
@@ -781,6 +805,14 @@ pub(crate) async fn quick_screenshot(
     }
     let main = label == "main";
     match action {
+        "prepare" if main => {
+            startup::ensure_window(&app).await?;
+            Ok(serde_json::Value::Null)
+        }
+        "prepared" if label == CAPTURE_LABEL => {
+            state.capture_prepared.store(true, Ordering::Release);
+            Ok(serde_json::Value::Null)
+        }
         "prepare-history-menu" if label == HISTORY_LABEL => {
             history_menu::warm(&app).await?;
             Ok(serde_json::Value::Null)
@@ -900,12 +932,18 @@ pub(crate) async fn quick_screenshot(
             let inner = lock(&state.inner);
             let mut result = serde_json::json!({"context":inner.context,"role": if viewer { "viewer" } else if label == CAPTURE_LABEL { "capture" } else { "history" }});
             if label == CAPTURE_LABEL {
-                let session = inner.session.as_ref().ok_or("screenshot:expired")?;
+                let Some(session) = inner.session.as_ref() else {
+                    result["prepared"] = true.into();
+                    return Ok(result);
+                };
                 result["session"] = session.id.into();
                 result["desktop"] = serde_json::to_value(&session.desktop)
                     .map_err(|_| "screenshot:capture-failed")?;
-                result["image"] =
-                    format!("data:image/png;base64,{}", STANDARD.encode(&session.png)).into();
+                if request["binary"].as_bool() == Some(true) {
+                    result["imageBytes"] = session.png.len().into();
+                } else {
+                    result["image"] = format!("data:image/png;base64,{}", STANDARD.encode(session.png.as_slice())).into();
+                }
             } else if viewer {
                 result["shot"] =
                     shot_json(inner.viewers.get(label).ok_or("screenshot:expired")?, true);
@@ -989,16 +1027,12 @@ pub(crate) async fn quick_screenshot(
         }
         "ready" if label == CAPTURE_LABEL => {
             require_session(&state, &request)?;
-            window.show().map_err(|_| "screenshot:window-failed")?;
-            window.set_focus().map_err(|_| "screenshot:window-failed")?;
-            if let Some(session) = lock(&state.inner).session.as_mut() {
-                session.ready = true;
-            }
+            startup::show_ready(&app, &window, request["session"].as_u64().ok_or("screenshot:expired")?, request["timing"].clone()).await?;
             Ok(serde_json::Value::Null)
         }
         "cancel" if label == CAPTURE_LABEL => {
             require_session(&state, &request)?;
-            finish(&app);
+            finish_session(&app,request["session"].as_u64());
             Ok(serde_json::Value::Null)
         }
         "copy-text" if label == CAPTURE_LABEL => {
@@ -1151,7 +1185,8 @@ pub(super) fn require_session(
     state: &ScreenshotState,
     request: &serde_json::Value,
 ) -> Result<(), String> {
-    if lock(&state.inner).session.as_ref().map(|s| s.id) != request["session"].as_u64() {
+    let requested=request["session"].as_u64().ok_or("screenshot:expired")?;
+    if !lock(&state.inner).session.as_ref().is_some_and(|session|session.id==requested) {
         Err("screenshot:expired".into())
     } else {
         Ok(())
@@ -1402,6 +1437,9 @@ mod tests {
     }
     #[test]
     fn screenshot_late_operations_are_rejected() {
+        for request in [serde_json::json!({}),serde_json::json!({"session":null}),serde_json::json!({"session":"1"})] {
+            assert!(require_session(&ScreenshotState::default(),&request).is_err());
+        }
         assert!(require_session(
             &ScreenshotState::default(),
             &serde_json::json!({"session":1})

@@ -36,7 +36,7 @@ const toast=createToastManager({getLanguage:getLang}), notify=message=>{
   else toast.show(message);
 };
 const output=createOutputRuntime({isTauri,tauriCorePromise,translate:t,notify});
-let context={},controller,bootRevision=0,disposed=false,dialogAction,dialogDismiss,dialogPath='',dialogKeepOpen=false,openingFolder=false,bootQueue=Promise.resolve();
+let context={},controller,bootRevision=0,loadingSession=null,disposed=false,dialogAction,dialogDismiss,dialogPath='',dialogKeepOpen=false,openingFolder=false,bootQueue=Promise.resolve();
 root.innerHTML=role==='toast'?feedbackMarkup:role==='history-menu'?historyMenuMarkup:role==='history'?historyMarkup:role==='viewer'?viewerMarkup:captureMarkup;
 document.body.classList.add(`shot-${role}-body`);
 const dialogRoot=q('Dialog');
@@ -80,25 +80,34 @@ const services={root,runtime,lifecycle,tr,q,notify,refresh,showDialog,closeDialo
 services.feedback=async kind=>{try{await runtime.call('feedback',{kind});}catch{toast.show(tr({copied:'historyCopied',phraseAdded:'phraseAdded',orderSaved:'historyOrderSaved'}[kind]));}};
 async function bootSession(revision){
   let data;
+  const started=performance.now(), timing={};
+  const mark=name=>{timing[name]=performance.now()-started;};
   try{
     if(disposed||revision!==bootRevision)return;
-    data=await runtime.call(role==='history-menu'?'menu-boot':'boot');if(disposed||revision!==bootRevision)return;
+    data=await runtime.call(role==='history-menu'?'menu-boot':'boot',role==='capture'?{binary:true}:{});if(disposed||revision!==bootRevision)return;
+    mark('boot');
     applyContext(data.context,role!=='history-menu');
+    if(role==='capture'&&data.prepared){await import('./capture-editor.js');if(!disposed&&revision===bootRevision){refresh();await runtime.call('prepared');}return;}
     if(role==='history-menu'&&controller){await controller.update(data);return;}
+    if(role==='capture'&&controller?.session===data.session)return;
+    if(role==='capture')loadingSession=data.session;
     if(controller)controller.dispose();
     const module=await (role==='toast'?import('./feedback-window.js'):role==='history-menu'?import('./history-menu-window.js'):role==='history'?import('./history-window.js'):role==='viewer'?import('./viewer-window.js'):import('./capture-editor.js'));
     if(disposed||revision!==bootRevision)return;
-    const next=await module.createController(services,data);
+    mark('module');
+    const next=await module.createController({...services,mark,isCurrent:()=>!disposed&&revision===bootRevision},data);
     if(disposed||revision!==bootRevision){next.dispose();return;}
-    controller=next;refresh();
-    if(role==='capture')await runtime.call('ready',{session:data.session});
+    controller=next;if(role==='capture')next.session=data.session;refresh();
+    mark('editor');
+    if(role==='capture'){mark('ready');await runtime.call('ready',{session:data.session,timing});if(!disposed&&revision===bootRevision)next.afterReady?.();}
   }catch(e){if(!disposed&&revision===bootRevision){controller?.dispose();controller=null;q('Desktop')?.removeAttribute('src');notify(tr(errorKey(e)));if(role==='capture'&&isTauri&&data?.session)void runtime.call('cancel',{session:data.session}).catch(()=>{});}}
+  finally{if(revision===bootRevision)loadingSession=null;}
 }
-function boot(){const revision=++bootRevision;bootQueue=bootQueue.then(()=>bootSession(revision));return bootQueue;}
+function boot(session){if(role==='capture'&&Number.isSafeInteger(session)&&(session===loadingSession||session===controller?.session))return bootQueue;const revision=++bootRevision;bootQueue=bootQueue.then(()=>bootSession(revision));return bootQueue;}
 async function bind(){
   const handlers=role==='toast'?[]:[['screenshot-context-changed',async()=>{try{const data=await runtime.call('metadata');if(!disposed)applyContext(data.context);}catch{/* window is closing */}}]];
   if(role==='capture'){
-    handlers.unshift(['screenshot-opened',boot],['screenshot-ended',()=>{bootRevision++;controller?.dispose();controller=null;closeDialog();}]);
+    handlers.unshift(['screenshot-opened',boot],['screenshot-ended',()=>{bootRevision++;loadingSession=null;controller?.dispose();controller=null;q('Desktop')?.removeAttribute('src');closeDialog();}]);
   }
   if(role==='history-menu')handlers.unshift(['screenshot-menu-opened',boot]);
   for(const [name,handler]of handlers){

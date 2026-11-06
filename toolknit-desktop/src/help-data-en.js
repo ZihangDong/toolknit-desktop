@@ -109,10 +109,10 @@ export const HELP_CONTENT_EN = {
       </ol>
 
       <h3>First Launch</h3>
-      <p>No optional component is forced on first launch. Related tools prompt for an on-demand install: FFmpeg is about 29 MB, the recommended Whisper Small model about 465 MB, and the LibreOffice download about 356 MB. After download reaches 100%, verification, extraction, or installation may still be running.</p>
+      <p>No optional component is forced on first launch. Related tools prompt for an on-demand install: FFmpeg is about 14 MB, the recommended Whisper Small model about 465 MB, and the LibreOffice download about 356 MB. After download reaches 100%, verification, extraction, or installation may still be running.</p>
 
       <div class="help-note">
-        <p>FFmpeg, Whisper, and LibreOffice support Auto, Official, or China mirror sources. LibreOffice powers Word to PDF, Excel to PDF, PPT to PDF, and PPT to Image. A rare offline Windows installation without WebView2 must go online once to install Microsoft Edge WebView2 Runtime.</p>
+        <p>FFmpeg, Whisper, and LibreOffice download on demand from 7Caiyun and are verified locally. LibreOffice powers Word to PDF, Excel to PDF, PPT to PDF, and PPT to Image. A rare offline Windows installation without WebView2 must go online once to install Microsoft Edge WebView2 Runtime.</p>
       </div>
     </div>`
   },
@@ -133,10 +133,10 @@ export const HELP_CONTENT_EN = {
       <p>Audio & Video to Text needs one local model before first use. <strong>Small</strong> is the default recommendation; Base is smaller and faster, while Medium prioritizes quality. Recognition works offline after download. Only optional AI refinement sends recognized text to your provider; media is never uploaded.</p>
 
       <h3>FFmpeg Runtime</h3>
-      <p>Audio conversion, clipping, audio extraction, video conversion, frame export, GIF export, and transcription preparation require FFmpeg. It is no longer bundled into the installer. Install it from Auto, Official, or China mirror here, or accept the dependency prompt when entering a supported tool.</p>
+      <p>Audio conversion, clipping, audio extraction, video conversion, frame export, GIF export, and transcription preparation require FFmpeg. It is no longer bundled into the installer. Install it here or accept the dependency prompt when entering a supported tool.</p>
 
       <h3>LibreOffice Runtime</h3>
-      <p>LibreOffice powers Word to PDF, Excel to PDF, PPT to PDF, and PPT to Image. Choose Auto, Official, or China mirror; after download, allow verification and extraction to finish. Conversion then works offline.</p>
+      <p>LibreOffice powers Word to PDF, Excel to PDF, PPT to PDF, and PPT to Image. After download, allow verification and extraction to finish. Conversion then works offline.</p>
 
       <h3>Window, Sound, and Shortcut</h3>
       <p>Configure resize behavior and small, large, or custom corner radius. Maximized windows remove rounding and cover the screen; rounding returns after restore. Global sounds have a master switch and three styles. Screen Color Picker defaults to <code>Ctrl+Shift+C</code>, can be customized or reset, minimizes the main window while picking, and returns the selected color to the Color Extractor.</p>
@@ -703,7 +703,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       </ol>
 
       <div class="help-note">
-        <p>First-time audio conversion prompts for the FFmpeg runtime (about 29 MB). It works offline after verification and installation.</p>
+        <p>First-time audio conversion prompts for the FFmpeg runtime (about 14 MB). It works offline after verification and installation.</p>
       </div>
 
       <h3>Format Guide</h3>
@@ -785,7 +785,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       </ol>
 
       <div class="help-note">
-        <p>Video conversion runs only in the desktop app and uses bundled FFmpeg locally. Each file can be up to 10 GB, with up to 30 files in one batch.</p>
+        <p>Video conversion runs only in the desktop app and uses an on-demand FFmpeg installation locally. Each file can be up to 10 GB, with up to 30 files in one batch.</p>
       </div>
     </div>`
   },
@@ -1200,12 +1200,12 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
       <div class="help-faq-item">
         <div class="help-faq-q">Q: How much space does FFmpeg need?</div>
-        <div class="help-faq-a">A: The current Windows runtime download is about 29 MB. It is installed under ToolKnit local app data, not your output folder, and works offline after installation.</div>
+        <div class="help-faq-a">A: The current Windows runtime download is about 14 MB. It is installed under ToolKnit local app data, not your output folder, and works offline after installation.</div>
       </div>
 
       <div class="help-faq-item">
         <div class="help-faq-q">Q: What if the FFmpeg download fails?</div>
-        <div class="help-faq-a">A: In Settings > FFmpeg Runtime, switch between Auto, Official, and China mirror, then retry. The download is integrity-checked; do not replace the executable with one from an unknown website.</div>
+        <div class="help-faq-a">A: Check your connection and retry in Settings > FFmpeg Runtime. The download is integrity-checked; do not replace the executable with one from an unknown website.</div>
       </div>
 
       <div class="help-faq-item">
@@ -1264,7 +1264,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
   'transcription': {
     title: 'Audio & Video to Text',
-    html: `<div class="help-doc"><h2>Audio & Video to Text</h2><p>Use the bundled offline Whisper engine to recognize Chinese and English in local audio or video. Media files are never uploaded.</p><h3>First use</h3><ol class="help-steps"><li>Open Settings and choose Offline transcription models</li><li>Small is recommended; Base is faster and smaller, while Medium uses more disk space for higher quality</li><li>Choose automatic, official, or China mirror download. A verified model works offline afterwards</li></ol><h3>Outputs and refinement</h3><p>Every run keeps the original JSON, SRT, and TXT. When AI refinement is enabled, only recognized subtitle text is sent to your configured AI provider; subtitle IDs and timecodes cannot be added, removed, split, or merged.</p><div class="help-note"><p>AI can improve punctuation, grammar, and clear context mistakes, but cannot hear the source audio. Verify names, numbers, and unclear speech against the original recording.</p></div></div>`
+    html: `<div class="help-doc"><h2>Audio & Video to Text</h2><p>Use the bundled offline Whisper engine to recognize Chinese and English in local audio or video. Media files are never uploaded.</p><h3>First use</h3><ol class="help-steps"><li>Open Settings and choose Offline transcription models</li><li>Small is recommended; Base is faster and smaller, while Medium uses more disk space for higher quality</li><li>Download from 7Caiyun. A verified model works offline afterwards</li></ol><h3>Outputs and refinement</h3><p>Every run keeps the original JSON, SRT, and TXT. When AI refinement is enabled, only recognized subtitle text is sent to your configured AI provider; subtitle IDs and timecodes cannot be added, removed, split, or merged.</p><div class="help-note"><p>AI can improve punctuation, grammar, and clear context mistakes, but cannot hear the source audio. Verify names, numbers, and unclear speech against the original recording.</p></div></div>`
   },
 
   'large-file-cleanup': {

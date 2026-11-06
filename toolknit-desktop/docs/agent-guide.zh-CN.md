@@ -51,7 +51,7 @@ V3.3 开发源码连接后，Agent 会显示 78 项 ToolKnit 工具（未发布�
 - `toolknit_audio_clip`：按明确起止秒数裁切一个本地音频，保留原件并以唯一文件名发布结果。
 - `toolknit_audio_extract`：从本地视频中提取指定音轨为 MP3、AAC、WAV、FLAC 或 OGG。
 - `toolknit_model_list`：只读查看桌面端与 CLI 共用的离线转写模型状态。
-- `toolknit_model_install`：从官方源或国内镜像下载并校验一个本地 Whisper 模型。
+- `toolknit_model_install`：从七彩云下载并校验一个本地 Whisper 模型；旧来源参数仍可使用，但均指向七彩云。
 - `toolknit_model_use`：选择已经安装的本地转写模型。
 - `toolknit_transcribe`：本地转写一个音频或视频，始终保留原始 JSON、SRT、TXT；可选二次润色只发送识别出的文字。
 - `toolknit_video_convert`：将 1 到 30 个本地视频转换为 MP4、AVI、MKV、MOV、WebM、FLV、WMV 或 TS；原件不改写，结果使用唯一文件名。

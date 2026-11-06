@@ -150,14 +150,27 @@ pub(super) fn transcription_model_source(
     source: Option<&str>,
 ) -> Result<String, String> {
     let source = source.unwrap_or("auto").trim().to_ascii_lowercase();
-    let root = match source.as_str() {
-        "official" => "https://huggingface.co/ggerganov/whisper.cpp/resolve/main",
-        "china" => "https://hf-mirror.com/ggerganov/whisper.cpp/resolve/main",
-        // Automatic source ordering and fallback are handled by the download loop.
-        "auto" => "https://huggingface.co/ggerganov/whisper.cpp/resolve/main",
+    match source.as_str() {
+        "official" | "china" | "auto" | "auto-china" | "auto-official" | "7caiyun" => {},
         _ => return Err("Unknown model download source".to_string()),
-    };
-    Ok(format!("{}/{}", root, model.file_name))
+    }
+    Ok(dependency_download::resource_url(&format!("models/whisper/{}", model.file_name)))
+}
+
+#[cfg(test)]
+mod download_source_tests {
+    use super::*;
+
+    #[test]
+    fn whisper_legacy_sources_resolve_to_the_pinned_origin() {
+        for model in &TRANSCRIPTION_MODELS {
+            let expected = format!("{}/models/whisper/{}", dependency_download::RESOURCE_ORIGIN, model.file_name);
+            for source in [None, Some("auto"), Some("auto-china"), Some("auto-official"), Some("official"), Some("china"), Some("7caiyun")] {
+                assert_eq!(transcription_model_source(model, source).unwrap(), expected);
+            }
+            assert!(transcription_model_source(model, Some("https://example.invalid/model")).is_err());
+        }
+    }
 }
 
 pub(super) fn sha256_file(path: &std::path::Path) -> Result<String, String> {
@@ -513,6 +526,8 @@ pub(super) async fn download_transcription_model(
     let partial = target.with_extension("bin.part");
     let client = reqwest::Client::builder()
         .user_agent("ToolKnit/3.3.0 offline-model-manager")
+        .https_only(true)
+        .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(std::time::Duration::from_secs(12))
         .build()
         .map_err(|error| format!("Cannot initialize model download: {}", error))?;
@@ -522,9 +537,7 @@ pub(super) async fn download_transcription_model(
         .trim()
         .to_ascii_lowercase();
     let candidates: Vec<&str> = match requested_source.as_str() {
-        "auto" | "auto-china" => vec!["china", "official"],
-        "auto-official" => vec!["official", "china"],
-        "official" | "china" => vec![requested_source.as_str()],
+        "auto" | "auto-china" | "auto-official" | "official" | "china" | "7caiyun" => vec!["7caiyun"],
         _ => return Err("Unknown model download source".to_string()),
     };
     let mut last_error = None;

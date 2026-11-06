@@ -32,6 +32,7 @@ pub fn run() {
         .manage(TeleprompterRecognitionState::default())
         .invoke_handler(tauri::generate_handler![
             quick_screenshot::quick_screenshot,
+            quick_screenshot::quick_screenshot_image,
             file_search::file_search,
             local_translation::local_translation,
             crate::clipboard_history::clipboard_history,

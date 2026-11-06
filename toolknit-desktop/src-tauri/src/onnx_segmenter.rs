@@ -788,6 +788,8 @@ pub async fn download_matting_model(
     let partial = target.with_extension("onnx.part");
     let client = reqwest::Client::builder()
         .user_agent("ToolKnit/3.3.0 matting-model-manager")
+        .https_only(true)
+        .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(std::time::Duration::from_secs(12))
         .build()
         .map_err(|error| format!("matting:download-init-failed:{error}"))?;
@@ -796,10 +798,7 @@ pub async fn download_matting_model(
         .trim()
         .to_ascii_lowercase();
     let candidates: Vec<&str> = match requested.as_str() {
-        "china" => vec!["china"],
-        "official" => vec!["official"],
-        "auto" | "auto-china" => vec!["china", "official"],
-        "auto-official" => vec!["official", "china"],
+        "china" | "official" | "auto" | "auto-china" | "auto-official" | "7caiyun" => vec!["7caiyun"],
         _ => return Err("matting:unknown-source".into()),
     };
     let mut last_error = String::from("matting:download-failed");
@@ -946,8 +945,7 @@ pub async fn download_matting_model(
 fn matting_model_source(source: Option<&str>) -> Result<String, String> {
     let source = source.unwrap_or("auto").trim().to_ascii_lowercase();
     let url = match source.as_str() {
-        "official" | "auto" => "https://huggingface.co/Xenova/modnet/resolve/main/onnx/model.onnx",
-        "china" => "https://hf-mirror.com/Xenova/modnet/resolve/main/onnx/model.onnx",
+        "official" | "china" | "auto" | "auto-china" | "auto-official" | "7caiyun" => dependency_download::MATTING_URL,
         _ => return Err("matting:unknown-source".to_string()),
     };
     Ok(url.to_string())
@@ -1230,6 +1228,14 @@ pub async fn export_segmented_image(
 #[cfg(test)]
 mod matting_tests {
     use super::*;
+
+    #[test]
+    fn legacy_matting_sources_use_only_7caiyun() {
+        for source in ["auto", "auto-china", "auto-official", "official", "china", "7caiyun"] {
+            assert_eq!(matting_model_source(Some(source)).unwrap(), dependency_download::MATTING_URL);
+        }
+        assert!(matting_model_source(Some("https://example.invalid")).is_err());
+    }
 
     #[test]
     fn gpu_success_does_not_run_cpu() {

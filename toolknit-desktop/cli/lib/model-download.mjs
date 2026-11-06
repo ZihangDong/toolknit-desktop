@@ -50,7 +50,7 @@ async function lock(file) {
   throw busy();
 }
 
-export async function downloadVerifiedModel({ model, destination, sources, signal, reportProgress, fetchImpl = fetch, timeoutMs = 15 * 60 * 1000 }) {
+export async function downloadVerifiedModel({ model, destination, sources, signal, reportProgress, fetchImpl = fetch, timeoutMs = 60 * 1000 }) {
   throwIfAborted(signal);
   if (downloads.has(destination)) throw busy();
   downloads.add(destination);
@@ -66,7 +66,10 @@ export async function downloadVerifiedModel({ model, destination, sources, signa
     let failure = 'download-failed';
     for (const source of sources) {
       throwIfAborted(signal);
-      const timeout = AbortSignal.timeout(timeoutMs), requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
+      const timeout = new AbortController();
+      let timer;
+      const resetTimeout = () => { clearTimeout(timer); timer = setTimeout(() => timeout.abort(), timeoutMs); };
+      const requestSignal = signal ? AbortSignal.any([signal, timeout.signal]) : timeout.signal;
       let response;
       try {
         const info = await regularInfo(partial);
@@ -82,7 +85,8 @@ export async function downloadVerifiedModel({ model, destination, sources, signa
         }
         const headers = { 'User-Agent': 'ToolKnit/3.3.0 offline-model-manager' };
         if (start) headers.Range = `bytes=${start}-`;
-        response = await fetchImpl(source.url, { headers, redirect: 'follow', signal: requestSignal });
+        resetTimeout();
+        response = await fetchImpl(source.url, { headers, redirect: 'error', signal: requestSignal });
         if (![200, 206].includes(response.status) || !response.body) throw new Error('http-status');
         const append = response.status === 206;
         if (append) {
@@ -91,6 +95,7 @@ export async function downloadVerifiedModel({ model, destination, sources, signa
         } else start = 0;
         let received = start;
         const meter = new Transform({ transform(chunk, encoding, callback) {
+          resetTimeout();
           received += chunk.length;
           if (received > model.bytes) { callback(new Error('size-limit')); return; }
           try { reportProgress?.(Math.min(94, received / model.bytes * 94), `Downloading ${model.display_name} model.`); } catch {}
@@ -98,6 +103,7 @@ export async function downloadVerifiedModel({ model, destination, sources, signa
         } });
         const flags = constants.O_WRONLY | constants.O_CREAT | (append ? constants.O_APPEND : constants.O_TRUNC) | (constants.O_NOFOLLOW || 0);
         await pipeline(Readable.fromWeb(response.body), meter, createWriteStream(partial, { flags, mode: 0o600 }), { signal: requestSignal });
+        clearTimeout(timer);
         if (received !== model.bytes) throw new Error('incomplete-response');
         if (await checksum(partial, requestSignal) !== model.sha256) throw new Error('integrity-check');
         throwIfAborted(requestSignal);
@@ -107,10 +113,11 @@ export async function downloadVerifiedModel({ model, destination, sources, signa
         return { already_installed: false, source: source.name };
       } catch (error) {
         if (signal?.aborted) throw cancellationError(signal);
-        failure = timeout.aborted ? 'timeout' : /^[a-z-]{1,40}$/.test(error.message) ? error.message : 'download-failed';
+        failure = timeout.signal.aborted ? 'timeout' : /^[a-z-]{1,40}$/.test(error.message) ? error.message : 'download-failed';
         const info = await regularInfo(partial);
         if (info && info.size >= model.bytes) await unlink(partial);
       } finally {
+        clearTimeout(timer);
         if (response?.body && !response.body.locked) await response.body.cancel().catch(() => {});
       }
     }

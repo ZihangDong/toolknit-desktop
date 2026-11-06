@@ -8,28 +8,32 @@ import { t } from '../../i18n.js';
 import { clamp, rectangle, contains, moveRect, handlePoints, resizeRect, resizeAnnotation, windowAt, formatOcrText, ocrLines, fitText, tightenTextAnnotation, isPaintStroke, MAX_ANNOTATIONS, MAX_POINTS, MAX_TOTAL_POINTS, errorKey } from './core.js';
 import { RECOGNITION_PROMPT, translationBlocks, resolveTranslationBatches, createTranslationRequestBudget, layoutTranslations } from './translation.js';
 import { renderEditor, composeScreenshot, createPaintScratch } from './renderer.js';
+import { loadCaptureSource } from './capture-source.js';
 
 export async function createController(services, data) {
   const { runtime, tr, q, notify, showDialog, getContext } = services;
   const scope = createLifecycleScope(), canvas = q('Canvas'), source = q('Desktop');
   const sampler = document.createElement('canvas'), scratch = createPaintScratch();
+  scope.use(()=>{sampler.width=sampler.height=scratch.pixels.width=scratch.pixels.height=scratch.mask.width=scratch.mask.height=1;});
+  try {
   const state = { width: data.desktop.bounds.width, height: data.desktop.bounds.height, crop: null, candidate: null, items: [], selected: null, original: false };
   let disposed = false, tool = 'select', drag = null, frame = 0, nextId = 0, busy = false, taskRevision = 0, abort = null, pointer = null;
   let ocrCache = null, recognitionCache = null;
   const localTranslation = createLocalTranslationRuntime({isTauri: services.isTauri, session: data.session});
-  const languageSelect = enhanceToolSelect(q('Language'));
-  scope.use(() => languageSelect?.dispose());
+  let languageSelect;
   function stage(key, vars) { q('Busy').querySelector('[data-i18n]').textContent = tr(key, vars); }
   const snapshot = () => structuredClone({ crop: state.crop, items: state.items });
   const history = createSnapshotHistory({ capture: snapshot, apply(value) { Object.assign(state, structuredClone(value)); state.selected = null; draw(); }, equals: (a, b) => JSON.stringify(a) === JSON.stringify(b), onChange: () => updateActions(), limit: 30, measure: value => JSON.stringify(value).length*2, maxBytes: 8*1024*1024 });
   const requestAi = createAiRequestRuntime({ isTauri: services.isTauri, getConfig: () => getContext().provider,
     getApiKey: async () => (await tauriCorePromise).invoke('load_ai_api_key'), translate: t });
-  source.src = data.image;
-  await source.decode();
+  await loadCaptureSource({source,data,runtime,scope,isCurrent:()=>!scope.disposed&&(services.isCurrent?.()??true)});
+  services.mark?.('decode');
   sampler.width = state.width; sampler.height = state.height;
   const sample = sampler.getContext('2d', { willReadFrequently: true }); sample.drawImage(source, 0, 0);
-  try { q('Language').value = (await localTranslation.call('status')).targetLanguage; }
-  catch { q('Language').value = 'zh-Hans'; }
+  services.mark?.('sample');
+  languageSelect = enhanceToolSelect(q('Language'));
+  scope.use(() => languageSelect?.dispose());
+  q('Language').value = 'zh-Hans';
   languageSelect?.refresh();
   function currentPoint(e) { const r = canvas.getBoundingClientRect(); return { x: clamp((e.clientX-r.left)*state.width/r.width, 0, state.width-1), y: clamp((e.clientY-r.top)*state.height/r.height, 0, state.height-1) }; }
   function physicalScale() { return { x: canvas.width/state.width, y: canvas.height/state.height }; }
@@ -199,6 +203,7 @@ export async function createController(services, data) {
         const status=await localTranslation.call('status');
         if(!current())return;
         if(!status.ready||status.installing){notify(tr('localMissing'));return;}
+        if(languageRevision===0&&['zh-Hans','en'].includes(status.targetLanguage)){q('Language').value=status.targetLanguage;languageSelect?.refresh();}
       }
       if(action==='save'){await services.save(imagePayload(),current);return;}
       if(['confirm','copy','pin'].includes(action)){await runtime.call(action,imagePayload());if(action==='copy')notify(tr('copied'));return;}
@@ -315,8 +320,13 @@ export async function createController(services, data) {
   toolbarObserver.observe(q('Toolbar'));scope.use(()=>toolbarObserver.disconnect());
   scope.event(window,'resize',resize);history.reset();resize();canvas.focus();
   return {finishCapture:()=>runtime.call('cancel',{session:data.session}),
+    afterReady(){const owner=languageRevision;void localTranslation.call('status').then(status=>{
+      if(disposed||owner!==languageRevision||!['zh-Hans','en'].includes(status.targetLanguage))return;
+      q('Language').value=status.targetLanguage;languageSelect?.refresh();
+    }).catch(()=>{});},
     copyText:async text=>{try{await runtime.call('copy-text',{session:data.session,text});notify(tr('copied'));}catch{notify(tr('failed'));}},
     contextChanged(next){if(busy&&JSON.stringify(next.provider)!==JSON.stringify(data.context?.provider)){abort?.abort();taskRevision++;busy=false;abort=null;notify(tr('providerChanged'));}data.context=next;draw();},
     dispose(){if(disposed)return;disposed=true;taskRevision++;abort?.abort();ocrCache=recognitionCache=null;cancelAnimationFrame(frame);scope.dispose();history.clear();state.items=[];sampler.width=sampler.height=scratch.pixels.width=scratch.pixels.height=scratch.mask.width=scratch.mask.height=1;canvas.width=canvas.height=1;source.removeAttribute('src');q('Toolbar').hidden=true;q('Magnifier').hidden=true;q('Dimensions').hidden=true;q('Busy').hidden=true;}
   };
+  } catch(error) {scope.dispose();source.removeAttribute('src');canvas.width=canvas.height=1;throw error;}
 }

@@ -2,6 +2,11 @@ import { tauriCorePromise, tauriEventPromise } from './tauri-runtime.js';
 export function createScreenshotRuntime({ isTauri = false } = {}) {
   return Object.freeze({
     available: isTauri,
+    async image(session) {
+      if (!isTauri) throw new Error('screenshot:windows-only');
+      const { invoke } = await tauriCorePromise;
+      return invoke('quick_screenshot_image', { session });
+    },
     async call(action, payload = {}) {
       if (!isTauri) throw new Error('screenshot:windows-only');
       const { invoke } = await tauriCorePromise;

@@ -9,7 +9,7 @@ const RECORDS: &str = include_str!("records.json");
 const ENGINE_NAME: &str = "mtranserver.exe";
 const ENGINE_BYTES: u64 = 129_295_360;
 const ENGINE_HASH: &str = "70999a5842984247aeacbd381bc1df26737a129e1a6683be3572bd0cc1b5a798";
-const ENGINE_URL: &str = "https://github.com/xxnuo/MTranServer/releases/download/v4.0.33/mtranserver-4.0.33-windows-amd64.exe";
+const ENGINE_URL: &str = crate::platform::dependency_download::TRANSLATION_ENGINE_URL;
 const DOWNLOAD_BYTES: u64 = 201_647_315;
 
 fn lock<T>(value: &Mutex<T>) -> std::sync::MutexGuard<'_, T> { value.lock().unwrap_or_else(|e| e.into_inner()) }
@@ -54,7 +54,7 @@ fn mutate(state: &TranslationState) -> Result<MutationGuard<'_>, String> {
 #[serde(rename_all = "camelCase")]
 struct Record { source_language: String, target_language: String, file_type: String, attachment: Attachment, decompressed_hash: String, decompressed_size: u64 }
 #[derive(Deserialize)]
-struct Attachment { hash: String, size: u64, filename: String, location: String }
+struct Attachment { hash: String, size: u64, filename: String }
 #[derive(Deserialize)]
 struct Catalogue { data: Vec<Record> }
 fn records() -> Vec<Record> { serde_json::from_str::<Catalogue>(RECORDS).expect("pinned model manifest").data }
@@ -76,13 +76,7 @@ struct Progress { phase: String, received: u64, total: u64, source: String }
 enum DownloadSource { #[default] Auto, Official, Accelerated }
 impl DownloadSource {
     fn candidates(self) -> Vec<(&'static str, String)> {
-        let official = ("official", ENGINE_URL.to_string());
-        let accelerated = ("accelerated", format!("https://gh-proxy.com/{ENGINE_URL}"));
-        match self {
-            Self::Auto => vec![official, accelerated],
-            Self::Official => vec![official],
-            Self::Accelerated => vec![accelerated],
-        }
+        vec![("7caiyun", ENGINE_URL.to_string())]
     }
 }
 #[derive(Default)]
@@ -202,9 +196,9 @@ pub(super) fn shutdown(app: &tauri::AppHandle) {
 mod tests {
     use super::*;
     #[test] fn translation_sources_are_pinned_and_reject_arbitrary_urls() {
-        assert_eq!(DownloadSource::Auto.candidates(),vec![("official",ENGINE_URL.into()),("accelerated",format!("https://gh-proxy.com/{ENGINE_URL}"))]);
-        assert_eq!(DownloadSource::Official.candidates().len(),1);
-        assert_eq!(DownloadSource::Accelerated.candidates().len(),1);
+        assert_eq!(DownloadSource::Auto.candidates(),vec![("7caiyun",ENGINE_URL.into())]);
+        assert_eq!(DownloadSource::Official.candidates(), DownloadSource::Auto.candidates());
+        assert_eq!(DownloadSource::Accelerated.candidates(), DownloadSource::Auto.candidates());
         assert!(serde_json::from_value::<Request>(serde_json::json!({"action":"install"})).is_ok());
         assert!(serde_json::from_value::<Request>(serde_json::json!({"action":"install","source":"accelerated"})).is_ok());
         assert!(serde_json::from_value::<Request>(serde_json::json!({"action":"install","source":"https://example.invalid/model.exe"})).is_err());

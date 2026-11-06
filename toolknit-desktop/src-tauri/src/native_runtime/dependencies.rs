@@ -127,14 +127,9 @@ pub(super) fn begin_conversion() -> Result<ConversionGuard, String> {
 }
 
 pub(super) const FFMPEG_RUNTIME_DIRECTORY: &str = "ffmpeg";
-pub(super) const FFMPEG_ARCHIVE_BYTES: u64 = 29_581_307;
+pub(super) const FFMPEG_ARCHIVE_BYTES: u64 = 14_642_939;
 pub(super) const FFMPEG_ARCHIVE_SHA256: &str =
-    "8883a3dffbd0a16cf4ef95206ea05283f78908dbfb118f73c83f4951dcc06d77";
-pub(super) const FFMPEG_OFFICIAL_URL: &str =
-    "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-win32-x64.gz";
-pub(super) const FFMPEG_CHINA_URL: &str =
-    "https://cdn.npmmirror.com/binaries/ffmpeg-static/b6.1.1/ffmpeg-win32-x64.gz";
-pub(super) const FFMPEG_CHINA_FALLBACK_URL: &str = "https://gh-proxy.com/https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-win32-x64.gz";
+    "c4f982b2f82dda95e079bd26129435640bc31d36d05308fada77cebc47a61fe3";
 
 pub(super) fn ffmpeg_runtime_dir() -> Result<std::path::PathBuf, String> {
     Ok(toolknit_app_data_dir()?.join(FFMPEG_RUNTIME_DIRECTORY))
@@ -465,16 +460,9 @@ fn ffmpeg_runtime_status() -> Result<FfmpegRuntimeStatus, String> {
 pub(super) fn ffmpeg_download_candidates(
     source: &str,
 ) -> Result<Vec<(&'static str, &'static str)>, String> {
-    let china = [
-        ("china", FFMPEG_CHINA_URL),
-        ("china-fallback", FFMPEG_CHINA_FALLBACK_URL),
-    ];
-    let official = [("official", FFMPEG_OFFICIAL_URL)];
     Ok(match source {
-        "auto" | "auto-china" => china.into_iter().chain(official).collect(),
-        "auto-official" => official.into_iter().chain(china).collect(),
-        "china" => china.into_iter().collect(),
-        "official" => official.into_iter().collect(),
+        "auto" | "auto-china" | "auto-official" | "china" | "official" =>
+            vec![("7caiyun", dependency_download::FFMPEG_URL)],
         _ => return Err("Unknown FFmpeg download source".to_string()),
     })
 }
@@ -569,6 +557,8 @@ pub(super) async fn download_ffmpeg_runtime(
     let candidates = ffmpeg_download_candidates(&requested)?;
     let client = reqwest::Client::builder()
         .user_agent("ToolKnit/3.3.0 ffmpeg-runtime-manager")
+        .https_only(true)
+        .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(std::time::Duration::from_secs(12))
         .build()
         .map_err(|error| format!("Cannot initialize FFmpeg download: {}", error))?;
@@ -764,10 +754,6 @@ pub(super) const LIBREOFFICE_RUNTIME_VERSION: &str = "26.2.5";
 pub(super) const LIBREOFFICE_ARCHIVE_BYTES: u64 = 372_948_992;
 pub(super) const LIBREOFFICE_ARCHIVE_SHA256: &str =
     "f15ba07bfcb0186986cf3171063506f5d207c11f8cc051ba0d135209e9e915f9";
-pub(super) const LIBREOFFICE_OFFICIAL_URL: &str =
-    "https://download.documentfoundation.org/libreoffice/stable/26.2.5/win/x86_64/LibreOffice_26.2.5_Win_x86-64.msi";
-pub(super) const LIBREOFFICE_CHINA_URL: &str =
-    "https://mirrors.tuna.tsinghua.edu.cn/libreoffice/libreoffice/stable/26.2.5/win/x86_64/LibreOffice_26.2.5_Win_x86-64.msi";
 
 pub(super) fn libreoffice_runtime_dir() -> Result<std::path::PathBuf, String> {
     Ok(toolknit_app_data_dir()?
@@ -973,13 +959,9 @@ fn libreoffice_runtime_status() -> Result<LibreOfficeRuntimeStatus, String> {
 pub(super) fn libreoffice_download_candidates(
     source: &str,
 ) -> Result<Vec<(&'static str, &'static str)>, String> {
-    let china = [("china", LIBREOFFICE_CHINA_URL)];
-    let official = [("official", LIBREOFFICE_OFFICIAL_URL)];
     Ok(match source {
-        "auto" | "auto-china" => china.into_iter().chain(official).collect(),
-        "auto-official" => official.into_iter().chain(china).collect(),
-        "china" => china.into_iter().collect(),
-        "official" => official.into_iter().collect(),
+        "auto" | "auto-china" | "auto-official" | "china" | "official" =>
+            vec![("7caiyun", dependency_download::LIBREOFFICE_URL)],
         _ => return Err("Unknown PPT runtime download source".to_string()),
     })
 }
@@ -1029,6 +1011,8 @@ pub(super) async fn download_libreoffice_runtime(
     let candidates = libreoffice_download_candidates(&requested)?;
     let client = reqwest::Client::builder()
         .user_agent("ToolKnit/3.3.0 libreoffice-runtime-manager")
+        .https_only(true)
+        .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(std::time::Duration::from_secs(15))
         .build()
         .map_err(|error| format!("Cannot initialize PPT runtime download: {}", error))?;
@@ -1250,6 +1234,16 @@ pub(super) fn cancel_dependency_downloads() {
 mod dependency_probe_tests {
     use super::*;
     use crate::native_runtime::office::probe_libreoffice;
+
+    #[test]
+    fn legacy_dependency_sources_use_only_7caiyun() {
+        for source in ["auto", "auto-china", "auto-official", "official", "china"] {
+            assert_eq!(ffmpeg_download_candidates(source).unwrap(), vec![("7caiyun", dependency_download::FFMPEG_URL)]);
+            assert_eq!(libreoffice_download_candidates(source).unwrap(), vec![("7caiyun", dependency_download::LIBREOFFICE_URL)]);
+        }
+        assert!(ffmpeg_download_candidates("https://example.invalid").is_err());
+        assert!(libreoffice_download_candidates("https://example.invalid").is_err());
+    }
 
     #[test]
     fn invalid_archive_preserves_existing_ffmpeg_and_non_ffmpeg_is_rejected() {

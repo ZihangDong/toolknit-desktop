@@ -78,7 +78,7 @@
     "test:hardware-inspector": "node scripts/test-hardware-inspector-contract.mjs",
     "test:clipboard-history": "node scripts/test-clipboard-history.mjs",
     "test:recording-mode": "node scripts/test-recording-mode.mjs",
-    "test:quick-screenshot": "node scripts/test-quick-screenshot.mjs",
+    "test:quick-screenshot": "node scripts/test-quick-screenshot.mjs && node scripts/test-screenshot-startup.mjs",
     "test:markdown-editor": "node scripts/test-markdown-editor-core.mjs && node scripts/test-markdown-editor-contract.mjs",
     "test:limits-contract": "npm run stage:cli-resources && node scripts/test-limits-contract.mjs",
     "test:pdf-text-markdown": "node scripts/test-pdf-text-extract-core.mjs && node scripts/test-pdf-text-table-grid.mjs && node scripts/test-pdf-text-extract-tool-contract.mjs",

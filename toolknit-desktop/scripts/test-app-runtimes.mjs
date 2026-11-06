@@ -135,6 +135,46 @@ assert.equal(opened[0][0], 'https://toolknit.com/docs');
 assert.equal(blocked.length, 2);
 links.dispose();
 
+// Dependency source links use the same validated system-browser navigation as
+// homepage links, including native failures and listener cleanup.
+{
+  const source = new FakeElement('ffmpeg-source');
+  source.dataset.homeLink = 'ffmpegSource';
+  const root = new FakeRoot([source]);
+  root.querySelectorAll = selector => selector === '[data-home-link]' ? [source] : [];
+  const expectedUrl = 'https://github.com/ZihangDong/toolknit-ffmpeg-sources';
+  for (const native of [false, true]) {
+    const calls = [];
+    const runtime = createExternalLinksRuntime({
+      root, isTauri: native,
+      windowRef: { open: (...args) => calls.push(args) },
+      tauriCorePromise: Promise.resolve({ invoke: async (...args) => calls.push(args) })
+    });
+    const click = new Event('click', { cancelable: true });
+    source.dispatchEvent(click);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(click.defaultPrevented, true);
+    assert.deepEqual(calls, native ? [['open_url', { url: expectedUrl }]]
+      : [[expectedUrl, '_blank', 'noopener,noreferrer']]);
+    runtime.dispose(); runtime.dispose();
+    source.dispatchEvent(new Event('click'));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(calls.length, 1, 'disposing the source link removes its listener');
+  }
+  const errors = [], toasts = [];
+  const failed = createExternalLinksRuntime({
+    root, isTauri: true,
+    windowRef: { showToast: message => toasts.push(message), open: () => assert.fail('no browser fallback in Tauri') },
+    tauriCorePromise: Promise.resolve({ invoke: async () => { throw new Error('native-open-failed'); } }),
+    onError: error => errors.push(error.message)
+  });
+  source.dispatchEvent(new Event('click'));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(errors, ['native-open-failed']);
+  assert.deepEqual(toasts, ['common.openLinkFailed']);
+  failed.dispose();
+}
+
 const aiElements = [
   'settingsApiKey', 'apiKeyOverlay', 'apiKeyBack', 'apiKeyInput', 'apiKeyToggle',
   'apiKeySave', 'apiKeyClear', 'apiKeyStatus', 'apiKeyDropdown', 'apiKeyDropdownTrigger',

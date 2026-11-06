@@ -28,7 +28,7 @@ const LEGAL_CONTENT_ZH = {
       <h3>四、其他网络访问</h3>
       <p>桌面端不会进行静默行为分析或广告追踪。以下操作可能联网：</p>
       <ul>
-        <li>用户在设置中下载 FFmpeg、Whisper 模型或 LibreOffice 时，访问所选的官方源或国内镜像，并进行完整性校验。</li>
+        <li>用户按需下载 FFmpeg、Whisper、MODNet、LibreOffice 或本地翻译资源时，访问七彩云并进行完整性校验。</li>
         <li>首页获取公开的 GitHub 仓库指标与公开支持记录；请求仅用于展示公开项目数据。</li>
         <li>启动后及设置页检查更新会读取 GitHub 与 AtomGit 的公开正式版本标签，不上传用户文件或进行使用计数。新版安装包通过 toolknit.com/exe.html 分发。</li>
         <li>用户点击网页端、GitHub、Issue 或其他外部链接时，由系统浏览器打开相应网站。</li>
@@ -44,6 +44,9 @@ const LEGAL_CONTENT_ZH = {
       <h3>六、第三方组件与按需依赖</h3>
       <p>文件搜索复用了 Win顺（WinShun）的 MIT 匹配、拼音和 NTFS 元数据模块。WinShun 与拼音数据的原许可分别保留在随附的第三方声明中；不依赖 Qt 或 Everything。</p>
       <p>本软件使用 Tauri、Rust、PDF.js、pdf-lib、FFmpeg、Whisper、LibreOffice、JSZip、ExcelJS、Chart.js、Lucide 等开源组件或运行时。相关权利归各自权利人所有，具体版本、源码与许可应以仓库依赖清单、锁文件和第三方声明为准。</p>
+      <p>按需下载的 FFmpeg 6.1.6-toolknit-r3 Windows 构建由 ToolKnit 使用归档源码编译，适用 GNU GPL v3 或更新版本。对应主源码、依赖源码、构建脚本及原始许可在独立源码仓库提供；组件及工具链声明随应用附带。Whisper 项目使用 MIT 许可，Xenova 的 MODNet 模型卡标注 Apache-2.0。其他下载资源及其依赖仍适用各自的许可和声明。</p>
+      <p>FFmpeg 下载弹框的 GitHub 入口可查看固定版本的完整源码包、构建记录及许可；历史版本在同一仓库单独保留。</p>
+      <p>本地翻译使用 MTranServer（Apache-2.0，含 MPL-2.0 等组件）和 Mozilla 翻译模型；LibreOffice 运行时包含 MPL-2.0 等第三方许可。各组件来源及声明见随附的 <code>Download-Models-Notice.txt</code>。</p>
       <p>界面默认使用阿里巴巴普惠体 Medium / Bold（Copyright © 2019 Alibaba（中国）有限公司，字体设计：Alibaba Design、汉仪字库）及 Montserrat Regular / Bold（Montserrat Project Authors，依据 SIL Open Font License 1.1 发布）。字体权利归各自权利人所有，完整声明见安装包内 <code>assets/fonts/THIRD_PARTY_FONTS.md</code>。用户自行上传替换的字体由用户确认其使用和分发授权。</p>
       <p>FFmpeg、Whisper 模型和 LibreOffice 不随基础安装包全部内置。下载源、网络速度、磁盘空间、系统策略及第三方发布变化都可能影响安装和运行。</p>
 
@@ -102,7 +105,7 @@ const LEGAL_CONTENT_ZH = {
 
       <h3>五、按需依赖</h3>
       <ul>
-        <li>FFmpeg、Whisper 模型和 LibreOffice 应优先通过 ToolKnit 设置页提供的官方源或国内镜像安装，并等待下载、安装和校验完整结束。</li>
+        <li>FFmpeg、Whisper 模型和 LibreOffice 可通过 ToolKnit 设置页按需安装，请等待下载、安装和校验完整结束。</li>
         <li>不要使用来源不明的可执行文件替换受管理运行时。手动配置路径时，用户应自行确认来源、版本和许可证。</li>
         <li>删除运行时会让对应工具暂时不可用，但不会删除用户输出文件。</li>
       </ul>
@@ -159,7 +162,7 @@ const LEGAL_CONTENT_EN = {
       <h3>4. Other Network Access</h3>
       <p>The desktop app does not perform silent behavioral analytics or advertising tracking. It may access the network in these cases:</p>
       <ul>
-        <li>At the user's request, Settings downloads FFmpeg, Whisper models, or LibreOffice from the selected official source or China mirror and verifies the result.</li>
+        <li>On request, ToolKnit downloads and verifies FFmpeg, Whisper, MODNet, LibreOffice, and local translation resources from 7Caiyun.</li>
         <li>The home page reads public GitHub repository metrics and the public support record for display.</li>
         <li>Startup and Settings update checks read public stable version tags from GitHub and AtomGit without uploading user files or collecting usage counts. Installers are distributed at toolknit.com/exe.html.</li>
         <li>Website, GitHub, Issue, and other external links open in the system browser after the user clicks them.</li>
@@ -175,6 +178,9 @@ const LEGAL_CONTENT_EN = {
       <h3>6. Third-Party Components and Optional Runtimes</h3>
       <p>File search reuses MIT-licensed matching, pinyin and NTFS metadata modules from WinShun. The original WinShun and pinyin-data licenses are retained separately in the bundled notices. Qt and Everything are not required.</p>
       <p>The software uses open-source components or runtimes including Tauri, Rust, PDF.js, pdf-lib, FFmpeg, Whisper, LibreOffice, JSZip, ExcelJS, Chart.js, and Lucide. Rights remain with their respective owners. Refer to dependency manifests, lockfiles, and third-party notices for authoritative versions and licenses.</p>
+      <p>The optional FFmpeg 6.1.6-toolknit-r3 Windows build is compiled by ToolKnit from archived sources under GNU GPL v3 or later. Matching main and dependency sources, build scripts and original licenses are available in its separate source repository; component and toolchain notices accompany the application. The Whisper project uses the MIT license and Xenova's MODNet model card identifies Apache-2.0. Other downloaded resources and their dependencies retain their respective licenses and notices.</p>
+      <p>The FFmpeg download dialog links to the fixed source package, build records and licenses on GitHub. Historical versions remain separately available in the same repository.</p>
+      <p>Local translation uses MTranServer (Apache-2.0, including MPL-2.0 and other components) and Mozilla translation models. LibreOffice includes MPL-2.0 and other third-party licenses. Sources and notices are listed in the bundled <code>Download-Models-Notice.txt</code>.</p>
       <p>The default interface uses Alibaba PuHuiTi Medium / Bold (Copyright © 2019 Alibaba (China) Co., Ltd.; font design by Alibaba Design and Hanyi Fonts) and Montserrat Regular / Bold (Montserrat Project Authors, released under the SIL Open Font License 1.1). Rights remain with their respective owners. See <code>assets/fonts/THIRD_PARTY_FONTS.md</code> in the installation for full notices. Users are responsible for confirming rights to any font they upload as a replacement.</p>
       <p>FFmpeg, Whisper models, and LibreOffice are not all bundled with the base installer. Installation can be affected by the selected source, network speed, disk space, system policy, and upstream releases.</p>
 
@@ -233,7 +239,7 @@ const LEGAL_CONTENT_EN = {
 
       <h3>5. Optional Runtimes</h3>
       <ul>
-        <li>Install FFmpeg, Whisper models, and LibreOffice through the verified official source or China mirror offered in Settings, and wait for download, installation, and verification to finish.</li>
+        <li>Install FFmpeg, Whisper models, and LibreOffice through Settings, and wait for download, installation, and verification to finish.</li>
         <li>Do not replace a managed runtime with an executable from an untrusted source. Users who configure a path manually are responsible for its source, version, and license.</li>
         <li>Removing a runtime temporarily disables dependent tools but does not delete user output files.</li>
       </ul>

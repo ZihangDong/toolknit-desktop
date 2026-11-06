@@ -203,6 +203,7 @@ for (const fileName of whisperLegalFiles) {
   if (!fs.existsSync(filePath)) throw new Error(`whisper legal notice is missing: ${filePath}`);
   copyFileAtomic(filePath, path.join(whisperDestination, fileName));
 }
+copyFileAtomic(path.join(root, 'LICENSES', 'Download-Whisper-MIT.txt'), path.join(root, 'cli', 'LICENSES', 'Download-Whisper-MIT.txt'));
 fs.mkdirSync(coreDestination, { recursive: true });
 for (const fileName of coreFiles) {
   const filePath = path.join(coreSource, fileName);

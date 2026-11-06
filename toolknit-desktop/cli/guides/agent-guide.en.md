@@ -51,7 +51,7 @@ Unreleased V3.3 source exposes 78 ToolKnit tools (published npm 3.2.0 has 77) an
 - `toolknit_audio_clip` trims one local audio file between explicit timestamps while preserving the source and publishing a uniquely named result.
 - `toolknit_audio_extract` extracts a selected local video audio track as MP3, AAC, WAV, FLAC, or OGG.
 - `toolknit_model_list` reads the status of the offline transcription models shared by desktop and CLI.
-- `toolknit_model_install` downloads and integrity-verifies one local Whisper model from the official source or a China mirror.
+- `toolknit_model_install` downloads and integrity-verifies one local Whisper model from 7Caiyun. Legacy source values remain accepted and use the same origin.
 - `toolknit_model_use` selects an installed local transcription model.
 - `toolknit_transcribe` transcribes one local audio or video file and always keeps original JSON, SRT, and TXT; optional refinement sends recognized text only.
 - `toolknit_video_convert` converts one to 30 local videos to MP4, AVI, MKV, MOV, WebM, FLV, WMV, or TS while preserving sources and publishing unique result names.

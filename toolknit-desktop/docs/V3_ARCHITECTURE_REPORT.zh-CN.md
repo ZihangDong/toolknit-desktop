@@ -1,5 +1,7 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-11-05 截图提速：原生 startup 模块持有空窗口创建锁、条件合成等待、主线程就绪校验和可选计时；前端 capture-source 持有二进制图像解码及 URL 释放。新增仅截图窗口/活动会话可用的 quick_screenshot_image 命令；既有 boot 保留兼容，新增 prepare/prepared action，不变更用户设置。75 工具、12 分类、78 CLI/MCP；159 个命令实现 / 158 个名称。验证边界见[截图提速记录](V33_SCREENSHOT_STARTUP_20261105.zh-CN.md)。
+
 > 2026-11-05 冗余清理：组合根移除迁移遗留的 PPT 导入与未调用包装；六处输出路径旧函数移除。搜索页不再请求空交接，原生旧 action 保留 null 兼容；开发监听及发布审计隔离生成物/外联草稿。75 工具、12 分类、78 CLI/MCP 与公开契约不变；见[清理记录](V33_REDUNDANCY_CLEANUP_20261105.zh-CN.md)。
 
 > 2026-11-04 文件搜索增量：`features/file-search` 持有工具页、共享结果视图与独立胶囊；`native_runtime/file_search` 持有索引、查询租约、原生窗口和可选 NTFS 服务，`filesystem_worker` 以普通权限独立进程隔离共享目录访问。复用平台调用、导航、主窗恢复、自绘菜单、阴影和截图辅助窗注册。新增一个 `file_search` 命令、限定窗口的事件监听能力及独立本机缓存；75 工具、12 分类、78 CLI/MCP，158 个 Tauri 实现 / 157 个名称。实际验证与剩余管理员/桌面验收见 [文件搜索实施记录](V33_FILE_SEARCH_IMPLEMENTATION.zh-CN.md)。
