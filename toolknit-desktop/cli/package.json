@@ -70,7 +70,7 @@
     "music-tempo": "^1.0.3",
     "pdf-lib": "^1.17.1",
     "pdf-lib-plus-encrypt": "^1.1.0",
-    "pdfjs-dist": "6.2.108",
+    "pdfjs-dist": "6.5.438",
     "sharp": "0.35.5",
     "yauzl": "3.4.0",
     "xml-js": "1.6.11"
