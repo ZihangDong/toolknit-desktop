@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
-import { createCanvas } from '@napi-rs/canvas';
+import { createCanvas, GlobalFonts } from '@napi-rs/canvas';
 import { createOcrTypography } from '../src/features/pdf-to-word/adapters/ocr-typography.js';
 import { trimOcrOwnedFragments } from '../src/features/pdf-to-word/core/ocr-fragment-ownership.js';
 
 // A small area may use a different CJK face from the dominant line. A drifted
 // comma must not inherit its neighbour's strokes merely because the otherwise
 // strong line cannot be aligned using one uniform face.
-for(const inner of ['FangSong','SimSun']){
+const optionalFangSong=GlobalFonts.has('FangSong');
+if(!optionalFangSong)console.log('Optional real-FangSong mixed-face outline check unavailable; SimSun ownership and common-face alignment contracts still run.');
+for(const inner of [...(optionalFangSong?['FangSong']:[]),'SimSun']){
   const phrase='请在此处核对材料名称、法律条款以及约定事项。',mark=[...phrase].indexOf('、');
   const canvas=createCanvas(1800,160),ctx=canvas.getContext('2d');
   ctx.fillStyle='white';ctx.fillRect(0,0,1800,160);ctx.fillStyle='black';ctx.fontKerning='none';
@@ -84,7 +86,7 @@ const text='隐蔽工程验收，继续进入下道工序施工。2、如未经�
 }
 // Use the CJK faces available on supported Windows runners; optional FangSong
 // reader behavior is verified separately instead of accepting a silent fallback.
-for(const [font,bold]of [['SimSun',false],['SimSun',true],['SimHei',false]]){
+for(const [font,bold]of [['SimSun',false],['SimSun',true],['SimHei',false],...(optionalFangSong?[['FangSong',false]]:[])]){
 const canvas=createCanvas(2000,160),ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);
 ctx.fillStyle='black';ctx.font=`${bold?'bold ':''}48px "${font}"`;ctx.fontKerning='none';let x=25;const expected=[],words=[];
 for(const [index,char]of [...text].entries()){
