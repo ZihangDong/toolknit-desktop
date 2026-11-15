@@ -169,7 +169,7 @@ canvas.width=canvas.height=0;
 }
 {
  const c=createCanvas(600,150),paint=c.getContext('2d');paint.fillStyle='white';paint.fillRect(0,0,600,150);
- paint.fillStyle='black';paint.font='60px "FangSong"';paint.fontKerning='none';
+ paint.fillStyle='black';paint.font='60px "SimHei"';paint.fontKerning='none';
  for(const [letter,x]of [['甲',20],['年',176],['月',300],['日',430],['乙',510]])paint.fillText(letter,x,100);
  const rules=[{axis:'h',at:105,from:90,to:168,isolatedWriting:true},{axis:'h',at:105,from:238,to:292,isolatedWriting:true},
   {axis:'h',at:105,from:360,to:418,isolatedWriting:true}];
@@ -182,7 +182,7 @@ canvas.width=canvas.height=0;
   tight:{x:15,y:45,width:560,height:65},inkAt:(x,y)=>pixels[(y*600+x)*4]<180&&Math.abs(y-105)>3,
   ruleInkAt:(x,y)=>pixels[(y*600+x)*4]<180,allowSymbolCorrection:true,
   protectedRules:[...rules,...rules.map(r=>({...r,from:r.from-1,to:r.to+1,isolatedWriting:undefined}))]});
- assert.equal(result.font,'FangSong');assert.equal(result.words.map(w=>w.text).join(''),'甲年月日乙');
+ assert.equal(result.font,'SimHei');assert.equal(result.words.map(w=>w.text).join(''),'甲年月日乙');
  assert.equal(result.ocrRuleTokens.length,5,'duplicate stroke evidence and an end peak do not block writing-field ownership');
  const year=result.words.find(w=>w.text==='年');let left=236,right=176,top=100,bottom=45;
  for(let y=45;y<110;y++)for(let x=176;x<236;x++)if(pixels[(y*600+x)*4]<180&&Math.abs(y-105)>3){left=Math.min(left,x);right=Math.max(right,x+1);top=Math.min(top,y);bottom=Math.max(bottom,y+1);}
@@ -190,7 +190,7 @@ canvas.width=canvas.height=0;
   'a displaced underscore peak cannot cut away the next glyph after its source stroke is proven');
  assert.deepEqual(raw,before);c.width=c.height=0;
 }
-function punctuationFixture({font='FangSong',size=60,symbol='。',symbolSize=size,zeroOwner=false}={}){
+function punctuationFixture({font='SimSun',size=60,symbol='。',symbolSize=size,zeroOwner=false}={}){
  const c=createCanvas(1600,260),paint=c.getContext('2d');paint.fillStyle='white';paint.fillRect(0,0,c.width,c.height);
  paint.fillStyle='black';paint.font=`${size}px "${font}"`;paint.fontKerning='none';let x=30;const words=[],ctc=[];const baseline=150;
  for(const char of '联系信息填写'){
@@ -209,7 +209,7 @@ function punctuationFixture({font='FangSong',size=60,symbol='。',symbolSize=siz
  const pixels=paint.getImageData(0,0,c.width,c.height).data,options={rules:[rule],text,pixels,width:c.width,height:c.height,sx:3,sy:3,budget:{remaining:4_000_000}};
  return{canvas:c,paint,rule,markRect,options,ctc};
 }
-for(const font of ['FangSong','SimSun'])for(const size of [36,60,90]){
+for(const font of ['SimHei','SimSun'])for(const size of [36,60,90]){
  const f=punctuationFixture({font,size}),before=structuredClone({rules:f.options.rules,text:f.options.text});
  const marks=fitOcrWritingPunctuation(createCanvas,f.options);assert.equal(marks.length,1,`${font}/${size}: isolated printed full stop`);
  assert.equal(marks[0].text,'。');assert(marks[0].confidence>=.93);assert.equal(marks[0].font,font);
@@ -218,9 +218,16 @@ for(const font of ['FangSong','SimSun'])for(const size of [36,60,90]){
  assert(sceneLayoutBytes({items:[marks[0]],sources:[]})>=2048,'mark provenance consumes the existing scene budget');
  f.canvas.width=f.canvas.height=0;
 }
-for(const options of [{symbol:'0'},{symbol:'0',symbolSize:20},{symbol:'o'},{symbol:'O'},{symbol:'°'},{symbol:'·'}]){
+for(const options of [{symbol:'0'},{symbol:'o'},{symbol:'O'},{symbol:'°'},{symbol:'·'}]){
  const f=punctuationFixture(options);assert.equal(fitOcrWritingPunctuation(createCanvas,f.options).length,0,`${options.symbol}/${options.symbolSize||60}: true symbols are not rewritten`);f.canvas.width=f.canvas.height=0;
 }
+// This small-zero counterexample relies on FangSong's actual glyph outline;
+// another face can rasterize it like a full stop. Never certify a fallback face.
+if(GlobalFonts.has('FangSong')){
+ const f=punctuationFixture({font:'FangSong',symbol:'0',symbolSize:20});
+ assert.equal(fitOcrWritingPunctuation(createCanvas,f.options).length,0,'real FangSong small zero is not rewritten');
+ f.canvas.width=f.canvas.height=0;
+}else console.log('Optional real-FangSong small-zero outline check unavailable; portable writing-rule and punctuation contracts still run.');
 for(const change of [
  f=>{f.options.text=[];},f=>{f.options.text[0].ocr=false;},f=>{f.options.text[0].ocrFontScore=.6;},
  f=>{f.options.rules=[];},f=>{f.options.budget.remaining=0;},f=>{f.options.protectedRects=[f.markRect];},
