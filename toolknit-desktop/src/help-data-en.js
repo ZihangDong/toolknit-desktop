@@ -53,8 +53,8 @@ export const HELP_CONTENT_EN = {
     title: 'Overview',
     html: `<div class="help-doc">
       <h2>ToolKnit Overview</h2>
-      <p>ToolKnit 3.3 is a <strong>local-first</strong> Windows toolbox with 75 desktop tools in the current development catalog across 12 categories and 78 capabilities exposed to IDE Agents through CLI / MCP. Basic file processing stays local; AI tools send the necessary content to your selected provider only when explicitly invoked.</p>
-      <p>This is the unreleased V3.3 development version. The V3.2 desktop app and CLI/MCP are both released, including PDF to Word, Images to PDF and recording workflows. Check the official download page and npm for stable versions.</p>
+      <p>ToolKnit 3.3 is a <strong>local-first</strong> Windows toolbox with 75 desktop tools in the current release across 12 categories and 78 capabilities exposed to IDE Agents through CLI / MCP. Basic file processing stays local; AI tools send the necessary content to your selected provider only when explicitly invoked.</p>
+      <p>This is the V3.3 release, adding file search and Word to PDF, with improved local OCR, scanned PDF to Word and screenshots. Desktop installers and CLI/MCP are distributed separately through the website and npm.</p>
 
       <h3>Tool Categories</h3>
       <div class="help-tool-grid">
@@ -1003,7 +1003,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       <p>After connecting ToolKnit CLI to an MCP-capable IDE, you can ask an Agent in plain language to process local files from the project. The Agent calls real ToolKnit tools; it does not need the desktop app to stay open and should not claim a result without a tool call.</p>
 
       <h3>Current scope</h3>
-      <div class="help-agent-scope"><p>V3.3 development exposes <strong>78 capabilities</strong>, adding Word to PDF. Published npm 3.2.0 provides 77. The CLI runs independently of the desktop app.</p><ul>
+      <div class="help-agent-scope"><p>V3.3 exposes <strong>78 capabilities</strong>, adding Word to PDF. The corresponding npm version is 3.3.0. The CLI runs independently of the desktop app.</p><ul>
         <li><strong>PDF and Office</strong>: inspect, merge, split, rotate, encrypt/decrypt, compress, enhance, export images, convert to Word, extract text/Markdown, crop, number pages, create scan effects or blank PDFs, and render XLSX to PDF. Word defaults to local analysis; complex regions may remain images. Excel rendering needs LibreOffice.</li>
         <li><strong>PPT</strong>: PDF/image export, asset/text extraction, compression, AI outlines and editable drafts.</li>
         <li><strong>Images</strong>: PDF creation, format conversion, compression, crop/rotate/flip, color replacement, icon archives, palette extraction, stitching and color-space conversion.</li>

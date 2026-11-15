@@ -4,7 +4,7 @@
 
 # ToolKnit Desktop 3.3
 
-> V3.3 is in development and has not been released. This branch is preparing for release. The published desktop app and npm CLI / MCP remain at 3.2.0.
+> V3.3 released November 15, 2026. Windows Desktop and npm CLI / MCP 3.3.0 are available. Author-owned source uses the MIT License.
 
 **One toolbox for the little tasks scattered across your desktop.**
 
@@ -36,7 +36,7 @@ Most need no account. Supported file tasks run locally in your browser. Network 
 
 ### Then bring it to your desktop
 
-This V3.3 branch contains **75 desktop tools**. File search and Word to PDF are new, with improvements to local OCR, scanned PDF to Word and screenshots.
+V3.3 contains **75 desktop tools**. File search and Word to PDF are new, with improvements to local OCR, scanned PDF to Word and screenshots.
 Available installers are listed on the [Windows download page](https://toolknit.com/exe.html).
 Set an output folder and favorite your tools. Install models only when needed.
 Enable **one-click recording mode** for startup, clipboard monitoring and floating history. Press `Alt + Q` to capture.
@@ -52,7 +52,7 @@ See [Get started](#08--get-started) for installation requirements and instructio
 - **Screenshots and PDFs:** reduced capture startup work; fixed overlays remaining after Escape and multi-page PDF export failures.
 - **MIT source license:** author-owned code, including the PDF-to-Word Engine, uses MIT. Credits and backlinks are recommended, not required.
 
-See the [changelog](changelog.md) and [V3.3 release preparation](toolknit-desktop/docs/RELEASE_3_3_PREPARATION.zh-CN.md) for details.
+See the [changelog](changelog.md) and [V3.3 release notes](docs/desktop-update.en.md) for details.
 
 ### People weaving it together
 
@@ -177,14 +177,14 @@ A Windows-account-protected backup can restore a missing key file. Without a usa
 | --- | --- |
 | PDF | Merge, split, crop, page numbers, rotate, export images / Word, compress, encrypt, decrypt, edit and extract text / Markdown |
 | PPT | Export PDF / images, extract pictures and text, compress, generate AI outlines or editable PPTX drafts |
-| File search (unreleased V3.3) | Local filename / pinyin search, filters, sorting, image thumbnails, incremental results, Explorer reveal and a desktop capsule |
-| Word (unreleased V3.3) | Local DOC / DOCX to PDF; batches, cancellation, retry and handoff to PDF Editor |
+| File search (new in V3.3) | Local filename / pinyin search, filters, sorting, image thumbnails, incremental results, Explorer reveal and a desktop capsule |
+| Word (new in V3.3) | Local DOC / DOCX to PDF; batches, cancellation, retry and handoff to PDF Editor |
 | Excel | Convert XLSX / XLS / ODS to PDF; select all or visible sheets, paper size, orientation and scaling |
 | Cleanup | Analyze large files, clean C drive and scan duplicates by file type |
 
 ### PDF to Word: convert, then edit
 
-**V3.3 is in development and unreleased.** The desktop app reconstructs text, paragraphs, tables and columns locally, preserving source page layout in DOCX.
+**Available in V3.3.** The desktop app reconstructs text, paragraphs, tables and columns locally, preserving source page layout in DOCX.
 Text-based PDFs need no Python, Office, GPU or extra model. Scanned pages use local OCR with a model downloaded on demand. Files stay on the device.
 
 | Option | Purpose |
@@ -249,9 +249,9 @@ WPS / Microsoft Office is not LibreOffice and cannot replace workflows that need
 
 **Desktop for visual interaction. CLI for batches. Agents for orchestration.**
 
-V3.3 development source exposes **78 CLI / MCP capabilities**, adding Word to PDF. Published npm 3.2.0 still has 77.
+V3.3 exposes **78 CLI / MCP capabilities**, adding Word to PDF. npm 3.3.0 is also published.
 
-> This branch includes CLI/MCP 3.3.0 source. The published npm version remains [3.2.0](https://www.npmjs.com/package/@toolknit/cli/v/3.2.0), installed and released independently of Desktop.
+> [npm CLI / MCP 3.3.0](https://www.npmjs.com/package/@toolknit/cli/v/3.3.0) is published and runs independently of Desktop.
 
 | Area | Examples |
 | --- | --- |
@@ -262,9 +262,9 @@ V3.3 development source exposes **78 CLI / MCP capabilities**, adding Word to PD
 | File inspection | Read-only scanning, dependency checks and structured JSON results |
 
 Progress, cancellation and explicit errors are supported. Originals and existing outputs stay protected. Unicode paths, long paths and model downloads are improved.
-Windows, clipboard monitoring and system cleanup remain desktop interactions. **The development catalog has 78 interfaces and 75 desktop tools; these do not map one-to-one.**
+Windows, clipboard monitoring and system cleanup remain desktop interactions. **The catalog has 78 interfaces and 75 desktop tools; these do not map one-to-one.**
 
-Use **`@toolknit/cli` 3.2.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for the 78 development capabilities. Requires Node.js **22.13+**.
+Use **`@toolknit/cli` 3.3.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for the 78 capabilities. Requires Node.js **22.13+**.
 
 ```powershell
 npm install --global @toolknit/cli
@@ -347,7 +347,7 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 ## Complete tool catalog
 
 <details>
-<summary><strong>Expand 75 development desktop tools / 12 categories</strong></summary>
+<summary><strong>Expand 75 desktop tools / 12 categories</strong></summary>
 
 | Category | Count | Tools |
 | --- | ---: | --- |

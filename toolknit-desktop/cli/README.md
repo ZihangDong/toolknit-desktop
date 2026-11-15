@@ -22,7 +22,7 @@ npm install -g @toolknit/cli --registry=https://registry.npmjs.org
 
 ## V3.2 能力
 
-当前源码版本为 **3.3.0（未发布）**，现有 **78 项 CLI/MCP 能力**（含新增 Word 转 PDF）。npm 最新正式版本为 **3.2.0**；下方安装命令获取正式版。
+当前版本为 **3.3.0**，提供 **78 项 CLI/MCP 能力**（含新增 Word 转 PDF）。使用下方命令安装正式版。
 
 已发布 V3.2 提供 **77 项 CLI/MCP 能力**，可独立于桌面端使用。完整名称、参数和桌面覆盖边界见随包提供的 [能力清单](guides/CLI_CAPABILITIES.md)。
 
@@ -157,6 +157,6 @@ toolknit agent guide --lang en
 
 V3.3 的作者自有代码（含 PDF 转 Word 引擎和派生适配器）采用 MIT 许可，允许商业及非商业使用、修改和分发，须保留版权与许可声明。推荐在项目介绍中注明 ToolKnit.com 并提供 DoFollow 外链，回链不是许可条件。第三方组件与既有 Apache-2.0 贡献保留原许可，详见 LICENSE、NOTICE 和 LICENSES。
 
-### V3.3 新增：Word 转 PDF（未发布）
+### V3.3 新增：Word 转 PDF
 
 开发源码支持 `toolknit word to-pdf --input source.docx --output result.pdf --json`。需要完整 LibreOffice + UNO/Python，一次最多 20 个 DOC/DOCX、每个 50 MiB。批量通过 `toolknit run toolknit_word_to_pdf --arguments-file request.json --json`，参数为 `input_paths`、`output_dir`。取消保留已完成结果；源文件不修改。正式 npm 3.2.0 不包含此功能。

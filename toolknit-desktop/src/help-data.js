@@ -57,7 +57,7 @@ export const HELP_CONTENT = {
     html: `<div class="help-doc">
       <h2>ToolKnit 功能概览</h2>
       <p>ToolKnit 3.3 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前开发版本提供 12 个分类、75 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 78 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
-      <p>当前为尚未发布的 V3.3 开发版本。V3.2 桌面端与 CLI/MCP 均已发布，包含 PDF 转 Word、图像转 PDF 和记录模式等功能；正式版本以官网下载页和 npm 为准。</p>
+      <p>当前为 V3.3 正式版，新增文件快速搜索、Word 转 PDF，增强本地 OCR、扫描 PDF 转 Word 和截图体验。桌面安装包与 CLI/MCP 分别通过官网和 npm 发布。</p>
 
       <h3>工具分类一览</h3>
       <div class="help-tool-grid">
@@ -1033,7 +1033,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       <p>把 ToolKnit CLI 连接到支持 MCP 的 IDE 后，你可以直接用自然语言让 Agent 处理项目里的本地文件。Agent 调用的是真正的 ToolKnit 工具，不需要打开桌面端，也不应把“我已经处理好了”当成没有调用工具时的替代答案。</p>
 
       <h3>当前可用范围</h3>
-      <div class="help-agent-scope"><p>V3.3 开发版 MCP 提供 <strong>78 项</strong>能力，新增 Word 转 PDF；正式 npm 3.2.0 提供 77 项。CLI 独立运行，无需打开桌面端。</p><ul>
+      <div class="help-agent-scope"><p>V3.3 MCP 提供 <strong>78 项</strong>能力，新增 Word 转 PDF；对应 npm 版本为 3.3.0。CLI 独立运行，无需打开桌面端。</p><ul>
         <li><strong>PDF 与 Office</strong>：检查、合并、拆分、旋转、加解密、压缩、增强、导出图像、转 Word、文本/Markdown、裁剪、页码、扫描效果、空白 PDF，以及 XLSX 转 PDF。Word 默认离线，复杂区域可保留图像；Excel 渲染需要 LibreOffice。</li>
         <li><strong>PPT</strong>：转 PDF/图像、提取素材/文字、压缩、AI 大纲和可编辑草稿。</li>
         <li><strong>图像</strong>：转 PDF、格式转换、压缩、裁剪/旋转/翻转、颜色替换、图标包、取色、长图拼接与颜色空间换算。</li>
