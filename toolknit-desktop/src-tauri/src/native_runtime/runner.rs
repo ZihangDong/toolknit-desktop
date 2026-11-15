@@ -27,6 +27,7 @@ pub fn run() {
         .manage(file_search::FileSearchState::default())
         .manage(platform::auxiliary_windows::Registry::default())
         .manage(local_translation::TranslationState::default())
+        .manage(local_ocr::OcrState::default())
         .manage(crate::clipboard_history::ClipboardHistoryState::default())
         .manage(onnx_segmenter::MattingState::default())
         .manage(TeleprompterRecognitionState::default())
@@ -35,6 +36,7 @@ pub fn run() {
             quick_screenshot::quick_screenshot_image,
             file_search::file_search,
             local_translation::local_translation,
+            local_ocr::runtime::local_ocr,
             crate::clipboard_history::clipboard_history,
             crate::clipboard_history::copy_sensitive_text,
             open_url,
@@ -328,6 +330,7 @@ pub fn run() {
             if matches!(event, tauri::RunEvent::Exit) {
                 file_search::shutdown(app);
                 local_translation::shutdown(app);
+                local_ocr::shutdown(app);
             }
             if let tauri::RunEvent::ExitRequested { api, code, .. } = event {
                 crate::clipboard_history::on_exit_requested(app, &api, code);

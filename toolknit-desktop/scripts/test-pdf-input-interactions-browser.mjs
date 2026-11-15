@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import path from 'node:path';
 import { preview } from 'vite';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { createCanvas } from '@napi-rs/canvas';
 
-const { chromium } = createRequire(import.meta.url)('playwright');
+const { chromium } = createRequire(process.env.TOOLKNIT_TEST_MODULES
+  ? path.join(process.env.TOOLKNIT_TEST_MODULES,'package.json') : import.meta.url)('playwright');
 const output = 'tmp/pdf-input-interactions';
 await mkdir(output, { recursive: true });
 const pdf = await PDFDocument.create(), font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -109,8 +111,14 @@ try {
       assert.ok(button.x >= 0 && button.x + button.width <= width && button.y + button.height <= height);
     }
     await page.setViewportSize({ width: 1440, height: 900 });
+    await open('pdf-to-word','#pdfWordOverlay');
+    await page.locator('#pdfWordFileInput').setInputFiles(file);
+    await page.locator('#pdfWordPagesOverlay.visible').waitFor();
+    await page.locator('#pdfWordSelectPages').click();
+    await page.locator('#pdfWordSelector.visible').waitFor();
+    await page.waitForFunction(()=>document.querySelector('#pdfWordSelector [data-wb-canvas]').width>80);
+    await zoom('#pdfWordSelector [data-wb-scroll]','#pdfWordSelector [data-wb-canvas]','pdf-to-word-selector');
     const cases = [
-      ['pdf-to-word', 'pdfWord', 'FileInput', '#pdfWordPreview', '#pdfWordPaper'],
       ['pdf-crop', 'pdfCrop', 'FileInput', '#pdfCropCanvasScroll', '#pdfCropCanvasWrap'],
       ['pdf-page-number', 'pdfPageNumber', 'FileInput', '#pdfPageNumberCanvasScroll', '#pdfPageNumberCanvasWrap'],
       ['pdf-editor', 'pdfEditor', 'FileInput', '#pdfEditorCanvasScroll', '#pdfEditorOverlay .pdf-editor-canvas-wrap'],

@@ -69,7 +69,7 @@ html[data-theme="light"] .app.is-v2-home :is(.home-search-field, .tool-result-em
   color: var(--tk-page-muted);
 }
 
-html[data-theme="light"] .app.is-v2-home .home-search-field :is(input, svg) {
+html[data-theme="light"] .app.is-v2-home .home-search-field :is(input, svg, button) {
   color: var(--tk-page-ink);
 }
 
@@ -90,6 +90,11 @@ html[data-theme="light"] .app.is-v2-home .home-search-field:focus-within {
 html[data-theme="light"] .app.is-v2-home .home-search-field input:focus-visible {
   outline: none;
   box-shadow: none;
+}
+
+html[data-theme="light"] .app.is-v2-home .home-search-field .home-search-clear:hover {
+  color: #111111;
+  background: rgba(0, 0, 0, 0.06);
 }
 
 html[data-theme="light"] .app.is-v2-home .home-search-field::after { display: none; }

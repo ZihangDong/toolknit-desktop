@@ -28,16 +28,46 @@
           <p class="donation-author" data-i18n="home.supportPage.authorName">— 董子航 · Zihang Dong</p>
           <dl class="donation-stats" aria-label="ToolKnit 项目数据">
             <div><dt id="donationGithubStars">435+</dt><dd data-i18n="home.supportPage.statStars">GitHub Stars</dd></div>
-            <div><dt>65</dt><dd data-i18n="home.supportPage.statTools">桌面工具</dd></div>
-            <div><dt data-i18n="home.supportPage.statViewsValue">200 万</dt><dd data-i18n="home.supportPage.statViews">累计内容播放</dd></div>
+            <div><dt>75</dt><dd data-i18n="home.supportPage.statTools">桌面工具</dd></div>
+            <div><dt data-i18n="home.supportPage.statViewsValue">300万+</dt><dd data-i18n="home.supportPage.statViews">累计内容播放</dd></div>
             <div><dt id="donationJournalCount">81</dt><dd data-i18n="home.supportPage.statLogs">公开更新日志</dd></div>
           </dl>
         </div>
         <div class="donation-support-panel">
-          <p class="donation-support-copy" data-i18n="home.supportPage.scanLead">为了持续给大家免费更新 ToolKnit，作者仅 AI 开发与测试每月就要自掏腰包 500 多元，长期独自承担已越来越吃力。你的每一份支持都会直接用于继续维护、验证和发布 ToolKnit。</p>
-          <figure class="donation-qr-figure"><img src="assets/donate/donation-support.webp" alt="ToolKnit 支付宝与微信双收款码 / Alipay and WeChat QR codes"></figure>
-          <p class="donation-support-benefit"><i data-lucide="users" aria-hidden="true"></i><span data-i18n="home.supportPage.supporterBenefit">赞助后可加入 ToolKnit 灰度体验群，提前体验新版本，并直接提交希望加入的功能。</span></p>
-          <p class="donation-voluntary" data-i18n="home.supportPage.voluntary">灰度群用于版本交流、测试和需求收集；赞助不等于购买功能，建议会统一评估，不承诺实现或优先排期。</p>
+          <p class="donation-support-eyebrow" data-i18n="home.supportPage.coffeeEyebrow">一杯咖啡，一份继续做下去的动力。</p>
+          <h3 class="donation-support-title" data-i18n="home.supportPage.coffeeTitle">请作者喝杯咖啡吧。</h3>
+          <p class="donation-support-copy" data-i18n="home.supportPage.scanLead">ToolKnit 由我一个人开发维护，个人预算有限。你的一杯咖啡，可以支持服务器和后续更新。请量力而行，你的使用与反馈，同样是很珍贵的支持。</p>
+          <div class="donation-qr-grid">
+            <figure class="donation-qr-card">
+              <figcaption><span aria-hidden="true">01</span><strong data-i18n="home.supportPage.alipay">支付宝</strong></figcaption>
+              <img src="assets/donate/ToolKnit-Alipay.png" data-i18n-aria-label="home.supportPage.alipayQrAlt" alt="ToolKnit Alipay QR" width="876" height="876" />
+              <button type="button" class="donation-qr-save" data-donation-save-qr="alipay"><span data-i18n="home.supportPage.saveQr">保存收款码</span><i data-lucide="download" aria-hidden="true"></i></button>
+            </figure>
+            <figure class="donation-qr-card">
+              <figcaption><span aria-hidden="true">02</span><strong data-i18n="home.supportPage.wechat">微信支付</strong></figcaption>
+              <img src="assets/donate/ToolKnit-WeChat.png" data-i18n-aria-label="home.supportPage.wechatQrAlt" alt="ToolKnit WeChat Pay QR" width="626" height="626" />
+              <button type="button" class="donation-qr-save" data-donation-save-qr="wechat"><span data-i18n="home.supportPage.saveQr">保存收款码</span><i data-lucide="download" aria-hidden="true"></i></button>
+            </figure>
+          </div>
+          <p class="donation-scan-hint" data-i18n="home.supportPage.scanHint">使用对应支付 App 扫码，或保存收款码后从相册识别。</p>
+          <div class="donation-pledges">
+            <section>
+              <p class="donation-support-eyebrow" data-i18n="home.supportPage.freeEyebrow">关于免费运营的承诺</p>
+              <h4 data-i18n="home.supportPage.freeTitle">至少免费运营至</h4>
+              <strong class="donation-pledge-date" data-i18n="home.supportPage.freeDate">2027 年 12 月 31 日</strong>
+              <p data-i18n="home.supportPage.freeBody">在此日期前，网站继续免费提供使用。谢谢你让这个独立项目，多一份坚持的底气。</p>
+            </section>
+            <section>
+              <p class="donation-support-eyebrow" data-i18n="home.supportPage.rewardEyebrow">给早期支持者的一份回馈</p>
+              <div class="donation-reward"><strong>¥30</strong><span data-i18n="home.supportPage.rewardTotal">累计赞助</span></div>
+              <p data-i18n="home.supportPage.rewardBody">如果 ToolKnit 未来推出会员制，累计赞助满 30 元的朋友，将获得 ToolKnit 永久会员权益。目前没有会员制度，我会先人工登记，待会员制上线后兑现。</p>
+            </section>
+          </div>
+          <section class="donation-receipt">
+            <h4 data-i18n="home.supportPage.receiptTitle">记得留下邮箱，方便以后兑现这份承诺。</h4>
+            <p><span data-i18n="home.supportPage.receiptBefore">请在付款备注中留下邮箱；如果无法备注，请将付款凭证和联系邮箱发送至 </span><span class="donation-contact-email">info@toolknit.com</span><span data-i18n="home.supportPage.receiptAfter">，我会人工核对登记。请保留好凭证，不要在备注或文件中放邮箱之外的敏感付款信息。</span></p>
+          </section>
+          <div class="donation-support-bottom"><span data-i18n="home.supportPage.coffeeThanks">谢谢你，陪这些小工具继续走下去。</span><button class="donation-action donation-action-primary" type="button" data-donation-close><span data-i18n="home.supportPage.continueTools">继续使用工具</span><i data-lucide="arrow-right" aria-hidden="true"></i></button></div>
         </div>
       </div>
       <div class="donation-detail-grid">

@@ -155,7 +155,7 @@ toolknit agent guide --lang en
 
 ## 许可证
 
-PDF 转 Word 引擎及派生适配器遵循独立源码观摩许可；普通使用官方 CLI 按官方应用例外执行，提取、集成、修改或商用授权请联系 info@toolknit.com。其余新授权自有代码遵循 PolyForm Noncommercial 1.0.0：新授权的作者代码仅限非商业用途；商业使用需联系作者另行授权。旧 Apache-2.0 授权及第三方许可不变，详见 LICENSE、NOTICE 和 LICENSES。
+V3.3 的作者自有代码（含 PDF 转 Word 引擎和派生适配器）采用 MIT 许可，允许商业及非商业使用、修改和分发，须保留版权与许可声明。推荐在项目介绍中注明 ToolKnit.com 并提供 DoFollow 外链，回链不是许可条件。第三方组件与既有 Apache-2.0 贡献保留原许可，详见 LICENSE、NOTICE 和 LICENSES。
 
 ### V3.3 新增：Word 转 PDF（未发布）
 

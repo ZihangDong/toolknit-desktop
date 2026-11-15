@@ -6,7 +6,7 @@ export async function createController({runtime,tr,q},data){
   const show=async pending=>{
     if(scope.disposed||!pending||pending.revision<revision)return;
     revision=pending.revision;setLangWithoutFade(pending.lang==='en'?'en':'zh');
-    q('DesktopToastText').textContent=tr({copied:'historyCopied',phraseAdded:'phraseAdded',orderSaved:'historyOrderSaved'}[pending.kind]||'historyCopied');
+    q('DesktopToastText').textContent=tr({copied:'historyCopied',saved:'saved',phraseAdded:'phraseAdded',orderSaved:'historyOrderSaved'}[pending.kind]||'historyCopied');
     animation?.cancel();
     if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
       animation=q('DesktopToast').animate([{opacity:0,transform:'translateY(8px)',offset:0},{opacity:1,transform:'translateY(0)',offset:.08},{opacity:1,transform:'translateY(0)',offset:.88},{opacity:0,transform:'translateY(4px)',offset:1}],{duration:2200,fill:'forwards',easing:'ease-out'});

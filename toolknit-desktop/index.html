@@ -551,8 +551,7 @@
                     </button>
                   </div>
                   <p class="hero-support-note text-cn">
-                    <span data-i18n="home.recommendedProviders">作者推荐中转站 · 低价不降智</span>
-                    <span class="home-provider-links"><a class="home-provider-malian" href="https://www.mlai.online/register?aff=5Q2VVMD7YJVB" data-home-link="malian" target="_blank" rel="noopener noreferrer" data-i18n="home.malian">马良AI</a><a class="home-provider-doufu" href="https://doufuapi.com/register?aff=TWKCBH9RGLN3" data-home-link="doufu" target="_blank" rel="noopener noreferrer" data-i18n="home.doufu">豆腐AI</a></span>
+                    <a class="home-provider-niuniu" href="https://s2acf.fucksb.com/register?aff=28G79Z33FT63" data-home-link="niuniu" target="_blank" rel="sponsored noopener noreferrer" data-i18n="home.niuniu">牛牛API（GPT专用不降智，不烧心）· 作者推荐</a>
                   </p>
                   <div class="hero-meta" data-i18n-aria-label="home.productInfoAria" aria-label="产品信息">
                     <span><i data-lucide="monitor" aria-hidden="true"></i><span>WINDOWS DESKTOP</span></span>
@@ -596,10 +595,13 @@
                     <h2 class="tool-finder-title" id="toolExplorerTitle" data-i18n="home.toolExplorerTitle">搜索全部工具</h2>
                     <p class="tool-finder-subtitle" data-i18n="home.toolExplorerDescription">从这里开始找工具。默认展示全部已上线工具，也可以输入关键词或切换分类胶囊。</p>
                   </div>
-                  <label class="home-search-field">
-                    <i data-lucide="search"></i>
+                  <div class="home-search-field">
+                    <i data-lucide="search" aria-hidden="true"></i>
                     <input id="homeToolSearch" type="search" placeholder="搜索 PDF、PPT、图像、音视频、文本、AI、硬件..." autocomplete="off" data-i18n-placeholder="home.toolSearchPlaceholder" data-i18n-aria-label="home.searchToolsLabel" aria-label="搜索全部工具" />
-                  </label>
+                    <button id="homeToolSearchClear" class="home-search-clear" type="button" data-i18n-title="home.clearToolSearch" data-i18n-aria-label="home.clearToolSearch" aria-label="清除工具搜索" title="清除工具搜索" hidden>
+                      <i data-lucide="x" aria-hidden="true"></i>
+                    </button>
+                  </div>
                 </div>
 
                 <div class="category-strip" id="homeCategoryStrip" data-i18n-aria-label="home.categoriesAria" aria-label="工具分类">
@@ -617,11 +619,17 @@
                   <button class="category-chip" type="button" data-home-category="developer"><i data-lucide="braces"></i><span data-i18n="home.categoryDeveloper">开发者</span></button>
                   <button class="category-chip" type="button" data-home-category="clean"><i data-lucide="trash-2"></i><span data-i18n="home.categoryCleanup">清理</span></button>
                    <div class="tool-feedback-prompt">
-                     <span data-i18n="home.featureRequestPrompt">Can't find the right tool? Tell us what you'd like to see.</span>
-                     <button class="tool-feedback-link" type="button" data-home-link="feedback">
-                       <i data-lucide="message-square-plus"></i>
-                       <span data-i18n="home.featureRequestAction">Suggest a feature</span>
-                     </button>
+                     <div class="home-provider-promo" role="group" data-i18n-aria-label="home.aiProvidersAria" aria-label="AI 服务推荐">
+                       <span data-i18n="home.aiProviderPrompt">使用 ToolKnit 的 AI 功能，可选择</span>
+                       <span class="home-provider-links"><a class="home-provider-doufu" href="https://doufuapi.com/register?aff=TWKCBH9RGLN3" data-home-link="doufu" target="_blank" rel="sponsored noopener noreferrer" data-i18n="home.doufu">豆腐AI</a><a class="home-provider-malian" href="https://www.mlai.online/register?aff=5Q2VVMD7YJVB" data-home-link="malian" target="_blank" rel="sponsored noopener noreferrer" data-i18n="home.malian">马良AI</a><a class="home-provider-niuniu home-provider-niuniu-inline" href="https://s2acf.fucksb.com/register?aff=28G79Z33FT63" data-home-link="niuniu" target="_blank" rel="sponsored noopener noreferrer" data-i18n="home.niuniuAi">牛牛AI</a></span>
+                     </div>
+                     <div class="tool-feedback-actions">
+                       <span data-i18n="home.featureRequestPrompt">没找到想要的工具？告诉我们你希望加入什么。</span>
+                       <button class="tool-feedback-link" type="button" data-home-link="feedback">
+                         <i data-lucide="message-square-plus"></i>
+                         <span data-i18n="home.featureRequestAction">提交功能建议</span>
+                       </button>
+                     </div>
                    </div>
                  </div>
 
@@ -1831,5 +1839,40 @@
     <div class="feature-tool-overlay audio-extract-feature-host" id="audioExtractFeatureOverlay" aria-hidden="true"></div>
     <div class="feature-tool-overlay audio-convert-feature-host" id="audioConvertFeatureOverlay" aria-hidden="true"></div>
     <div class="toast" id="favToast"><span id="favToastText"></span></div>
+    <section id="releaseAnnouncement" class="release-announcement-overlay" role="dialog" aria-modal="true" aria-labelledby="releaseNoticeTitle" aria-describedby="releaseNoticeIntro" aria-hidden="true" inert data-i18n-aria-label="home.releaseNotice.title" aria-label="ToolKnit 版本更新与许可说明">
+      <article class="release-announcement-panel">
+        <header class="release-announcement-header">
+          <p class="release-announcement-eyebrow" data-i18n="home.releaseNotice.eyebrow">TOOLKNIT DESKTOP · V3.2 + V3.3</p>
+          <h1 id="releaseNoticeTitle" data-i18n="home.releaseNotice.title">常用工具，网页与桌面都能快速打开</h1>
+          <p id="releaseNoticeIntro" class="release-announcement-intro" data-i18n="home.releaseNotice.intro">我们持续改进本地文件工作流，也保留随时可用的网页版。</p>
+        </header>
+        <div class="release-announcement-content">
+          <div class="release-announcement-products">
+            <section class="release-announcement-product">
+              <h2 data-i18n="home.releaseNotice.webTitle">网页端 · 打开即用</h2>
+              <p data-i18n="home.releaseNotice.webBody">无需安装，适合临时处理文件与分享工具链接。桌面右上角的“网页版本”可随时直达 ToolKnit.com，欢迎打开并收藏。</p>
+              <a href="https://toolknit.com" data-home-link="website" target="_blank" rel="noopener noreferrer"><span data-i18n="home.releaseNotice.webLink">打开并收藏网页版</span><i data-lucide="external-link" aria-hidden="true"></i></a>
+            </section>
+            <section class="release-announcement-product">
+              <h2 data-i18n="home.releaseNotice.desktopTitle">桌面端 · 融入 Windows 工作流</h2>
+              <p data-i18n="home.releaseNotice.desktopBody">在本机处理文件，使用系统文件定位、快捷截图、文件搜索和离线 OCR 等桌面能力。</p>
+              <a href="https://github.com/ZihangDong/toolknit-desktop" data-home-link="github" target="_blank" rel="noopener noreferrer"><span data-i18n="home.releaseNotice.sourceLink">查看桌面端源码</span><i data-lucide="github" aria-hidden="true"></i></a>
+            </section>
+          </div>
+          <section class="release-announcement-updates" data-i18n-aria-label="home.releaseNotice.updatesAria" aria-label="版本更新">
+            <article><h2 data-i18n="home.releaseNotice.v32Title">V3.2 · PDF 工作流与稳定性</h2><p data-i18n="home.releaseNotice.v32Body">完善 PDF 编辑、多选拆分、图像转 PDF 与扫描件输出；改进记录悬浮窗、深浅主题和安装升级，补齐 CLI/MCP 自动化能力。</p></article>
+            <article><h2 data-i18n="home.releaseNotice.v33Title">V3.3 · 转换、搜索与本地识别</h2><p data-i18n="home.releaseNotice.v33Body">新增 Word 转 PDF、文件快速搜索与桌面胶囊；截图支持本地提字和翻译，PDF 转 Word 改进扫描件、表格与文字编辑，并优化大文件预览和导出。</p></article>
+          </section>
+          <section class="release-announcement-license">
+            <h2 data-i18n="home.releaseNotice.licenseTitle">桌面端源码采用 MIT 许可</h2>
+            <p data-i18n="home.releaseNotice.licenseBody">本版本桌面自有代码（含 PDF 转 Word 引擎）采用 MIT，允许商业和非商业使用、修改与分发，须保留版权和许可声明。第三方组件继续遵循各自许可；ToolKnit 品牌和托管网页服务不包含在源码许可中。</p>
+            <p class="release-announcement-credit" data-i18n="home.releaseNotice.credit">若项目对你有帮助，欢迎在介绍中注明 ToolKnit.com，并添加 DoFollow 外链，支持网页端被更多人发现。</p>
+          </section>
+        </div>
+        <footer class="release-announcement-footer">
+          <button id="releaseNoticeAcknowledge" type="button" disabled aria-label="我知道了（还需 10 秒）">我知道了（还需 10 秒）</button>
+        </footer>
+      </article>
+    </section>
   </body>
 </html>

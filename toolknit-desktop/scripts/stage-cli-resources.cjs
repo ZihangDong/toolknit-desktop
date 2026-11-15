@@ -228,7 +228,7 @@ for (const fileName of fontFiles) {
   if (!fs.existsSync(filePath)) throw new Error(`CLI font resource is missing: ${filePath}`);
   copyFileAtomic(filePath, path.join(fontDestination, fileName));
 }
-for (const fileName of ['LICENSE', 'NOTICE', 'LICENSES/Apache-2.0.txt', 'LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md']) {
+for (const fileName of ['LICENSE', 'NOTICE', 'LICENSES/Apache-2.0.txt', 'LICENSES/MIT.txt']) {
   copyFileAtomic(path.join(root, fileName), path.join(root, 'cli', fileName));
 }
 copyFileAtomic(path.join(root, 'src-tauri/resources/office/word-to-pdf.py'), path.join(root, 'cli/resources/office/word-to-pdf.py'));

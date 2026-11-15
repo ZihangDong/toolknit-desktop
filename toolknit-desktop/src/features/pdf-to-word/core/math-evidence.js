@@ -1,9 +1,11 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
+import { shorthandIntegralNodeEvidence } from './source-shorthand-integral.js';
 import { bottom, right, union, median, contains } from './geometry.js';
 import { mathOperatorBaseline, mathGlyphBaseline } from './math-rows.js';
 import { matrixDelimiterPairs } from './math-matrices.js';
+import { sourceAccentBase } from './math-accents.js';
 
 const reject = () => { throw new Error('math-evidence-position'); };
 
@@ -14,6 +16,11 @@ export function validateMathGeometry(ast, glyphs, strokes, roots) {
     if (node.type === 'symbol') {
       const glyph = glyphs.get(node.sourceId);
       return { ...glyph, baseline: mathGlyphBaseline(glyph), twoDimensional: false };
+    }
+    if (node.type === 'accent') {
+      const source = glyphs.get(node.sourceId), base = visit(node.base);
+      if (!sourceAccentBase(source, node.base, glyphs) || node.text !== source.text) reject();
+      return { ...base, rect: union([base.rect, source.rect]) };
     }
     if (node.type === 'row') {
       const children = node.children.map(visit), size = Math.max(...children.map(item => item.size));
@@ -74,6 +81,12 @@ export function validateMathGeometry(ast, glyphs, strokes, roots) {
         boxes.push(degree.rect);
       }
       return { ...content, rect: union(boxes), twoDimensional: true };
+    }
+    if (node.type === 'shorthand-integral') {
+      if (!shorthandIntegralNodeEvidence(node, glyphs)) reject();
+      const operator = visit(node.operator), lower = visit(node.lower), body = visit(node.body);
+      return { ...body, baseline: mathOperatorBaseline(operator), twoDimensional: true,
+        rect: union([operator.rect, lower.rect, body.rect]) };
     }
     if (node.type === 'nary' || node.type === 'integral') {
       const operator = visit(node.operator), body = visit(node.body), baseline = mathOperatorBaseline(operator);

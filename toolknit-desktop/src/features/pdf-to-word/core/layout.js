@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { union, median, right, bottom } from './geometry.js';
 import { buildParagraphs, isOption } from './text.js';
 import { optionGrids } from './tables.js';
@@ -61,7 +61,14 @@ function columnCuts(lines, rect) {
     if (merged[i][0] - merged[i - 1][1] < Math.max(18, bodySize * 1.5)) continue;
     const cut = (merged[i][0] + merged[i - 1][1]) / 2;
     const left = candidates.filter(line => right(line.rect) < cut), rightSide = candidates.filter(line => line.rect.x > cut);
-    if (left.length >= 2 && rightSide.length >= 2) cuts.push(cut);
+    if (left.length < 2 || rightSide.length < 2) continue;
+    // A cover's top-right reference and lower-left form labels can leave a
+    // large gutter without independent columns. Both flows must actually
+    // occupy a shared vertical interval, with repeated lines on either side.
+    const top = Math.max(Math.min(...left.map(line => line.rect.y)), Math.min(...rightSide.map(line => line.rect.y)));
+    const end = Math.min(Math.max(...left.map(line => bottom(line.rect))), Math.max(...rightSide.map(line => bottom(line.rect))));
+    const shared = side => side.filter(line => line.rect.y < end && bottom(line.rect) > top).length;
+    if (end - top >= bodySize && shared(left) >= 2 && shared(rightSide) >= 2) cuts.push(cut);
   }
   return cuts.length <= 3 ? cuts : [];
 }

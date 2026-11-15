@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { LIMITS, wordError } from './core/input.js';
 import { planAiScopes, aiScopePayload, validateAiScope, applyAiScope } from './core/ai-v2.js';
 import { planAiBatches, aiBatchRequest, compactAiBatch, layoutInstruction } from './core/ai-batch.js';

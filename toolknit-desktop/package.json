@@ -2,7 +2,7 @@
   "name": "toolknit-desktop",
   "private": true,
   "version": "3.3.0",
-  "license": "SEE LICENSE IN NOTICE",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22.13.0"
@@ -32,6 +32,7 @@
     "test:pdf-editor-exporter": "node scripts/test-pdf-editor-exporter.mjs",
     "test:pdf-to-word": "node scripts/test-pdf-to-word.mjs && node scripts/test-pdf-to-word-contract.mjs",
     "test:pdf-to-word-browser": "node scripts/test-pdf-to-word-browser.mjs",
+    "test:pdf-word-scan-browser": "node scripts/test-pdf-word-scan-browser.mjs",
     "test:pdf-rotate": "node scripts/test-pdf-rotate-core.mjs && node scripts/test-pdf-rotate-workbench-export.mjs",
     "test:pdf-rotate-tool-contract": "node scripts/test-pdf-rotate-tool-contract.mjs",
     "test:pdf-encrypt": "node scripts/test-pdf-encrypt-core.mjs && node scripts/test-pdf-encrypt-native.mjs",
@@ -79,6 +80,7 @@
     "test:clipboard-history": "node scripts/test-clipboard-history.mjs",
     "test:recording-mode": "node scripts/test-recording-mode.mjs",
     "test:quick-screenshot": "node scripts/test-quick-screenshot.mjs && node scripts/test-screenshot-startup.mjs",
+    "test:screenshot-ocr-browser": "node scripts/test-screenshot-ocr-browser.mjs",
     "test:markdown-editor": "node scripts/test-markdown-editor-core.mjs && node scripts/test-markdown-editor-contract.mjs",
     "test:limits-contract": "npm run stage:cli-resources && node scripts/test-limits-contract.mjs",
     "test:pdf-text-markdown": "node scripts/test-pdf-text-extract-core.mjs && node scripts/test-pdf-text-table-grid.mjs && node scripts/test-pdf-text-extract-tool-contract.mjs",
@@ -179,7 +181,11 @@
     "test:office-dependencies": "node scripts/test-office-archive-dependencies.mjs",
     "postinstall": "node scripts/patch-office-glob.cjs",
     "test:file-search": "node scripts/test-file-search.mjs && node scripts/test-file-search-context.mjs",
-    "test:native-loader": "node scripts/audit-native-loader.mjs"
+    "test:native-loader": "node scripts/audit-native-loader.mjs",
+    "test:local-ocr": "node scripts/test-local-ocr.mjs && cargo test --manifest-path src-tauri/Cargo.toml local_ocr:: --lib",
+    "test:local-ocr-browser": "node scripts/test-local-ocr-browser.mjs",
+    "test:release-announcement-browser": "node scripts/test-release-announcement-browser.mjs",
+    "test:donation-qr": "node scripts/test-donation-qr.mjs"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",

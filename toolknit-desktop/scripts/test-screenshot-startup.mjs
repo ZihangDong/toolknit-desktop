@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { loadCaptureSource } from '../src/features/quick-screenshot/capture-source.js';
+import { loadCaptureSource, waitForCaptureStage, prewarmCaptureSource } from '../src/features/quick-screenshot/capture-source.js';
 import { createLifecycleScope } from '../src/app/tool-lifecycle.js';
 
 const png=Uint8Array.from([137,80,78,71,13,10,26,10,1]);
@@ -10,6 +10,13 @@ let created=0,revoked=0;
 URL.createObjectURL=()=>{created++;return 'blob:synthetic-only';};
 URL.revokeObjectURL=()=>{revoked++;};
 const source=()=>({naturalWidth:100,naturalHeight:80,src:'',decode:async()=>{},removeAttribute(){this.src='';}});
+const warmImage=source();let warmData;
+warmImage.decode=async()=>{warmData=warmImage.src;};
+await prewarmCaptureSource({createImage:()=>warmImage});
+assert.match(warmData,/^data:image\/png;base64,/);assert.equal(warmImage.src,'');
+const warmOwner=new AbortController();const slowWarm=source();slowWarm.decode=()=>new Promise(()=>{});
+const warming=prewarmCaptureSource({createImage:()=>slowWarm,signal:warmOwner.signal});warmOwner.abort();
+await assert.rejects(warming,/expired/);assert.equal(slowWarm.src,'');
 try {
   const scope=createLifecycleScope(), image=source();
   await loadCaptureSource({source:image,data,runtime:{image:async id=>{assert.equal(id,7);return png.buffer;}},scope});
@@ -35,6 +42,23 @@ try {
   await assert.rejects(loadCaptureSource({source:mismatch,data,runtime:{image:async()=>png},scope:wrongScope}),/invalid-image/);wrongScope.dispose();
   const legacyScope=createLifecycleScope();
   await loadCaptureSource({source:source(),data:{...data,image:'data:image/png;base64,fixture'},runtime:{image(){throw Error('legacy should not fetch');}},scope:legacyScope});legacyScope.dispose();
+
+  const hungScope=createLifecycleScope();
+  const hung=loadCaptureSource({source:source(),data,runtime:{image:()=>new Promise(()=>{})},scope:hungScope});
+  hungScope.dispose();await assert.rejects(hung,/expired/,'ending capture releases a hung binary IPC wait');
+  const decoding=source();decoding.decode=()=>new Promise(()=>{});
+  const decodingScope=createLifecycleScope();
+  const decodePending=loadCaptureSource({source:decoding,data:{...data,image:'data:image/png;base64,fixture'},runtime:{},scope:decodingScope});
+  decodingScope.dispose();await assert.rejects(decodePending,/expired/,'ending capture releases a hung browser decode');
+  assert.equal(decoding.src,'');
+  const cancelled=new AbortController();cancelled.abort();
+  await assert.rejects(waitForCaptureStage(Promise.resolve('old'),{signal:cancelled.signal}),/expired/);
+  await assert.rejects(waitForCaptureStage(new Promise(()=>{}),{timeoutMs:15}),/window-failed/,'unresponsive capture stages have a deadline');
+  assert.equal(await waitForCaptureStage(Promise.resolve('new')),'new','a subsequent stage can run after failure');
+  let rejectLate;
+  const lateFailure=new Promise((_,reject)=>{rejectLate=reject;});
+  await assert.rejects(waitForCaptureStage(lateFailure,{timeoutMs:15}),/window-failed/);
+  rejectLate(new Error('late failure'));await new Promise(resolve=>setImmediate(resolve));
 } finally {URL.createObjectURL=original.create;URL.revokeObjectURL=original.revoke;}
 const read=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8');
 assert.match(read('src-tauri/src/native_runtime/quick_screenshot/mod.rs'),/window\.label\(\) != CAPTURE_LABEL/);

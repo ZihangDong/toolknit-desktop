@@ -137,12 +137,16 @@ links.dispose();
 
 // Dependency source links use the same validated system-browser navigation as
 // homepage links, including native failures and listener cleanup.
-{
+for (const [linkKey, expectedUrl] of [
+  ['ffmpegSource', 'https://github.com/ZihangDong/toolknit-ffmpeg-sources'],
+  ['niuniu', 'https://s2acf.fucksb.com/register?aff=28G79Z33FT63'],
+  ['doufu', 'https://doufuapi.com/register?aff=TWKCBH9RGLN3'],
+  ['malian', 'https://www.mlai.online/register?aff=5Q2VVMD7YJVB']
+]) {
   const source = new FakeElement('ffmpeg-source');
-  source.dataset.homeLink = 'ffmpegSource';
+  source.dataset.homeLink = linkKey;
   const root = new FakeRoot([source]);
   root.querySelectorAll = selector => selector === '[data-home-link]' ? [source] : [];
-  const expectedUrl = 'https://github.com/ZihangDong/toolknit-ffmpeg-sources';
   for (const native of [false, true]) {
     const calls = [];
     const runtime = createExternalLinksRuntime({
@@ -567,6 +571,22 @@ modalSession.dispose();
   documentRef.dispatchEvent(escape);
   assert.equal(escape.defaultPrevented, true);
   assert.equal(closed, 1, 'the fallback focus keeps Escape owned by the modal');
+  session.dispose();
+}
+
+{
+  const documentRef = new FakeRoot(), modal = new FakeElement('requiredNotice');
+  const first = new FakeElement('first'), last = new FakeElement('last');
+  for (const item of [first, last]) { item.tabIndex = 0; item.focus = () => { documentRef.activeElement = item; }; }
+  modal.querySelectorAll = () => [first, last];
+  modal.contains = node => node === first || node === last;
+  let closed = 0;
+  const session = createModalSession({ root: modal, documentRef, initialFocus: first, canClose: () => false, onClose: () => { closed++; } });
+  session.open();last.focus();
+  const tab = new Event('keydown', { cancelable: true });Object.defineProperty(tab,'key',{value:'Tab'});documentRef.dispatchEvent(tab);
+  assert.equal(tab.defaultPrevented,true);assert.equal(documentRef.activeElement,first,'mandatory notices still trap keyboard focus');
+  const escape = new Event('keydown', { cancelable: true });Object.defineProperty(escape,'key',{value:'Escape'});documentRef.dispatchEvent(escape);
+  assert.equal(escape.defaultPrevented,true);assert.equal(closed,0,'mandatory notice consumes Escape without dismissal');
   session.dispose();
 }
 

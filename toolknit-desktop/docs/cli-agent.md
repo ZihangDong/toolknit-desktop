@@ -231,7 +231,7 @@ The test suite creates temporary PDFs outside the repository and validates CLI o
 - `excel to-pdf`: validated XLSX only, rejects active/external workbook content, uses an isolated LibreOffice profile and preserves workbook print setup. No WPS fallback.
 - `markdown html`: desktop Markdown tables/tasks and MathML formulas, escaped raw HTML, strict standalone CSP, no remote images/scripts. Mermaid remains code.
 
-The npm archive contains only the staged pure engines, headless runtimes, runtime resources, notices and public guides. Private Skills, test fixtures and internal maintenance reports are excluded. The PDF-to-Word engine and its headless adapter keep their scoped source-viewing license; using the unmodified official CLI follows the official-application exception. Other author-owned code retains PolyForm terms and third-party materials retain their licenses. Commercial/reuse authorization: info@toolknit.com.
+The npm archive contains staged pure engines, headless runtimes, resources, notices and public guides. Private Skills, fixtures and internal reports are excluded. Author-owned V3.3 code, including the PDF-to-Word engine and headless adapter, uses MIT. Preserve copyright and permission notices. ToolKnit.com credit and a DoFollow backlink are recommended, not required. Third-party materials and prior Apache-2.0 contributions retain their licenses.
 
 Validation includes the current working-source snapshot, an actual packed archive installed in an isolated consumer directory, CLI invocations, MCP calls, and real output inspection. `test:cli-clean-worktree` is a compatibility script name; it now verifies current uncommitted source as well as tracked code rather than testing an older HEAD.
 

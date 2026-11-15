@@ -1,0 +1,60 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { createCanvas } from '@napi-rs/canvas';
+import { prepareOcrScene, needsPageOcr } from '../src/features/pdf-to-word/core/ocr-scene.js';
+import { inferDocument, validateCoverage } from '../src/features/pdf-to-word/core/layout.js';
+import { ocrLines, formatOcrText, errorKey } from '../src/features/quick-screenshot/core.js';
+
+const canvas=createCanvas(600,800),ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,600,800);
+ctx.fillStyle='black';ctx.fillRect(60,80,120,20);ctx.fillStyle='red';ctx.fillRect(400,500,80,60);
+const pixels=ctx.getImageData(0,0,600,800).data;
+const scene={number:1,width:600,height:800,sources:[],items:[],rules:[],risks:['image-page'],rasterPage:false,characters:0};
+const result={engine:'pp-ocrv5-mobile',width:600,height:800,lines:[{text:'本地 OCR ABC-123',x:55,y:75,width:130,height:30,confidence:.95}],rules:[]};
+assert(needsPageOcr(scene));
+const fallback={number:1,width:600,height:800,risks:[],sources:[{id:'known',text:'Verified native table'}],items:[{type:'image',sourceIds:['known'],rect:{x:0,y:0,width:600,height:400}}]};
+assert(!needsPageOcr(fallback),'a proven native fallback protected from OCR must not invoke a redundant model pass');
+assert(needsPageOcr({...fallback,sources:[{id:'known',text:'\u0004\u0008\u000e'}]}),'unreadable mappings remain eligible for OCR when outline repair cannot help');
+for(const preserveGeometry of [false,true]){
+ const built=prepareOcrScene({scene,result,pixels,width:600,height:800,preserveGeometry});
+ assert(built.changed);assert.equal(built.scene.sources[0].disposition,'editable');
+ assert.equal(built.pixels[(85*600+70)*4],255,'recognized old glyphs are erased');
+ assert.equal(built.pixels[(510*600+410)*4+1],0,'coloured stamp remains intact');
+ const document=inferDocument([built.scene],{preserveGeometry});assert.equal(validateCoverage(document).imageCharacters,0);
+ assert(built.scene.items.some(item=>item.type==='image'),'unknown visual content survives');
+}
+const rejected=prepareOcrScene({scene,result:{...result,lines:[{...result.lines[0],confidence:.1}]},pixels,width:600,height:800});
+assert(!rejected.changed,'uncertain recognition cannot replace original ink');
+assert(!prepareOcrScene({scene,result:{...result,lines:[{...result.lines[0],width:20,height:200}]},pixels,width:600,height:800}).changed,'unsupported vertical writing remains visible instead of becoming squeezed horizontal text');
+const colored=createCanvas(600,800),colorContext=colored.getContext('2d');colorContext.fillStyle='white';colorContext.fillRect(0,0,600,800);
+colorContext.fillStyle='#0000AA';colorContext.fillRect(60,80,120,20);colorContext.fillStyle='#CC0000';colorContext.fillRect(400,500,80,60);
+const coloredResult=prepareOcrScene({scene,result:{...result,lines:[...result.lines,{text:'印章',x:395,y:495,width:90,height:70,confidence:.96}]},pixels:colorContext.getImageData(0,0,600,800).data,width:600,height:800,preserveGeometry:true});
+assert.equal(coloredResult.scene.sources.length,1,'red stamp stays a graphic');assert.equal(coloredResult.scene.items.find(item=>item.type==='text').color,'0000AA','blue heading remains editable with its colour');
+const clipped=prepareOcrScene({scene,result:{...result,lines:[{...result.lines[0],x:62,y:82,width:116,height:16}]},pixels,width:600,height:800,preserveGeometry:true});
+assert.equal(clipped.pixels[(99*600+179)*4],255,'rounding at detector edges cannot leave old glyph fragments behind');
+ctx.fillStyle='black';ctx.fillRect(50,60,2,120);
+const bordered=prepareOcrScene({scene,result:{...result,rules:[{axis:'v',at:50.5,from:60,to:180}]},pixels:ctx.getImageData(0,0,600,800).data,width:600,height:800,preserveGeometry:true});
+assert(bordered.scene.items.find(item=>item.type==='text').size<30,'expanded text masks must not measure a table border as a tall glyph');
+assert.equal(bordered.pixels[(85*600+50)*4],0,'unowned table rules remain intact');
+const header={id:'native-header',type:'text',sourceIds:['native-header'],text:'ＡＢＣ',rect:{x:60,y:20,width:120,height:20},baseline:38,size:20,font:'test',fontFamily:'Microsoft YaHei',order:0,color:'000000'};
+const mixed=prepareOcrScene({scene:{...scene,items:[header],sources:[{id:header.id,text:header.text,rect:header.rect,disposition:'editable'}]},result:{...result,lines:[{...result.lines[0],text:'ABC',y:15},...result.lines]},pixels,width:600,height:800,preserveGeometry:true});
+assert.equal(mixed.scene.sources.length,2,'mixed PDF native headers win over equivalent full/half-width OCR text');
+assert.equal(mixed.scene.sources.filter(source=>source.id==='native-header').length,1);
+const conflicting=prepareOcrScene({scene:{...scene,items:[header],sources:[{id:header.id,text:header.text,rect:header.rect,disposition:'editable'}]},result:{...result,lines:[{...result.lines[0],text:'AXC',y:15},...result.lines]},pixels,width:600,height:800,preserveGeometry:true});
+assert.equal(conflicting.scene.sources.length,2,'an OCR spelling disagreement never duplicates native text at the same position');
+const rasterOwner={id:'table-fallback',type:'image',role:'figure',sourceIds:['raster-text'],rect:{x:50,y:70,width:150,height:40}};
+const protectedResult=prepareOcrScene({scene:{...scene,items:[header,rasterOwner],sources:[{id:header.id,text:header.text,rect:header.rect,disposition:'editable'},{id:'raster-text',text:'Known cell',disposition:'visible-image'}]},result,pixels,width:600,height:800,preserveGeometry:true});
+assert(!protectedResult.changed,'native table fallback cannot be overwritten by less reliable whole-page OCR');
+assert.throws(()=>prepareOcrScene({scene,result:{...result,width:0},pixels,width:600,height:800}));
+const line=ocrLines({...result,lines:[{...result.lines[0],words:[{text:'A',x:0,y:0,width:1,height:10},{text:'B',x:2,y:0,width:1,height:10}]}]});
+assert.equal(line[0].text,result.lines[0].text,'CTC character boxes must not insert Latin spaces');
+assert.equal(formatOcrText({...result,lines:[{...result.lines[0],text:'ABC-123',words:[{text:'A',x:0,y:0,width:5,height:10},{text:'B',x:7,y:0,width:5,height:10}]}]}),'ABC-123','text extraction uses the recognized CTC line, just like translation');
+assert.equal(errorKey('ocr:not-installed'),'ocrModelsMissing');assert.equal(errorKey('ocr:cancelled'),'cancelled');
+for(const language of ['zh','en']){
+ const dictionary=JSON.parse(await readFile(`src/locales/${language}.json`,'utf8'));
+ const template=await readFile('src/app/templates/dependency-managers.html','utf8');
+ for(const [,key]of template.matchAll(/data-i18n(?:-aria-label)?="(settings.localOcr.[^"]+)"/g))assert.equal(typeof key.split('.').reduce((v,k)=>v?.[k],dictionary),'string');
+}
+const native=await readFile('src-tauri/src/native_runtime/ocr/runtime.rs','utf8');
+assert(native.includes('deny_unknown_fields'));assert(native.includes('window.label()!="screenshot-capture"')||native.includes('window.label() != "screenshot-capture"'));
+assert(!native.includes('println!'));assert(native.includes('spawn_blocking'));
+console.log('Local OCR: editable sources, preserved stamp, removed old ink, uncertainty, input bounds, CTC spaces and bilingual manager passed.');

@@ -1,9 +1,11 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
+import { nativePairRuns } from '../core/native-pair-spacing.js';
+import { nativePairPolicyRuns, nativePairEditStyle } from '../core/native-pair-policy.js';
 import { Document, Packer, TextRun, ImageRun, Header, Footer, Table, TableRow, TableCell,
   WidthType, TableLayoutType, BorderStyle, HeightRule, LineRuleType, SectionType, ColumnBreak, DocumentGridType,
-  HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, TextWrappingType } from 'docx';
+  HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, TextWrappingType, BuilderElement } from 'docx';
 import { right, bottom, median, union } from '../core/geometry.js';
 import { paragraphLineHeight, planParagraphPagination } from '../core/pagination.js';
 import { validateCoverage, leafBlocks } from '../core/layout.js';
@@ -13,7 +15,13 @@ import { needsPositionedPage, positionedPage } from './docx-positioned.js';
 import { PdfParagraph as Paragraph } from './docx-paragraph.js';
 import { continuousSection } from './docx-continuous.js';
 import { inferMathAst } from '../core/math.js';
-import { wordFont, outputWordFont, wordLineMetrics } from './docx-fonts.js';
+import { nativeMathReaderMode } from '../core/native-math-policy.js';
+import { planNativeMathRuns } from '../core/math-limit-runs.js';
+import { wordFont } from './docx-fonts.js';
+import { sourceFontOptions } from './source-font-runtime.js';
+import { createOcrFontContext } from './ocr-font-context.js';
+import { runOptions, textMetrics, originX, baselinePosition, measureLineBox, positionedTextRuns,
+  positionedTextItems, positionedLineOrigin } from './text-layout.js';
 export { wordFont } from './docx-fonts.js';
 
 const twip = value => Math.round(value * 20);
@@ -27,111 +35,11 @@ const anchorRun = { size: 1, snapToGrid: false };
 const empty = (height = 0.5) => new Paragraph({ children: [new TextRun({ text: '', ...anchorRun })], run: anchorRun,
   spacing: { before: 0, after: 0, line: twip(height), lineRule: LineRuleType.EXACT }, widowControl: false });
 
-function runOptions(item) {
-  let font = wordFont(item.font, item.fontFamily);
-  if (font === 'Times New Roman' && /[\p{Script=Han}\u2460-\u24ff\u3000-\u303f\uff00-\uffef]/u.test(item.text || '')) font = 'SimSun';
-  font = outputWordFont(font);
-  const size = Math.max(2, Math.min(800, Math.round(item.size * 2)));
-  // This writer owns a plain default style; absent emphasis means off. Avoid
-  // redundant off-tags that presence-only preview parsers may enable instead.
-  return { font: { ascii: font, hAnsi: font, eastAsia: font, cs: font }, size,
-    bold: item.bold || /FZDBS/i.test(item.font || '') || undefined, italics: item.italic || undefined,
-    color: /^[0-9a-f]{6}$/i.test(item.color) ? item.color : '000000',
-    characterSpacing: Math.round((item.size - size / 2) * 20), snapToGrid: false };
-}
-
-function textMetrics(item, context) {
-  const options = runOptions(item);
-  const measurementFont = wordFont(options.font.ascii);
-  // Measuring tiny glyphs quantizes their ink boxes on some canvas backends.
-  // Large-em metrics describe the outline that document renderers actually use.
-  context.font = `${options.italics ? 'italic ' : ''}${options.bold ? 'bold ' : ''}1000px "${measurementFont.replaceAll('"', '')}"`;
-  context.fontKerning = 'none';
-  const result = context.measureText(item.text);
-  const scale = options.size / 2 / 1000;
-  const family = value => String(value).replace(/^[A-Z]{6}\+/, '').replace(/BoldItalic|Regular|Bold|Italic|Oblique|PSMT|MT|PS/gi, '').replace(/[^a-z]/gi, '').toLowerCase();
-  const source = item.fontMetrics;
-  const winMetrics = source && ['calibri', 'cambria', 'arial', 'timesnewroman', 'couriernew'].includes(family(measurementFont))
-    && family(item.font) === family(measurementFont)
-    && Math.abs(source.ascent - result.fontBoundingBoxAscent / 1000) < .02
-    && Math.abs(source.descent - result.fontBoundingBoxDescent / 1000) < .02;
-  const substituteMetrics = wordLineMetrics(measurementFont, result.fontBoundingBoxAscent / 1000, result.fontBoundingBoxDescent / 1000);
-  // Word uses OS/2 Windows line metrics for these matching font faces; Canvas
-  // can expose hhea metrics instead. Never apply a source face to a substitute.
-  return { width: result.width * scale, left: result.actualBoundingBoxLeft * scale,
-    ascent: result.actualBoundingBoxAscent * scale,
-    fontAscent: winMetrics ? source.winAscent * options.size / 2 : substituteMetrics ? substituteMetrics.ascent * options.size / 2 : result.fontBoundingBoxAscent * scale,
-    fontDescent: winMetrics ? source.winDescent * options.size / 2 : substituteMetrics ? substituteMetrics.descent * options.size / 2 : result.fontBoundingBoxDescent * scale };
-}
-const originX = (item, context) => item.type === 'image' ? item.rect.x : item.preciseInk && context
-  ? item.rect.x + textMetrics(item, context).left : item.baselineX ?? item.rect.x;
-
-function baselinePosition(item, baseline, metrics) {
-  // Nimbus replacements preserve the text baseline. Their glyph outlines differ
-  // from the Windows faces, so aligning each word's ink box distorts a whole line.
-  const compatible = /^(?:[A-Z]{6}\+)?Nimbus(?:RomNo9L|Roman|SanL|Sans|MonL|Mono)/i.test(item.font || '')
-    && runOptions(item).font.ascii === wordFont(item.font);
-  return Math.round((compatible && Number.isFinite(item.baseline)
-    ? baseline - item.baseline : baseline - item.rect.y - metrics.ascent) * 2);
-}
-
-function measureLineBox(line, context, includeImages = false) {
-  const items = line.items.filter(item => item.type !== 'image');
-  const size = Math.max(1, ...items.map(item => item.size));
-  if (!context || !items.length && !includeImages) return { height: size * 1.2, baselineOffset: size };
-  let ascent = 0, descent = 0;
-  for (const [index, item] of items.entries()) {
-    const metrics = textMetrics(item, context);
-    const position = item.preciseInk ? baselinePosition(item, line.baseline, metrics) / 2 : 0;
-    ascent = Math.max(ascent, metrics.fontAscent + position);
-    descent = Math.max(descent, metrics.fontDescent - position);
-    if (!index) { ascent = Math.max(ascent, metrics.fontAscent); descent = Math.max(descent, metrics.fontDescent); }
-  }
-  if (includeImages) for (const item of line.items.filter(item => item.type === 'image')) {
-    const position = Math.round((line.baseline - bottom(item.rect)) * 2) / 2;
-    ascent = Math.max(ascent, item.rect.height + position); descent = Math.max(descent, -position);
-  }
-  const height = Math.max(size * 1.2, ascent + descent);
-  return { height, baselineOffset: (height + ascent - descent) / 2 };
-}
-
 function positionedRuns(line, assets, context) {
-  line = { ...line, items: line.items.flatMap(item => item.words?.length > 1
-    ? item.words.map(word => ({ ...item, ...word, words: undefined, positionedWord: true })) : [item]) };
-  const runs = [];
-  let cursor = originX(line.items[0], context);
-  for (let i = 0; i < line.items.length; i++) {
-    const item = line.items[i], start = originX(item, context), gap = start - cursor;
-    if (gap > .1 || item.spaceBefore) {
-      const spacing = twip(Math.max(0, gap) - .278);
-      runs.push(new TextRun({ text: ' ', font: 'Arial', size: 2, characterSpacing: spacing, snapToGrid: false }));
-      cursor += .278 + spacing / 20;
-    }
-    if (item.type === 'image') {
-      runs.push(image(item, assets, false, line.baseline));
-      cursor += item.rect.width; continue;
-    }
-    const metrics = textMetrics(item, context), next = line.items[i + 1];
-    const count = Math.max(1, [...item.text].length);
-    const naturalAdvance = item.advanceWidth || metrics.width;
-    const nextOrigin = next ? originX(next, context) : Infinity;
-    const extra = nextOrigin - start - naturalAdvance;
-    // Keep sub-letter placement gaps in the preceding glyph's advance. Tiny
-    // spacer runs accumulate width in readers that clamp their negative spacing.
-    const adjacent = count === 1 && next && next.type !== 'image' && !next.spaceBefore
-      && !/\s$/u.test(item.text) && !/^\s/u.test(next.text || '')
-      && extra >= 0 && extra <= Math.min(item.size, next.size) * .22;
-    const advance = adjacent ? nextOrigin - start : Math.min(naturalAdvance, nextOrigin - start);
-    const spacing = twip((advance - metrics.width) / count);
-    const options = runOptions(item);
-    runs.push(new TextRun({ ...options, text: item.text, characterSpacing: spacing,
-      // Integer half-points are interoperable; WPS misreads decimal unit strings.
-      position: baselinePosition(item, line.baseline, metrics) }));
-    // Track serialized twips, not ideal advances, so rounding does not accumulate
-    // across a long reference line. Gaps remain real, editable space characters.
-    cursor += metrics.width + spacing / 20 * count;
-  }
-  return runs;
+  return positionedTextRuns(line, context).map(run => run.kind === 'space'
+    ? new TextRun({ text: ' ', font: 'Arial', size: 2, characterSpacing: run.spacing, snapToGrid: false })
+    : run.kind === 'image' ? image(run.item, assets, false, line.baseline)
+      : new TextRun({ ...run.options, text: run.item.text, characterSpacing: run.spacing, position: run.position }));
 }
 
 function textRuns(line, assets, context) {
@@ -156,8 +64,9 @@ function textRuns(line, assets, context) {
 
 function measuredLineWidth(line, context) {
   if (line.items.every(item => item.preciseInk || item.type === 'image')) {
-    const last = line.items.at(-1);
-    return originX(last, context) + (last.type === 'image' ? last.rect.width : context ? textMetrics(last, context).width : last.advanceWidth) - originX(line.items[0], context);
+    const items = context ? positionedTextItems(line) : line.items, last = items.at(-1);
+    return originX(last, context) + (last.type === 'image' ? last.rect.width : context ? textMetrics(last, context).width : last.advanceWidth)
+      - (context ? positionedLineOrigin(line,context) : originX(items[0], context));
   }
   if (!context) return line.rect.width;
   let width = 0, previous = null;
@@ -172,7 +81,7 @@ function measuredLineWidth(line, context) {
   return width;
 }
 
-function paragraph(block, origin, { before = 0, lineBreaks = true, breakColumn = false, assets, measurementContext, lineHeight } = {}) {
+function paragraph(block, origin, { before = 0, lineBreaks = true, breakColumn = false, assets, measurementContext, lineHeight, rightAllowance = 0 } = {}) {
   const lines = block.lines;
   const line = lineHeight ?? paragraphLineHeight(block);
   const children = [];
@@ -182,14 +91,16 @@ function paragraph(block, origin, { before = 0, lineBreaks = true, breakColumn =
     else if (index && !/[\p{Script=Han}]$/u.test(lines[index - 1].text) && !/^[\p{Script=Han}]/u.test(part.text)) children.push(new TextRun(' '));
     children.push(...textRuns(part, assets, measurementContext));
   });
-  const lineOrigin = part => part.items.every(item => item.preciseInk || item.type === 'image') ? originX(part.items[0], measurementContext) : part.rect.x;
+  const lineOrigin = part => measurementContext && part.items.every(item => item.preciseInk || item.type === 'image')
+    ? positionedLineOrigin(part,measurementContext) : part.rect.x;
   const left = lines.length > 1 ? median(lines.slice(1).map(lineOrigin)) : lineOrigin(lines[0]);
   const firstDelta = lineOrigin(lines[0]) - left;
   const indent = block.align === 'center' ? (() => {
     const delta = block.rect.x + block.rect.width / 2 - (origin + block.column.width / 2);
     return delta > 0 ? { left: twip(delta * 2) } : { right: twip(-delta * 2) };
   })() : { left: Math.max(0, twip(left - origin)), ...(firstDelta > 0.5 ? { firstLine: twip(firstDelta) } : firstDelta < -0.5 ? { hanging: twip(-firstDelta) } : {}) };
-  return { element: new Paragraph({ children, alignment: block.align || 'left', indent, run: runOptions(lines[0].items[0]),
+  if (rightAllowance > 0 && block.align !== 'center') indent.right = -Math.ceil(rightAllowance * 20);
+  return { element: new Paragraph({ children, alignment: block.align || 'left', indent, run: { ...runOptions(lines[0].items[0]), bold: undefined, italics: undefined },
     spacing: { before: Math.max(0, twip(before)), after: 0, line: twip(line), lineRule: lineBreaks ? LineRuleType.EXACT : LineRuleType.AT_LEAST },
     keepNext: block.role === 'heading' || undefined, keepLines: block.role === 'heading' || undefined, widowControl: false,
     // contextualSpacing defaults to off in our styles. Omitting it prevents
@@ -197,23 +108,54 @@ function paragraph(block, origin, { before = 0, lineBreaks = true, breakColumn =
     autoSpaceEastAsianText: false }), height: line * (lineBreaks ? lines.length : Math.max(1, lines.length)) };
 }
 
+/** Table readers can wrap on a final full-width advance even when all visible
+ * ink fits. Reserve only that proven blank overhang; do not resize the cell or
+ * glyphs, relax vertical fit, or allow actual ink outside its source cell.
+ */
+function tableLineAllowance(line, cellRight, context) {
+  if (!context || !Number.isFinite(cellRight) || !line.items.length
+    || !line.items.every(item => item.type !== 'image' && item.preciseInk && !item.raster
+      && right(item.rect) <= cellRight + .25)) return 0;
+  const last = line.items.at(-1), plan = positionedTextRuns(line, context), tail = plan.at(-1);
+  const serializedEnd = tail?.kind === 'text' ? tail.x + tail.metrics.width
+    + tail.spacing / 20 * Math.max(1, [...tail.item.text].length) : -Infinity;
+  // The emitted final run may retain source character spacing after its last
+  // visible glyph. Natural font width alone misses that blank advance, causing
+  // Office to wrap a whole word even though every visible glyph fits the cell.
+  const end = Math.max(positionedLineOrigin(line,context) + measuredLineWidth(line, context), serializedEnd);
+  const overhang = end - cellRight;
+  if (!(overhang > 0 && overhang <= last.size * .5)) return 0;
+  // One point covers reader rounding/line-break lookahead without changing any
+  // run origin. An overlong source line still fails the existing fit preflight.
+  return overhang + 1;
+}
+
 function image(item, assets, floating = false, baseline) {
   const asset = assets.get(item.assetId || item.id);
   if (!asset?.bytes?.length) throw wordError('image');
   const format = asset.format ?? 'png';
   if (!['png', 'jpg'].includes(format)) throw wordError('image');
-  if (item.backgroundPaintIndexes?.length && (!Array.isArray(asset.excludedPaintIndexes)
-    || item.backgroundPaintIndexes.length !== asset.excludedPaintIndexes.length
-    || item.backgroundPaintIndexes.some((index, position) => index !== asset.excludedPaintIndexes[position]))) throw wordError('image');
+  const excluded = item.backgroundPaintIndexes?.length ? item.backgroundPaintIndexes : item.decorationTextPaintIndexes;
+  if (item.decorationTextPaintIndexes?.length && (!item.decoration || !item.thin || item.sourceIds.length || item.backgroundPaintIndexes?.length)) throw wordError('image');
+  if (excluded?.length && (!Array.isArray(asset.excludedPaintIndexes)
+    || excluded.length !== asset.excludedPaintIndexes.length
+    || excluded.some((index, position) => index !== asset.excludedPaintIndexes[position]))) throw wordError('image');
   const rect = item.rect;
   return new ImageRun({ type: format, data: asset.bytes, transformation: { width: rect.width * 96 / 72, height: rect.height * 96 / 72 },
     ...(Number.isFinite(baseline) ? { run: { position: Math.round((baseline - bottom(rect)) * 2), snapToGrid: false } } : {}),
     ...(floating ? { floating: { horizontalPosition: { relative: HorizontalPositionRelativeFrom.PAGE, offset: emu(rect.x) },
       verticalPosition: { relative: VerticalPositionRelativeFrom.PAGE, offset: emu(rect.y) },
-      allowOverlap: true, lockAnchor: true, behindDocument: Boolean(item.backgroundPaintIndexes?.length), wrap: { type: TextWrappingType.NONE }, layoutInCell: false } } : {}) });
+      allowOverlap: true, lockAnchor: true, behindDocument: Boolean(item.backgroundPaintIndexes?.length || item.ocrBackground || item.formTableBackdrop), wrap: { type: TextWrappingType.NONE }, layoutInCell: false } } : {}) });
 }
 
 function table(block, originX, assets, settings) {
+  if(block.nativeOpenGrid&&block.cells.some(cell=>cell.blocks.some(b=>b.lines?.some(line=>line.items.some(item=>(item.words?.length?item.words:[item]).some(word=>{
+    if(!/^(?:[A-Z]{6}\+)?NimbusRomNo9L-Regu$/i.test((word.nativePairPolicy?.evidence||word.nativePairSpacing)?.sourceFont||''))return false;
+    const value={...item,...word};return !(nativePairPolicyRuns(value,settings.measurementContext,runOptions(value))
+      ||nativePairEditStyle(value)&&nativePairRuns(value,settings.measurementContext,runOptions(value)));
+  }))))))throw wordError('layout-quality');
+
+  if(block.nativeOpenGrid&&block.cells.some(cell=>cell.blocks.some(b=>b.lines?.some(line=>line.items.some(item=>/^(?:[A-Z]{6}\+)?(?:CMMI(?:9|10)|CMR(?:9|10)|CMBX10|CMSY10)$/.test(item.font||''))))))throw wordError('layout-quality');
   const widths = block.columnWidths.map(value => Math.max(1, twip(value))), rows = [];
   const exactGrid = settings.positioned && block.type === 'table' && block.rowHeights?.length === block.rows;
   const borderWidth = block.borderless ? 0 : .5, inset = exactGrid ? borderWidth / 2 : 0;
@@ -231,12 +173,17 @@ function table(block, originX, assets, settings) {
       }
       const width = widths.slice(col, col + cell.colSpan).reduce((sum, n) => sum + n, 0);
       const cellFlow = flow(cell.blocks, cell.rect.x + inset, cell.rect.y + inset, assets,
-        { ...settings, inTable: true, requireBaselineFit: Boolean(block.borderless) });
+        { ...settings, inTable: true, cellRight: right(cell.rect) - inset, cellBottom: bottom(cell.rect),
+        compactTable: Boolean(block.nativeRules?.length), nativeRowBaseline: Boolean(block.nativeRowBaseline),
+        nativeMappingBaseline: block.nativeMappingBaseline === true,
+        requireBaselineFit: Boolean(block.borderless) });
       if (exactGrid && cellFlow.cursor > bottom(cell.rect) + .25) throw wordError('layout-quality');
       const content = cellFlow.children;
       cells.push(new TableCell({ width: { size: width, type: WidthType.DXA }, columnSpan: cell.colSpan, rowSpan: cell.rowSpan,
         ...(cell.shading ? { shading: { fill: cell.shading } } : {}),
-        children: content.length ? content : [empty()], margins: { top: 0, bottom: 0, left: 0, right: 0 }, verticalAlign: 'top' }));
+        children: content.length ? content : block.emptyForm ? [new Paragraph({ children: [],
+          run: { font: 'Arial', size: 22 }, spacing: { before: 0, after: 0 }, widowControl: false })] : [empty()],
+        margins: { top: 0, bottom: 0, left: 0, right: 0 }, verticalAlign: 'top' }));
       col += cell.colSpan;
     }
     rows.push(new TableRow({ children: cells, cantSplit: rowHeights[row] < 150,
@@ -270,12 +217,17 @@ function flow(blocks, originX, startY, assets, settings = {}) {
       if (settings.inTable && settings.positioned && settings.measurementContext
         && block.lines.every(line => line.items.every(item => item.preciseInk))) {
         for (const line of block.lines) {
-          const box = measureLineBox(line, settings.measurementContext);
+          const next = block.lines[block.lines.indexOf(line) + 1];
+          const measuredLine = settings.nativeMappingBaseline ? { ...line, nativeMappingRow: true } : line;
+          const box = measureLineBox(measuredLine, settings.measurementContext, false, settings.compactTable
+            ? { top: cursor, bottom: Math.min(settings.cellBottom, next?.rect.y ?? settings.cellBottom) } : null,
+            Boolean(settings.nativeMappingBaseline), settings.nativeRowBaseline);
           const beforeLine = line.baseline - box.baselineOffset - cursor;
           if (settings.requireBaselineFit && beforeLine < -.25) throw wordError('layout-quality');
           const before = Math.max(0, beforeLine);
           const result = paragraph({ ...block, lines: [line], align: 'left' }, originX,
-            { before, assets, measurementContext: settings.measurementContext, lineHeight: box.height });
+            { before, assets, measurementContext: settings.measurementContext, lineHeight: box.height,
+              rightAllowance: tableLineAllowance(line, settings.cellRight, settings.measurementContext) });
           children.push(result.element); cursor += before + result.height;
         }
         breakColumn = false; continue;
@@ -322,33 +274,55 @@ function headerFooter(blocks, page, assets, footer = false) {
   return { content: footer ? new Footer({ children: children.length ? children : [empty()] }) : new Header({ children: children.length ? children : [empty()] }), origin };
 }
 
-export async function createWordBytes(document, assetList, { continuous = false, preserveGeometry = false, editableMath = false, check = () => {}, measurementContext = null } = {}) {
+export async function createWordBytes(document, assetList, { continuous = false, preserveGeometry = false, editableMath = false, strictMathGeometry = false, check = () => {}, measurementContext = null } = {}) {
   check();
   const quality = validateCoverage(document), assets = new Map(assetList.map(asset => [asset.id, asset]));
   quality.layout = assertLayoutQuality(document);
   if (assetList.reduce((sum, asset) => sum + asset.bytes.length, 0) > LIMITS.assetBytes) throw wordError('asset-large');
+  const generatedFonts = createOcrFontContext();
+  try {
+  const fonts = await sourceFontOptions(document, assetList, { onFont: (asset, info) => generatedFonts.add(asset, info.generatedProgram) }); check();
   const sections = [];
   quality.pagination = [];
   quality.nativeFormulas = 0;
   const nativeSourceIds = new Set();
-  // Native math is an internal validation path until its layout clears the same
-  // fidelity gate. The tool UI deliberately exports faithful formulas.
+  // The experimental writer supports more structures than the reader policy.
+  // Unverified structures retain their visible image in the desktop path.
   const mathWriter = editableMath ? (await import('./docx-math.js')).nativeMath : null;
   const mathFor = item => {
     if (!mathWriter) return null;
-    const ast = inferMathAst(item);
+    const limitPlan = planNativeMathRuns(item);
+    item = limitPlan?.region || item;
+    const ast = limitPlan?.ast || inferMathAst(item);
     if (!ast) return null;
+    const readerMode = strictMathGeometry ? nativeMathReaderMode(ast, item) : null;
+    if (strictMathGeometry && !readerMode) {
+      (quality.nativeMathFallbacks ||= []).push({ id: item.id, reason: 'reader-geometry' }); return null;
+    }
     let result;
     try { result = mathWriter(ast, item, { measurementContext, defaultSize: DEFAULT_DOCUMENT_SIZE / 2 }); }
     catch (error) {
-      if (error?.code !== 'native-math-layout') throw error;
+      if (!['native-math-layout','structure'].includes(error?.code)) throw error;
       (quality.nativeMathFallbacks ||= []).push({ id: item.id, reason: error.message });
       return null;
+    }
+    if (readerMode === 'flat' && measurementContext && result.sourceLayout) {
+      // Calibrated OCR glyphs use Office's fixed-line baseline placement. The
+      // compact native frame's ascent estimate is not the scan font's actual
+      // baseline; the existing source-baseline frame below preserves it.
+      result.sourceLayout.strictGeometry = !item.ocrMath;
+      const box = result.sourceLayout.measured;
+      const expected = item.rect.x + item.rect.width - result.sourceLayout.x;
+      if (!Number.isFinite(box?.width) || Math.abs(box.width - expected) > Math.max(1, item.size * .08)) {
+        (quality.nativeMathFallbacks ||= []).push({ id: item.id, reason: 'measured-width' });
+        return null;
+      }
     }
     item.sourceIds.forEach(id => nativeSourceIds.add(id)); quality.nativeFormulas++;
     return result;
   };
   measurementContext ||= typeof OffscreenCanvas === 'function' ? new OffscreenCanvas(1, 1).getContext('2d') : null;
+  measurementContext = generatedFonts.context(measurementContext);
   if (continuous) {
     const planned = continuousSection(document, assets, { flow, empty, measurementContext, check, positionedPage,
       textRuns, runOptions, image, table, originX, measureLineBox, mathFor });
@@ -403,9 +377,12 @@ export async function createWordBytes(document, assetList, { continuous = false,
     }
     flush(); if (first) append([]);
   }
-  const file = new Document({ creator: 'ToolKnit', title: 'Converted PDF', description: 'Editable document converted locally with ToolKnit.',
+  const file = new Document({ ...(fonts.length ? { fonts } : {}), creator: 'ToolKnit', title: 'Converted PDF', description: 'Editable document converted locally with ToolKnit.',
     styles: { default: { document: { run: { font: { ascii: 'Arial', hAnsi: 'Arial', eastAsia: 'SimSun' }, size: DEFAULT_DOCUMENT_SIZE }, paragraph: { spacing: { after: 0 }, widowControl: false } } } },
     sections });
+  // Preserve scan backgrounds and formula assets when the reader saves edits.
+  // Office otherwise defaults to resampling embedded images, even on a no-op save.
+  file.Settings.addChildElement(new BuilderElement({ name: 'w:doNotAutoCompressPictures' }));
   const buffer = await Packer.toArrayBuffer(file); check();
   quality.nativeMathCharacters = document.pages.flatMap(page => page.sources).filter(source => nativeSourceIds.has(source.id))
     .reduce((sum, source) => sum + source.text.replace(/\s/g, '').length, 0);
@@ -413,4 +390,5 @@ export async function createWordBytes(document, assetList, { continuous = false,
   quality.imageCharacters -= quality.nativeMathCharacters;
   if (buffer.byteLength > LIMITS.outputBytes || buffer.byteLength < 100) throw wordError('output-large');
   return { bytes: new Uint8Array(buffer), quality };
+  } finally { generatedFonts.dispose(); }
 }

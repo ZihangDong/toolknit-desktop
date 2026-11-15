@@ -1,6 +1,7 @@
 import { createLifecycleScope } from '../app/tool-lifecycle.js';
 
 const editable = target => target?.closest?.('input,textarea,select,[contenteditable="true"]');
+const pointerControl = target => target?.closest?.('button,a[href],[data-preview-interactive]');
 
 /** Shared wheel/pan input. The feature owns scale, rendering and document lifetime. */
 export function createPreviewViewport({
@@ -88,7 +89,7 @@ export function createPreviewViewport({
     scope.event(viewport, 'pointerenter', () => { hovered = true; });
     scope.event(viewport, 'pointerleave', () => { hovered = false; });
     scope.event(document, 'keydown', event => {
-      if (event.code !== 'Space' || editable(event.target) || !active()) return;
+      if (event.code !== 'Space' || editable(event.target) || pointerControl(event.target) || !active()) return;
       space = true;
       if (hovered || viewport.contains(event.target)) event.preventDefault();
     });
@@ -96,7 +97,7 @@ export function createPreviewViewport({
     scope.event(window, 'blur', reset);
     scope.event(viewport, 'pointerdown', event => {
       suppressClick = false;
-      if (!active() || editable(event.target) || !(event.button === 1 || event.button === 0 && (space || panPrimary()))) return;
+      if (!active() || editable(event.target) || pointerControl(event.target) && event.button === 0 && !space || !(event.button === 1 || event.button === 0 && (space || panPrimary()))) return;
       event.preventDefault(); event.stopImmediatePropagation();
       dragging = { id: event.pointerId, x: event.clientX, y: event.clientY, left: viewport.scrollLeft, top: viewport.scrollTop };
       viewport.classList.add('is-preview-panning');

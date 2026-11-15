@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 const portableFamilies = new Map(['Arial', 'Times New Roman', 'Courier New', 'Calibri', 'Cambria', 'Cambria Math',
   'Georgia', 'Palatino Linotype', 'Verdana', 'Tahoma', 'Segoe UI', 'Trebuchet MS', 'Comic Sans MS', 'Consolas', 'Lucida Console',
   'Symbol', 'Wingdings', 'Webdings', 'SimSun', 'SimHei', 'KaiTi', 'FangSong', 'Microsoft YaHei']
@@ -48,7 +48,10 @@ export function mathWordFont(glyph) {
   // Common text faces omit many Unicode math symbols. Measuring their missing
   // glyph and letting Office choose another face produces unrelated geometry.
   if (glyph.alphabet || [...glyph.text].some(character => character.codePointAt(0) > 127 && /\p{Sm}/u.test(character))) return 'Cambria Math';
+  if (/^(?:[A-Z]{6}\+)?CMTT(?:[5-9]|1[012])$/.test(glyph.font || '') && /^[a-z]{3,12}$/.test(glyph.text)
+    && !glyph.italic && !glyph.bold) return 'Courier New';
   const mapped = wordFont(glyph.font);
+  if (mapped === 'Cambria' && /^[\x20-\x7e]+$/.test(glyph.text)) return mapped;
   return ['Times New Roman', 'Arial', 'Courier New', 'Cambria Math', 'Symbol'].includes(mapped) ? mapped : 'Cambria Math';
 }
 
@@ -57,4 +60,17 @@ export function outputWordFont(name) {
   // LibreOffice substitutes the English aliases despite the Windows faces
   // being installed. Their localized family names select the intended faces.
   return family === 'KaiTi' ? '\u6977\u4f53' : family === 'FangSong' ? '\u4eff\u5b8b' : family;
+}
+
+/** Newly typed OCR characters cannot use a scan-derived subset's absent glyph.
+ * Keep a known local text family where it supports the requested script. This
+ * is a style hint only; it never authorizes embedding a source font program. */
+export function localOcrTextFont(name, text) {
+  if (typeof name !== 'string' || !name.trim() || name.length > 160 || /[<>\x00-\x1f\x7f-\x9f]/.test(name)) return null;
+  const font = wordFont(name);
+  if (!portableFamilies.has(font.replace(/\s/g, '').toLowerCase())
+    || ['Symbol', 'Wingdings', 'Webdings', 'Cambria Math'].includes(font)) return null;
+  if (/[\p{Script=Han}\u3000-\u303f\uff00-\uffef]/u.test(text)
+    && !['SimSun', 'SimHei', 'KaiTi', 'FangSong', 'Microsoft YaHei'].includes(font)) return null;
+  return font;
 }

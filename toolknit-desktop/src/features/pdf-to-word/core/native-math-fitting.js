@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 // Align verified radical geometry, sharing a fraction axis when one exists. The
 // source's horizontal rule and sign bottom have different painted lengths, so
 // their geometric errors are weighted by those lengths, never by page whitespace.

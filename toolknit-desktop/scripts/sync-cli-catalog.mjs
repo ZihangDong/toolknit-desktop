@@ -42,7 +42,8 @@ const lines = [
   '## 运行边界', '',
   '- Windows 硬件能力取决于系统查询权限；其他平台不宣称具有完整硬件数据。',
   '- 音视频需要 FFmpeg；PPT/Excel 渲染需要 LibreOffice；离线转写需要已安装的 Whisper 模型。缺少依赖返回结构化错误，不自动下载大模型。',
-  '- PDF 转 Word 默认离线，AI 模式只辅助结构；复杂图形/公式可保留图像，扫描件 OCR 不在其转换范围。引擎遵循独立授权，联系 info@toolknit.com。',
+  '- PDF 转 Word 默认离线，AI 模式只辅助结构；复杂图形/公式可保留图像，CLI/MCP 暂不包含扫描 OCR；桌面端可按需安装本地 OCR 模型处理扫描/混合页。引擎遵循独立授权，联系 info@toolknit.com。',
+  '- V3.3 桌面 PDF 转 Word 仅提供本地原排版转换，编辑通过结构化 Word 文档模式交接；CLI/MCP 的既有 A4/AI 参数保持兼容，不依赖桌面界面或会话。',
   '- 只读文件扫描不删除内容。剪贴板监控、密码生成、系统清理和交互型悬浮窗口没有 headless 入口。',
   '- 直接调用 AI 文本/PDF 图像识别或开启 PDF-to-Word ai_mode 会发送相关文字/区域图像；桌面 Key 不与 CLI/MCP 共享。',
   '- 文件输出显式指定，默认拒绝覆盖。工具若返回 partial/no-reduction 等状态，应检查 outputs、warnings 和逐项结果。', ''

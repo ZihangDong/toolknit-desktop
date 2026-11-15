@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createCanvas } from '@napi-rs/canvas';
-import { rectangle, moveRect, resizeRect, resizeAnnotation, windowAt, parseTranslations, formatOcrText, ocrLines, normalizeOcrText, fitText, annotationTextLayout, tightenTextAnnotation, isPaintStroke, errorKey } from '../src/features/quick-screenshot/core.js';
-import { translationBatches, translationBudget, translationBlocks, resolveTranslationBatches, createTranslationRequestBudget, layoutTranslations } from '../src/features/quick-screenshot/translation.js';
+import { rectangle, moveRect, resizeRect, resizeAnnotation, windowAt, formatOcrText, ocrLines, normalizeOcrText, fitText, annotationTextLayout, tightenTextAnnotation, isPaintStroke, errorKey } from '../src/features/quick-screenshot/core.js';
+import { translationBlocks, layoutTranslations } from '../src/features/quick-screenshot/translation.js';
 import { composeScreenshot } from '../src/features/quick-screenshot/renderer.js';
 import { createSnapshotHistory } from '../src/shared/snapshot-history.js';
 
@@ -15,8 +15,6 @@ for(let handle=0;handle<8;handle++) {
 assert.deepEqual(resizeRect({x:20,y:20,width:60,height:40},3,{x:120,y:90},160,100),{x:20,y:20,width:100,height:40});
 assert.deepEqual(resizeAnnotation({x:20,y:20,width:60,height:40,points:[{x:20,y:20},{x:80,y:60}]},{x:10,y:10,width:120,height:80}).points,[{x:10,y:10},{x:130,y:90}]);
 assert.deepEqual(windowAt({bounds:{x:-1920,y:-100,width:3840,height:1200},windows:[{x:-1800,y:0,width:600,height:500}]},{x:200,y:200}),{x:120,y:100,width:600,height:500});
-const lines=[{id:1,text:'one'},{id:2,text:'two'}];
-assert.deepEqual(parseTranslations('[{"id":2,"text":"B"},{"id":1,"text":"A"}]',lines).map(l=>l.text),['A','B']);
 assert.equal(formatOcrText({text:'fallback',lines:[
   {id:2,text:'world',x:60,y:40,width:40,height:16},
   {id:1,text:'hello',x:10,y:40,width:40,height:16},
@@ -27,12 +25,6 @@ assert.equal(normalizeOcrText('我 先 检 查 内 容 ，然后运行 git statu
 const words=[{text:'Hello',x:10,y:10,width:28,height:14},{text:'world',x:40,y:10,width:30,height:14}];
 assert.equal(formatOcrText({lines:[{text:'bad fallback',x:10,y:10,width:60,height:14,words}]}),'Hello world');
 assert.equal(ocrLines({lines:[{id:9,text:'我 先 检 查',x:10,y:10,width:60,height:14},null,{text:'bad',x:0,y:0,width:0,height:0}]}).length,1);
-assert.deepEqual(translationBatches(Array.from({length:81},(_,id)=>({id,text:'hello'}))).map(batch=>batch.length),[12,12,12,12,12,12,9]);
-assert.deepEqual(translationBatches([{id:0,text:'x'.repeat(4000)},{id:1,text:'y'.repeat(3000)}]).map(batch=>batch.length),[1,1]);
-assert.ok(translationBudget([{text:'short'}]) < translationBudget([{text:'x'.repeat(2000)}]));
-assert.ok(translationBudget([{text:'short'}])>=4096,'short text also needs room for reasoning and JSON');
-assert.throws(()=>parseTranslations('[null,null]',lines),/invalid-translation/);
-assert.throws(()=>parseTranslations('broken json',lines),/invalid-translation/);
 const paragraphs=translationBlocks([
   {id:0,text:'A wrapped',x:10,y:10,width:100,height:16},
   {id:1,text:'sentence.',x:10,y:32,width:90,height:16},
@@ -41,32 +33,6 @@ const paragraphs=translationBlocks([
 ]);
 assert.equal(paragraphs.length,3);assert.equal(paragraphs[0].text,'A wrapped\nsentence.');
 assert.equal(paragraphs[0].height,38);assert.equal(paragraphs[0].fontHeight,16);
-const response=batch=>JSON.stringify(batch.map(line=>({id:line.id,text:`Translated ${line.id}`})));
-const truncated=()=>Object.assign(new Error('truncated'),{code:'response_truncated'});
-const retries=[];
-const recovered=await resolveTranslationBatches(lines,async(batch,tokens)=>{
-  retries.push(tokens);if(retries.length===1)throw truncated();return response(batch);
-});
-assert.equal(recovered.lines.length,2);assert.equal(recovered.failed.length,0);assert.equal(retries[1],16384);
-const splitCalls=[];
-const split=await resolveTranslationBatches(lines,async(batch)=>{
-  splitCalls.push(batch.length);if(batch.length>1)throw truncated();return response(batch);
-});
-assert.deepEqual(splitCalls,[2,2,1,1]);assert.equal(split.lines.length,2);
-const partial=await resolveTranslationBatches(lines,async(batch)=>{
-  if(batch.some(line=>line.id===2))return 'not JSON';return response(batch);
-});
-assert.deepEqual(partial.lines.map(line=>line.id),[1]);assert.equal(partial.failed[0].line.id,2);
-let requests=0;
-const stopped=await resolveTranslationBatches(lines,async()=>{requests++;throw Object.assign(new Error('unauthorized'),{code:'http_error',status:401});});
-assert.equal(requests,1);assert.equal(stopped.failed.length,2);
-const exhausted=await resolveTranslationBatches(lines,async()=>{throw new Error('must not request');},{budget:{requests:24,deadline:100,now:()=>0}});
-assert.equal(exhausted.lines.length,0);assert.equal(exhausted.failed.length,2);
-const timedOut=await resolveTranslationBatches(lines,async()=>{throw new Error('must not request');},{budget:{requests:0,deadline:100,now:()=>100}});
-assert.equal(timedOut.failed[0].error.code,'timeout');
-const cancellation=new AbortController();
-await assert.rejects(()=>resolveTranslationBatches(lines,async()=>{cancellation.abort();return response(lines);},{signal:cancellation.signal}),/aborted/);
-assert.ok(createTranslationRequestBudget().deadline>Date.now());
 assert.equal(formatOcrText({lines:[
   {text:'第二段',x:10,y:100,width:60,height:16},
   {text:'中文',x:10,y:10,width:30,height:16},
@@ -76,7 +42,6 @@ assert.equal(formatOcrText({lines:[{text:'名称',x:10,y:10,width:30,height:16},
 assert.equal(formatOcrText({text:'fallback',lines:[{text:'bad',x:0,y:0,width:0,height:0}]}),'fallback');
 for(const [code,key]of [['aborted','cancelled'],['provider_changed','providerChanged'],['timeout','aiTimeout'],['invalid_config','aiInvalidConfig'],['network_error','aiNetwork']])assert.equal(errorKey({code,message:'localized'}),key);
 assert.equal(errorKey({code:'http_error',status:507}),'aiProviderUnavailable');
-for(const input of ['[]','[{"id":1,"text":"A"},{"id":1,"text":"B"}]','[{"id":1,"text":"A"},{"id":3,"text":"B"}]','[{"id":1,"text":""},{"id":2,"text":"B"}]'])assert.throws(()=>parseTranslations(input,lines));
 
 globalThis.document={createElement:()=>createCanvas(1,1)};
 const source=createCanvas(320,200), ctx=source.getContext('2d');

@@ -1,10 +1,17 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
+import { sourceAlignedEquationRegion as alignedSourceRegion, sourceAlignedRowContext } from './source-aligned-equations.js';
+import { sourceUpperAttachmentRegion } from './source-upper-attachment.js';
+import {sourceIndexedSumRegion,sourceIndexedSumLayoutMeasurement} from './source-indexed-sum.js';
+import {sourceScalarRelationRegion} from './source-scalar-relation.js';
 // Adapted from docx 9.12.0's equations layout, MIT, Copyright (c) 2016 Dolan.
 // Full notice: public/assets/licenses/pdf-word-dependencies.txt.
-// Only the normal-text structures emitted by this writer are supported. This
+// Only source-bound literal structures emitted by this writer are supported. This
 // predicts geometry; actual reader rendering remains the acceptance authority.
+import { sourceFirstLevelIndexRegion } from './source-first-level-index.js';
+import { sourceNativeUnicodeScalar, nativeUnicodeScalarLayoutMeasurement } from './native-unicode-scalars.js';
+import { mathUnicodeRunStyle } from './font-style.js';
 const UNITS = 2048;
 const CONSTANTS = Object.freeze({ axisHeight: 585, subscriptShiftDown: 418, subscriptTopMax: 760,
   subscriptBaselineDropMin: 320, superscriptShiftUp: 750, superscriptShiftUpCramped: 615,
@@ -44,7 +51,18 @@ const fail = reason => { throw new NativeMathLayoutError(reason); };
 /** The callback measures the exact font used by the serialized normal-text run.
  * Each invocation has its own traversal budget and script/font contexts.
  */
-export function createNativeMathMeasurer(measureRun) {
+export function createNativeMathMeasurer(measureRun, { sourceProvenItalicGamma = false, sourceProvenUnicodeScalar = null, sourceIndexRegion = null, sourceScalarRelationRegion: relationRegion = null,sourceIndexedSumRegion:sumRegion=null,sourceUpperAttachmentRegion:upperRegion=null,sourceAlignedEquationRegion:alignedRegion=null,sourceAlignedRow:alignedContext=null } = {}) {
+  const scalarSource = sourceNativeUnicodeScalar(sourceProvenUnicodeScalar) ? sourceProvenUnicodeScalar.mathGlyphs[0] : null;
+  const indexSource = sourceFirstLevelIndexRegion(sourceIndexRegion);
+  const sumSource=sourceIndexedSumRegion(sumRegion);if(sumRegion!==null&&!sumSource)fail('Incomplete indexed sum source evidence');
+  const upperSource=sourceUpperAttachmentRegion(upperRegion);if(upperRegion!==null&&!upperSource)fail('Incomplete upper attachment source evidence');
+  const alignedSource=alignedSourceRegion(alignedRegion),alignedRowSource=sourceAlignedRowContext(alignedContext);
+  if(alignedRegion!==null&&!alignedSource||alignedContext!==null&&!alignedRowSource)fail('Incomplete aligned source evidence');
+  const sourceSpaceSize=upperSource?.main.size||alignedRowSource?.item.size
+    ||(alignedSource?alignedRegion.rect.width+alignedSource.rows[0].item.size*2:0);
+  const relationSource=sourceScalarRelationRegion(relationRegion);
+  if(relationRegion!==null&&!relationSource)fail('Incomplete scalar relation source evidence');
+  if (sourceIndexRegion !== null && !indexSource) fail('Incomplete first-level index source evidence');
   if (typeof measureRun !== 'function') throw new TypeError('Math text measurement is required');
   return (equation, size, context = {}) => {
     if (!Number.isFinite(size) || size < .5 || size > 400) fail('Invalid math size');
@@ -99,7 +117,10 @@ export function createNativeMathMeasurer(measureRun) {
       }
       return { ...plain(base.width + Math.max(sub?.width || 0, sup?.width || 0) + (operator ? 0 : constant('spaceAfterScript', style)),
         Math.max(base.height, sup ? up + sup.height : 0), Math.max(base.depth, sub ? down + sub.depth : 0)),
-        placement: { subscript: down, superscript: -up } };
+        // Horizontal metadata exposes the measured serialized argument origin.
+        // This changes no layout widths or existing vertical placement gates.
+        placement: { subscript: down, superscript: -up, baseAdvance: base.width,
+          subscriptX: base.width, superscriptX: base.width } };
     };
     const scripts = (value, style, nesting) => {
       const baseParts = parts(find(value, 'm:e'), style, nesting), real = baseParts.filter(part => !part.space);
@@ -161,6 +182,21 @@ export function createNativeMathMeasurer(measureRun) {
       const body = argument(find(value, 'm:e'), style, nesting);
       return plain(box.width + points(UNITS / 6, style) + body.width, Math.max(box.height, body.height), Math.max(box.depth, body.depth));
     };
+    const alignedArray=(value,style,nesting)=>{
+      if(!alignedSource||nesting!==0||style.level!==0||style.depth!==0)fail('Unsupported aligned array context');
+      const props=find(value,'m:eqArrPr'),raw=children(value),rows=raw.filter(v=>v['m:e']);
+      const names=children(props).map(v=>Object.keys(v)[0]);
+      const requested=Number(property(props,'m:rSp'));
+      const expected=Math.round((alignedSource.rows[1].item.baseline-alignedSource.rows[0].item.baseline)*20);
+      if(raw.length!==3||rows.length!==2||names.length!==3||new Set(names).size!==3
+        ||names.some(n=>!['m:baseJc','m:rSpRule','m:rSp'].includes(n))
+        ||property(props,'m:baseJc')!=='top'||Number(property(props,'m:rSpRule'))!==3
+        ||!Number.isFinite(requested)||requested!==expected||requested<=0||requested>2000)
+        fail('Unverified aligned array spacing');
+      const boxes=rows.map(v=>argument(v['m:e'],{...style,level:0},nesting+1));
+      return plain(Math.max(...boxes.map(b=>b.width)),boxes[0].height,
+        Math.max(boxes[0].depth,requested/20+boxes[1].depth),true);
+    };
     const matrix = (value, style, nesting) => {
       const props = find(value, 'm:mPr'), rule = Number(property(props, 'm:rSpRule') ?? 0);
       const requested = Number(property(props, 'm:rSp') ?? 0) / 20;
@@ -183,7 +219,7 @@ export function createNativeMathMeasurer(measureRun) {
         placement: { matrixRows: baselines.map(value => value - shift), matrixWidths: widths } };
     };
     const run = (value, style) => {
-      if (!on(find(value, 'm:rPr'), 'm:nor')) fail('Unsupported nonliteral math text');
+      const mathProps = find(value, 'm:rPr');
       const props = find(value, 'w:rPr'), attr = name => attributes(find(props, name));
       const text = children(value).filter(child => child['m:t']).map(child => Array.isArray(child['m:t'])
         ? child['m:t'].filter(item => typeof item === 'string').join('') : '').join('');
@@ -193,10 +229,33 @@ export function createNativeMathMeasurer(measureRun) {
       const format = { text, size: scriptSize(ownSize, style.depth), font: attr('w:rFonts')['w:ascii'] || 'Cambria Math',
         bold: on(props, 'w:b', 'w'), italic: on(props, 'w:i', 'w'), scale: Number(attr('w:w')['w:val'] ?? 100),
         spacing: Number(attr('w:spacing')['w:val'] ?? 0) / 20 };
+      // Its italic outline is encoded in the unchanged Unicode glyph. The
+      // explicit math style survives reader save-time folding; measuring a
+      // second synthetic italic would change the already calibrated geometry.
+      const unicodeLiteral = mathUnicodeRunStyle(text,{sourceProvenItalicGamma,sourceProvenUnicodeScalar:Boolean(scalarSource && scalarSource.text === text || relationSource && relationSource.base.text === text),sourceIndexRegion})==='italic'&&on(mathProps,'m:lit')
+        &&property(mathProps,'m:sty')==='i'&&format.font==='Cambria Math'&&!format.bold&&!format.italic;
+      // A source-proven upper attachment needs a math-mode spacer so that
+      // replacing its next character cannot inherit normal-text formatting.
+      // Only the writer's one-point, single-space, literal italic spacer is
+      // admitted; source proof is mandatory and all old paths stay unchanged.
+      const upperMathSpace=Boolean(sourceSpaceSize&&text===' '&&ownSize===1&&format.font==='Arial'
+        &&format.size>=.5&&format.size<=1&&format.scale===100&&!format.bold&&!format.italic
+        &&Math.abs(format.spacing)<=sourceSpaceSize&&on(mathProps,'m:lit')
+        &&property(mathProps,'m:sty')==='i'&&children(mathProps).length===2
+        &&children(mathProps).every(v=>Object.keys(v).length===1&&['m:lit','m:sty'].includes(Object.keys(v)[0])));
+      if (!on(mathProps, 'm:nor')&&!unicodeLiteral&&!upperMathSpace) fail('Unsupported nonliteral math text');
       if (!Number.isFinite(format.size) || format.size < .5 || format.size > 400 || !Number.isFinite(format.scale)
         || format.scale < 1 || format.scale > 600 || !Number.isFinite(format.spacing) || Math.abs(format.spacing) > 1440
         || typeof format.font !== 'string' || format.font.length > 80) fail('Invalid math text format');
-      return { box: checked({ ...measureRun(format), italic: 0, characters: true }), kind: 'ordinary', ...(text.trim() ? {} : { space: true }) };
+      const measured = measureRun(format);
+      if (scalarSource && (scalarSource.text !== text || !nativeUnicodeScalarLayoutMeasurement(text, format, measured)))
+        fail('Unverified source Unicode scalar hmtx measurement');
+      if (indexSource && text.trim() && (![indexSource.base,indexSource.index].some(g=>g.text===text)
+        || !nativeUnicodeScalarLayoutMeasurement(text, format, measured))) fail('Unverified source index hmtx measurement');
+      if(relationSource&&text===relationSource.base.text&&!nativeUnicodeScalarLayoutMeasurement(text,format,measured))
+        fail('Unverified source relation scalar hmtx measurement');
+      if(sumSource&&text.trim()&&!sourceIndexedSumLayoutMeasurement(text,format,measured))fail('Unverified indexed sum hmtx measurement');
+      return { box: checked({ ...measured, italic: 0, characters: true }), kind: 'ordinary', ...(text.trim() ? {} : { space: true }) };
     };
     const parts = (value, style, nesting = 0) => {
       budget(value, nesting);
@@ -217,10 +276,29 @@ export function createNativeMathMeasurer(measureRun) {
           const contentParts = parts(find(content, 'm:e'), inner, nesting + 1);
           box = { ...(contentParts.length === 1 ? contentParts[0].box : row(contentParts, inner)), characters: false };
         }
+        else if(name==='m:phant'){
+          const props=find(content,'m:phantPr');
+          const fields=children(props).flatMap(Object.keys),outer=children(content).flatMap(Object.keys);
+          if(!sumSource||fields.length!==2||!fields.includes('m:show')||!fields.includes('m:zeroWid')
+            ||outer.length!==2||!outer.includes('m:phantPr')||!outer.includes('m:e')
+            ||!on(props,'m:show')||!on(props,'m:zeroWid'))fail('Unsupported visible zero-width source wrapper');
+          const base=argument(find(content,'m:e'),style,nesting+1);box={...base,width:0,italic:0,characters:false};
+        }
+        else if (name === 'm:acc') {
+          const props = find(content, 'm:accPr'), runProps = find(find(props, 'm:ctrlPr'), 'w:rPr');
+          const size = Number(attributes(find(runProps, 'w:sz'))['w:val']) / 2;
+          if (!(property(props,'m:chr')==='\u02c6'||sumSource&&property(props,'m:chr')==='\u0304') || style.depth || style.level > 1 || !Number.isFinite(size) || size < 4 || size > 40
+            || attributes(find(runProps, 'w:rFonts'))['w:ascii'] !== 'Cambria Math') fail('Unsupported accent');
+          const base = argument(find(content, 'm:e'), style, nesting + 1);
+          // Only the narrow native hat is emitted. This bounded envelope is a
+          // prediction; the source/reader ink proof is the acceptance gate.
+          box = { ...base, height: base.height + size * .25, characters: false };
+        }
         else if (name === 'm:f') { box = fraction(content, style, nesting + 1); kind = 'inner'; }
         else if (['m:sSub', 'm:sSup', 'm:sSubSup'].includes(name)) box = scripts(content, style, nesting + 1);
         else if (name === 'm:rad') box = radical(content, style, nesting + 1);
         else if (name === 'm:nary') { box = nary(content, style, nesting + 1); kind = 'operator'; after = 'ordinary'; }
+        else if (name === 'm:eqArr') box = alignedArray(content, style, nesting);
         else if (name === 'm:m') box = matrix(content, style, nesting + 1);
         else if (['m:limLow', 'm:limUpp'].includes(name)) {
           const upper = name === 'm:limUpp', base = argument(find(content, 'm:e'), style, nesting + 1);

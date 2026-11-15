@@ -55,3 +55,13 @@
     <div class="transcription-model-actions local-translation-actions"><button class="settings-btn" id="localTranslationInstall" type="button"></button><button class="settings-btn" id="localTranslationCancel" type="button" data-i18n="common.cancel" hidden></button><button class="settings-btn" id="localTranslationRemove" type="button" data-i18n="settings.localTranslation.remove" hidden></button></div>
   </div>
 </div>
+<div class="transcription-model-overlay" id="localOcrOverlay" aria-hidden="true" inert role="dialog" aria-modal="true" aria-labelledby="localOcrTitle">
+  <div class="transcription-model-panel">
+    <div class="transcription-model-header"><div><span class="tools-eyebrow">LOCAL OCR</span><h2 id="localOcrTitle" data-i18n="settings.localOcr.title"></h2></div><button class="pdf-page-workspace-close" type="button" id="localOcrClose" data-i18n-aria-label="common.close"><i data-lucide="x"></i></button></div>
+    <p class="transcription-model-intro" data-i18n="settings.localOcr.hint"></p>
+    <p class="transcription-model-intro" data-i18n="settings.localOcr.privacy"></p>
+    <p class="transcription-model-intro" data-i18n="settings.localOcr.license"></p>
+    <p id="localOcrStatus" role="status" aria-live="polite"></p><progress id="localOcrProgress" hidden></progress><span id="localOcrBytes" hidden></span>
+    <div class="transcription-model-actions local-translation-actions"><button class="settings-btn" id="localOcrInstall" type="button"></button><button class="settings-btn" id="localOcrCancel" type="button" data-i18n="common.cancel" hidden></button><button class="settings-btn" id="localOcrRemove" type="button" data-i18n="settings.localOcr.remove" hidden></button></div>
+  </div>
+</div>

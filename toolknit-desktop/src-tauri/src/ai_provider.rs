@@ -845,8 +845,26 @@ mod tests {
         use std::io::{Read, Write};
         let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
         let address = listener.local_addr().unwrap();
+        listener.set_nonblocking(true).unwrap();
         let server = std::thread::spawn(move || {
-            let (mut stream, _) = listener.accept().unwrap();
+            // A busy test runner can exhaust the 80ms request budget before
+            // connecting. Bound the mock itself so join() cannot wait forever
+            // after the client has already reported the expected timeout.
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+            let (mut stream, _) = loop {
+                match listener.accept() {
+                    Ok(connection) => break connection,
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        if std::time::Instant::now() >= deadline {
+                            return;
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(5));
+                    }
+                    Err(error) => panic!("mock server accept failed: {error}"),
+                }
+            };
+            stream.set_read_timeout(Some(std::time::Duration::from_secs(2))).unwrap();
+            stream.set_write_timeout(Some(std::time::Duration::from_secs(2))).unwrap();
             let mut bytes = [0u8; 8192];
             let _ = stream.read(&mut bytes);
             std::thread::sleep(std::time::Duration::from_millis(250));

@@ -13,7 +13,13 @@ const ENGINE_URL: &str = crate::platform::dependency_download::TRANSLATION_ENGIN
 const DOWNLOAD_BYTES: u64 = 201_647_315;
 
 fn lock<T>(value: &Mutex<T>) -> std::sync::MutexGuard<'_, T> { value.lock().unwrap_or_else(|e| e.into_inner()) }
-fn root() -> Result<PathBuf, String> { Ok(toolknit_app_data_dir()?.join("local-translation")) }
+fn root() -> Result<PathBuf, String> {
+    #[cfg(test)]
+    if let Some(root) = std::env::var_os("TOOLKNIT_OCR_WEBVIEW_APPDATA") {
+        return Ok(PathBuf::from(root).join("ToolKnit/local-translation"));
+    }
+    Ok(toolknit_app_data_dir()?.join("local-translation"))
+}
 fn installed(root: &Path) -> PathBuf { root.join(VERSION) }
 fn check_cancel(cancel: &AtomicBool) -> Result<(), String> {
     if cancel.load(Ordering::Relaxed) { Err("translation:cancelled".into()) } else { Ok(()) }
@@ -66,8 +72,9 @@ fn complete(dir: &Path) -> bool {
     std::fs::read_to_string(dir.join("ready")).is_ok_and(|s| s == ENGINE_HASH)
         && regular_size(&dir.join(ENGINE_NAME), ENGINE_BYTES)
         && records().iter().all(|r| regular_size(&model_path(dir,r),r.decompressed_size))
-        && std::fs::read_to_string(dir.join("config/records.json")).is_ok_and(|s| s == RECORDS)
+        && std::fs::read_to_string(dir.join("config/records.json")).is_ok_and(|s| same_records(&s))
 }
+fn same_records(value: &str) -> bool { value.lines().eq(RECORDS.lines()) }
 #[derive(Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct Progress { phase: String, received: u64, total: u64, source: String }
@@ -193,6 +200,12 @@ pub(super) fn shutdown(app: &tauri::AppHandle) {
 }
 
 #[cfg(test)]
+pub(super) async fn ocr_translation_fixture(dir: &Path, texts: &[String]) -> Result<Vec<String>, String> {
+    let state = TranslationState::default();
+    process::translate(dir, &state, texts, "en", &AtomicBool::new(false)).await
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test] fn translation_sources_are_pinned_and_reject_arbitrary_urls() {
@@ -204,6 +217,9 @@ mod tests {
         assert!(serde_json::from_value::<Request>(serde_json::json!({"action":"install","source":"https://example.invalid/model.exe"})).is_err());
     }
     #[test] fn translation_manifest_is_pinned_and_bounded() {
+        let unix=RECORDS.replace("\r\n","\n");
+        assert!(same_records(&unix));assert!(same_records(&unix.replace('\n',"\r\n")));
+        assert!(!same_records(&unix.replace("sourceLanguage","unexpectedLanguage")),"line-ending compatibility never accepts changed manifest fields");
         let records=records();assert_eq!(records.len(),7);
         assert_eq!(ENGINE_BYTES+records.iter().map(|r|r.attachment.size).sum::<u64>(),DOWNLOAD_BYTES);
         for r in records { assert!(valid_target(&r.source_language)&&valid_target(&r.target_language)); assert!(!r.attachment.filename.contains('/'));assert_eq!(r.decompressed_hash.len(),64);assert_eq!(r.attachment.hash.len(),64); assert!(matches!(r.file_type.as_str(),"model"|"lex"|"vocab"|"srcvocab"|"trgvocab")); }

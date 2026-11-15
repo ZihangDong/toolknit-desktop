@@ -1,152 +1,71 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { createModalSession, setModalInteractivity } from '../../app/modal-runtime.js';
 import { moveFocusOutOfHiddenRegion } from '../../shared/tool-page-shell.js';
 import { pdfjsDocumentOptions, destroyPdfDocument } from '../../shared/pdfjs-options.js';
-import { createPreviewViewport } from '../../shared/preview-viewport.js';
 import { startScanAnimation } from '../../shared/curve-loading.js';
 import { tauriCorePromise, loadTauriDialog, loadTauriWebview } from '../../platform/tauri-runtime.js';
+import { createLocalOcrRuntime } from '../../platform/local-ocr-runtime.js';
 import { t, onLangChange, applyTranslations } from '../../i18n.js';
-import { LIMITS, wordError, validateInput, parsePageRange, outputName } from './core/input.js';
-import { analyzeWordDocument, enhanceWordStructure, publishWord } from './processor.js';
-import { createWordAiCache, wordInputDigest } from './ai-runtime.js';
-import { createWordPageStrip } from './page-strip.js';
-import { createWordResultEditor } from './result-editor.js';
-import { pageAssetIds, renderResultPage } from './result-preview.js';
+import { LIMITS, wordError, validateInput, outputName } from './core/input.js';
+import { analyzeWordDocument, publishWord } from './processor.js';
+import { createWordPageSelector } from './page-selector.js';
+import { downloadWord, wordErrorKey } from './output.js';
+import { createConversionDeadline } from './deadline.js';
 
 export function createPdfWordController({ overlay, isTauri = false, getOutputDir, displayFilesystemPath = value => value,
-  refreshIcons = () => {}, requestAi, getAiApiKey, getAiPlatformConfig, requestAiKeyConfiguration } = {}) {
+  refreshIcons = () => {}, openDocumentEditor, recognizePage: recognizeOverride } = {}) {
   const scope = createLifecycleScope(), byId = suffix => document.getElementById('pdfWord' + suffix);
   const tr = (key, params) => t('home.pdfWord.' + key, params);
-  const aiCache = createWordAiCache();
-  let owner = null, disposed = false, pdf = null, pdfjs = null, file = null, active = null, analysis = null, inputDigest = '';
-  let pageNumber = 1, previewRevision = 0, previewTask = null, mode = 'local', layout = 'faithful', zoom = 1;
-  let status = null, progress = null, passwordUpdate = null, result = null, strip = null, stopAnimation = null, confirmation = null, aiReview = null;
-  const key = () => JSON.stringify([byId('Range').value.trim(), layout]);
-  const alive = session => session && owner === session && !session.disposed;
+  let owner = null, disposed = false, pdf = null, pdfjs = null, file = null, active = null, analysis = null;
+  let result = null, status = null, progress = null, passwordUpdate = null, stopAnimation = null, pendingHandoff = null;
+  const alive = session => Boolean(session && owner === session && !session.disposed);
   const current = op => active === op && alive(op.owner) && !op.cancelled;
-  const viewport = createPreviewViewport({ viewport: byId('Preview'), content: byId('Paper'),
-    enabled: () => Boolean(owner && pdf && !active), getScale: () => zoom, min: .2, max: 4,
-    setScale: value => {
-      zoom = value; sizePaper(); previewRevision++; try { previewTask?.cancel(); } catch {} previewTask = null;
-    }, render: () => showPage({ refreshUi: false }) });
-  scope.use(viewport.dispose);
-  function sizePaper() {
-    byId('Paper').style.width = Math.round(Math.min(760, byId('Preview').clientWidth - 48) * zoom) + 'px';
-    byId('Paper').style.maxWidth = 'none';
-  }
-  let resizeTimer = 0, previewWidth = 0;
-  const resizePreview = new ResizeObserver(() => {
-    if (!owner || !pdf || active || !byId('Preview').clientWidth) return;
-    const width = byId('Preview').getBoundingClientRect().width;
-    if (Math.abs(width - previewWidth) < .5) return;
-    previewWidth = width;
-    viewport.reset(); sizePaper(); clearTimeout(resizeTimer);
-    const session = owner;
-    resizeTimer = setTimeout(() => { resizeTimer = 0; if (alive(session) && !active) void showPage({ refreshUi: false }); }, 130);
-  });
-  resizePreview.observe(byId('Preview')); scope.use(() => { resizePreview.disconnect(); clearTimeout(resizeTimer); });
-  const editor = createWordResultEditor({ overlay, byId, tr, enabled: () => Boolean(owner && !active && analysis),
-    pageNumber: () => pageNumber, report, changed: () => { update(); editor.render(); void showPage(); } });
   const processModal = createModalSession({ root: byId('ProgressOverlay'), background: overlay, initialFocus: byId('Cancel'), onClose: cancel, canClose: () => !active?.committing });
   const passwordModal = createModalSession({ root: byId('PasswordOverlay'), background: overlay, initialFocus: byId('Password'), onClose: cancel });
-  const successModal = createModalSession({ root: byId('SuccessOverlay'), background: overlay, initialFocus: byId('SuccessOk'), onClose: () => successModal.close() });
-  const confirmModal = createModalSession({ root: byId('ConfirmOverlay'), background: overlay, initialFocus: byId('ConfirmCancel'), onClose: () => finishConfirm(false) });
-  function finishConfirm(value) { const resolve = confirmation; confirmation = null; confirmModal.close(); resolve?.(value); }
-  async function confirm(message) {
-    if (confirmation) return false;
-    byId('ConfirmMessage').textContent = tr(message); confirmModal.open();
-    return new Promise(resolve => { confirmation = resolve; });
-  }
-  async function allowDiscard() { return !editor.dirty || await confirm('discardEdits'); }
+  const pagesModal = createModalSession({ root: byId('PagesOverlay'), background: overlay, initialFocus: byId('AllPages'), onClose: reset });
+  const successModal = createModalSession({ root: byId('SuccessOverlay'), background: overlay, initialFocus: byId('EditDocument'), onClose: reset });
+  const selector = createWordPageSelector({ root: byId('Selector'), tr, confirm: pages => { hideSelector(); void convert(pages); }, back: reset, refreshIcons });
   function setStatus(code, params = {}, error = false) { status = { code, params, error }; renderStatus(); }
-  function renderStatus() {
-    for (const id of ['Status', 'EmptyStatus']) {
-      byId(id).textContent = status && (id === 'Status' || !pdf) ? tr(status.code, status.params) : '';
-      byId(id).classList.toggle('is-error', Boolean(status?.error));
-    }
-  }
-  function update() {
-    const busy = Boolean(active) || editor.busy;
-    for (const id of ['Pick', 'EmptyPick', 'Range', 'Local', 'Ai', 'Faithful', 'Flow', 'Structure', 'PageInput']) byId(id).disabled = busy;
-    byId('Export').disabled = busy || !pdf;
-    byId('Prev').disabled = busy || !pdf || pageNumber <= 1;
-    byId('Next').disabled = busy || !pdf || pageNumber >= pdf.numPages;
-    byId('PageInput').value = String(pageNumber); byId('PageInput').max = String(pdf?.numPages || 1);
-    byId('PageNumber').textContent = '/ ' + (pdf?.numPages || 0);
-    byId('FileName').textContent = file?.name || ''; byId('FileName').title = file?.name || '';
-    byId('Meta').textContent = pdf ? tr('meta', { pages: pdf.numPages, size: (file.size / 1024 / 1024).toFixed(2) }) : '';
-    byId('Privacy').textContent = tr(mode === 'ai' ? 'aiPrivacy' : 'localPrivacy');
-    byId('PreviewLabel').textContent = tr(editor.dirty ? 'editedPreview' : 'originalPreview');
-    byId('Export').querySelector('span').textContent = tr(editor.dirty ? 'exportEdited' : 'export');
-    const editKey = byId('Structure').getAttribute('aria-pressed') === 'true' ? 'exitEdit' : 'structure';
-    byId('Structure').dataset.i18nTitle = byId('Structure').dataset.i18nAriaLabel = 'home.pdfWord.' + editKey;
-    byId('Structure').title = tr(editKey); byId('Structure').setAttribute('aria-label', tr(editKey));
-    byId('Structure').querySelector('span').dataset.i18n = 'home.pdfWord.' + editKey;
-    byId('Structure').querySelector('span').textContent = tr(editKey);
-    for (const button of overlay.querySelectorAll('[data-word-mode]')) button.setAttribute('aria-pressed', String(button.dataset.wordMode === mode));
-    for (const button of overlay.querySelectorAll('[data-word-layout]')) button.setAttribute('aria-pressed', String(button.dataset.wordLayout === layout));
-    let pages = null; try { if (pdf) pages = parsePageRange(byId('Range').value, pdf.numPages); } catch {}
-    strip?.update(pageNumber, pages); editor.render(); renderStatus();
-  }
+  function renderStatus() { byId('Status').textContent = status ? tr(status.code, status.params) : ''; byId('Status').classList.toggle('is-error', Boolean(status?.error)); }
+  function report(error) { const key = wordErrorKey(error); setStatus(key, {}, key !== 'cancelled'); }
   function setProgress(value) { progress = value; byId('ProgressTitle').textContent = tr(value.key, value); }
   function begin(kind) {
-    const session = owner;
-    const op = { owner: session, kind, cancelled: false, committing: false, abort: new AbortController(), worker: null, renderTask: null, loadingTask: null, nativeCancel: null };
-    op.check = () => { if (!current(op)) throw wordError('cancelled'); };
-    active = op; strip?.pause(); previewRevision++; try { previewTask?.cancel(); } catch {}
-    const timer = setTimeout(() => { if (current(op) && !op.committing) { cancel(); setStatus('error.timeout', {}, true); } }, LIMITS.timeoutMs);
-    op.releaseTimer = session.use(() => clearTimeout(timer));
-    update(); byId('Cancel').disabled = false; setProgress({ key: kind === 'load' ? 'loading' : 'preparing' }); processModal.open();
-    stopAnimation?.(); stopAnimation = startScanAnimation(byId('ProgressCanvas'), byId('ProgressQuote'), tr);
-    return op;
+    const op = { owner, cancelled: false, committing: false, abort: new AbortController(), worker: null, renderTask: null, loadingTask: null, nativeCancel: null };
+    op.check = () => { if (!current(op)) throw wordError('cancelled'); }; active = op;
+    op.deadline = createConversionDeadline({ baseMs: LIMITS.timeoutMs, onTimeout: () => { if (current(op) && !op.committing) { cancel(); setStatus('error.timeout', {}, true); } } });
+    op.addOcrBudget = () => op.deadline.addOcrPage();
+    byId('EmptyPick').disabled = true; setProgress({ key: kind === 'load' ? 'loading' : 'preparing' });
+    processModal.open(); stopAnimation?.(); stopAnimation = startScanAnimation(byId('ProgressCanvas'), byId('ProgressQuote'), tr); return op;
+  }
+  function end(op) {
+    op.deadline.dispose(); if (active !== op) return;
+    active = null; passwordUpdate = null; byId('Password').value = '';
+    passwordModal.close({ restore: false }); processModal.close(); stopAnimation?.(); stopAnimation = null; byId('EmptyPick').disabled = false;
   }
   function cancel() {
     const op = active; if (!op || op.committing) return;
-    op.cancelled = true; op.abort.abort(); op.nativeCancel?.(); op.releaseTimer();
-    // An analyzed worker owns the result assets. A pending pack may finish in the
-    // background, but its cancelled operation can never publish a file.
-    if (op.worker && op.worker !== analysis?.worker) op.worker.dispose();
-    try { op.renderTask?.cancel(); } catch {}
-    void op.loadingTask?.destroy().catch(() => {});
-    passwordUpdate = null; byId('Password').value = '';
-    passwordModal.close(); end(op); setStatus('cancelled'); void showPage();
+    op.cancelled = true; op.abort.abort(); op.nativeCancel?.(); op.worker?.dispose();
+    try { op.renderTask?.cancel(); } catch {} void op.loadingTask?.destroy().catch(() => {});
+    end(op); reset(); setStatus('cancelled');
   }
-  function end(op) {
-    op.releaseTimer(); if (active !== op) return;
-    active = null; passwordUpdate = null; byId('Password').value = '';
-    passwordModal.close(); processModal.close(); stopAnimation?.(); stopAnimation = null; strip?.resume(); update();
-  }
-  function report(error) {
-    if (error?.code === 'cancelled' || error?.name === 'RenderingCancelledException' || error?.code === 'aborted') return setStatus('cancelled');
-    const known = new Set(['type', 'empty', 'input-large', 'pages', 'selection-large', 'range', 'page-size', 'complexity', 'text-large', 'geometry', 'coverage', 'layout-quality', 'a4-fit', 'asset-large', 'output-large', 'worker', 'timeout', 'image', 'structure', 'ai-response', 'ai-request-large', 'ai-config', 'output-invalid', 'output-path', 'output-name', 'permission', 'busy', 'session', 'read', 'edit-text', 'edit-fit', 'edit-image']);
-    let code = known.has(error?.code) ? error.code : 'failed';
-    if (/^pdf-to-word:/.test(String(error))) code = String(error).split('pdf-to-word:')[1].split(/[\s:]/)[0];
-    if (!known.has(code)) code = 'failed';
-    if (error?.name === 'InvalidPDFException' || error?.name === 'MissingPDFException') code = 'read';
-    if (['invalid_config', 'provider_changed', 'ai-config'].includes(error?.code)) code = 'ai-config';
-    else if (error?.code === 'ai-timeout') code = 'ai-timeout';
-    else if (error?.code === 'http_error') code = ({ 401: 'ai-auth', 403: 'ai-forbidden', 404: 'ai-endpoint', 429: 'ai-rate' })[error.status] || 'ai-request';
-    else if (['invalid_response', 'empty_response', 'response_truncated', 'response_too_large'].includes(error?.code)) code = 'ai-response';
-    else if (error?.code === 'invalid_request') code = 'ai-parameters';
-    else if (['network_error', 'native_transport_unavailable'].includes(error?.code)) code = 'ai-request';
-    setStatus('error.' + code, {}, true);
-  }
-  function dropAnalysis() { analysis?.worker?.dispose(); analysis = null; aiReview = null; aiCache.clear(); editor.clear(); }
-  function releaseDocument() {
-    previewRevision++; try { previewTask?.cancel(); } catch {} previewTask = null;
-    strip?.dispose(); strip = null; dropAnalysis(); inputDigest = '';
-    const old = pdf; pdf = null; file = null; if (old) void destroyPdfDocument(old).catch(() => {});
-    byId('Canvas').width = byId('Canvas').height = 0;
+  function releasePdf() { const old = pdf; pdf = null; file = null; if (old) void destroyPdfDocument(old).catch(() => {}); }
+  function hideSelector() { moveFocusOutOfHiddenRegion(byId('Selector')); byId('Selector').classList.remove('visible'); setModalInteractivity(byId('Selector'), false); selector.clear(); if (owner) setModalInteractivity(overlay, true); }
+  function reset() {
+    if (active) return;
+    pagesModal.close({ restore: false }); successModal.close({ restore: false }); hideSelector();
+    analysis?.worker?.dispose(); analysis = null; releasePdf(); result = null; status = null; pendingHandoff = null; byId('EmptyPick').disabled = false; renderStatus();
+    if (owner && !overlay.inert) byId('EmptyPick').focus({ preventScroll: true });
   }
   async function loadFile(candidate) {
-    if (!owner || active || disposed) return;
-    const session = owner; if (!await allowDiscard() || !alive(session)) return;
+    if (!owner || active || result || pdf || disposed || pendingHandoff) return;
     const op = begin('load'); let task = null, adopted = false;
     try {
+      // Give the processing mask a paint before PDF parsing or file decoding.
+      await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0))); op.check();
       let bytes;
       if (candidate.path) {
         const { invoke } = await tauriCorePromise; op.check();
@@ -154,192 +73,106 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
         bytes = Uint8Array.from(await invoke('read_file_bytes_limited', { path: candidate.path, maxBytes: LIMITS.inputBytes }));
       } else { validateInput(candidate); bytes = new Uint8Array(await candidate.arrayBuffer()); }
       op.check(); validateInput({ name: candidate.name, size: bytes.length });
-      const digest = await wordInputDigest(bytes); op.check();
       pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs'); op.check(); pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
       task = pdfjs.getDocument(pdfjsDocumentOptions({ data: bytes, isEvalSupported: false, enableXfa: false, fontExtraProperties: true, useSystemFonts: false })); op.loadingTask = task;
       task.onPassword = (callback, reason) => {
         if (!current(op)) return;
         passwordUpdate = callback; byId('Password').value = ''; byId('PasswordHint').textContent = tr(reason === 2 ? 'passwordWrong' : 'passwordHint');
-        processModal.close(); stopAnimation?.(); stopAnimation = null; passwordModal.open();
+        processModal.close({ restore: false }); stopAnimation?.(); stopAnimation = null; passwordModal.open();
       };
       const loaded = await task.promise; op.check();
       if (loaded.numPages > LIMITS.documentPages) throw wordError('pages');
       const permissions = await loaded.getPermissions(); op.check();
       if (permissions && !permissions.includes(pdfjs.PermissionFlag.COPY)) throw wordError('permission');
-      releaseDocument(); pdf = loaded; file = candidate; inputDigest = digest; adopted = true; op.loadingTask = null;
-      pageNumber = 1; zoom = 1; byId('Range').value = loaded.numPages > LIMITS.selectedPages ? '1-' + LIMITS.selectedPages : '';
-      moveFocusOutOfHiddenRegion(byId('Empty')); byId('Empty').hidden = true; byId('Loaded').hidden = false;
-      byId('Structure').setAttribute('aria-pressed', 'false'); viewport.reset(); sizePaper();
-      strip = createWordPageStrip({ root: byId('Thumbnails'), pdf, select: number => { if (!active) { viewport.reset(); pageNumber = number; void showPage(); } }, label: number => tr('pageLabel', { page: number }) });
-      strip.pause(); setStatus('ready');
+      pdf = loaded; file = candidate; adopted = true; op.loadingTask = null;
     } catch (error) { if (current(op)) report(error); }
-    finally { if (task && !adopted) void task.destroy().catch(() => {}); end(op); if (adopted && alive(op.owner)) void showPage(); }
+    finally { if (task && !adopted) void task.destroy().catch(() => {}); end(op); }
+    if (!adopted || !alive(op.owner)) return;
+    if (pdf.numPages === 1) await convert([1]);
+    else { byId('PagesMessage').textContent = tr('choosePagesHint', { count: pdf.numPages }) + (pdf.numPages > LIMITS.selectedPages ? ' ' + tr('choosePagesLimit') : ''); byId('AllPages').disabled = pdf.numPages > LIMITS.selectedPages; pagesModal.open(); }
   }
   async function pick() {
-    if (!owner || active) return;
+    if (!owner || active || pdf || result || pendingHandoff) return;
     if (!isTauri) { byId('FileInput').click(); return; }
     const session = owner;
-    try {
-      const { open } = await loadTauriDialog(); if (!alive(session)) return;
+    try { const { open } = await loadTauriDialog(); if (!alive(session)) return;
       const path = await open({ multiple: false, filters: [{ name: 'PDF', extensions: ['pdf'] }] });
       if (path && alive(session)) await loadFile({ path, name: path.split(/[\\/]/).pop() });
     } catch (error) { if (alive(session)) report(error); }
   }
-  async function showPage({ refreshUi = true } = {}) {
-    if (!pdf || !owner || active) return;
-    const revision = ++previewRevision, session = owner, snapshot = pdf, number = pageNumber;
-    try { previewTask?.cancel(); } catch {}
-    const valid = () => alive(session) && revision === previewRevision && pdf === snapshot && !active;
-    const check = () => { if (!valid()) throw wordError('cancelled'); };
-    let canvas;
+  async function convert(pages) {
+    if (!pdf || !file || active || !owner || !pages.length || pages.length > LIMITS.selectedPages) return;
+    pagesModal.close({ restore: false }); const op = begin('convert'); const session = owner, name = outputName(file.name);
+    let prepared;
     try {
-      const page = await snapshot.getPage(number); if (!valid()) return;
-      const viewport = page.getViewport({ scale: 1 });
-      const scale = Math.min(6, Math.max(.1, byId('Paper').clientWidth / viewport.width * Math.min(2, window.devicePixelRatio || 1)), Math.sqrt(8000000 / (viewport.width * viewport.height)));
-      canvas = document.createElement('canvas'); canvas.width = Math.ceil(viewport.width * scale); canvas.height = Math.ceil(viewport.height * scale);
-      const editedPage = editor.dirty && editor.document()?.pages.find(item => item.number === number);
-      if (editedPage && analysis?.worker) {
-        const assets = await analysis.worker.request('assets', { ids: pageAssetIds(editedPage) }); check();
-        await renderResultPage(editedPage, canvas, new Map([...assets, ...editor.assets.values()].map(asset => [asset.id, asset])), check); check();
-      } else {
-        const task = page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport: page.getViewport({ scale }), background: '#fff' }); previewTask = task;
-        try { await task.promise; } finally { if (previewTask === task) previewTask = null; }
-        if (!valid()) return;
-      }
-      const target = byId('Canvas'); target.width = canvas.width; target.height = canvas.height; target.getContext('2d').drawImage(canvas, 0, 0);
-      if (refreshUi) update();
-    } catch (error) { if (valid()) report(error); }
-    finally { if (canvas) canvas.width = canvas.height = 0; }
-  }
-  async function prepare(op) {
-    const requestKey = key();
-    if (analysis?.key === requestKey && analysis.worker && !analysis.worker.disposed) return analysis;
-    const pages = parsePageRange(byId('Range').value, pdf.numPages), previous = previewTask;
-    try { previous?.cancel(); } catch {} if (previous) await previous.promise.catch(() => {}); op.check();
-    const value = await analyzeWordDocument({ pdf, pages, ops: pdfjs.OPS, operation: op, preserveGeometry: layout === 'faithful', continuous: layout === 'flow',
-      onProgress: value => { if (current(op)) setProgress(value); } }); op.check();
-    const preserveEdits = analysis?.key === requestKey && editor.baseline;
-    analysis?.worker?.dispose(); analysis = { ...value, key: requestKey, ai: preserveEdits && analysis?.ai };
-    if (!preserveEdits) editor.setBaseline(value.document);
-    return analysis;
-  }
-  async function structure() {
-    if (!owner || !pdf || active) return;
-    const on = byId('Structure').getAttribute('aria-pressed') !== 'true';
-    if (on && (!analysis?.worker || analysis.worker.disposed || analysis.key !== key())) {
-      const op = begin('analyze');
-      try { await prepare(op); op.check(); op.worker = null; }
-      catch (error) { if (current(op)) report(error); return; }
-      finally { end(op); }
-    }
-    byId('Structure').setAttribute('aria-pressed', String(on)); update(); void showPage();
-  }
-  async function exportWord() {
-    if (!pdf || active || !owner || editor.busy) return;
-    const session = owner;
-    try { parsePageRange(byId('Range').value, pdf.numPages); } catch (error) { report(error); return; }
-    if (mode === 'ai') {
-      const config = getAiPlatformConfig?.(), apiKey = await getAiApiKey?.();
-      if (!alive(session) || active) return;
-      if (!apiKey || !config?.url || !config?.model) { setStatus('error.ai-config', {}, true); requestAiKeyConfiguration?.(); return; }
-    }
-    const op = begin('export');
-    try {
-      const prepared = await prepare(op); op.check(); op.worker = prepared.worker;
-      const provider = getAiPlatformConfig?.();
-      const providerKey = JSON.stringify([provider?.url, provider?.model, provider?.allowPrivateHttp]);
-      if (mode === 'ai' && prepared.ai !== providerKey && !editor.dirty) {
-        const enhanced = await enhanceWordStructure({ document: prepared.document, pdf, requestAi, operation: op, inputDigest, cache: aiCache,
-          getProvider: getAiPlatformConfig, selectedPages: [pageNumber], expectedProvider: getAiPlatformConfig?.(),
-          onProgress: value => { if (current(op)) setProgress(value); } }); op.check();
-        editor.setBaseline(enhanced.document); prepared.ai = enhanced.review.remaining ? null : providerKey; aiReview = enhanced.review;
-      }
+      const localOcr = createLocalOcrRuntime({ isTauri });
+      prepared = await analyzeWordDocument({ pdf, pages, ops: pdfjs.OPS, operation: op, preserveGeometry: true,
+        preserveScanFigures: true, refineScanText: true,
+        recognizePage: recognizeOverride || (isTauri ? async (canvas, signal) => {
+          const resume = op.deadline.pause();
+          try { await localOcr.ensure(signal); } finally { resume(); }
+          op.check(); return localOcr.recognize(canvas.toDataURL('image/png'), signal);
+        } : null),
+        onProgress: value => { if (current(op)) setProgress(value); } }); op.check();
       setProgress({ key: 'assembling' });
-      const output = await prepared.worker.request('finish', { document: editor.document(), editedAssets: editor.editedAssets(),
-        options: { continuous: layout === 'flow', preserveGeometry: layout === 'faithful' } }); op.check();
+      const output = await prepared.worker.request('finish', { document: prepared.document, options: { preserveGeometry: true, editableMath: true, strictMathGeometry: true } }); op.check();
       setProgress({ key: 'saving' });
-      const name = outputName(file.name), path = await publishWord({ bytes: output.bytes, name, isTauri, getOutputDir, operation: op }); op.check();
-      if (!isTauri) {
-        const url = URL.createObjectURL(new Blob([output.bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }));
-        const revoke = session.use(() => URL.revokeObjectURL(url)); session.timeout(revoke, 30000);
-        const anchor = document.createElement('a'); anchor.href = url; anchor.download = name; document.body.append(anchor); anchor.click(); anchor.remove();
-      }
-      result = { name: path ? path.split(/[\\/]/).pop() : name, path, quality: output.quality }; editor.markSaved();
-      renderResult(); setStatus('success'); end(op); successModal.open();
-    } catch (error) { if (current(op)) report(error); }
-    finally { op.worker = null; end(op); if (alive(session)) void showPage(); }
+      const path = await publishWord({ bytes: output.bytes, name, isTauri, getOutputDir, operation: op }); op.check();
+      if (!isTauri) downloadWord(output.bytes, name, session);
+      analysis = prepared; op.worker = null; result = { name: path ? path.split(/[\\/]/).pop() : name, path, quality: output.quality };
+      releasePdf(); end(op); renderResult(); setStatus('success'); successModal.open();
+    } catch (error) { if (current(op)) { prepared?.worker?.dispose(); end(op); reset(); report(error); } }
+    finally { end(op); }
   }
   function renderResult() {
     if (!result) return;
-    byId('ResultName').textContent = result.name;
-    byId('ResultQuality').textContent = [result.quality.imageCharacters ? tr('imageNotice') : '',
-      mode === 'ai' && aiReview?.remaining ? tr(editor.dirty ? 'aiPartialEdited' : 'aiPartial', { count: aiReview.remaining }) : ''].filter(Boolean).join(' ');
-    byId('ResultPath').textContent = result.path ? displayFilesystemPath(result.path) : tr('browserDownload');
-    byId('OpenFolder').hidden = byId('OpenFile').hidden = !result.path;
+    byId('ResultName').textContent = result.name; byId('ResultPath').textContent = result.path ? displayFilesystemPath(result.path) : tr('browserDownload');
+    byId('OpenFolder').disabled = !result.path; byId('EditDocument').disabled = !openDocumentEditor;
+    byId('ResultStatus').textContent = result.quality.imageCharacters ? tr('imageNotice') : '';
   }
-  function translate() {
-    for (const id of ['', 'Progress', 'Password', 'Success', 'Edit', 'Confirm']) applyTranslations(id ? byId(id + 'Overlay') : overlay);
-    overlay.setAttribute('aria-label', tr('title')); update(); renderResult(); if (progress) setProgress(progress);
-  }
-  for (const id of ['Pick', 'EmptyPick']) scope.event(byId(id), 'click', () => { void pick(); });
+  scope.event(byId('EditDocument'), 'click', async () => {
+    if (!owner || !analysis || !result || !openDocumentEditor) return;
+    const saved = result, converted = analysis, sourceOwner = owner; analysis = null; result = null;
+    const ticket = pendingHandoff = Symbol('word-document'); byId('EmptyPick').disabled = true;
+    successModal.close({ restore: false });
+    // Detach before navigation closes this tool. The target editor owns release.
+    const session = { document: converted.document, worker: converted.worker, name: saved.name, path: saved.path, canTransfer: () => alive(sourceOwner) && pendingHandoff === ticket,
+      restore() { if (!alive(sourceOwner) || pendingHandoff !== ticket) return false; pendingHandoff = null; analysis = converted; result = saved; byId('EmptyPick').disabled = false; renderResult(); successModal.open(); return true; },
+      release() { converted.worker.dispose(); } };
+    try { await openDocumentEditor(session); }
+    catch (error) { if (alive(sourceOwner) && analysis === converted) byId('ResultStatus').textContent = tr(wordErrorKey(error)); else if (!session.restore()) session.release(); }
+  });
+  scope.event(byId('OpenFolder'), 'click', async () => { if (!result?.path || !owner) return;
+    const session = owner, saved = result;
+    try { const { invoke } = await tauriCorePromise; if (alive(session) && result === saved) await invoke('open_path', { path: saved.path }); }
+    catch (error) { if (alive(session) && result === saved) byId('ResultStatus').textContent = tr(wordErrorKey(error)); }
+  });
+  scope.event(byId('EmptyPick'), 'click', () => { void pick(); });
   scope.event(byId('FileInput'), 'change', () => { const candidate = byId('FileInput').files?.[0]; byId('FileInput').value = ''; if (candidate) void loadFile(candidate); });
-  scope.event(byId('Export'), 'click', () => { void exportWord().catch(report); });
-  scope.event(byId('Structure'), 'click', () => { void structure().catch(report); });
   scope.event(byId('Cancel'), 'click', cancel); scope.event(byId('PasswordCancel'), 'click', cancel);
-  scope.event(byId('SuccessOk'), 'click', () => successModal.close());
-  scope.event(byId('ConfirmCancel'), 'click', () => finishConfirm(false)); scope.event(byId('ConfirmOk'), 'click', () => finishConfirm(true));
-  scope.event(byId('Reset'), 'click', async () => { const session = owner; if (await confirm('resetConfirm') && alive(session) && !active) { editor.reset(); setStatus('resetDone'); } });
-  scope.event(byId('Range'), 'change', async () => {
-    const old = analysis?.key ? JSON.parse(analysis.key)[0] : '', session = owner;
-    if (!await allowDiscard() || !alive(session)) { byId('Range').value = old; return; }
-    dropAnalysis(); update(); setStatus('ready');
+  scope.event(byId('SuccessOk'), 'click', reset);
+  scope.event(byId('AllPages'), 'click', () => { if (pdf) void convert(Array.from({ length: pdf.numPages }, (_, i) => i + 1)); });
+  scope.event(byId('SelectPages'), 'click', () => {
+    if (!pdf || active) return; pagesModal.close({ restore: false }); moveFocusOutOfHiddenRegion(overlay); setModalInteractivity(overlay, false);
+    byId('Selector').classList.add('visible'); setModalInteractivity(byId('Selector'), true); selector.open(pdf, file.name);
+    byId('Selector').querySelector('button')?.focus({ preventScroll: true }); refreshIcons();
   });
-  scope.event(byId('PasswordForm'), 'submit', event => {
-    event.preventDefault(); const callback = passwordUpdate; passwordUpdate = null;
+  scope.event(byId('PasswordForm'), 'submit', event => { event.preventDefault(); const callback = passwordUpdate; passwordUpdate = null;
     const value = byId('Password').value; byId('Password').value = '';
-    if (callback && active && !active.cancelled) {
-      passwordModal.close(); processModal.open();
-      stopAnimation?.(); stopAnimation = startScanAnimation(byId('ProgressCanvas'), byId('ProgressQuote'), tr); callback(value);
-    }
+    if (callback && active && !active.cancelled) { passwordModal.close({ restore: false }); processModal.open(); stopAnimation = startScanAnimation(byId('ProgressCanvas'), byId('ProgressQuote'), tr); callback(value); }
   });
-  scope.event(overlay, 'click', async event => {
-    const button = event.target.closest('button'); if (!button || button.disabled) return;
-    if (button.hasAttribute('data-pdf-word-close')) { const session = owner; if ((!editor.unsaved || await confirm('discardEdits')) && alive(session)) close(); }
-    const nextMode = button.dataset.wordMode, nextLayout = button.dataset.wordLayout;
-    if ((nextMode && nextMode !== mode) || (nextLayout && nextLayout !== layout)) {
-      const session = owner; if (!await allowDiscard() || !alive(session) || active) return;
-      if (nextMode) { mode = nextMode; if (analysis) { analysis.ai = false; editor.setBaseline(analysis.document); } }
-      if (nextLayout) { layout = nextLayout; dropAnalysis(); }
-      update(); if (pdf) setStatus('ready'); void showPage();
-    }
-  });
-  for (const [id, delta] of [['Prev', -1], ['Next', 1]]) scope.event(byId(id), 'click', () => {
-    if (!pdf || active) return; viewport.reset(); pageNumber = Math.max(1, Math.min(pdf.numPages, pageNumber + delta)); void showPage();
-  });
-  scope.event(byId('PageInput'), 'change', () => { if (pdf && !active) { viewport.reset(); pageNumber = Math.max(1, Math.min(pdf.numPages, Math.floor(Number(byId('PageInput').value)) || 1)); void showPage(); } });
-  for (const [id, delta] of [['ZoomOut', -.25], ['ZoomIn', .25], ['ZoomFit', 0]]) scope.event(byId(id), 'click', () => {
-    if (delta) viewport.zoomTo(zoom + delta);
-    else { viewport.reset(); zoom = 1; sizePaper(); void showPage({ refreshUi: false }); }
-  });
-  scope.event(byId('PagesToggle'), 'click', () => {
-    const collapsed = byId('Loaded').classList.toggle('pages-collapsed'); byId('PagesToggle').setAttribute('aria-expanded', String(!collapsed));
-  });
-  for (const [id, command] of [['OpenFolder', 'open_path'], ['OpenFile', 'open_pdf_to_word_result']]) scope.event(byId(id), 'click', async () => {
-    if (!result?.path || !owner) return;
-    try { const { invoke } = await tauriCorePromise; await invoke(command, { path: result.path }); }
-    catch (error) { successModal.close(); report(error); }
-  });
+  scope.event(overlay, 'click', event => { if (event.target.closest('[data-pdf-word-close]')) close(); });
   scope.event(overlay, 'dragover', event => { if (!isTauri) event.preventDefault(); });
   scope.event(overlay, 'drop', event => { if (isTauri) return; event.preventDefault(); const files = event.dataTransfer?.files; if (files?.length === 1) void loadFile(files[0]); else setStatus('error.single', {}, true); });
-  scope.event(document, 'keydown', async event => {
-    if (event.key === 'Escape' && owner && !overlay.inert) {
-      const session = owner; if ((!editor.unsaved || await confirm('discardEdits')) && alive(session)) close();
-    }
+  scope.event(document, 'keydown', event => {
+    if (event.key !== 'Escape' || !owner) return;
+    if (byId('Selector').classList.contains('visible')) { event.preventDefault(); reset(); }
+    else if (!overlay.inert) { event.preventDefault(); close(); }
   });
-  scope.event(window, 'pagehide', close); scope.use(onLangChange(translate));
+  function translate() { for (const id of ['', 'ProgressOverlay', 'PasswordOverlay', 'PagesOverlay', 'SuccessOverlay']) applyTranslations(id ? byId(id) : overlay); renderStatus(); renderResult(); if (progress) setProgress(progress); }
+  scope.use(onLangChange(translate)); scope.event(window, 'pagehide', () => close(true));
   async function nativeDrop(session) {
-    try {
-      const { getCurrentWebview } = await loadTauriWebview(); if (!alive(session)) return;
+    try { const { getCurrentWebview } = await loadTauriWebview(); if (!alive(session)) return;
       session.use(await getCurrentWebview().onDragDropEvent(({ payload }) => {
         if (!alive(session) || overlay.inert || payload.type !== 'drop') return;
         if (payload.paths.length !== 1) { setStatus('error.single', {}, true); return; }
@@ -347,25 +180,18 @@ export function createPdfWordController({ overlay, isTauri = false, getOutputDir
       }));
     } catch { if (alive(session)) setStatus('dropUnavailable'); }
   }
-  function open() {
-    if (disposed) return;
-    close(); owner = createLifecycleScope(); overlay.classList.add('visible'); setModalInteractivity(overlay, true);
-    byId('Empty').hidden = false; byId('Loaded').hidden = true; byId('Range').value = ''; status = null; result = null;
-    translate(); refreshIcons(); byId('EmptyPick').focus({ preventScroll: true }); if (isTauri) void nativeDrop(owner);
+  function open() { if (disposed) return; close(true); owner = createLifecycleScope(); status = null;
+    overlay.classList.add('visible'); setModalInteractivity(overlay, true); translate(); refreshIcons(); byId('EmptyPick').focus({ preventScroll: true }); if (isTauri) void nativeDrop(owner);
   }
-  function close() {
-    viewport.reset();
-    clearTimeout(resizeTimer); resizeTimer = 0;
-    previewWidth = 0;
+  function close(force = false) {
+    if (active?.committing && !force) return false;
     const session = owner; owner = null;
-    if (active) {
-      active.cancelled = true; active.abort.abort(); active.worker?.dispose(); active.nativeCancel?.(); active.releaseTimer();
-      try { active.renderTask?.cancel(); } catch {} void active.loadingTask?.destroy().catch(() => {});
-    }
+    if (active) { active.cancelled = true; active.abort.abort(); active.worker?.dispose(); active.nativeCancel?.(); active.deadline.dispose();
+      try { active.renderTask?.cancel(); } catch {} void active.loadingTask?.destroy().catch(() => {}); }
     active = null; passwordUpdate = null; byId('Password').value = ''; session?.dispose(); stopAnimation?.(); stopAnimation = null;
-    processModal.close({ restore: false }); passwordModal.close({ restore: false }); successModal.close({ restore: false }); finishConfirm(false);
-    releaseDocument(); result = null; moveFocusOutOfHiddenRegion(overlay); overlay.classList.remove('visible'); setModalInteractivity(overlay, false);
+    processModal.close({ restore: false }); passwordModal.close({ restore: false }); reset();
+    moveFocusOutOfHiddenRegion(overlay); overlay.classList.remove('visible'); setModalInteractivity(overlay, false); byId('EmptyPick').disabled = false;
   }
   translate();
-  return { open, close, dispose() { if (disposed) return; close(); disposed = true; editor.dispose(); scope.dispose(); } };
+  return { open, close, dispose() { if (disposed) return; close(true); disposed = true; selector.dispose(); scope.dispose(); for (const modal of [processModal, passwordModal, pagesModal, successModal]) modal.dispose(); } };
 }

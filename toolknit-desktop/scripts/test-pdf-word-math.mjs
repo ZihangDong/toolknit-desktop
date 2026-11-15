@@ -132,9 +132,9 @@ const sameEmSources = sameEmItems.map(item => ({ id: item.id, order: item.order,
 const sameEmGroup = groupPageRegions(sameEmItems, [], [], sameEmSources);
 assert.equal(sameEmGroup.items.length, 1, 'superscripts must stay with their base even across font em conventions');
 assert.equal(sameEmGroup.items[0].sourceIds.length, 2);
-const groupFixture = values => {
+const groupFixture = (values, attributes = {}) => {
   const items = values.map(([id, text, x, width]) => ({ ...glyph(id, text, x, 20, 12, width), italic: false,
-    sourceIds: [id], order: x }));
+    ...attributes, sourceIds: [id], order: x }));
   const sources = items.map(item => ({ id: item.id, text: item.text, order: item.order, disposition: 'editable' }));
   return { ...groupPageRegions(items, [], [], sources), sources };
 };
@@ -177,6 +177,27 @@ for (const id of ['words', 'description']) assert.equal(proseAfterFormula.source
 const namedFunction = groupFixture([['name', 'sin', 10, 15], ['open', '(', 26, 3], ['x', 'x', 30, 6],
   ['close', ')', 37, 3], ['equals', '=', 42, 6], ['zero', '0', 50, 6]]);
 assert.equal(namedFunction.items.length, 1); assert.equal(namedFunction.items[0].role, 'math');
+const nativeUnicode = { font: 'ABCDEF+XITSMath-Regular', preciseInk: true, raster: false, color: '000000' };
+const unicodeEquation = groupFixture([['left', '𝑦', 10, 6], ['equal', '=', 17, 6], ['right', '𝑥', 24, 6], ['tail', '𝑦', 31, 6]], nativeUnicode);
+assert.equal(unicodeEquation.items.length, 1, 'mathematical Unicode letters cannot leave holes in a complete equation');
+assert.equal(unicodeEquation.items[0].role, 'math');
+assert.equal(unicodeEquation.items[0].mathGlyphs.map(g => g.text).join(''), '𝑦=𝑥𝑦', 'classification does not serialize compatibility-normalized letters');
+assert(inferMathAst(unicodeEquation.items[0]));
+const nativeArguments = groupFixture([['name', 'f(x;y)', 10, 34], ['equal', '=', 45, 6], ['zero', '0', 53, 6]], { ...nativeUnicode, font: 'Times-Roman' });
+assert.equal(nativeArguments.items.length, 1, 'a separator inside a native mathematical run is retained');
+assert(inferMathAst(nativeArguments.items[0]));
+const unknownUnicode = groupFixture([['left', '𝑦', 10, 6], ['equal', '=', 17, 6], ['right', '𝑥', 24, 6]],
+  { ...nativeUnicode, font: 'UnverifiedMathFont' });
+for (const id of ['left', 'right']) assert.equal(unknownUnicode.sources.find(s => s.id === id).disposition, 'editable',
+  'an unsupported whole-formula candidate must not swallow previously editable Unicode letters');
+const implicitSubstitute = groupFixture([['left', '𝑦', 10, 6], ['equal', '=', 17, 6], ['right', '𝑥', 24, 6]],
+  { ...nativeUnicode, font: 'Times-Roman' });
+assert.equal(implicitSubstitute.sources.find(s => s.id === 'left').disposition, 'editable',
+  'the legacy ASCII frame policy is not proof of Unicode substitution geometry');
+const styledProse = groupFixture([['x', '𝑥', 10, 6], ['plus', '+', 17, 6], ['y', '𝑦', 24, 6], ['words', '𝗻𝗼𝘁𝗲', 32, 30]]);
+assert.equal(styledProse.sources.find(s => s.id === 'words').disposition, 'editable', 'decorative Unicode prose is not a formula bridge');
+const outsideSeparator = groupFixture([['x', '𝑥', 10, 6], ['plus', '+', 17, 6], ['y', '𝑦', 24, 6], ['semicolon', ';', 31, 2]]);
+assert.equal(outsideSeparator.sources.find(s => s.id === 'semicolon').disposition, 'editable', 'an external sentence separator remains outside the formula');
 const floorNotation = groupFixture([['floor', '\u230a\u00b7\u230b', 10, 16]]);
 assert.equal(floorNotation.items[0].role, 'math');
 assert.equal(inferMathAst(floorNotation.items[0]).text, '\u230a\u00b7\u230b');

@@ -17,6 +17,11 @@ window.__TAURI_INTERNALS__={metadata:{currentWindow:{label:'screenshot-capture'}
     if(command==='get_output_root'||command==='get_default_output_root')return 'C:/SyntheticOutput';
     if(command==='open_path')return;
     if(command==='load_ai_api_key')return '';
+    if(command==='local_ocr'){
+      if(args.request.action==='status')return {ready:true,installing:false};
+      if(args.request.action==='recognize')return {engine:'pp-ocrv5-mobile',text:'SCREENSHOT TEST',lines:[]};
+      if(args.request.action==='cancel')return;
+    }
     if(command==='quick_screenshot_image'){
       if(!active||args.session!==session)throw Error('screenshot:expired');
       if(failImage)throw Error('screenshot:capture-failed');return bytes.slice(0);
@@ -30,7 +35,7 @@ window.__TAURI_INTERNALS__={metadata:{currentWindow:{label:'screenshot-capture'}
       if(request.action==='boot')return active?{session,context:context(),desktop:{bounds:{x:0,y:0,width,height},windows:[],monitors:[{x:0,y:0,width,height}]},imageBytes:bytes.byteLength}:{prepared:true,context:context()};
       if(request.action==='metadata')return {context:context()};
       if(request.action==='cancel'||request.action==='confirm'){active=false;emit('screenshot-ended');return;}
-      if(request.action==='save')return 'C:/SyntheticOutput/capture.png';
+      if(request.action==='save'){if(request.finish){active=false;emit('screenshot-ended');}return 'C:/SyntheticOutput/capture.png';}
       if(request.action==='ocr')return {text:'SCREENSHOT TEST',lines:[]};
       return null;
     }
@@ -64,9 +69,8 @@ document.getElementById('qa-run').onclick=async()=>{
       crop();assert(!document.getElementById('shotToolbar').hidden,'crop and toolbar '+value);
       button('ocr').click();await until(()=>document.getElementById('shotDialog').classList.contains('visible'));
       assert(document.querySelector('#shotDialogContent textarea')?.value.includes('SCREENSHOT TEST'),'OCR result '+value);
-      document.getElementById('shotDialogOk').click();button('save').click();await until(()=>!document.getElementById('shotDialogFolder').hidden);
-      document.getElementById('shotDialogFolder').click();await until(()=>!active);
-      assert(calls.at(-1).command==='open_path','save reveals after capture exits '+value);
+      document.getElementById('shotDialogOk').click();button('save').click();await until(()=>!active);
+      assert(calls.some(call=>call.action==='save'&&call.finish),'save completes without a result dialog '+value);
       await open();const before=calls.filter(call=>call.command==='quick_screenshot_image').length;emit('screenshot-opened',session);await delay(45);
       assert(calls.filter(call=>call.command==='quick_screenshot_image').length===before,'duplicate event does not decode twice '+value);
       button('cancel').click();await until(()=>!active);await delay(20);

@@ -135,6 +135,27 @@ assert.equal(short - condensed, 2, 'glyph advance can be condensed without addin
 const blank = measure([xml(new Run(' ', 1, { characterSpacing: -40 }))], 12);
 assert.equal(blank.width, 0, 'negative spacer advance clamps to zero');
 const unsupported = value => assert.throws(() => measure(value, 11), error => error instanceof NativeMathLayoutError);
+const unicodeRun = () => {
+ const run=xml(new MathRun({text:'𝑥',literal:true,style:'italic'}));
+ run['m:r'].splice(1,0,new RunProperties({font:'Cambria Math',size:24}).prepForXml({stack:[]}));
+ return run;
+};
+let seenUnicode;
+const unicodeMeasure=createNativeMathMeasurer(format=>{seenUnicode=format;return{width:8,height:9,depth:1};});
+const unicode=unicodeRun(),unicodeBefore=structuredClone(unicode);
+assert.equal(unicodeMeasure([unicode],12).width,8);
+assert.equal(seenUnicode.text,'𝑥');assert.equal(seenUnicode.italic,false);
+assert.deepEqual(unicode,unicodeBefore);
+for(const change of [
+ r=>{r['m:r'].find(p=>p['m:t'])['m:t']=['x'];},
+ r=>{r['m:r'].find(p=>p['m:t'])['m:t']=['𝗫'];},
+ r=>{r['m:r'].find(p=>p['m:rPr'])['m:rPr']=[];},
+ r=>{r['m:r'].find(p=>p['w:rPr'])['w:rPr']=new RunProperties({font:'Unknown',size:24}).prepForXml({stack:[]})['w:rPr'];},
+ r=>{r['m:r'].find(p=>p['w:rPr'])['w:rPr']=new RunProperties({font:'Cambria Math',size:24,italics:true}).prepForXml({stack:[]})['w:rPr'];},
+]){
+ const rejected=unicodeRun();change(rejected);
+ assert.throws(()=>unicodeMeasure([rejected],12),NativeMathLayoutError,'unknown literal/style combinations stay rejected');
+}
 unsupported([{ 'm:unrecognized': [] }]);
 unsupported([xml(new MathRun({ text: 'N' }))]);
 unsupported([xml(new Run('N'.repeat(4097)))]);

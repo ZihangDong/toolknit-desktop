@@ -310,12 +310,15 @@ assert.match(zhUsageSource, /随当前功能边界更新/, 'Chinese usage policy
 assert.match(enUsageSource, /with the current feature boundary/, 'English usage policy must use a version-independent feature boundary');
 
 for (const [name, locale] of [['Chinese', zhLocale], ['English', enLocale]]) {
-  for (const key of ['recommendedProviders', 'malian', 'doufu', 'customTools', 'customToolsTitle', 'customToolsDescription', 'openWebWorkbench']) {
+  for (const key of ['niuniu', 'niuniuAi', 'clearToolSearch', 'aiProviderPrompt', 'aiProvidersAria', 'malian', 'doufu', 'customTools', 'customToolsTitle', 'customToolsDescription', 'openWebWorkbench']) {
     assert.ok(locale.home?.[key]?.trim(), `${name} home ${key} must be translated`);
   }
   assert.equal(locale.home?.supportCostNote, undefined, `${name} obsolete homepage cost copy must be removed`);
   assert.equal(locale.home?.supportGroupNote, undefined, `${name} obsolete homepage group copy must be removed`);
+  assert.ok(locale.home?.releaseNotice?.eyebrow?.includes(`V${seriesVersion}`), `${name} first-run notice must cover the current release`);
+  assert.match(locale.home?.releaseNotice?.wait ?? '', /\{seconds\}/, `${name} reading countdown keeps its seconds placeholder`);
 }
+assert.deepEqual(Object.keys(zhLocale.home.releaseNotice).sort(), Object.keys(enLocale.home.releaseNotice).sort(), 'First-run notice translations match');
 assert.match(zhLocale.home?.supportPage?.supporterBenefit ?? '', /灰度体验群/, 'Chinese support copy must explain preview-group access');
 assert.match(enLocale.home?.supportPage?.supporterBenefit ?? '', /preview group/i, 'English support copy must explain preview-group access');
 assert.match(zhLegalSource, /灰度体验群/, 'Chinese legal copy must define the preview-group boundary');

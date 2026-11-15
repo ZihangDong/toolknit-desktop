@@ -5,6 +5,7 @@ const HOME_LINKS = Object.freeze({
   github: 'https://github.com/ZihangDong/toolknit-desktop',
   ffmpegSource: 'https://github.com/ZihangDong/toolknit-ffmpeg-sources',
   feedback: 'https://github.com/ZihangDong/toolknit-desktop/issues',
+  niuniu: 'https://s2acf.fucksb.com/register?aff=28G79Z33FT63',
   malian: 'https://www.mlai.online/register?aff=5Q2VVMD7YJVB',
   doufu: 'https://doufuapi.com/register?aff=TWKCBH9RGLN3'
 });

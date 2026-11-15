@@ -1,10 +1,12 @@
 import { SUPPORT_JOURNAL_ENTRIES } from '../support-journal-data.js';
 import { createLifecycleScope } from './tool-lifecycle.js';
 import { createModalSession } from './modal-runtime.js';
+import { saveDonationQr } from './donation-qr-runtime.js';
+import { t } from '../i18n.js';
 
 const JOURNAL_DURATION_MS = 15_000;
 
-export function createDonationController({ openExternalUrl } = {}) {
+export function createDonationController({ openExternalUrl, isTauri = false, notify = () => {} } = {}) {
   const overlay = document.getElementById('donationOverlay');
   if (!overlay) return { open() {}, close() {}, dispose() {} };
 
@@ -32,6 +34,7 @@ export function createDonationController({ openExternalUrl } = {}) {
   let modalSession = null;
   let previousZIndex = '';
   let currentBackground = null;
+  let qrSave = null;
 
   const clearPlayback = () => {
     if (timer !== null) window.clearTimeout(timer);
@@ -162,6 +165,9 @@ export function createDonationController({ openExternalUrl } = {}) {
     modalSession?.close();
     modalSession = null;
     currentBackground = null;
+    qrSave?.abort();
+    qrSave = null;
+    overlay.querySelectorAll('[data-donation-save-qr]').forEach(button => { button.disabled = false; });
     overlay.style.zIndex = previousZIndex;
     document.body.classList.remove('donation-open');
     clearPlayback();
@@ -185,6 +191,23 @@ export function createDonationController({ openExternalUrl } = {}) {
     }
   });
   overlay.querySelectorAll('[data-donation-close]').forEach(button => lifecycle.event(button, 'click', close));
+  overlay.querySelectorAll('[data-donation-save-qr]').forEach(button => lifecycle.event(button, 'click', async () => {
+    if (qrSave || !overlay.classList.contains('visible')) return;
+    const owner = new AbortController();
+    qrSave = owner;
+    overlay.querySelectorAll('[data-donation-save-qr]').forEach(item => { item.disabled = true; });
+    try {
+      const saved = await saveDonationQr(button.dataset.donationSaveQr, { isTauri, signal: owner.signal });
+      if (saved && !owner.signal.aborted) notify(t('home.supportPage.qrSaved'));
+    } catch {
+      if (!owner.signal.aborted) notify(t('home.supportPage.qrSaveFailed'));
+    } finally {
+      if (qrSave === owner) {
+        qrSave = null;
+        overlay.querySelectorAll('[data-donation-save-qr]').forEach(item => { item.disabled = false; });
+      }
+    }
+  }));
   overlay.querySelectorAll('[data-donation-link]').forEach(button => lifecycle.event(button, 'click', () => {
     const urls = { changelog: 'https://toolknit.com/changelog.html', github: 'https://github.com/ZihangDong/toolknit-desktop' };
     const url = urls[button.dataset.donationLink];

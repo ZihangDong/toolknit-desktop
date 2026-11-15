@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { bottom, right, union, median } from './geometry.js';
 import { mathIntegralOperator, integralLimitBand, integralLimitEvidence, attachIntegralBodies } from './math-integrals.js';
 
@@ -18,7 +18,9 @@ export const namedMathLimit = node => node?.type === 'symbol' && !node.italic &&
 export const mathNaryOperator = node => node?.type === 'symbol' && node.text === '\u2211' && !node.italic && !node.bold && !node.alphabet;
 export const mathOperatorBaseline = glyph => glyph.rect.y + glyph.rect.height / 2 + glyph.size * .25;
 export const mathGlyphBaseline = glyph => mathNaryOperator({ ...glyph, type: 'symbol' }) || mathIntegralOperator({ ...glyph, type: 'symbol' })
-  || !glyph.mathStyleUncertain && !glyph.italic && /^(?:[A-Z]{6}\+)?CMEX[1-9]\d?$/.test(glyph.font || '')
+  || !glyph.mathStyleUncertain && !glyph.italic
+    && (/^(?:[A-Z]{6}\+)?CMEX[1-9]\d?$/.test(glyph.font || '')
+      || /^(?:[A-Z]{6}\+)?XITSMath-Regular$/i.test(glyph.font || '') && glyph.preciseInk && glyph.raster === false)
     && /^[()[\]{}]$/.test(glyph.text) && glyph.rect.height >= glyph.size * 1.1
   ? mathOperatorBaseline(glyph) : glyph.baseline;
 export function mathNaryBody(node) {
@@ -64,12 +66,62 @@ function attachable(item, base) {
   const descenderIndex = base.symbolBody && item.node.type === 'symbol' && item.size < base.size * .8
     && localOffset > base.size * .12 && bottom(base.bodyRect) > base.baseline + base.size * .1
     && item.rect.y > base.bodyRect.y + base.size * .08 && bottom(item.rect) > base.baseline + base.size * .1;
+  // Cambria italic has shallow native subscripts whose visible lower edge is
+  // only slightly below the base. Require exact native ink and the same face;
+  // the ordinary script threshold stays unchanged for other fonts and scans.
+  const compactItalic = base.symbolBody && item.node.type === 'symbol' && item.nativeFace === base.nativeFace
+    && /^(?:[A-Z]{6}\+)?Cambria-Italic$/i.test(base.nativeFace || '')
+    && base.node.italic && item.node.italic && !base.node.bold && !item.node.bold
+    && !base.node.alphabet && !item.node.alphabet
+    && /^[A-Za-z]{1,3}$/.test(base.node.text) && /^[A-Za-z0-9]$/.test(item.node.text)
+    && item.size >= base.size * .55 && item.size < base.size * .75
+    && localOffset > base.size * .06 && localOffset < base.size * .18
+    && item.rect.y > base.bodyRect.y + base.size * .1
+    && bottom(item.rect) > bottom(base.bodyRect) + base.size * .06;
   return (item.node.type !== 'fraction' || fractionScript) && !(base.node.type === 'symbol' && operator.test(base.node.text.trim()))
     && item.rect.x >= base.rect.x && item.rect.x - right(base.rect) <= base.size * .55
-    && (smallInk || descenderIndex || Math.abs(localOffset) > base.size * .18)
+    && (smallInk || compactItalic || descenderIndex || Math.abs(localOffset) > base.size * .18)
     && Math.abs(localOffset) <= base.size * (fractionScript ? 1.8 : 1.05);
 }
 export { attachable as mathScriptAttachment };
+
+// TeX's smallest native script faces can use the same point size for the next
+// nested index. This is not evidence for arbitrary same-size shifted text.
+function sourceFloorIndex(item, base, depth) {
+  if (!(depth > 0) || !base?.symbolBody || base.node.type !== 'symbol' || item.node.type !== 'symbol'
+    || !base.node.italic || !item.node.italic || base.node.bold || item.node.bold || base.node.alphabet || item.node.alphabet
+    || item.nativeFace !== base.nativeFace || !/^(?:[A-Z]{6}\+)?CMMI[567]$/.test(item.nativeFace || '')
+    || !/^[A-Za-z]$/.test(base.node.text) || !/^[A-Za-z0-9]$/.test(item.node.text)
+    || base.size < 5 || base.size > 8 || Math.abs(item.size / base.size - 1) > .01) return false;
+  const offset = item.baseline - base.baseline;
+  return offset > base.size * .25 && offset < base.size * .55
+    && item.rect.x >= right(base.bodyRect) - base.size * .15 && item.rect.x <= right(base.bodyRect) + base.size * .4
+    && item.rect.y > base.bodyRect.y + base.size * .25 && bottom(item.rect) > bottom(base.bodyRect) + base.size * .15;
+}
+
+/** Source-proven side indices on a native sum; centered limits use the existing
+ * independent test. The following body must not be claimed as a limit. */
+export function sideMathNaryLimit(base, items, upper = false) {
+  const node = base?.node || (base && { ...base, type: 'symbol' });
+  const native = item => typeof item?.nativeFace === 'string' || item?.preciseInk === true && item.raster === false;
+  const face = item => item.nativeFace || item.font || '';
+  if (!base || !native(base) || !mathNaryOperator(node) || !/^(?:[A-Z]{6}\+)?CMEX(?:[5-9]|1[012])$/.test(face(base))
+    || !(base.size >= 5 && base.size <= 18) || !Array.isArray(items) || !items.length || items.length > 16) return false;
+  const baseline = mathOperatorBaseline(base), edge = right(base.bodyRect || base.rect);
+  if (!items.every(item => {
+    const glyph = item?.node || (item && { ...item, type: 'symbol' });
+    const offset = (item.baseline - baseline) * (upper ? -1 : 1);
+    return native(item) && glyph?.type === 'symbol' && !glyph.alphabet && !glyph.bold
+      && /^[\p{Script=Latin}\p{Script=Greek}\p{N}=+\-]$/u.test(glyph.text)
+      && /^(?:[A-Z]{6}\+)?CM(?:MI|R|SY)[5-9]$/.test(face(item))
+      && item.size >= base.size * .35 && item.size < base.size * .88
+      && offset > base.size * .2 && offset < base.size * .9
+      && item.rect.x >= edge - .3 && right(item.rect) <= edge + base.size * 1.1;
+  })) return false;
+  const box = union(items.map(item => item.rect)), reference = median(items.map(item => item.baseline));
+  return box.width <= base.size * 1.4 && box.height <= base.size * 1.1
+    && items.every(item => Math.abs(item.baseline - reference) <= item.size * .22);
+}
 
 /** Assemble a baseline and its bounded child rows without flattening the
  * scripts inside those rows. Structural strokes have already been consumed. */
@@ -79,14 +131,21 @@ export function assembleMathAtoms(input, { depth = 0, spend } = {}) {
   const options = { depth: depth + 1, spend }, consumedLimits = new Set(), limits = new Map(), claims = new Map();
   for (const base of input.filter(item => namedMathLimit(item.node) || mathNaryOperator(item.node) || mathIntegralOperator(item.node))) {
     const bands = {};
-    const integral = mathIntegralOperator(base.node);
-    const bodyStart = integral ? input.filter(item => item !== base && item.size >= base.size * .88
+    const integral = mathIntegralOperator(base.node), nary = mathNaryOperator(base.node);
+    const bodyStart = integral || nary ? input.filter(item => item !== base && item.size >= base.size * .88
       && item.rect.x >= right(base.bodyRect) - .3 && Math.abs(item.baseline - base.baseline) <= base.size * .3)
       .reduce((start, item) => Math.min(start, item.rect.x), Infinity) : Infinity;
     for (const [key, upper] of [['lower', false], ['upper', true]]) {
       const members = input.filter(item => item !== base && (!integral || right(item.rect) <= bodyStart + .3)
         && (integral ? integralLimitBand : limitBand)(base, item, upper));
       if (!(integral ? integralLimitEvidence : centeredMathLimit)(base, members, upper)) continue;
+      bands[key] = members;
+      for (const member of members) claims.set(member, (claims.get(member) || 0) + 1);
+    }
+    if (nary && !Object.keys(bands).length) for (const [key, upper] of [['lower', false], ['upper', true]]) {
+      const members = input.filter(item => item !== base && right(item.rect) <= bodyStart + .3
+        && sideMathNaryLimit(base, [item], upper));
+      if (!sideMathNaryLimit(base, members, upper)) continue;
       bands[key] = members;
       for (const member of members) claims.set(member, (claims.get(member) || 0) + 1);
     }
@@ -128,7 +187,8 @@ export function assembleMathAtoms(input, { depth = 0, spend } = {}) {
       if (Math.abs(offset) <= mainSize * .22) { append(item); continue; }
       failure();
     }
-    if (item.size >= base.size * .88 && item.inkHeight >= base.inkHeight * .8 || bareMathClosing(base.node)) failure();
+    if (item.size >= base.size * .88 && item.inkHeight >= base.inkHeight * .8 && !sourceFloorIndex(item, base, depth)
+      || bareMathClosing(base.node)) failure();
     const key = localOffset < 0 ? 'superscript' : 'subscript';
     const members = [item]; let box = item.rect;
     for (const next of atoms.slice(position + 1)) {
@@ -139,7 +199,8 @@ export function assembleMathAtoms(input, { depth = 0, spend } = {}) {
       if (Math.sign(nextOffset) !== Math.sign(localOffset)) continue;
       // Another full-size raised tier can be an outer script, not part of
       // this argument. Smaller nested indices are parsed within their row.
-      if (next.size >= item.size * .88 && Math.abs(next.baseline - item.baseline) > item.size * .18) break;
+      if (next.size >= item.size * .88 && Math.abs(next.baseline - item.baseline) > item.size * .18
+        && !sourceFloorIndex(next, members.at(-1), depth + 1)) break;
       if (next.rect.x - right(box) > item.size * .65 || Math.abs(nextOffset) > base.size * 1.8) break;
       members.push(next); consumed.add(next); box = union([box, next.rect]);
     }

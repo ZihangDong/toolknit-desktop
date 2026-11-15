@@ -57,6 +57,22 @@ assert(strokeMayTouchRect({ paint: 'stroke', from: [10, 22], to: [18, 10], strok
 assert.equal(radicalPaths(simple.mathStrokes).length, 1);
 const ast = inferMathAst(simple); assert.equal(ast.type, 'radical'); assert.equal(ast.radicand.sourceId, 'x');
 assert.deepEqual(ast.strokeIds, ['root-0', 'root-1', 'root-2', 'root-3']); assert(validateMathAst(ast, simple));
+// Attaching a sibling accent must not corrupt a radical's primitive evidence
+// arrays. Both structures must survive parsing, validation and serialization.
+const marked = region([...simple.mathGlyphs,
+  { ...glyph('marked-s', 's', 45, 22, 11, 4), font: 'CMMI10', italic: true,
+    preciseInk: true, raster: false, color: '000000', rect: { x: 45, y: 17, width: 4, height: 5 } },
+  { ...glyph('hat', 'ˆ', 45.8, 22, 11, 2.9), font: 'CMR10', preciseInk: true, raster: false,
+    color: '000000', rect: { x: 45.8, y: 14.3, width: 2.9, height: 1.68 } }], structuredClone(simple.mathStrokes));
+const markedBefore = structuredClone(marked), markedAst = inferMathAst(marked);
+assert(markedAst && validateMathEvidence(markedAst, marked) && validateMathAst(markedAst, marked));
+assert.deepEqual(markedAst.children.map(node => node.type), ['radical', 'accent']);
+assert.deepEqual(markedAst.children[0].strokeIds, ast.strokeIds);
+assert(markedAst.children[0].strokeIds.every(id => typeof id === 'string'));
+assert.deepEqual(marked, markedBefore, 'accent attachment never mutates original glyphs or paths');
+const markedFormula = nativeMath(markedAst, marked, { measurementContext: createCanvas(1, 1).getContext('2d') });
+const markedXml = await (await JSZip.loadAsync(await Packer.toBuffer(new Document({ sections: [{ children: [new Paragraph({ children: [markedFormula] })] }] })))).file('word/document.xml').async('string');
+assert(markedXml.includes('<m:rad>') && markedXml.includes('<m:acc>'), 'actual DOCX retains both the radical and accent');
 const indexed = region([glyph('index', '3', 8, 15, 5, 3), glyph('x', 'x', 20, 22)], rootPath('root'));
 const indexedAst = inferMathAst(indexed); assert.equal(indexedAst.degree.sourceId, 'index'); assert.equal(indexedAst.radicand.sourceId, 'x');
 const swapped = { ...indexedAst, degree: indexedAst.radicand, radicand: indexedAst.degree };

@@ -31,7 +31,7 @@ export async function checkSecondaryTheme(browser, url, output) {
       await page.locator(scroll).evaluate(n => { n.scrollTop = 0; });
       const failures = await page.locator(root).evaluate(overlay => {
         const failures = [];
-        for (const n of overlay.querySelectorAll('button, input, h1, h2, h3, h4, p, .api-key-dropdown-trigger, .donation-qr-figure')) {
+        for (const n of overlay.querySelectorAll('button, input, h1, h2, h3, h4, p, .api-key-dropdown-trigger, .donation-qr-card')) {
           if (n.closest('.feedback-marquee')) continue;
           const r = n.getBoundingClientRect();
           if (!r.width || !r.height || getComputedStyle(n).visibility === 'hidden') continue;
@@ -75,7 +75,7 @@ export async function checkSecondaryTheme(browser, url, output) {
       await click('#settingsBack');
       await click('.app .home-v2-support-top');
       await page.waitForFunction(() => document.querySelector('#donationJournalReaderTitle').textContent.length > 0);
-      assert.ok(await page.locator('.donation-qr-figure img').evaluate(n => n.complete && n.naturalWidth > 0 && n.getAttribute('src') === 'assets/donate/donation-support.webp'));
+      assert.deepEqual(await page.locator('.donation-qr-card img').evaluateAll(nodes => nodes.map(n => n.complete && n.naturalWidth > 0)), [true, true]);
       for (const [width, height] of [[1400, 887], [1024, 480], [820, 600], [720, 480], [390, 740]]) {
         await page.setViewportSize({ width, height });
         await layout('#donationOverlay', `support-${width}`, '.donation-scroll');

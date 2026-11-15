@@ -3,6 +3,30 @@ use tauri::Manager;
 use super::*;
 static FLUSH_PENDING:AtomicBool=AtomicBool::new(false);
 
+pub(super) struct FlagGuard<'a>(&'a AtomicBool);
+impl<'a> FlagGuard<'a> {
+    pub fn acquire(flag: &'a AtomicBool) -> Option<Self> {
+        flag.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire).ok().map(|_| Self(flag))
+    }
+}
+impl Drop for FlagGuard<'_> {
+    fn drop(&mut self) { self.0.store(false, Ordering::Release); }
+}
+
+pub(super) async fn capture_with_timeout(app: &tauri::AppHandle, deadline: std::time::Duration) -> Result<(Desktop, Vec<u8>), String> {
+    let flag = app.state::<ScreenshotState>().capture_worker.clone();
+    flag.compare_exchange(false,true,Ordering::AcqRel,Ordering::Acquire).map_err(|_| "screenshot:busy")?;
+    let host=app.clone();
+    let worker=tauri::async_runtime::spawn_blocking(move || {
+        // The OS call cannot be forcibly cancelled. Keep its slot until it
+        // actually returns so timeout/retry cannot accumulate blocked workers.
+        let _slot=FlagGuard(&flag);
+        capture_frame(&host)
+    });
+    tokio::time::timeout(deadline, worker).await.map_err(|_| "screenshot:capture-failed")?
+        .map_err(|_| "screenshot:capture-failed")?
+}
+
 pub(super) async fn ensure_window(app: &tauri::AppHandle) -> Result<(), String> {
     let state=app.state::<ScreenshotState>();
     let _transition=state.capture_transition.lock().await;
@@ -62,9 +86,12 @@ pub(super) async fn show_ready(app: &tauri::AppHandle, window: &tauri::WebviewWi
     let (send,receive)=tokio::sync::oneshot::channel();let app=app.clone();let target=window.clone();
     window.run_on_main_thread(move|| {
         let result:Result<(),String>=(|| {
-            let state=app.state::<ScreenshotState>();let mut inner=lock(&state.inner);
-            let session=inner.session.as_mut().filter(|s|s.id==id).ok_or("screenshot:expired")?;
-            if session.ready {return Ok(());}
+            let state=app.state::<ScreenshotState>();
+            {
+                let inner=lock(&state.inner);
+                let session=inner.session.as_ref().filter(|s|s.id==id).ok_or("screenshot:expired")?;
+                if session.ready {return Ok(());}
+            }
             let visible={
             #[cfg(all(test, windows))]
             {app.try_state::<super::native_startup_tests::Fixture>().is_none()}
@@ -72,10 +99,34 @@ pub(super) async fn show_ready(app: &tauri::AppHandle, window: &tauri::WebviewWi
             {true}
             };
             if visible {target.show().map_err(|_|"screenshot:window-failed")?;target.set_focus().map_err(|_|"screenshot:window-failed")?;}
+            let mut inner=lock(&state.inner);
+            if !inner.session.as_ref().is_some_and(|s|s.id==id) {
+                let hide=inner.session.as_ref().is_none_or(|s|!s.ready);
+                drop(inner);
+                if visible&&hide {let _=target.hide();}
+                return Err("screenshot:expired".into());
+            }
+            let session=inner.session.as_mut().unwrap();
             session.ready=true;session.trace.mark("shown");session.trace.finish(&timing);Ok(())
         })();let _=send.send(result);
     }).map_err(|_|"screenshot:window-failed")?;
     receive.await.map_err(|_|"screenshot:window-failed")?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn screenshot_gate_is_exclusive_and_released_on_unwind() {
+        let flag=AtomicBool::new(false);
+        let guard=FlagGuard::acquire(&flag).unwrap();
+        assert!(FlagGuard::acquire(&flag).is_none());
+        drop(guard);
+        assert!(!flag.load(Ordering::Acquire));
+        let _=std::panic::catch_unwind(|| { let _guard=FlagGuard::acquire(&flag).unwrap();panic!("synthetic task failure"); });
+        assert!(!flag.load(Ordering::Acquire));
+        assert!(FlagGuard::acquire(&flag).is_some());
+    }
 }
 
 pub(super) struct Trace {

@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { intersect, transformedRect, validRect } from './geometry.js';
 
 const paints = name => name === 'constructPath' || name === 'shadingFill' || /^paint(?:Image|InlineImage|SolidColor)/.test(name)

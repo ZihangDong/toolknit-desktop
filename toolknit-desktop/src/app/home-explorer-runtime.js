@@ -59,6 +59,7 @@ export function createHomeExplorerRuntime({
     : () => {};
   const homeScrollContainer = root?.querySelector?.('.main-content');
   const homeToolSearch = root?.getElementById?.('homeToolSearch');
+  const homeToolSearchClear = root?.getElementById?.('homeToolSearchClear');
   const homeToolGrid = root?.getElementById?.('homeToolGrid');
   const homeToolLoadMore = root?.getElementById?.('homeToolLoadMore');
   const homeToolLoadMoreSummary = root?.getElementById?.('homeToolLoadMoreSummary');
@@ -255,7 +256,16 @@ export function createHomeExplorerRuntime({
     if (card.matches('.audio-list-item')) { event.preventDefault(); saveFavorite(getToolInfo(card)); }
     else if (card.matches('.tool-result-card')) { event.preventDefault(); saveFavorite(findToolInfo(card.dataset.homeTool)); }
   });
-  bindEvent(homeToolSearch, 'input', () => renderHomeTools({ resetPagination: true }));
+  const syncSearchClear = () => { if (homeToolSearchClear) homeToolSearchClear.hidden = !homeToolSearch?.value; };
+  bindEvent(homeToolSearch, 'input', () => { syncSearchClear(); renderHomeTools({ resetPagination: true }); });
+  bindEvent(homeToolSearchClear, 'click', () => {
+    if (!homeToolSearch) return;
+    homeToolSearch.value = '';
+    syncSearchClear();
+    renderHomeTools({ resetPagination: true });
+    homeToolSearch.focus?.({ preventScroll: true });
+  });
+  syncSearchClear();
   bindEvent(homeLazyLoadToggle, 'click', () => {
     lazyLoadEnabled = !lazyLoadEnabled;
     settings.write('home_lazy_load', lazyLoadEnabled);

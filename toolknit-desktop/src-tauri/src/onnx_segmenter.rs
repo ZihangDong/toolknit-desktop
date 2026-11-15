@@ -204,59 +204,6 @@ fn installed_matting_model_file(spec: &MattingModelSpec) -> Result<Option<PathBu
     }
 }
 
-fn get_onnxruntime_dll_path() -> Result<PathBuf, String> {
-    let exe = std::env::current_exe().map_err(|error| error.to_string())?;
-    let exe_dir = exe.parent().ok_or("Cannot find executable directory")?;
-    let bundled = exe_dir
-        .join("resources")
-        .join("onnxruntime")
-        .join("onnxruntime.dll");
-    if bundled.is_file() {
-        return Ok(bundled);
-    }
-    let development = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("resources")
-        .join("onnxruntime")
-        .join("onnxruntime.dll");
-    if development.is_file() {
-        return Ok(development);
-    }
-    Err("matting:onnxruntime-dll-missing".to_string())
-}
-
-#[cfg(target_os = "windows")]
-fn preload_onnx_libraries(dll: &Path) -> Result<(), String> {
-    use libloading::os::windows::{
-        Library, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR,
-    };
-
-    let flags = LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
-    let runtime = unsafe { Library::load_with_flags(dll, flags) }
-        .map_err(|error| format!("matting:onnxruntime-load-failed:{error}"))?;
-    let direct_ml = dll.parent().map(|directory| directory.join("DirectML.dll"));
-
-    // Keep the handles alive for the process. ORT and DirectML resolve their
-    // imports by module name after initialization, so an immediately dropped
-    // preload does not make the dependency available reliably.
-    static LIBRARIES: OnceLock<Mutex<Vec<libloading::Library>>> = OnceLock::new();
-    let libraries = LIBRARIES.get_or_init(|| Mutex::new(Vec::new()));
-    let mut loaded = libraries
-        .lock()
-        .map_err(|_| "matting:onnxruntime-loader-busy".to_string())?;
-    loaded.push(runtime.into());
-    if let Some(direct_ml) = direct_ml.filter(|path| path.is_file()) {
-        if let Ok(library) = unsafe { Library::load_with_flags(&direct_ml, flags) } {
-            loaded.push(library.into());
-        }
-    }
-    Ok(())
-}
-
-#[cfg(not(target_os = "windows"))]
-fn preload_onnx_libraries(_dll: &Path) -> Result<(), String> {
-    Ok(())
-}
-
 fn matting_runtime() -> &'static Mutex<MattingRuntime> {
     static RUNTIME: OnceLock<Mutex<MattingRuntime>> = OnceLock::new();
     RUNTIME.get_or_init(|| Mutex::new(MattingRuntime::default()))
@@ -273,18 +220,7 @@ fn lock_matting_runtime(runtime: &Mutex<MattingRuntime>) -> MutexGuard<'_, Matti
 }
 
 fn ort_dylib_ready() -> Result<(), String> {
-    static PREPARED: OnceLock<Mutex<bool>> = OnceLock::new();
-    let mut prepared = PREPARED
-        .get_or_init(|| Mutex::new(false))
-        .lock()
-        .map_err(|_| "matting:onnxruntime-loader-busy".to_string())?;
-    if !*prepared {
-        let dll = get_onnxruntime_dll_path()?;
-        preload_onnx_libraries(&dll)?;
-        std::env::set_var("ORT_DYLIB_PATH", &dll);
-        *prepared = true;
-    }
-    Ok(())
+    crate::platform::onnx_runtime::prepare().map_err(|error| format!("matting:{error}"))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

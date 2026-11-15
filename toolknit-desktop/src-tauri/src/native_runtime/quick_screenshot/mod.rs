@@ -9,13 +9,17 @@ mod capture;
 mod feedback;
 mod history_actions;
 mod history_menu;
+#[cfg(test)]
 mod ocr;
 mod window_visibility;
 mod startup;
+mod viewer_layout;
 #[cfg(test)]
 mod latency_tests;
 #[cfg(all(test, windows))]
 mod native_startup_tests;
+#[cfg(all(test, windows))]
+mod native_ocr_tests;
 
 const MAX_PIXELS: u64 = 32_000_000;
 const MAX_BYTES: usize = 32 * 1024 * 1024;
@@ -71,6 +75,8 @@ struct Session {
 pub(crate) struct ScreenshotState {
     inner: Mutex<Inner>,
     starting: AtomicBool,
+    ending: AtomicBool,
+    capture_worker: Arc<AtomicBool>,
     sequence: AtomicU64,
     work: AtomicBool,
     capture_transition: tokio::sync::Mutex<()>,
@@ -281,29 +287,32 @@ pub(crate) fn initialize(app: &tauri::AppHandle) {
 }
 pub(crate) async fn begin(app: &tauri::AppHandle) -> Result<(), String> {
     let mut trace = startup::Trace::new();
-    let had_surfaces = app.webview_windows().values().any(startup::is_visible);
-    feedback::dismiss(app).await?;
-    history_menu::dismiss(app, false);
     let state = app.state::<ScreenshotState>();
-    if state.starting.swap(true, Ordering::SeqCst) {
-        return Ok(());
-    }
-    let result = async {
-        if let Some(ready) = lock(&state.inner).session.as_ref().map(|session|session.ready) {
+    let Some(_starting) = startup::FlagGuard::acquire(&state.starting) else { return Ok(()); };
+    async {
+        // Finish hiding the previous surface before taking the next desktop
+        // frame. Otherwise a fast reopen can capture or hide the newer session.
+        tokio::time::timeout(std::time::Duration::from_millis(1500), async {
+            while state.ending.load(Ordering::Acquire) {
+                tokio::time::sleep(std::time::Duration::from_millis(2)).await;
+            }
+        }).await.map_err(|_| "screenshot:window-failed")?;
+        let active = { lock(&state.inner).session.as_ref().map(|session|session.ready) };
+        if let Some(ready) = active {
             if ready { if let Some(window) = app.get_webview_window(CAPTURE_LABEL) {
                 if startup::is_visible(&window) { let _ = window.set_focus(); }
             } }
             return Ok(());
         }
+        let had_surfaces = app.webview_windows().values()
+            .any(|window| window.label() != "main" && startup::is_visible(window));
+        feedback::dismiss(app).await?;
+        history_menu::dismiss(app, false);
         let mut restore = hide_for_capture(app).await?;
         trace.mark("hidden");
         startup::settle_desktop(restore.changed || had_surfaces).await;
         trace.mark("settled");
-        let capture_app = app.clone();
-        let captured = tauri::async_runtime::spawn_blocking(move || startup::capture_frame(&capture_app))
-            .await
-            .map_err(|_| "screenshot:capture-failed")?;
-        let (mut desktop, png) = captured?;
+        let (mut desktop, png) = startup::capture_with_timeout(app, std::time::Duration::from_secs(6)).await?;
         trace.mark("captured");
         if png.len() > MAX_BYTES {
             return Err("screenshot:image-too-large".into());
@@ -359,22 +368,24 @@ pub(crate) async fn begin(app: &tauri::AppHandle) -> Result<(), String> {
         }
         opened
     }
-    .await;
-    state.starting.store(false, Ordering::SeqCst);
-    result
+    .await
 }
 pub(crate) fn finish(app: &tauri::AppHandle) {
     finish_session(app,None);
 }
 fn finish_session(app: &tauri::AppHandle, expected:Option<u64>) {
     let state = app.state::<ScreenshotState>();
-    let previous = {
+    let (_ending, previous) = {
         let mut inner=lock(&state.inner);
         if expected.is_some_and(|id|!inner.session.as_ref().is_some_and(|session|session.id==id)){return;}
-        inner.session.take()
+        // A stale timeout must never occupy the exit gate and drop the active
+        // session's cancel request while waiting for this state lock.
+        let Some(ending) = startup::FlagGuard::acquire(&state.ending) else { return; };
+        (ending, inner.session.take())
     };
+    super::local_ocr::cancel_owner(app,CAPTURE_LABEL);
     if let Some(window) = app.get_webview_window(CAPTURE_LABEL) {
-        let _ = window.emit("screenshot-ended", ());
+        let _ = window.emit("screenshot-ended", previous.as_ref().map(|session|session.id));
         let _ = window.hide();
     }
     if let Some(session) = previous {
@@ -406,6 +417,9 @@ async fn hide_for_capture(app: &tauri::AppHandle) -> Result<RestoreWindows, Stri
         changed: false,
     };
     for (label, window) in app.webview_windows() {
+        // The main workbench is part of the user's desktop, not capture UI.
+        // Never hide or restore it: doing so delays capture and can flash it.
+        if label == "main" { continue; }
         if restore
             .auxiliary
             .as_ref()
@@ -414,8 +428,7 @@ async fn hide_for_capture(app: &tauri::AppHandle) -> Result<RestoreWindows, Stri
             // Native no-activation show may differ from the framework cache.
             restore.changed |= startup::is_visible(&window);
             window_visibility::hide(&window).await?;
-        } else if (label == "main"
-            || label.starts_with("screenshot-")
+        } else if (label.starts_with("screenshot-")
             || label == "color-picker-overlay")
             && window.is_visible().unwrap_or(false)
         {
@@ -519,6 +532,9 @@ fn open_viewer(app: &tauri::AppHandle, shot: Shot) -> Result<(), String> {
         let _ = w.set_focus();
         return Ok(());
     }
+    let cursor = app.cursor_position().map_err(|_| "screenshot:window-failed")?;
+    let (work, scale) = monitor_for(app, cursor.x, cursor.y)?;
+    let (width, height) = viewer_layout::size((shot.width, shot.height), (work.width, work.height), scale);
     let state = app.state::<ScreenshotState>();
     {
         let mut inner = lock(&state.inner);
@@ -531,14 +547,18 @@ fn open_viewer(app: &tauri::AppHandle, shot: Shot) -> Result<(), String> {
         inner.viewers.insert(label.clone(), shot);
     }
     let created = window_builder(app, &label, "viewer").and_then(|b| {
-        b.inner_size(1000.0, 720.0)
-            .min_inner_size(740.0, 420.0)
+        b.inner_size(width, height)
+            .min_inner_size(320.0_f64.min(width), 220.0_f64.min(height))
             .always_on_top(true)
             .build()
             .map_err(|_| "screenshot:window-failed".into())
     });
     match created {
         Ok(w) => {
+            let _ = w.set_position(Position::Physical(PhysicalPosition::new(
+                work.x + ((work.width as f64 - width * scale) / 2.0).round() as i32,
+                work.y + ((work.height as f64 - height * scale) / 2.0).round() as i32,
+            )));
             let _ = w.show();
             let _ = w.set_focus();
             Ok(())
@@ -1052,9 +1072,7 @@ pub(crate) async fn quick_screenshot(
             if viewer && action != "copy" && action != "save" {
                 return Err("screenshot:forbidden".into());
             }
-            if state.work.swap(true, Ordering::SeqCst) {
-                return Err("screenshot:busy".into());
-            }
+            let _work = startup::FlagGuard::acquire(&state.work).ok_or("screenshot:busy")?;
             let result = async {
                 let bytes = if viewer {
                     lock(&state.inner)
@@ -1069,17 +1087,11 @@ pub(crate) async fn quick_screenshot(
                 };
                 let (width, height) = image_dimensions(&bytes)?;
                 if action == "ocr" {
-                    let language = match request.get("language").and_then(|v| v.as_str()) {
-                        Some("zh") => Some("zh".to_string()),
-                        Some("en") => Some("en".to_string()),
-                        None => None,
-                        _ => return Err("screenshot:invalid-request".into()),
-                    };
-                    return tauri::async_runtime::spawn_blocking(move || {
-                        ocr::recognize_with_language(bytes, language)
-                    })
-                    .await
-                    .map_err(|_| "screenshot:ocr-failed")?;
+                    if request.get("language").and_then(|v|v.as_str()).is_some_and(|v|!matches!(v,"zh"|"en")){return Err("screenshot:invalid-request".into());}
+                    let id=format!("capture-{}",request["session"].as_u64().ok_or("screenshot:invalid-request")?);
+                    let result=super::local_ocr::recognize(&app,label,&id,bytes).await?;
+                    require_session(&state,&request)?;
+                    return Ok(result);
                 }
                 if action == "save" {
                     let directory = request["directory"]
@@ -1113,6 +1125,12 @@ pub(crate) async fn quick_screenshot(
                     })
                     .await
                     .map_err(|_| "screenshot:save-failed")??;
+                    if label == CAPTURE_LABEL && request["finish"].as_bool() == Some(true)
+                        && require_session(&state, &request).is_ok()
+                    {
+                        finish_session(&app, request["session"].as_u64());
+                        let _ = feedback::show(&app, "saved");
+                    }
                     return Ok(path.into());
                 }
                 let copied = bytes.clone();
@@ -1161,6 +1179,7 @@ pub(crate) async fn quick_screenshot(
                         open_viewer(&app, shot.clone())?;
                     }
                     finish(&app);
+                    let _ = feedback::show(&app, "copied");
                     if preferences().history {
                         show_history(&app)?;
                     }
@@ -1175,7 +1194,6 @@ pub(crate) async fn quick_screenshot(
                 Ok(serde_json::Value::Null)
             }
             .await;
-            state.work.store(false, Ordering::SeqCst);
             result
         }
         _ => Err("screenshot:forbidden".into()),

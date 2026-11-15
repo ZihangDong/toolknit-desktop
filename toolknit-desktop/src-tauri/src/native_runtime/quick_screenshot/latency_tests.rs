@@ -13,11 +13,14 @@ fn screenshot_encoding_baseline() {
             let color=if text { 30 } else { 245 };
             [color, color, if x>width/2 {(x.wrapping_mul(17)^y.wrapping_mul(11)) as u8} else {color}, 255]
         }).collect();
-        for mode in ["default", "fast-adaptive", "fast-sub"] {
+        let bgra:Vec<u8>=pixels.chunks_exact(4).flat_map(|p|[p[2],p[1],p[0],0]).collect();
+        for mode in ["default", "fast-adaptive", "fast-sub", "production-bgra"] {
             let mut elapsed=Vec::new(); let mut size=0;
             for _ in 0..5 {
                 let start=Instant::now(); let mut encoded=Vec::new();
-                if mode=="default" {
+                if mode=="production-bgra" {
+                    encoded=capture::encode_desktop_bgra(width,height,bgra.clone()).unwrap();
+                } else if mode=="default" {
                     image::DynamicImage::ImageRgba8(image::RgbaImage::from_raw(width,height,pixels.clone()).unwrap())
                         .write_to(&mut std::io::Cursor::new(&mut encoded),image::ImageFormat::Png).unwrap();
                 } else {

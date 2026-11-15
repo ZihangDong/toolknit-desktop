@@ -311,52 +311,6 @@
         line-height: 1.7;
       }
 
-      .donation-qr-figure {
-        width: 100%;
-        margin: 0;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 6px;
-        background: #ffffff;
-      }
-
-      .donation-qr-figure img {
-        display: block;
-        width: 100%;
-        height: auto;
-        aspect-ratio: 2400 / 1018;
-        object-fit: contain;
-      }
-
-      .donation-voluntary {
-        margin: 14px 0 0;
-        color: rgba(244, 245, 242, 0.5);
-        font-size: 12px;
-        line-height: 1.7;
-      }
-
-      .donation-support-benefit {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        margin: 16px 0 0;
-        padding: 14px 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.14);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-        color: rgba(255, 255, 255, 0.88);
-        font-size: 13px;
-        font-weight: 700;
-        line-height: 1.65;
-      }
-
-      .donation-support-benefit svg {
-        width: 17px;
-        height: 17px;
-        flex: 0 0 auto;
-        margin-top: 2px;
-        color: #ffffff;
-      }
-
       .donation-detail-grid {
         display: grid;
         grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
@@ -543,10 +497,6 @@
 
         .donation-support-copy {
           max-width: 720px;
-        }
-
-        .donation-qr-figure {
-          max-width: 840px;
         }
 
         .donation-detail-grid,

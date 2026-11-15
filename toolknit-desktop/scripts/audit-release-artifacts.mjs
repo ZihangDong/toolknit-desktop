@@ -40,7 +40,7 @@ const trackedFiles = execFileSync('git', ['ls-files', '-z'], {
 }).toString('utf8').split('\0').filter(Boolean);
 assert.ok(!trackedFiles.some(isPrivateSkillFile), 'Private Skills must not be tracked in the repository');
 const requiredAssets = ['logo.png', 'assets/spider.png', 'assets/backgrounds/default-dark-mountain.jpg',
-  'assets/donate/alipay-qr.jpg', 'assets/donate/wechat-qr.png', 'assets/donate/donation-support.webp'];
+  'assets/donate/ToolKnit-Alipay.png', 'assets/donate/ToolKnit-WeChat.png'];
 for (const asset of requiredAssets) {
   assert.ok(publicFiles.includes(`public/${asset}`), `Required source asset missing: ${asset}`);
   assert.ok(distFiles.includes(`dist/${asset}`), `Required built asset missing: ${asset}`);

@@ -21,7 +21,7 @@ pub(super) struct Pending {
 }
 
 pub(super) fn show(app: &tauri::AppHandle, kind: &str) -> Result<(), String> {
-    if !["copied", "phraseAdded", "orderSaved"].contains(&kind) {
+    if !["copied", "saved", "phraseAdded", "orderSaved"].contains(&kind) {
         return Err("screenshot:invalid-request".into());
     }
     let state = app.state::<ScreenshotState>();
@@ -160,7 +160,7 @@ pub(super) async fn dismiss(app: &tauri::AppHandle) -> Result<(), String> {
         .feedback_revision
         .fetch_add(1, Ordering::AcqRel);
     if let Some(window) = app.get_webview_window(LABEL) {
-        window_visibility::hide(&window).await?;
+        if startup::is_visible(&window) { window_visibility::hide(&window).await?; }
     }
     Ok(())
 }

@@ -1,15 +1,21 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
+import { sourceAlignedEquationRegion, sourceAlignedEquation } from './source-aligned-equations.js';
+import {inferSourceIndexedSum,sourceIndexedSum} from './source-indexed-sum.js';
 import { bottom, right, union, median, validRect, contains } from './geometry.js';
+import { inferSourceShorthandEquation, sourceShorthandEquation, sourceShorthandNodePresent, shorthandIntegralNodeEvidence, sourceShorthandSumBody } from './source-shorthand-integral.js';
 import { radicalEvidence } from './math-paths.js';
 import { validateMathGeometry } from './math-evidence.js';
+import { mathClassificationText } from './font-style.js';
+import { inferRasterMathAst, rasterMathAstMatches } from './raster-math-evidence.js';
+import { sourceMathAccent, sourceAccentBase, attachSourceMathAccents } from './math-accents.js';
 import { mathIntegralOperator, integralLimitEvidence, integralBodyEvidence, integralDifferential } from './math-integrals.js';
 import { validDelimiterGlyph, matrixDelimiterPairs, matrixCells, supportedMatrixShape } from './math-matrices.js';
 import { MAX_MATH_DEPTH as MAX_DEPTH, MAX_MATH_NODES as MAX_NODES, mathAtom as atom,
-  assembleMathAtoms, bareMathClosing, namedMathLimit, centeredMathLimit, mathNaryOperator, mathGlyphBaseline, mathNaryBody } from './math-rows.js';
+  assembleMathAtoms, bareMathClosing, namedMathLimit, centeredMathLimit, sideMathNaryLimit, mathNaryOperator, mathGlyphBaseline, mathNaryBody } from './math-rows.js';
 
-const allowed = /^[\p{Script=Latin}\p{Script=Greek}\p{N}\p{Sm}\s()[\]{}|.,'\-\u2026\u2032\u2033\u00b0\u00b7\u00b5\u2308-\u230b]+$/u;
+const allowed = /^[\p{Script=Latin}\p{Script=Greek}\p{N}\p{Sm}\s()[\]{}|.,:;'\-\u2026\u2032\u2033\u00b0\u00b7\u00b5\u2308-\u230b]+$/u;
 const failure = () => { throw new Error('ambiguous-math'); };
 export const validMathStyle = glyph => !glyph.mathStyleUncertain && (!glyph.alphabet
   || ['script', 'doubleStruck'].includes(glyph.alphabet) && !/[a-z]/.test(glyph.text) && !glyph.italic
@@ -18,15 +24,24 @@ const symbol = glyph => ({ type: 'symbol', sourceId: glyph.id, text: glyph.text,
   ...(glyph.alphabet ? { alphabet: glyph.alphabet } : {}) });
 const unsupportedIntegral = glyph => /[\u222b-\u2233]/u.test(glyph.text)
   && !mathIntegralOperator({ ...glyph, type: 'symbol' });
+const supportedRasterGlyph = glyph => glyph.ocrEvidence?.confidence >= .98 && glyph.ocrEvidence?.shapeScore >= .8
+  && /^[a-zA-Z0-9+\-−=×÷*/().,[\]{}<>≤≥]$/u.test(glyph.text);
 
 /** Geometry-only formula candidates. Uncertain encoding, intersecting ink and
  * unsupported structures remain images; a candidate never rewrites symbols.
  */
 export function inferMathAst(region) {
+  if(region?.sourceAlignedEquation!==undefined)return sourceAlignedEquationRegion(region)?.ast||null;
+  if(region?.sourceIndexedSum!==undefined)return inferSourceIndexedSum(region);
+  return inferStandardMathAst(region) || inferSourceShorthandEquation(region, inferStandardMathAst);
+}
+
+function inferStandardMathAst(region) {
+  if (region?.rasterMathEvidence !== undefined) return inferRasterMathAst(region);
   if (region.role !== 'math' || !region.mathGlyphs?.length || region.reasons?.length) return null;
   const glyphs = region.mathGlyphs, strokes = region.mathStrokes || [];
-  if (glyphs.length + strokes.length > MAX_NODES || glyphs.some(glyph => glyph.raster || !validMathStyle(glyph) || unsupportedIntegral(glyph)
-    || !allowed.test(glyph.text) && !validDelimiterGlyph(glyph)
+  if (glyphs.length + strokes.length > MAX_NODES || glyphs.some(glyph => glyph.raster && !supportedRasterGlyph(glyph) || !validMathStyle(glyph) || unsupportedIntegral(glyph)
+    || !allowed.test(mathClassificationText(glyph.text)) && !validDelimiterGlyph(glyph) && !sourceMathAccent(glyph)
     || !validRect(glyph.rect) || !Number.isFinite(glyph.baseline) || !(glyph.size > 0))
     || strokes.some(stroke => stroke.unmapped || !stroke.thin || !validRect(stroke.rect) || stroke.path && !stroke.path.complete)) return null;
   let nodes = 0;
@@ -36,6 +51,8 @@ export function inferMathAst(region) {
     spend(items.length + lines.length);
     const size = Math.max(...items.map(item => item.size));
     const remaining = new Set(items), remainingLines = new Set(lines), atoms = [];
+    const accents = items.filter(sourceMathAccent);
+    accents.forEach(g => remaining.delete(g));
     const roots = radicalEvidence(items, lines), matrices = matrixDelimiterPairs(items);
     const underRoot = (root, item) => item.rect.x >= root.barStart[0] - .5 && right(item.rect) <= root.barEnd[0] + .7
       && item.rect.y >= root.barStart[1] + .2 && bottom(item.rect) <= root.valley[1] + size * .35;
@@ -116,7 +133,8 @@ export function inferMathAst(region) {
     if (remainingLines.size) failure();
     for (const glyph of remaining) {
       const node = symbol(glyph);
-      atoms.push(atom(node, glyph.rect, mathGlyphBaseline(glyph), glyph.size));
+      atoms.push({ ...atom(node, glyph.rect, mathGlyphBaseline(glyph), glyph.size),
+        ...(!glyph.raster && glyph.preciseInk ? { nativeFace: glyph.font } : {}) });
     }
     atoms.sort((a, b) => a.rect.x - b.rect.x || a.rect.y - b.rect.y);
     for (const fraction of atoms.filter(item => ['fraction', 'radical'].includes(item.node.type))) {
@@ -130,7 +148,7 @@ export function inferMathAst(region) {
       const rows = cells?.map(row => row.map(items => assembleMathAtoms(items, { depth: depth + 1, spend })));
       return rows && supportedMatrixShape(rows, grid.kind) ? rows : null;
     }
-    return assembleMathAtoms(atoms, { depth, spend });
+    return attachSourceMathAccents(assembleMathAtoms(atoms, { depth, spend }), accents, new Map(items.map(g => [g.id, g])));
   };
   try {
     const ast = parse(glyphs, strokes);
@@ -141,15 +159,20 @@ export function inferMathAst(region) {
 
 /** Reject model-supplied text, unknown nodes and any duplicated/missing evidence. */
 export function validateMathEvidence(ast, region) {
+  if(region?.sourceAlignedEquation!==undefined)return Boolean(sourceAlignedEquation(ast,region));
+  if(region?.sourceIndexedSum!==undefined)return Boolean(sourceIndexedSum(ast,region));
+  if (sourceShorthandNodePresent(ast) && !sourceShorthandEquation(ast, region)) return false;
+  if (region?.rasterMathEvidence !== undefined) return rasterMathAstMatches(ast, region);
   if (!region.mathGlyphs?.length || region.mathGlyphs.length + (region.mathStrokes?.length || 0) > MAX_NODES
     || region.mathGlyphs.some(item => !validRect(item.rect) || !(item.size > 0) || !Number.isFinite(item.size)
-      || !Number.isFinite(item.baseline) || item.raster || unsupportedIntegral(item))) return false;
+      || !Number.isFinite(item.baseline) || item.raster && !supportedRasterGlyph(item) || unsupportedIntegral(item))) return false;
   const glyphs = new Map((region.mathGlyphs || []).map(item => [item.id, item]));
   const strokes = new Map((region.mathStrokes || []).map(item => [item.id, item]));
   if (glyphs.size !== region.mathGlyphs.length || strokes.size !== (region.mathStrokes?.length || 0)
     || [...strokes.values()].some(item => !validRect(item.rect) || !item.thin || item.unmapped
       || item.path && !item.path.complete)) return false;
   const roots = radicalEvidence(region.mathGlyphs || [], region.mathStrokes || []), matrices = matrixDelimiterPairs(region.mathGlyphs || []);
+  const shorthand = sourceShorthandEquation(ast, region);
   const seen = new Set(), usedStrokes = new Set(), usedIntegrals = new Set(); let count = 0;
   const members = node => node.type === 'symbol' ? [glyphs.get(node.sourceId)]
     : Object.values(node).filter(value => value && typeof value === 'object').flatMap(value =>
@@ -158,15 +181,21 @@ export function validateMathEvidence(ast, region) {
     if (!node || typeof node !== 'object' || Array.isArray(node) || depth > MAX_DEPTH || ++count > MAX_NODES) failure();
     const keys = { symbol: ['type', 'sourceId', 'text', 'italic', 'bold', 'alphabet'], row: ['type', 'children'],
       fraction: ['type', 'strokeId', 'numerator', 'denominator'], script: ['type', 'base', 'subscript', 'superscript'],
+      accent: ['type', 'sourceId', 'text', 'base'],
       radical: ['type', 'strokeIds', 'glyphIds', 'radicand', 'degree'], limit: ['type', 'base', 'lower', 'upper'],
+      'shorthand-integral': ['type', 'operator', 'lower', 'body'],
       nary: ['type', 'operator', 'lower', 'upper', 'body'], integral: ['type', 'operator', 'lower', 'upper', 'body', 'differential'],
       matrix: ['type', 'brackets', 'leftGlyphIds', 'rightGlyphIds', 'rows'] }[node.type];
     if (!keys || Object.keys(node).some(key => !keys.includes(key))) failure();
     if (node.type === 'symbol') {
       const source = glyphs.get(node.sourceId);
-      if (!source || source.radicalPart || !validMathStyle(source) || seen.has(node.sourceId) || node.text !== source.text || !allowed.test(node.text)
+      if (!source || source.radicalPart || !validMathStyle(source) || seen.has(node.sourceId) || node.text !== source.text || !allowed.test(mathClassificationText(node.text))
         || node.italic !== Boolean(source.italic) || node.bold !== Boolean(source.bold) || node.alphabet !== source.alphabet) failure();
       seen.add(node.sourceId);
+    } else if (node.type === 'accent') {
+      const source = glyphs.get(node.sourceId);
+      if (!source || seen.has(node.sourceId) || node.text !== source.text || !sourceAccentBase(source, node.base, glyphs)) failure();
+      seen.add(node.sourceId); visit(node.base, depth + 1);
     } else if (node.type === 'row') {
       if (!Array.isArray(node.children) || node.children.length < 2 || node.children.length > MAX_NODES) failure();
       node.children.forEach(child => visit(child, depth + 1));
@@ -197,17 +226,29 @@ export function validateMathEvidence(ast, region) {
       for (const id of node.strokeIds) { if (!strokes.has(id) || usedStrokes.has(id)) failure(); usedStrokes.add(id); }
       if (node.degree) visit(node.degree, depth + 1);
       visit(node.radicand, depth + 1);
+    } else if (node.type === 'shorthand-integral') {
+      if (!shorthand || !shorthandIntegralNodeEvidence(node, glyphs)) failure();
+      visit(node.operator, depth + 1); visit(node.lower, depth + 1); visit(node.body, depth + 1);
+      usedIntegrals.add(node.operator.sourceId);
     } else if (['limit', 'nary', 'integral'].includes(node.type)) {
       const integral = node.type === 'integral', head = node.type === 'limit' ? node.base : node.operator;
       if (!(integral ? mathIntegralOperator(head) : node.type === 'nary' ? mathNaryOperator(head) : namedMathLimit(head))
         || !integral && !node.lower && !node.upper) failure();
       visit(head, depth + 1);
       const base = glyphs.get(head.sourceId);
+      const placements = new Set();
       for (const [key, upper] of [['lower', false], ['upper', true]]) if (node[key]) {
         visit(node[key], depth + 1);
-        if (!(integral ? integralLimitEvidence : centeredMathLimit)(base, members(node[key]), upper)) failure();
+        const parts = members(node[key]);
+        if ((integral ? integralLimitEvidence : centeredMathLimit)(base, parts, upper)) placements.add('centered');
+        else if (node.type === 'nary' && sideMathNaryLimit(base, parts, upper)) {
+          const bodyLeft = Math.min(...members(node.body).map(item => item.rect.x));
+          if (parts.some(item => right(item.rect) > bodyLeft + .3)) failure();
+          placements.add('side');
+        } else failure();
       }
-      if (node.type === 'nary') { visit(node.body, depth + 1); if (!mathNaryBody(node.body)) failure(); }
+      if (node.type === 'nary' && placements.size !== 1) failure();
+      if (node.type === 'nary') { visit(node.body, depth + 1); if (!mathNaryBody(node.body) && !(shorthand && sourceShorthandSumBody(node.body, node.lower))) failure(); }
       if (integral) {
         usedIntegrals.add(head.sourceId);
         visit(node.body, depth + 1); visit(node.differential, depth + 1);

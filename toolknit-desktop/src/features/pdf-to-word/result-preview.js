@@ -1,26 +1,32 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { leafBlocks } from './core/layout.js';
-import { wordFont, outputWordFont } from './adapters/docx-fonts.js';
+import { textMetrics } from './adapters/text-layout.js';
+import { drawResultText } from './adapters/text-rendering.js';
+import { nativePairMeasure } from './core/native-pair-policy.js';
 
 export function measureResultText(text, style, context) {
-  let font = wordFont(style.font, style.fontFamily);
-  if (font === 'Times New Roman' && /[\p{Script=Han}\u2460-\u24ff\u3000-\u303f\uff00-\uffef]/u.test(text)) font = 'SimSun';
-  font = outputWordFont(font).replaceAll('"', '');
-  context.font = (style.italic ? 'italic ' : '') + (style.bold || /FZDBS/i.test(style.font || '') ? 'bold ' : '') + style.size + 'px "' + font + '"';
-  context.fontKerning = 'none';
-  return context.measureText(text).width;
+  const paired = nativePairMeasure(text, style, context);
+  return paired === null ? textMetrics({ ...style, text }, context).width : paired;
 }
+measureResultText.metrics = (text, style, context) => {
+  const value = textMetrics({ ...style, text }, context);
+  return { ...value, descent: Math.max(0, value.inkDescent) };
+};
 
 export function pageAssetIds(page) {
-  return [...new Set(leafBlocks([...page.header, ...page.blocks, ...page.footer]).flatMap(block =>
-    block.type === 'image' ? [block.assetId || block.id] : (block.lines || []).flatMap(line => line.items.filter(item => item.type === 'image').map(item => item.assetId || item.id))))];
+  const leaves = leafBlocks([...page.header, ...page.blocks, ...page.footer]);
+  const fonts = leaves.flatMap(block => (block.lines || []).flatMap(line => line.items.flatMap(item =>
+    [item, ...(item.words || [])].map(value => value.fontAssetId).filter(Boolean))));
+  const images = leaves.flatMap(block => block.type === 'image' ? [block.assetId || block.id]
+    : (block.lines || []).flatMap(line => line.items.filter(item => item.type === 'image').map(item => item.assetId || item.id)));
+  return [...new Set([...fonts, ...images])];
 }
 
 /** Rebuild from export data, so erased text is never painted over a source screenshot. */
-export async function renderResultPage(page, canvas, assets, check = () => {}) {
-  const context = canvas.getContext('2d'), scale = canvas.width / page.width;
+export async function renderResultPage(page, canvas, assets, check = () => {}, fontScope = null) {
+  const context = fontScope?.context(canvas.getContext('2d')) || canvas.getContext('2d'), scale = canvas.width / page.width;
   const leaves = leafBlocks([...page.header, ...page.blocks, ...page.footer]);
   const imageItems = leaves.flatMap(block => block.type === 'image' ? [block] : (block.lines || []).flatMap(line => line.items.filter(item => item.type === 'image')));
   const decoded = [];
@@ -46,12 +52,6 @@ export async function renderResultPage(page, canvas, assets, check = () => {}) {
     tables([...page.header, ...page.blocks, ...page.footer]);
     for (const { item, bitmap } of decoded) context.drawImage(bitmap, item.rect.x, item.rect.y, item.rect.width, item.rect.height);
     tables([...page.header, ...page.blocks, ...page.footer], true);
-    for (const block of leaves) for (const line of block.lines || []) for (const item of line.items) {
-      if (item.type === 'image') continue;
-      measureResultText(item.text, item, context);
-      context.fillStyle = '#' + (/^[a-f0-9]{6}$/i.test(item.color) ? item.color : '000000');
-      context.textBaseline = 'alphabetic';
-      context.fillText(item.text, item.baselineX ?? item.rect.x, item.baseline ?? line.baseline);
-    }
+    drawResultText(page, context);
   } finally { decoded.forEach(({ bitmap }) => bitmap.close()); }
 }

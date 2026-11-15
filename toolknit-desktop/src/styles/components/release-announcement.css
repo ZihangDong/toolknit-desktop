@@ -1,0 +1,84 @@
+.release-announcement-overlay {
+  position: fixed;
+  z-index: 11000;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(5, 6, 8, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.release-announcement-overlay.visible { display: flex; }
+.release-announcement-overlay[hidden] { display: none; }
+
+.release-announcement-panel {
+  --release-surface: #17181b;
+  --release-ink: #f2f3f4;
+  --release-muted: #b5b8bd;
+  --release-line: rgba(255, 255, 255, 0.12);
+  --release-accent: #d7e5ff;
+  width: min(1100px, 100%);
+  height: min(900px, calc(100dvh - 24px));
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--release-line);
+  border-radius: 22px;
+  color: var(--release-ink);
+  background: var(--release-surface);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme="light"] .release-announcement-panel {
+  --release-surface: #ffffff;
+  --release-ink: #17191c;
+  --release-muted: #555c64;
+  --release-line: #d9dde2;
+  --release-accent: #134d8a;
+}
+
+.release-announcement-header { padding: 30px 36px 22px; }
+.release-announcement-eyebrow { margin: 0 0 10px; color: var(--release-muted); font-size: 11px; font-weight: 700; }
+.release-announcement-header h1 { max-width: 920px; margin: 0; font-size: 28px; line-height: 1.3; }
+.release-announcement-intro { margin: 9px 0 0; color: var(--release-muted); font-size: 14px; line-height: 1.65; }
+.release-announcement-content { flex: 1; min-height: 0; overflow: auto; padding: 0 36px 24px; }
+.release-announcement-products { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.release-announcement-product { min-width: 0; padding: 20px; border: 1px solid var(--release-line); border-radius: 14px; }
+.release-announcement-product h2,
+.release-announcement-updates h2,
+.release-announcement-license h2 { margin: 0; font-size: 16px; line-height: 1.45; }
+.release-announcement-product p,
+.release-announcement-updates p,
+.release-announcement-license p { margin: 9px 0 0; color: var(--release-muted); font-size: 14px; line-height: 1.75; }
+.release-announcement-product a { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; color: var(--release-accent); font-size: 12px; font-weight: 650; text-decoration: none; }
+.release-announcement-product a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.release-announcement-product a:focus-visible,
+.release-announcement-footer button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.release-announcement-product a svg { width: 14px; height: 14px; }
+.release-announcement-updates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 17px 0; border-bottom: 1px solid var(--release-line); }
+.release-announcement-updates article { min-width: 0; }
+.release-announcement-license { padding-top: 16px; }
+.release-announcement-license .release-announcement-credit { color: var(--release-muted); }
+.release-announcement-footer { flex-shrink: 0; display: flex; justify-content: flex-end; padding: 16px 36px 22px; border-top: 1px solid var(--release-line); }
+.release-announcement-footer button { min-width: 188px; min-height: 44px; padding: 0 24px; border: 1px solid var(--release-ink); border-radius: 999px; color: var(--release-surface); background: var(--release-ink); font-size: 14px; font-weight: 650; }
+.release-announcement-footer button:disabled { border-color: var(--release-line); color: var(--release-muted); background: transparent; cursor: wait; }
+
+@media (max-width: 640px) {
+  .release-announcement-overlay { padding: 10px; }
+  .release-announcement-panel { height: calc(100dvh - 20px); max-height: calc(100dvh - 20px); border-radius: 18px; }
+  .release-announcement-header { padding: 20px 18px 14px; }
+  .release-announcement-header h1 { font-size: 21px; }
+  .release-announcement-content { padding: 0 18px 16px; }
+  .release-announcement-products,
+  .release-announcement-updates { grid-template-columns: 1fr; gap: 9px; }
+  .release-announcement-footer { padding: 12px 18px 17px; }
+  .release-announcement-footer button { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .release-announcement-overlay { scroll-behavior: auto; }
+}

@@ -36,6 +36,19 @@ function fixture(groups = [['A'], ['B']]) {
 }
 const recovered = recoverTableTextLayers(fixture());
 assert.equal(recovered.count, 1); assert.equal(recovered.items.filter(item => item.type === 'text').length, 2);
+const precise = fixture(); precise.text.forEach(item => { item.preciseInk = true; item.font = 'Arial'; });
+const complete = recoverTableTextLayers(precise), completeTable = complete.items.find(item => item.type === 'table');
+assert(completeTable, 'fully proven recovered cells remain a real Word table over the original styled backdrop');
+assert.equal(completeTable.rows, 2); assert.equal(completeTable.columnWidths.length, 2);
+assert.equal(completeTable.cells.length, 4); assert(completeTable.borderless);
+assert.equal(completeTable.backdropId, complete.items[0].id);
+assert.deepEqual(completeTable.sourceIds.sort(), precise.sources.map(source => source.id).sort());
+assert.equal(complete.items.filter(item => item.type === 'text').length, 0, 'native cells do not duplicate individually restored text');
+assert.deepEqual(complete.items[0].sourceIds, []);
+const fallback = fixture(); fallback.text.forEach(item => { item.preciseInk = true; item.font = 'Arial'; });
+const rejected = recoverTableTextLayers({ ...fallback, tableFallbackIds: [completeTable.id] });
+assert(!rejected.items.some(item => item.type === 'table'), 'measured fallback survives rebuilding instead of recreating the rejected table');
+assert.equal(rejected.items.filter(item => item.type === 'text').length, 2);
 const adjacentBorder = fixture();
 adjacentBorder.graphics = [{ rect: { x: 9.75, y: 10, width: .5, height: 100 }, order: 100, strokedFillRect: true }];
 assert.equal(recoverTableTextLayers(adjacentBorder).count, 1,

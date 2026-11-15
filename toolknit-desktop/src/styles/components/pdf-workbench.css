@@ -17,6 +17,16 @@
 .pdf-workbench .pdf-workbench-body { display: grid; flex: 1; min-height: 0; overflow: hidden; }
 .pdf-workbench .pdf-editor-canvas-stage { min-height: 100%; box-sizing: border-box; }
 .pdf-workbench .pdf-editor-main-canvas[hidden] { display: none; }
+.pdf-workbench-surface { position: relative; flex: 0 0 auto; line-height: 0; }
+.pdf-workbench-view-only .pdf-editor-tile-select { display: none; }
+.pdf-workbench.pdf-workbench-select-right .pdf-workbench-body { grid-template-columns: minmax(0, 1fr) 290px; grid-template-rows: minmax(0, 1fr); overflow:hidden; }
+.pdf-workbench-select-right .pdf-editor-preview { grid-column: 1; grid-row: 1; }
+.pdf-workbench-select-right .pdf-editor-page-sidebar { grid-column: 2; grid-row: 1; min-height: 0; border-left: 1px solid var(--line); }
+.pdf-workbench-select-right .pdf-editor-tool-panel { display: none; }
+.pdf-workbench-select-right .pdf-editor-page-strip { flex: 1; min-height: 0; }
+.pdf-workbench.pdf-workbench-select-right .pdf-workbench-actions { flex: 0 0 auto; overflow: visible; padding: 14px 0 0; border-top: 1px solid var(--line); }
+@media (max-width: 700px) { .pdf-workbench.pdf-workbench-select-right .pdf-workbench-body { grid-template-columns: minmax(0, 1fr) 210px; } }
+@media (max-height: 620px) { .pdf-workbench.pdf-workbench-select-right .pdf-workbench-actions { max-height:60vh; overflow-y:auto; } }
 .pdf-workbench .pdf-editor-tile.is-current { outline: 2px solid #ffffff; outline-offset: -2px; }
 .pdf-workbench .pdf-editor-tile.is-selected:not(.is-current) { border-color: #969699; }
 .pdf-workbench .pdf-editor-tile-frame { min-height: 148px; }

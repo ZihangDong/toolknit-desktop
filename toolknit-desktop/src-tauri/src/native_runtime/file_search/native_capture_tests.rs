@@ -40,15 +40,30 @@ async fn settle(app: &tauri::AppHandle) -> Result<(), String> {
 
 pub(super) async fn verify(app: &tauri::AppHandle) -> Result<(), String> {
     for expanded in [false, true] {
+        // Keep an actual main HWND visible, off-screen and without activation.
+        // Capturing must preserve it even when native show bypasses the cache.
+        windows::on_main(app, move |host| {
+            use ::windows::Win32::{Foundation::HWND, UI::WindowsAndMessaging::{SetWindowPos, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW}};
+            let main = host.get_webview_window("main").ok_or("capture:missing-main")?;
+            main.set_skip_taskbar(true).map_err(|_| "capture:main-window")?;
+            unsafe { SetWindowPos(HWND(main.hwnd().unwrap().0 as isize), HWND::default(), -30000, -30000, 0, 0,
+                SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW) }.map_err(|_| "capture:main-window")?;
+            Ok(())
+        }).await?;
         windows::set_expanded(app, expanded, false).await?;
         tokio::time::sleep(Duration::from_millis(380)).await;
         visible(app, true, expanded).await?;
         let guard = crate::native_runtime::quick_screenshot::test_capture_visibility(app).await?;
+        main_stays_visible(app).await?;
         visible(app, false, false).await?;
         assert!(!allowed(&app.state::<FileSearchState>()));
         drop(guard);
         settle(app).await?;
         visible(app, true, expanded).await?;
+        main_stays_visible(app).await?;
+    }
+    if let Some(main) = app.get_webview_window("main") {
+        crate::platform::window_visibility::hide(&main.as_ref().window()).await?;
     }
 
     // Queue a newer collapse while the window transition is busy, then cancel
@@ -111,6 +126,17 @@ pub(super) async fn verify(app: &tauri::AppHandle) -> Result<(), String> {
         json!({"action":"configure","enabled":true}),
     )
     .await?;
-    println!("WEBVIEW_CAPTURE production guard hides both HWNDs, restores without activation, honors newer hide/disable");
+    println!("WEBVIEW_CAPTURE production guard preserves main HWND, hides auxiliary HWNDs, restores without activation, honors newer hide/disable");
     Ok(())
+}
+
+async fn main_stays_visible(app: &tauri::AppHandle) -> Result<(), String> {
+    windows::on_main(app, |host| {
+        use ::windows::Win32::{Foundation::HWND, UI::WindowsAndMessaging::{IsWindowVisible, GetForegroundWindow}};
+        let main = host.get_webview_window("main").ok_or("capture:missing-main")?;
+        let handle = HWND(main.hwnd().unwrap().0 as isize);
+        if !unsafe { IsWindowVisible(handle) }.as_bool() { return Err("capture:main-was-hidden".into()); }
+        if unsafe { GetForegroundWindow() } == handle { return Err("capture:main-stole-focus".into()); }
+        Ok(())
+    }).await
 }

@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { contains, overlaps, spatialIndex, median } from './geometry.js';
-import { ruledTableGrids, tableOwnsStroke } from './tables.js';
+import { ruledTableGrids, ruledTables, tableOwnsStroke } from './tables.js';
+import { groupLines } from './text.js';
 import { mathAtom, mathScriptAttachment } from './math-rows.js';
 import { independentTextGroups } from './text-paint-groups.js';
 import { LIMITS } from './input.js';
@@ -17,7 +18,7 @@ const scriptFragment = parts => {
 };
 
 /** Preserve the grid/uncertain content as a local backdrop, not duplicate text. */
-export function recoverTableTextLayers({ number, items, text, rules, sources, operations, graphics = [], tableGrids }) {
+export function recoverTableTextLayers({ number, items, text, rules, sources, operations, graphics = [], tableGrids, tableFallbackIds = [] }) {
   const groups = independentTextGroups(operations);
   if (!groups.length) return { items, count: 0 };
   const grids = (tableGrids || ruledTableGrids(rules)).filter(grid => grid.rows >= 2 && grid.columnWidths.length >= 2 && grid.cells.length >= 4);
@@ -60,10 +61,20 @@ export function recoverTableTextLayers({ number, items, text, rules, sources, op
     if (selected.size < 2) { output.push(item); continue; }
     count++;
     output.push({ ...item, sourceIds: item.sourceIds.filter(id => !selected.has(id)), backgroundPaintIndexes: indexes });
+    const recovered = [];
     for (const id of selected) {
       sourceById.get(id).disposition = 'editable';
-      restored.push({ ...eligible.get(id), type: 'text' });
+      recovered.push({ ...eligible.get(id), type: 'text' });
     }
+    // A fully proven grid can keep the original coloured borders/background
+    // while its actual Word cells own the recovered text. Partial/unknown cells
+    // retain the established individually positioned recovery path.
+    const complete = !protectedCells.size && selected.size === owned.size
+      && recovered.every(part => part.preciseInk)
+      && ruledTables(groupLines(recovered), rules, [grid]).find(table => table.sourceIds.length === selected.size);
+    if (complete && !tableFallbackIds.includes(complete.id)) {
+      restored.push({ ...complete, borderless: true, backdropId: item.id });
+    } else restored.push(...recovered);
   }
   return { items: [...output, ...restored], count };
 }

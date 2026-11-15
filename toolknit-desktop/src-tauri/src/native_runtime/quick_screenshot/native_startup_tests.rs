@@ -3,17 +3,34 @@ use serde_json::Value;
 use std::time::{Duration, Instant};
 
 #[derive(Default)]
-pub(super) struct Fixture { large: AtomicBool, frames: AtomicU64 }
+pub(super) struct Fixture { large: AtomicBool, frames: AtomicU64, hold_capture: AtomicBool, png: Option<Vec<u8>>, cached: Mutex<HashMap<bool,(Desktop,Vec<u8>)>> }
 impl Fixture {
+    pub fn from_png(png: Vec<u8>) -> Self { Self { png: Some(png), ..Self::default() } }
     pub fn capture(&self) -> Result<(Desktop, Vec<u8>), String> {
         self.frames.fetch_add(1,Ordering::SeqCst);
-        let (width,height)=if self.large.load(Ordering::Acquire) {(3840u32,2160u32)} else {(1920u32,1080u32)};
+        let until=Instant::now()+Duration::from_secs(3);
+        while self.hold_capture.load(Ordering::Acquire) {
+            if Instant::now()>until { return Err("test:capture-hold-timeout".into()); }
+            std::thread::sleep(Duration::from_millis(2));
+        }
+        if let Some(png) = &self.png {
+            let image = image::load_from_memory(png).map_err(|_| "test:fixture-image")?;
+            let bounds = Rect { x: -16000, y: -16000, width: image.width(), height: image.height() };
+            return Ok((Desktop { bounds: bounds.clone(), windows: vec![], monitors: vec![bounds] }, png.clone()));
+        }
+        // The pixels are fixed. Encoding them once per size keeps the lifecycle
+        // benchmark from spending minutes regenerating identical debug PNGs.
+        let large=self.large.load(Ordering::Acquire);
+        let mut cached=lock(&self.cached);
+        if let Some(frame)=cached.get(&large) { return Ok(frame.clone()); }
+        let (width,height)=if large {(3840u32,2160u32)} else {(1920u32,1080u32)};
         let image=image::RgbaImage::from_fn(width,height,|x,y|image::Rgba([
             if x%19<3 && y%24<15 {30} else {245},(x%256) as u8,(y%256) as u8,255]));
         let mut png=std::io::Cursor::new(Vec::new());
         image::DynamicImage::ImageRgba8(image).write_to(&mut png,image::ImageFormat::Png).unwrap();
         let bounds=Rect{x:-16000,y:-16000,width,height};
-        Ok((Desktop{bounds:bounds.clone(),windows:vec![bounds.clone()],monitors:vec![bounds]},png.into_inner()))
+        let frame=(Desktop{bounds:bounds.clone(),windows:vec![bounds.clone()],monitors:vec![bounds]},png.into_inner());
+        cached.insert(large,frame.clone());Ok(frame)
     }
 }
 
@@ -38,6 +55,7 @@ fn screenshot_webview_startup() {
     let report=Arc::new(Mutex::new(None));let result=report.clone();
     let handler:fn(tauri::ipc::Invoke<tauri::Wry>)->bool=tauri::generate_handler![quick_screenshot,quick_screenshot_image];
     let app=tauri::Builder::default().any_thread().manage(ScreenshotState::default()).manage(Fixture::default())
+        .manage(super::super::local_ocr::OcrState::default())
         .invoke_handler(move |invoke| {
             if invoke.message.command()=="local_translation" {
                 tauri::async_runtime::spawn(async move {
@@ -82,6 +100,9 @@ async fn exercise(app:&tauri::AppHandle)->Result<(),String>{
         println!("WEBVIEW_STARTUP {} {:.2}ms",if run==0 {"prepared-first"} else if large {"4k"} else {"1080p"},started.elapsed().as_secs_f64()*1000.0);
         let window=app.get_webview_window(CAPTURE_LABEL).unwrap();
         assert!(quick_screenshot_image(app.clone(),window.clone(),0).await.is_err(),"a stale session cannot read pixels");
+        finish_session(app,Some(0));
+        assert!(lock(&app.state::<ScreenshotState>().inner).session.as_ref().is_some_and(|s|s.ready),"a stale timeout cannot cancel the active session");
+        assert!(!app.state::<ScreenshotState>().ending.load(Ordering::Acquire),"a stale timeout must not retain the exit gate");
         if run==0 || run==30 {
             let pixels=eval(&window,"(() => {const i=document.getElementById('shotDesktop');const c=document.createElement('canvas');c.width=1;c.height=1;const x=c.getContext('2d');x.drawImage(i,10,10,1,1,0,0,1,1);return {width:i.naturalWidth,height:i.naturalHeight,pixel:[...x.getImageData(0,0,1,1).data]};})()").await?;
             assert_eq!(pixels["width"],if large {3840} else {1920});assert_eq!(pixels["height"],if large {2160} else {1080});
@@ -92,7 +113,14 @@ async fn exercise(app:&tauri::AppHandle)->Result<(),String>{
             assert!(lock(&app.state::<ScreenshotState>().inner).session.as_ref().unwrap().ready);
         }
         assert!(!app.get_webview_window(CAPTURE_LABEL).unwrap().is_visible().unwrap(),"test never displays desktop pixels or activates a window");
-        finish(app);
+        if run%2==0 {
+            eval(&window,"document.getElementById('shotCanvas').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true").await?;
+            let until=Instant::now()+Duration::from_secs(2);
+            while lock(&app.state::<ScreenshotState>().inner).session.is_some() {
+                if Instant::now()>until {return Err("startup:escape-cancel-timeout".into());}
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        } else {finish(app);}
         tokio::time::sleep(Duration::from_millis(40)).await;
         assert!(lock(&app.state::<ScreenshotState>().inner).session.is_none());
         let cleared=eval(&window,"({source:document.getElementById('shotDesktop').getAttribute('src'),width:document.getElementById('shotCanvas').width,toolbar:document.getElementById('shotToolbar').hidden})").await?;
@@ -107,7 +135,18 @@ async fn exercise(app:&tauri::AppHandle)->Result<(),String>{
     while !lock(&app.state::<ScreenshotState>().inner).session.as_ref().is_some_and(|s|s.ready){if Instant::now()>deadline{return Err("test:cold-timeout".into());}tokio::time::sleep(Duration::from_millis(5)).await;}
     println!("WEBVIEW_STARTUP cold-fallback {:.2}ms",started.elapsed().as_secs_f64()*1000.0);
     finish(app);
-    println!("WEBVIEW_LIFECYCLE 100 sessions: dimensions/pixels, stale ticket, duplicate notification, release and single shell passed");
+    app.state::<Fixture>().hold_capture.store(true,Ordering::Release);
+    assert!(startup::capture_with_timeout(app,Duration::from_millis(25)).await.is_err());
+    assert!(app.state::<ScreenshotState>().capture_worker.load(Ordering::Acquire));
+    assert_eq!(startup::capture_with_timeout(app,Duration::from_millis(25)).await.err().as_deref(),Some("screenshot:busy"));
+    app.state::<Fixture>().hold_capture.store(false,Ordering::Release);
+    let until=Instant::now()+Duration::from_secs(3);
+    while app.state::<ScreenshotState>().capture_worker.load(Ordering::Acquire) {
+        if Instant::now()>until {return Err("startup:capture-worker-stuck".into());}
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    assert!(startup::capture_with_timeout(app,Duration::from_secs(2)).await.is_ok());
+    println!("WEBVIEW_LIFECYCLE 100 sessions: dimensions/pixels, Escape cancellation, stale ticket, duplicate notification, release, single shell and bounded worker recovery passed");
     Ok(())
 }
 
