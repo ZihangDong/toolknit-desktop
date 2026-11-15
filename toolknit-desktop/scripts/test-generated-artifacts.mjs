@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rm, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,7 +25,10 @@ for (const file of [...generated, ...source]) {
 const loaded = await loadConfigFromFile({ command: 'serve', mode: 'development' },
   path.join(desktop, 'vite.config.js'));
 assert.ok(loaded?.config.server.watch.ignored.length);
-const scratch = await mkdtemp(path.join(tmpdir(), 'toolknit-generated-watch-'));
+// Windows runners may expose TMP through an 8.3 alias. Vite canonicalizes file
+// IDs, so its root and the fixture paths must use the same physical directory.
+const scratchParent = await realpath(tmpdir());
+const scratch = await mkdtemp(path.join(scratchParent, 'toolknit-generated-watch-'));
 let server;
 try {
   const paths = ['src/features/example.js', 'tmp/convert/result.tmp', 'output/result.pdf',
@@ -56,7 +59,7 @@ try {
   }
 } finally {
   await server?.close();
-  assert.equal(path.dirname(scratch), path.resolve(tmpdir()));
+  assert.equal(path.dirname(scratch), scratchParent);
   await rm(scratch, { recursive: true, force: true });
 }
 console.log('Generated artifact isolation passed: Git policy, actual watcher subscriptions and ignored outputs.');
