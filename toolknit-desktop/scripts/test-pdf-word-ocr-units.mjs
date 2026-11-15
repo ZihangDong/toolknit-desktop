@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {createCanvas,ImageData} from '@napi-rs/canvas';
+import {fixtureFonts} from './lib/pdf-word-font-fixture.mjs';
 import JSZip from 'jszip';
 import {createOcrTypography} from '../src/features/pdf-to-word/adapters/ocr-typography.js';
 import {recoverOcrSquareMetre} from '../src/features/pdf-to-word/core/ocr-symbols.js';
@@ -29,7 +30,7 @@ function sample(symbol,font,size=60,confidence=.99,repeats=1){
   allowSymbolCorrection:true,tight:{x:left/3,y:top/3,width:(right-left)/3,height:(bottom-top)/3},
   inkAt:(x,y)=>pixels[(y*canvas.width+x)*4]<180}};
 }
-for(const font of ['SimSun','SimHei','FangSong','Arial','Times New Roman']){
+for(const font of fixtureFonts(['SimSun','SimHei','FangSong','Arial','Times New Roman'])){
  for(const size of [36,60]){
   const {canvas,options,expected}=sample('㎡',font,size),before=structuredClone(options.line),result=fit(options);
   // This Node backend exposes identical missing-glyph boxes for squared/cubic
