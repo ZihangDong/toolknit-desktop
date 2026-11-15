@@ -82,7 +82,9 @@ const text='隐蔽工程验收，继续进入下道工序施工。2、如未经�
   const interior = [fixture()[0], row('interior', [word('年', 20), word('三', 46, 4, .43, .9), word('月', 80), word('日', 110)])];
   const interiorBefore = structuredClone(interior); trimOcrOwnedFragments(interior); assert.deepEqual(interior, interiorBefore);
 }
-for(const [font,bold]of [['SimSun',false],['SimSun',true],['FangSong',false]]){
+// Use the CJK faces available on supported Windows runners; optional FangSong
+// reader behavior is verified separately instead of accepting a silent fallback.
+for(const [font,bold]of [['SimSun',false],['SimSun',true],['SimHei',false]]){
 const canvas=createCanvas(2000,160),ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);
 ctx.fillStyle='black';ctx.font=`${bold?'bold ':''}48px "${font}"`;ctx.fontKerning='none';let x=25;const expected=[],words=[];
 for(const [index,char]of [...text].entries()){
