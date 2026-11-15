@@ -34,7 +34,6 @@ import './test-pdf-word-encoding.mjs';
 import './test-pdf-word-ocr-typography.mjs';
 import './test-pdf-word-ocr-line-bands.mjs';
 import './test-pdf-word-ocr-line-typography.mjs';
-import './test-pdf-word-ocr-glyph-alignment.mjs';
 import './test-pdf-word-ocr-figures.mjs';
 import './test-pdf-word-ocr-photo-regions.mjs';
 import './test-pdf-word-ocr-symbols.mjs';
@@ -128,7 +127,7 @@ import { groupLines } from '../src/features/pdf-to-word/core/text.js';
 
 // These fixtures register a synthetic font alias. A separate process prevents
 // top-level-await imports from sharing or removing another test's font handle.
-for (const fixture of ['test-pdf-word-ocr-colons.mjs', 'test-pdf-word-ocr-writing-lines.mjs']) {
+for (const fixture of ['test-pdf-word-ocr-colons.mjs', 'test-pdf-word-ocr-writing-lines.mjs', 'test-pdf-word-ocr-glyph-alignment.mjs']) {
   execFileSync(process.execPath, [fileURLToPath(new URL(fixture, import.meta.url))], {
     cwd: fileURLToPath(new URL('../', import.meta.url)), stdio: 'inherit',
     windowsHide: true, timeout: 120_000,
