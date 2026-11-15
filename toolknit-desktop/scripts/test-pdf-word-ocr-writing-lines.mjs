@@ -1,24 +1,28 @@
 import assert from 'node:assert/strict';
-import { createCanvas } from '@napi-rs/canvas';
+import { createCanvas, GlobalFonts } from '@napi-rs/canvas';
 import { prepareOcrScene } from '../src/features/pdf-to-word/core/ocr-scene.js';
 import { createOcrTypography } from '../src/features/pdf-to-word/adapters/ocr-typography.js';
 import { localOcrWritingRules, extendIsolatedWritingRules, coincidentWritingRules } from '../src/features/pdf-to-word/core/ocr-rule-ownership.js';
 import { fitOcrWritingPunctuation } from '../src/features/pdf-to-word/adapters/ocr-line-typography.js';
 import { sceneLayoutBytes } from '../src/features/pdf-to-word/core/scene-budget.js';
+// Pin synthetic source/writer pixels instead of silently substituting FangSong
+// on Windows runners without that optional font. Real reader coverage is separate.
+const fixtureFont=GlobalFonts.registerFromPath('public/assets/fonts/NotoSansSC-Regular.ttf','SimHei');assert(fixtureFont);
+try {
 const canvas=createCanvas(800,200),ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,800,200);
-ctx.font='60px "FangSong"';ctx.fontKerning='none';ctx.fillStyle='black';const words=[];
+ctx.font='60px "SimHei"';ctx.fontKerning='none';ctx.fillStyle='black';const words=[];
 function draw(text,start){let x=start;for(const char of text){const m=ctx.measureText(char);ctx.fillText(char,x,100);words.push({text:char,x:x+m.width*.4,y:45,width:Math.max(3,m.width*.2),height:65,confidence:.99});x+=m.width;}}
 draw('试用工资为',20);words.push({text:'_',x:400,y:45,width:15,height:65,confidence:.99});draw('元/月',530);
 ctx.strokeStyle='black';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(330,105);ctx.lineTo(500,105);ctx.stroke();
 const pixels=ctx.getImageData(0,0,800,200).data,line={text:'试用工资为_元/月',x:15,y:45,width:690,height:65,confidence:.99,words};const before=structuredClone(line);
 const scene={number:1,width:800/3,height:200/3,sources:[],items:[],rules:[],risks:['image-page'],characters:0};
 const result=prepareOcrScene({scene,result:{width:800,height:200,lines:[line],rules:[{axis:'h',at:105,from:330,to:500}]},pixels,width:800,height:200,preserveGeometry:true,measurementContext:ctx,fitTypography:createOcrTypography(createCanvas)});
-const text=result.scene.items.find(item=>item.type==='text');assert(text.words?.length);assert.equal(text.font,'FangSong');
+const text=result.scene.items.find(item=>item.type==='text');assert(text.words?.length);assert.equal(text.font,'SimHei');
 assert.equal(text.ocrOriginalText,line.text);assert.equal(text.text.replaceAll(' ',''),'试用工资为元/月');
 assert.equal(text.words.map(w=>w.text).join(''),'试用工资为元/月');assert.equal(text.ocrRuleTokens.length,1);
 assert.deepEqual(line,before,'recognizer tokens and CTC remain immutable');assert.equal(result.pixels[(105*800+400)*4],pixels[(105*800+400)*4],'the original writing line remains in the background');
 const local=prepareOcrScene({scene,result:{width:800,height:200,lines:[line],rules:[]},pixels,width:800,height:200,preserveGeometry:true,measurementContext:ctx,fitTypography:createOcrTypography(createCanvas)});
-const localText=local.scene.items.find(item=>item.type==='text');assert.equal(localText.font,'FangSong');
+const localText=local.scene.items.find(item=>item.type==='text');assert.equal(localText.font,'SimHei');
 assert.equal(localText.ocrRuleTokens.length,1,'an isolated local stroke does not require the whole-page detector');
 assert.equal(local.scene.rules.length,0,'local writing lines do not become table rules');
 assert.equal(local.pixels[(105*800+400)*4],pixels[(105*800+400)*4]);
@@ -240,3 +244,4 @@ for(const change of [
  f.canvas.width=f.canvas.height=0;
 }
 console.log('OCR writing lines: source-proven stroke/mark ownership, physical baseline/shape rivals, amount preservation, calibrated Chinese body, preserved rule pixels and immutable raw tokens passed.');
+} finally { GlobalFonts.remove(fixtureFont); }
