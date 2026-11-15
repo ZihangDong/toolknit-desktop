@@ -47,7 +47,7 @@ aes-gcm = "0.10"
 argon2 = "0.5"
 flate2 = "1"
 zstd = "0.13"
-getrandom = "0.2"
+getrandom = "0.4"
 zeroize = "1"
 rusqlite = { version = "0.41", features = ["bundled", "fallible_uint"] }
 notify = "8.2"
