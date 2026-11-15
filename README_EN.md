@@ -4,7 +4,7 @@
 
 # ToolKnit Desktop 3.3
 
-> V3.3 is in development and has not been released. The current stable desktop app and npm CLI / MCP are both 3.2.0.
+> V3.3 is in development and has not been released. This branch is preparing for release. The published desktop app and npm CLI / MCP remain at 3.2.0.
 
 **One toolbox for the little tasks scattered across your desktop.**
 
@@ -36,11 +36,23 @@ Most need no account. Supported file tasks run locally in your browser. Network 
 
 ### Then bring it to your desktop
 
-For everyday file work, [install the Windows app](https://toolknit.com/exe.html). V3.2 contains **73 tools**, with PDF to Word, Images to PDF, expanded floating history and saved phrases.
+This V3.3 branch contains **75 desktop tools**. File search and Word to PDF are new, with improvements to local OCR, scanned PDF to Word and screenshots.
+Available installers are listed on the [Windows download page](https://toolknit.com/exe.html).
 Set an output folder and favorite your tools. Install models only when needed.
 Enable **one-click recording mode** for startup, clipboard monitoring and floating history. Press `Alt + Q` to capture.
-The home page's V3.2 feature filter groups six new or enhanced tools.
+The home page groups **New features** by **V3.3 and V3.2**, newest first.
 See [Get started](#08--get-started) for installation requirements and instructions.
+
+### V3.3 highlights
+
+- **File search:** a main workspace and desktop capsule with Chinese names, pinyin, filters and sorting. Image previews, pagination and refresh preserve your position.
+- **Word to PDF:** batch DOC / DOCX conversion, cancellation, retry and PDF Editor handoff.
+- **Local OCR:** screenshots and scanned PDFs share PP-OCRv5. Download models when needed; no AI key is required for recognition.
+- **PDF to Word:** improved text placement, fonts, tables and common formulas. Complex diagrams remain images while body text stays editable.
+- **Screenshots and PDFs:** reduced capture startup work; fixed overlays remaining after Escape and multi-page PDF export failures.
+- **MIT source license:** author-owned code, including the PDF-to-Word Engine, uses MIT. Credits and backlinks are recommended, not required.
+
+See the [changelog](changelog.md) and [V3.3 release preparation](toolknit-desktop/docs/RELEASE_3_3_PREPARATION.zh-CN.md) for details.
 
 ### People weaving it together
 
@@ -116,16 +128,15 @@ Find the tool under Creative. Screenshots share history with content copied from
 
 | Task | How it works |
 | --- | --- |
-| Extract text | Local Windows OCR; small text, complex backgrounds and layouts can reduce accuracy |
+| Extract text | Local PP-OCRv5; downloads models on first use and needs no AI key |
 | AI extraction | Sends the selected region to your configured image-capable model for text extraction |
 | Screenshot translation | Requires the local Chinese / English model installed in Settings; recognition is followed by local translation and an image overlay |
 
-Screenshot translation supports **Chinese and English only**. Without AI configuration, local OCR feeds the local translator.
-With image-capable AI configured, OCR locates text and AI corrects it before local translation.
-If AI fails, you choose whether to use OCR instead. The full translation remains copyable even when it cannot fit.
+Screenshot translation supports **Chinese and English**. Local OCR feeds the local translator without calling an AI model.
+AI extraction is a separate action; it sends the selected region only when explicitly used. The full translation remains copyable even when it cannot fit.
 
 Translation components are downloaded on demand: approximately **192 MiB downloaded / 225 MiB installed**, separate from the main installer.
-External AI latency depends on the provider. There is no fixed completion-time guarantee. Check recognition and translation results.
+AI extraction latency depends on the provider. Check recognition on small text or complex backgrounds, as well as translations.
 
 ## 04 / Find what you copied
 
@@ -137,7 +148,7 @@ External AI latency depends on the provider. There is no fixed completion-time g
 
 Text, images and file paths stay in a searchable timeline. Filter, favorite and store records with local encryption. Monitoring preferences survive restarts.
 
-| Action | How it works in V3.2 |
+| Action | How it works in V3.3 |
 | --- | --- |
 | Browse floating history | Shares the full history database; shows the first 20 records, type filters and detailed timestamps |
 | Search and annotate | Searches content, source and notes as you type; right-click to add a note or delete |
@@ -166,7 +177,7 @@ A Windows-account-protected backup can restore a missing key file. Without a usa
 | --- | --- |
 | PDF | Merge, split, crop, page numbers, rotate, export images / Word, compress, encrypt, decrypt, edit and extract text / Markdown |
 | PPT | Export PDF / images, extract pictures and text, compress, generate AI outlines or editable PPTX drafts |
-| File search (unreleased V3.3) | Local filename / pinyin search, extension filters, sorting, Explorer reveal and a desktop capsule |
+| File search (unreleased V3.3) | Local filename / pinyin search, filters, sorting, image thumbnails, incremental results, Explorer reveal and a desktop capsule |
 | Word (unreleased V3.3) | Local DOC / DOCX to PDF; batches, cancellation, retry and handoff to PDF Editor |
 | Excel | Convert XLSX / XLS / ODS to PDF; select all or visible sheets, paper size, orientation and scaling |
 | Cleanup | Analyze large files, clean C drive and scan duplicates by file type |
@@ -198,6 +209,7 @@ Limit: **64 MiB / 100 pages per file**. CLI/MCP retain existing A4/AI options; s
 ### PDF editing and selection: start with a blank page
 
 Create a blank A4 PDF without uploading a file. Add multiline text, images and shapes, with undo and redo.
+PDF Editor initially selects every imported page and exports the checked pages. Export is disabled when none are selected.
 Improves rotated-page editing, edge placement and preview/export consistency. Fixes missing images after undo and stale state on rapid reopen.
 
 The split workspace starts with no pages selected. Enter `1-10`, then `15-20`, to select **16 pages** without `11-14`.
@@ -208,7 +220,7 @@ Shared navigation, themes, input underlines and completion dialogs reduce flashi
 
 ### Output and cleanup
 
-Excel's All worksheets option includes hidden sheets and changes only a temporary copy. Text-layer PDF extraction needs no AI key. Use the separate AI vision tools for scanned text.
+Excel's All worksheets option includes hidden sheets and changes only a temporary copy. Extract native PDF text directly. For scans, use local screenshot OCR or scanned PDF to Word. AI vision extraction is a separate optional action.
 Duplicates are checked by content. Nothing is selected for deletion by default. Keep at least one copy per group; confirmed files are rechecked before moving to the Recycle Bin.
 
 File tools preserve originals by default and write results to the output directory.
@@ -225,7 +237,7 @@ Crop, compress, convert and stitch images; generate icons or remove backgrounds 
 Convert audio and video, trim audio, extract sound, capture video frames, create GIFs, transcribe offline and edit Markdown.
 
 FFmpeg, LibreOffice, transcription and background-removal models are installed on demand. Existing usable runtimes are reused where supported.
-Downloads support source fallback, resume and integrity checks. Failed updates preserve usable components. Network speeds vary.
+Runtimes and models use pinned Qicaiyun downloads with resume and integrity checks. Failed updates preserve usable components.
 Background removal offers CPU mode. Automatic mode retries on CPU after GPU failure. Missing components get a specific error.
 WPS / Microsoft Office is not LibreOffice and cannot replace workflows that need `soffice`.
 
@@ -239,7 +251,7 @@ WPS / Microsoft Office is not LibreOffice and cannot replace workflows that need
 
 V3.3 development source exposes **78 CLI / MCP capabilities**, adding Word to PDF. Published npm 3.2.0 still has 77.
 
-> Desktop V3.2 and [npm CLI / MCP 3.2.0](https://www.npmjs.com/package/@toolknit/cli/v/3.2.0) are both released. Install each independently.
+> This branch includes CLI/MCP 3.3.0 source. The published npm version remains [3.2.0](https://www.npmjs.com/package/@toolknit/cli/v/3.2.0), installed and released independently of Desktop.
 
 | Area | Examples |
 | --- | --- |

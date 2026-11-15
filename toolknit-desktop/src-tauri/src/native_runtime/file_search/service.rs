@@ -259,16 +259,24 @@ pub(super) async fn acceleration_configure(
     }
 }
 pub(super) fn invalidate(app: &tauri::AppHandle, view: usize) -> Result<(), String> {
+    app.state::<FileSearchState>().thumbnails.cancel(view);
     index(app)?.shared.query_revisions[view].fetch_add(1, Ordering::AcqRel);
     lock(&app.state::<FileSearchState>().leases)[view] = Lease::default();
     Ok(())
 }
+#[cfg(test)]
 pub(super) async fn search(
     app: &tauri::AppHandle,
     view: usize,
     query: query::Query,
     cursor: Option<Value>,
 ) -> Result<Value, String> {
+    search_window(app, view, query, cursor, 50).await
+}
+pub(super) async fn search_window(
+    app: &tauri::AppHandle, view: usize, query: query::Query, cursor: Option<Value>, limit: usize,
+) -> Result<Value, String> {
+    if !(1..=10_000).contains(&limit) { return Err("file-search:query".into()); }
     let query = query.normalized()?;
     let engine = index(app)?;
     let shared = engine.shared.clone();
@@ -277,7 +285,7 @@ pub(super) async fn search(
     // this async queue before allocating a worker or waiting on the catalog.
     let _worker = engine.shared.query_turn(view, revision).await?;
     let state = app.state::<FileSearchState>();
-    let (after, ticket, expected) = if let Some(cursor) = cursor {
+    let (after, ticket, expected, retained) = if let Some(cursor) = cursor {
         let leases = lock(&state.leases);
         let lease = &leases[view];
         let ticket = cursor["ticket"].as_str().ok_or("file-search:stale-query")?;
@@ -291,22 +299,25 @@ pub(super) async fn search(
         {
             return Err("file-search:stale-query".into());
         }
-        (Some(id), ticket.to_owned(), Some(lease.generation))
+        (Some(id), ticket.to_owned(), Some(lease.generation), lease.allowed.len())
     } else {
         let mut bytes = [0u8; 16];
         getrandom::getrandom(&mut bytes).map_err(|_| "file-search:query")?;
+        state.thumbnails.cancel(view);
         lock(&state.leases)[view] = Lease::default();
-        (None, hex::encode(bytes), None)
+        (None, hex::encode(bytes), None, 0)
     };
     let run_query = query.clone();
-    let (result, generation, paths) = tauri::async_runtime::spawn_blocking(move || {
+    let (result, generation, paths, replace) = tauri::async_runtime::spawn_blocking(move || {
         let catalog = shared.query_catalog(view, revision)?;
-        if expected.is_some_and(|n| n != catalog.generation) {
-            return Err("file-search:stale-query".into());
-        }
-        let pivot = after.map(|id| catalog.ids.get(&id).and_then(|at| catalog.entries.get(*at))
+        // A live index can change between any two clicks. Rebase the loaded
+        // prefix atomically, rather than sending the user back to page one.
+        let replace = expected.is_some_and(|n| n != catalog.generation);
+        let limit = if replace { retained.saturating_add(50).min(10_000) } else if after.is_some() { 50.min(10_000usize.saturating_sub(retained)) } else { limit };
+        if limit == 0 { return Err("file-search:query-limit".into()); }
+        let pivot = after.filter(|_| !replace).map(|id| catalog.ids.get(&id).and_then(|at| catalog.entries.get(*at))
             .ok_or("file-search:stale-query")).transpose()?;
-        let result = query::search_with_metadata(&catalog.entries, &run_query, 50, pivot, Some(&catalog.extensions), || {
+        let result = query::search_with_metadata(&catalog.entries, &run_query, limit, pivot, Some(&catalog.extensions), || {
             shared.query_revisions[view].load(Ordering::Acquire) != revision
         })?;
         let paths = result
@@ -318,7 +329,7 @@ pub(super) async fn search(
                 Some((id, entry.path.clone()))
             })
             .collect::<HashMap<_, _>>();
-        Ok::<_, String>((result, catalog.generation, paths))
+        Ok::<_, String>((result, catalog.generation, paths, replace))
     })
     .await
     .map_err(|_| "file-search:worker")??;
@@ -331,7 +342,7 @@ pub(super) async fn search(
             return Err("file-search:cancelled".into());
         }
         let lease = &mut leases[view];
-        if after.is_none() {
+        if after.is_none() || replace {
             *lease = Lease {
                 ticket: ticket.clone(),
                 generation,
@@ -346,11 +357,11 @@ pub(super) async fn search(
             }
         }
     }
-    let cursor = result.more.then(
+    let cursor = (result.more && lock(&state.leases)[view].allowed.len() < 10_000).then(
         || json!({"ticket":ticket,"after":result.rows.last().map(|r|r.id.as_str()).unwrap_or("")}),
     );
     Ok(
-        json!({"query":query,"result":result,"cursor":cursor,"ticket":ticket,"generation":generation,"index":engine.status()}),
+        json!({"query":query,"result":result,"cursor":cursor,"ticket":ticket,"generation":generation,"replace":replace,"index":engine.status()}),
     )
 }
 pub(super) async fn check_query(app: &tauri::AppHandle, view: usize, ticket: &str) -> Result<Value, String> {
@@ -373,12 +384,12 @@ pub(super) async fn check_query(app: &tauri::AppHandle, view: usize, ticket: &st
     if !changed {lease.generation=generation;}
     Ok(json!({"changed":changed,"generation":generation,"extensions":extensions}))
 }
-pub(super) async fn reveal(
+pub(super) fn leased_path(
     app: &tauri::AppHandle,
     view: usize,
     id: &str,
     ticket: &str,
-) -> Result<(), String> {
+) -> Result<(Arc<Path>, Vec<PathBuf>), String> {
     let id = id.parse::<u64>().map_err(|_| "file-search:stale-query")?;
     let engine = index(app)?;
     let state = app.state::<FileSearchState>();
@@ -412,6 +423,11 @@ pub(super) async fn reveal(
         }
         entry.path.clone()
     };
+    Ok((path, roots))
+}
+pub(super) async fn reveal(app: &tauri::AppHandle, view: usize, id: &str, ticket: &str) -> Result<(), String> {
+    let (path, roots) = leased_path(app, view, id, ticket)?;
+    let engine = index(app)?;
     let outcome = tauri::async_runtime::spawn_blocking(move || {
         #[cfg(windows)]
         if super::filesystem_worker::remote(&path) {

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './test-file-search-thumbnails.mjs';
 import { createQuerySession, createInvalidationBarrier, createInputPublisher, normalizeQuery } from '../src/features/file-search/core.js';
 
 const pending = [], changes = [], errors = [];
@@ -129,3 +130,33 @@ assert.equal(await checked,null,'mode switch drops an in-flight background check
 console.log('Silent update checks, background refresh and mode-switch cancellation passed.');
 const expired=createQuerySession({search:async()=>result('expired'),check:async()=>{throw Error('file-search:stale-query');}});
 expired.start();await tick();assert.deepEqual(await expired.checkUpdate(),{expired:true},'index restart can request silent recovery instead of leaving results stale');expired.dispose();
+
+// Exercise a real multi-page contract, including a live-index rebase.
+let liveRows = Array.from({ length: 170 }, (_, i) => ({ id: String(i), name: `file${i}` }));
+const pageEvents = [], pageRequests = []; let liveGeneration = 1, paged = 0, holdPage;
+const pagedSession = createQuerySession({
+  search: async input => {
+    pageRequests.push(structuredClone(input));
+    if (holdPage) await new Promise(resolve => { holdPage = resolve; });
+    const rebase = input.cursor && input.cursor.generation !== liveGeneration;
+    const length = input.cursor ? rebase ? paged + 50 : 50 : input.limit || 50;
+    const start = input.cursor && !rebase ? paged : 0;
+    const slice = liveRows.slice(start, start + length); paged = start + slice.length;
+    return { result: { rows: slice, total: liveRows.length }, cursor: paged < liveRows.length ? { after: slice.at(-1).id, generation: liveGeneration } : null,
+      ticket: 'live', replace: Boolean(rebase), generation: liveGeneration };
+  }, changed: value => pageEvents.push(value)
+});
+pagedSession.start(); await tick(); assert.equal(pageEvents.at(-1).rows.length, 50);
+await pagedSession.more(); assert.equal(pageEvents.at(-1).rows.length, 100);
+liveRows.unshift({ id:'inserted', name:'newly indexed' }); liveGeneration++;
+await pagedSession.more();
+assert.equal(pageEvents.at(-1).rows.length, 150, 'stale cursor rebase includes all loaded pages plus the next page');
+assert.equal(new Set(pageEvents.at(-1).rows.map(r => r.id)).size, 150);
+assert.equal(pageEvents.at(-1).rows[0].id, 'inserted');
+holdPage = true; const updating = pagedSession.refresh(); await tick();
+assert.equal(pageEvents.at(-1).rows.length, 150, 'refresh never replaces the loaded list with a first-page loading view');
+assert.equal(pageEvents.at(-1).background, true);
+assert.equal(pageRequests.at(-1).limit, 150, 'refresh retains the complete loaded range');
+holdPage(); holdPage = null; await updating; assert.equal(pageEvents.at(-1).rows.length, 150);
+pagedSession.dispose();
+console.log('Live pagination rebase and retained-range refresh passed.');

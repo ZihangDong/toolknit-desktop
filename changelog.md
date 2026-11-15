@@ -21,6 +21,9 @@
 - 优化启动缓存、查询和分页。慢网络盘不再拖住本机更新，离线范围保留旧索引并提示。
 - 修复列表回顶、状态闪烁、过期查询干扰新结果及大小写改名重复显示。
 - 改善圆角、动画和彩色文件图标，修复折叠时闪出原生窗口、截图后误恢复的问题。
+- 修复重复展开、收起后胶囊偶发空白或只剩外壳的问题，补齐动画中断与结束通知丢失时的恢复。
+- 图片结果支持本地缩略图及 SVG 静态预览；按可见行加载，限制并发与缓存，临时繁忙自动重试。
+- 修复索引变化时「加载更多」退回第一页的问题；刷新保留已加载结果和滚动位置，新增内容就地合并。
 - 完全退出后停止索引，下次启动补齐变化；清除索引不删除文件，文件正文不上传。
 
 ### 本地 OCR 与 PDF 转 Word
@@ -76,7 +79,7 @@
 
 > 依赖分发仍待发布前完整复核。字体缺失、加密文档及复杂 Office 布局可能影响转换效果。
 
-维护记录：[版本说明、截图与支持页](toolknit-desktop/docs/V33_STARTUP_SCREENSHOT_SUPPORT_20261114.zh-CN.md) · [截图稳定性与速度](toolknit-desktop/docs/V33_SCREENSHOT_STABILITY_PERFORMANCE_20261115.zh-CN.md) · [发布前筛查](toolknit-desktop/docs/V33_FINAL_PREFLIGHT_20261114.zh-CN.md) · [Word 转 PDF](toolknit-desktop/docs/WORD_TO_PDF.zh-CN.md) · [文件搜索](toolknit-desktop/docs/V33_FILE_SEARCH_IMPLEMENTATION.zh-CN.md) · [搜索自动配置](toolknit-desktop/docs/V33_FILE_SEARCH_AUTOMATIC_SETUP_IMPLEMENTATION.zh-CN.md) · [搜索性能](toolknit-desktop/docs/V33_FILE_SEARCH_PERFORMANCE_20261105.zh-CN.md) · [搜索模式与刷新](toolknit-desktop/docs/V33_FILE_SEARCH_MODES_STATUS_20261105.zh-CN.md) · [PDF 导出](toolknit-desktop/docs/V33_PDF_LARGE_DOCUMENT_REPAIR_20261028.zh-CN.md) · [记录模式](toolknit-desktop/docs/V33_RECORDING_MODE_REPAIR_20261028.zh-CN.md) · [文件定位](toolknit-desktop/docs/V33_OPEN_LOCATION_REPAIR_20261114.zh-CN.md)
+维护记录：[发布准备](toolknit-desktop/docs/RELEASE_3_3_PREPARATION.zh-CN.md) · [搜索缩略图与恢复](toolknit-desktop/docs/V33_FILE_SEARCH_THUMBNAILS_RECOVERY_20261115.zh-CN.md) · [版本说明、截图与支持页](toolknit-desktop/docs/V33_STARTUP_SCREENSHOT_SUPPORT_20261114.zh-CN.md) · [截图稳定性与速度](toolknit-desktop/docs/V33_SCREENSHOT_STABILITY_PERFORMANCE_20261115.zh-CN.md) · [发布前筛查](toolknit-desktop/docs/V33_FINAL_PREFLIGHT_20261114.zh-CN.md) · [Word 转 PDF](toolknit-desktop/docs/WORD_TO_PDF.zh-CN.md) · [文件搜索](toolknit-desktop/docs/V33_FILE_SEARCH_IMPLEMENTATION.zh-CN.md) · [搜索自动配置](toolknit-desktop/docs/V33_FILE_SEARCH_AUTOMATIC_SETUP_IMPLEMENTATION.zh-CN.md) · [搜索性能](toolknit-desktop/docs/V33_FILE_SEARCH_PERFORMANCE_20261105.zh-CN.md) · [搜索模式与刷新](toolknit-desktop/docs/V33_FILE_SEARCH_MODES_STATUS_20261105.zh-CN.md) · [PDF 导出](toolknit-desktop/docs/V33_PDF_LARGE_DOCUMENT_REPAIR_20261028.zh-CN.md) · [记录模式](toolknit-desktop/docs/V33_RECORDING_MODE_REPAIR_20261028.zh-CN.md) · [文件定位](toolknit-desktop/docs/V33_OPEN_LOCATION_REPAIR_20261114.zh-CN.md)
 
 ## V3.2（2026-10-23）
 

@@ -21,12 +21,14 @@ enum Request {
     Normalize { path: Vec<u8> },
     Scan { path: Vec<u8>, #[serde(default)] policy: Option<super::scope_policy::Spec> },
     Reveal { path: Vec<u8>, root: Vec<u8> },
+    Thumbnail { path: Vec<u8>, root: Vec<u8> },
 }
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 enum Response {
     Normalized { path: Vec<u8> },
     Files { rows: Vec<Row> },
+    Thumbnail { image: Option<Vec<u8>> },
     Done { skipped: usize },
     Error,
 }
@@ -177,6 +179,16 @@ pub(super) fn reveal(path: &Path, root: &Path) -> Result<(), String> {
     )
     .map(|_| ())
 }
+pub(super) fn thumbnail(path: &Path, root: &Path, cancel: &AtomicBool) -> Result<Option<Vec<u8>>, String> {
+    let mut image = None;
+    run(Request::Thumbnail { path: storage::encode(path), root: storage::encode(root) }, cancel, Duration::from_secs(3), |response| {
+        if let Response::Thumbnail { image: value } = response {
+            if value.as_ref().is_some_and(|v| v.len() > super::thumbnails::MAX_PNG) { return Err("file-search:protocol".into()); }
+            image = Some(value); Ok(())
+        } else { Err("file-search:protocol".into()) }
+    })?;
+    image.ok_or("file-search:protocol".into())
+}
 fn command() -> Result<tokio::process::Command, String> {
     #[cfg(test)]
     let exe = std::env::var_os("TOOLKNIT_FILE_SEARCH_IO_TEST_EXE")
@@ -201,7 +213,8 @@ fn run(
         .map_err(|_| "file-search:worker")?
         .block_on(run_command(&mut command, request, cancel, limit, receive))
 }
-fn own(child: &tokio::process::Child) -> Result<std::os::windows::io::OwnedHandle, String> {
+const THUMBNAIL_MEMORY: usize = 256 * 1024 * 1024;
+fn own(child: &tokio::process::Child, thumbnail: bool) -> Result<std::os::windows::io::OwnedHandle, String> {
     use std::os::windows::io::{FromRawHandle, OwnedHandle};
     use windows::Win32::{Foundation::HANDLE, System::JobObjects::*};
     let result = || -> windows::core::Result<OwnedHandle> {
@@ -213,6 +226,10 @@ fn own(child: &tokio::process::Child) -> Result<std::os::windows::io::OwnedHandl
             // remains user-owned and must survive the short-lived helper.
             limits.BasicLimitInformation.LimitFlags =
                 JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK;
+            if thumbnail {
+                limits.BasicLimitInformation.LimitFlags |= JOB_OBJECT_LIMIT_PROCESS_MEMORY;
+                limits.ProcessMemoryLimit = THUMBNAIL_MEMORY;
+            }
             SetInformationJobObject(
                 handle,
                 JobObjectExtendedLimitInformation,
@@ -239,6 +256,7 @@ async fn run_command(
         return Err("file-search:cancelled".into());
     }
     let bytes = serde_json::to_vec(&request).map_err(|_| "file-search:protocol")?;
+    let thumbnail = matches!(&request, Request::Thumbnail { .. });
     if bytes.len() > protocol::MAX_FRAME {
         return Err("file-search:scope".into());
     }
@@ -247,9 +265,9 @@ async fn run_command(
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
-        .creation_flags(0x08000000);
+        .creation_flags(0x08000000 | if thumbnail { 0x4000 } else { 0 });
     let mut child = command.spawn().map_err(|_| "file-search:worker")?;
-    let job = own(&child)?;
+    let job = own(&child, thumbnail)?;
     let mut input = child.stdin.take().ok_or("file-search:worker")?;
     let mut output = child.stdout.take().ok_or("file-search:worker")?;
     let dialogue = async {
@@ -332,6 +350,11 @@ pub(super) fn dispatch() -> Option<i32> {
 }
 fn execute(request: Request, out: &mut impl Write) -> Result<(), String> {
     match request {
+        Request::Thumbnail { path, root } => {
+            let image = super::thumbnails::read(&decoded(&path)?, &decoded(&root)?)?;
+            protocol::write_frame(out, &Response::Thumbnail { image })?;
+            protocol::write_frame(out, &Response::Done { skipped: 0 })
+        }
         Request::Normalize { path } => {
             let path = decoded(&path)?
                 .canonicalize()
@@ -548,7 +571,16 @@ mod tests {
             let mut command = slow();
             command.creation_flags(0x08000000).kill_on_drop(true);
             let mut child = command.spawn().unwrap();
-            let job = own(&child).unwrap();
+            let job = own(&child, true).unwrap();
+            {
+                use std::os::windows::io::AsRawHandle;
+                use windows::Win32::{Foundation::HANDLE, System::JobObjects::*};
+                let mut info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
+                unsafe { QueryInformationJobObject(HANDLE(job.as_raw_handle() as isize), JobObjectExtendedLimitInformation,
+                    (&mut info as *mut JOBOBJECT_EXTENDED_LIMIT_INFORMATION).cast(), std::mem::size_of_val(&info) as u32, None).unwrap(); }
+                assert_eq!(info.ProcessMemoryLimit, THUMBNAIL_MEMORY, "the actual Windows job must enforce the thumbnail memory ceiling");
+                assert!(info.BasicLimitInformation.LimitFlags.contains(JOB_OBJECT_LIMIT_PROCESS_MEMORY));
+            }
             drop(job);
             assert!(
                 tokio::time::timeout(Duration::from_secs(2), child.wait())

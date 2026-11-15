@@ -5,6 +5,7 @@ import '../../tool-custom-select.css';
 import './filters.css';
 import './results.css';
 import { fileIcon } from './file-icons.js';
+import { createThumbnails } from './thumbnails.js';
 import { createElement as createLucideElement, FolderOpen, FolderSearch } from 'lucide';
 
 export function resultsMarkup() {
@@ -17,9 +18,11 @@ export function createResults({ root, runtime, tr, refreshIcons = () => {}, onFi
   const count = root.querySelector('.fs-count'), status = root.querySelector('.fs-index-status'), message = root.querySelector('.fs-message');
   let model = { rows: [], query: normalizeQuery(), loading: false, total: 0, extensions: [] }, selected = -1, opening = new Set(), disposed = false, renderFrame, pointerInside = false, emptySignature = '';
   const refresh = root.querySelector('.fs-refresh');
-  let rowsSignature = '', filterSignature = '', dateLocale = '', dateFormatter;
+  let rowsSignature = '', filterSignature = '', dateLocale = '', dateFormatter, pendingScroll = null, visiblePreviews = [];
+  let rowNodes = new Map();
   let checkedGeneration = null, checking = false, checkTimer = null, lastCheck = 0;
   const filtersUI = [];
+  const thumbnails = createThumbnails({ runtime });
   const closeFilters = () => { const wasOpen = filtersUI.some(filter => filter.isOpen()); filtersUI.forEach(filter => filter.close()); return wasOpen; };
   const rowHeight = 74, overscan = 4;
   const el = (tag, className, text) => { const value = doc.createElement(tag); if (className) value.className = className; if (text !== undefined) value.textContent = text; return value; };
@@ -50,9 +53,10 @@ export function createResults({ root, runtime, tr, refreshIcons = () => {}, onFi
     const activeId = doc.activeElement?.dataset?.fsReveal;
     // Read before replacing rows. Reading scrollTop after emptying the list
     // forces layout at height zero and clamps every scroll back to the top.
-    const scrollTop = list.scrollTop, viewportHeight = list.clientHeight || 300;
+    const scrollTop = pendingScroll ?? list.scrollTop, viewportHeight = list.clientHeight || 300;
     const content = doc.createDocumentFragment();
     if (!model.rows.length) {
+      thumbnails.clear(); rowNodes.clear(); visiblePreviews = []; pendingScroll = null;
       rowsSignature = '';
       const configured = model.index && model.index.phase !== 'unconfigured';
       const key = model.loading ? 'searching' : !configured ? 'setupTitle' : !model.query.text && !model.query.extension ? 'emptyTitle' : 'noResults';
@@ -75,18 +79,32 @@ export function createResults({ root, runtime, tr, refreshIcons = () => {}, onFi
     // A native state tick or a few pixels of scrolling usually leaves the
     // virtual window unchanged. Preserve its nodes, focus and decoded icons.
     const signature = JSON.stringify([first, last, model.rows.length, model.total, Boolean(model.cursor),
-      model.loading, selected, [...opening], locale, labels, model.rows.slice(first, last)]);
-    if (signature === rowsSignature) return;
+      model.loading && !model.background, selected, [...opening], locale, labels, model.rows.slice(first, last)]);
+    if (signature === rowsSignature) { thumbnails.update(visiblePreviews, model.ticket, JSON.stringify(model.query)); return; }
     rowsSignature = signature;
     if (dateLocale !== locale || !dateFormatter) { dateLocale = locale; dateFormatter = new Intl.DateTimeFormat(locale); }
     const top = el('div', 'fs-list-spacer'); top.style.height = `${first * rowHeight}px`; top.setAttribute('aria-hidden', 'true'); content.append(top);
+    const previews = [], nextNodes = new Map();
     for (let i = first; i < last; i++) {
-      const row = model.rows[i]; const item = el('div', `fs-row${i === selected ? ' is-selected' : ''}`);
+      const row = model.rows[i], signature = JSON.stringify([row, locale, labels.unknown, labels.stale, labels.reveal]);
+      const previous = rowNodes.get(row.id);
+      if (previous?.signature === signature) {
+        const item = previous.item;
+        item.classList.toggle('is-selected', i === selected); item.dataset.fsRow = String(i);
+        item.setAttribute('aria-posinset', String(i + 1)); item.setAttribute('aria-setsize', String(model.total || model.rows.length));
+        item.querySelector('[data-fs-reveal]').disabled = (model.loading && !model.background) || opening.has(row.id);
+        if (previous.preview) previews.push(previous.preview);
+        nextNodes.set(row.id, previous); content.append(item); continue;
+      }
+      const item = el('div', `fs-row${i === selected ? ' is-selected' : ''}`);
       item.setAttribute('role', 'listitem'); item.dataset.fsRow = String(i);
       item.setAttribute('aria-posinset', String(i + 1)); item.setAttribute('aria-setsize', String(model.total || model.rows.length));
       const mark = el('span', 'fs-file-icon'), picture = el('img');
       const type = fileIcon(row.extension); picture.src = type.url; picture.alt = ''; picture.draggable = false;
+      picture.decoding = 'async';
       picture.width = 24; picture.height = 24; mark.dataset.fileType = type.kind; mark.append(picture);
+      const preview = type.kind === 'image' ? { row, mark, picture, fallback: type.url } : null;
+      if (preview) previews.push(preview);
       const main = el('div', 'fs-file-main'); const name = el('div', 'fs-file-name'); name.title = row.name;
       const split = row.name.lastIndexOf('.');
       name.append(el('span', 'fs-name-stem', split > 0 ? row.name.slice(0, split) : row.name));
@@ -96,14 +114,16 @@ export function createResults({ root, runtime, tr, refreshIcons = () => {}, onFi
       const modified = row.modified == null ? null : new Date(row.modified * 1000);
       const date = modified && Number.isFinite(modified.getTime()) ? dateFormatter.format(modified) : labels.unknown;
       const meta = el('div', 'fs-file-meta', `${size(row.size)} · ${date}`);
-      const button = el('button', 'fs-icon'); button.type = 'button'; button.dataset.fsReveal = row.id; button.disabled = model.loading || opening.has(row.id);
+      const button = el('button', 'fs-icon'); button.type = 'button'; button.dataset.fsReveal = row.id; button.disabled = (model.loading && !model.background) || opening.has(row.id);
       button.title = labels.reveal; button.setAttribute('aria-label', `${labels.reveal}：${row.name} · ${row.parent}`); button.append(icon('folder-open'));
-      item.append(mark, main, meta, button); content.append(item);
+      item.append(mark, main, meta, button); content.append(item); nextNodes.set(row.id, { item, signature, preview });
     }
     const bottom = el('div', 'fs-list-spacer'); bottom.style.height = `${(model.rows.length - last) * rowHeight}px`; bottom.setAttribute('aria-hidden', 'true'); content.append(bottom);
     if (model.cursor) { const next = el('button', 'fs-more', labels.more); next.type = 'button'; next.disabled = model.loading; next.dataset.fsMore = ''; content.append(next); }
     list.replaceChildren(content);
-    list.scrollTop = scrollTop;
+    rowNodes = nextNodes; visiblePreviews = previews;
+    thumbnails.update(previews, model.ticket, JSON.stringify(model.query));
+    list.scrollTop = scrollTop; pendingScroll = null;
     if (activeId) [...list.querySelectorAll('[data-fs-reveal]')].find(b => b.dataset.fsReveal === activeId)?.focus({ preventScroll: true });
   }
   function size(bytes) { if (bytes == null) return tr('unknown'); if (bytes < 1024) return `${bytes} B`; if (bytes < 1048576) return `${(bytes/1024).toFixed(1)} KB`; if (bytes < 1073741824) return `${(bytes/1048576).toFixed(1)} MB`; return `${(bytes/1073741824).toFixed(1)} GB`; }
@@ -136,13 +156,24 @@ export function createResults({ root, runtime, tr, refreshIcons = () => {}, onFi
     changed: next => {
       const same = JSON.stringify(model.query) === JSON.stringify(next.query);
       const selectedId = model.rows[selected]?.id;
+      if (same && next.reconcile && !next.loading && model.rows.length) {
+        const index = Math.min(model.rows.length - 1, Math.floor(list.scrollTop / rowHeight));
+        const positions = new Map(next.rows.map((row, i) => [row.id, i]));
+        // Anchor the first visible surviving file, including its partial row.
+        // If it was deleted, prefer its next neighbour, then the previous one.
+        const anchor = model.rows.slice(index).find(row => positions.has(row.id)) || model.rows.slice(0, index).reverse().find(row => positions.has(row.id));
+        pendingScroll = anchor ? positions.get(anchor.id) * rowHeight + list.scrollTop % rowHeight : list.scrollTop;
+      }
       model = { ...model, ...next }; message.hidden = true;
       if (next.generation != null) checkedGeneration=next.generation;
       selected = same && selectedId ? model.rows.findIndex(row => row.id === selectedId) : -1;
       refresh.hidden = true;
       if (!same) { selected = -1; model.total = 0; list.scrollTop = 0; }
       render();
-    }, failed: showError
+    }, failed: error => {
+      showError(error);
+      if (!disposed && model.rows.length) { refresh.hidden = false; text(refresh, tr('refreshResults')); }
+    }
   });
   async function checkUpdates() {
     checkTimer=null;
@@ -170,7 +201,7 @@ export function createResults({ root, runtime, tr, refreshIcons = () => {}, onFi
   };
   scope.event(list, 'pointerenter', () => { pointerInside = true; });
   scope.event(list, 'pointerleave', () => { pointerInside = false; });
-  scope.event(refresh, 'click', () => { selected = -1; session.refresh(); });
+  scope.event(refresh, 'click', () => { void session.refresh(); });
   for (const select of [extension, sort]) scope.event(select, 'change', () => {
     const query = { ...session.query, extension: extension.value, sort: sort.value };
     if (onFilter) void onFilter(query); else session.set(query, { immediate: true });
@@ -205,7 +236,7 @@ export function createResults({ root, runtime, tr, refreshIcons = () => {}, onFi
     if (enhanced) filtersUI.push(enhanced);
   }
   refreshIcons();
-  return { session, navigate, closeFilters, markPending() { if (disposed) return; model.loading = true; model.ticket = ''; renderRows(); }, setIndex(index) {
+  return { session, navigate, closeFilters, pause() { thumbnails.clear(); session.pause(); }, markPending() { if (disposed) return; model.loading = true; model.ticket = ''; thumbnails.clear(); renderRows(); }, setIndex(index) {
     if (disposed) return;
     if (index?.phase!=='unconfigured' && Number(index?.generation)<Number(model.index?.generation)) return;
     model.index = index; text(status, tr(`phases.${index?.phase || 'unconfigured'}`));
@@ -215,10 +246,10 @@ export function createResults({ root, runtime, tr, refreshIcons = () => {}, onFi
   }, render,
     dispose() {
       if (disposed) return;
-      disposed = true; session.dispose(); cancelAnimationFrame(renderFrame); clearTimeout(checkTimer);
+      disposed = true; thumbnails.dispose(); session.dispose(); cancelAnimationFrame(renderFrame); clearTimeout(checkTimer);
       filtersUI.forEach(filter => filter.dispose()); filtersUI.length = 0; scope.dispose();
       model = { rows: [], query: normalizeQuery(), loading: false, total: 0, extensions: [] };
-      opening.clear(); iconTemplates.clear(); rowsSignature = ''; filterSignature = ''; emptySignature = '';
+      opening.clear(); rowNodes.clear(); visiblePreviews = []; iconTemplates.clear(); rowsSignature = ''; filterSignature = ''; emptySignature = '';
       dateFormatter = null; selected = -1; list.replaceChildren();
     }
   };

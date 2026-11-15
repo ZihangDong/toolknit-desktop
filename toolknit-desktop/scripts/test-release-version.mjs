@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { assertNpmReleaseNotes } from './lib/release-note-contract.mjs';
+import './test-release-note-contract.mjs';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -168,9 +170,8 @@ if (releasedToolCount !== desktopToolCount) {
     'Source documentation must direct readers to the download page for installer availability');
 }
 if (publishedVersion === fullVersion) {
-  assert.match(currentReleaseNotes, /CLI \/ MCP 源码扩展至 77 项能力/, 'Release notes must distinguish current source capabilities from npm availability');
-  assert.match(currentReleaseNotes, new RegExp(`npm CLI / MCP ${escapeRegExp(fullVersion)} 已于 \\d{4}-\\d{2}-\\d{2} 发布`), 'Release notes must record the independently verified npm publication date');
-  assert.match(currentReleaseNotes, new RegExp(`npmjs\\.com/package/@toolknit/cli/v/${escapeRegExp(fullVersion)}`), 'Release notes must link the published npm version');
+  const catalog = await readJson('cli/guides/CLI_CAPABILITIES.json');
+  assertNpmReleaseNotes(currentReleaseNotes, { sourceCapabilities: catalog.tools.length, desktopVersion: fullVersion });
 }
 
 const manifestVersions = new Map([

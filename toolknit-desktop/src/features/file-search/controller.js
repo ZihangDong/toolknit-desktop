@@ -32,7 +32,7 @@ export function createFileSearchController({ overlay, isTauri = false, fileSearc
     const nextReady = data.automatic === true, nextCapsule = data.window?.enabled === true;
     const changed = ready !== nextReady || capsuleMode !== nextCapsule; ready = nextReady; capsuleMode = nextCapsule;
     const canSearch = ready && !capsuleMode && !modeBusy;
-    if (!canSearch) { composing = false; q('Maintenance').open = false; results?.closeFilters(); results?.session.pause(); }
+    if (!canSearch) { composing = false; q('Maintenance').open = false; results?.closeFilters(); results?.pause(); }
     for (const [name, shown] of [['Setup', !ready], ['Workbench', ready && !capsuleMode], ['CapsuleGuide', ready && capsuleMode]]) {
       const panel = q(name);
       if (!shown && panel.contains(doc.activeElement)) moveFocusOutOfHiddenRegion(panel);
@@ -92,7 +92,7 @@ export function createFileSearchController({ overlay, isTauri = false, fileSearc
   lifetime.event(doc, 'pointerdown', event => { if (!q('Maintenance').contains(event.target)) q('Maintenance').open = false; });
   async function switchMode(enabled) {
     if (modeBusy || busy || nativeBusy || !visible()) return;
-    const owner=session; modeBusy=true; controls(); results?.closeFilters(); results?.session.pause();
+    const owner=session; modeBusy=true; controls(); results?.closeFilters(); results?.pause();
     q('CapsuleStatus').hidden=true;
     try {
       await context(); const next=await runtime.call('configure', { enabled });
@@ -120,7 +120,7 @@ export function createFileSearchController({ overlay, isTauri = false, fileSearc
   function close() {
     if (!session) return;
     composing = false; polling = false; statusAgain=false; q('Maintenance').open = false;
-    session.dispose(); session = null; results?.closeFilters(); results?.session.pause();
+    session.dispose(); session = null; results?.closeFilters(); results?.pause();
     moveFocusOutOfHiddenRegion(overlay, returnFocus); overlay.classList.remove('visible'); setModalInteractivity(overlay, false);
   }
   async function open() {

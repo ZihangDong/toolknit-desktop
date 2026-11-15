@@ -34,6 +34,7 @@ mod storage;
 mod scope_policy;
 mod discovery;
 mod windows;
+mod thumbnails;
 
 pub(super) const BAR: &str = "file-search-bar";
 pub(super) const RESULTS: &str = "file-search-results";
@@ -77,6 +78,7 @@ pub(crate) struct FileSearchState {
     inner: Mutex<Inner>,
     pub(super) transition: tokio::sync::Mutex<()>,
     pub(super) generation: AtomicU64,
+    pub(super) settled_generation: AtomicU64,
     pub(super) drag_generation: AtomicU64,
     menu_generation: AtomicU64,
     pub(super) adjusting: AtomicBool,
@@ -91,6 +93,7 @@ pub(crate) struct FileSearchState {
     needs_service_repair: AtomicBool,
     auto_locations: Mutex<Vec<discovery::Location>>,
     leases: Mutex<[service::Lease; 2]>,
+    thumbnails: thumbnails::State,
 }
 pub(super) fn allowed(state: &FileSearchState) -> bool {
     let s = lock(&state.inner);
@@ -136,7 +139,7 @@ pub(super) fn snapshot(state: &FileSearchState) -> Value {
     let s = lock(&state.inner);
     let index = lock(&state.index).as_ref().map(|index| index.status());
     json!({"enabled":s.preferences.enabled,"hidden":s.hidden,"suspended":s.suspended,"index":index,
-        "expanded":s.expanded,"generation":state.generation.load(Ordering::Acquire),
+        "expanded":s.expanded,"generation":state.generation.load(Ordering::Acquire),"settledGeneration":state.settled_generation.load(Ordering::Acquire),
         "layout":s.layout,"context":s.context,"query":s.query,"menuToken":s.menu_token})
 }
 pub(super) fn notify(app: &tauri::AppHandle) {
@@ -231,6 +234,8 @@ fn capture_restore(app: &tauri::AppHandle, token: u64) {
 pub(crate) fn shutdown(app: &tauri::AppHandle) {
     let state = app.state::<FileSearchState>();
     state.stopping.store(true, Ordering::Release);
+    state.thumbnails.cancel(0);
+    state.thumbnails.cancel(1);
     service::cancel_configuration(&state);
     state.generation.fetch_add(1, Ordering::AcqRel);
     if let Some(index) = lock(&state.index).as_ref() {
@@ -298,7 +303,11 @@ pub(crate) async fn file_search(
             let query = serde_json::from_value::<query::Query>(request["query"].clone())
                 .map_err(|_| "file-search:query")?;
             let cursor = (!request["cursor"].is_null()).then(|| request["cursor"].clone());
-            let result=service::search(&app, usize::from(label != "main"), query, cursor).await?;
+            let limit = match request.get("limit") {
+                None | Some(Value::Null) => 50,
+                Some(value) => value.as_u64().filter(|n| (1..=10_000).contains(n)).ok_or("file-search:query")? as usize,
+            };
+            let result=service::search_window(&app, usize::from(label != "main"), query, cursor, limit).await?;
             ensure_query_surface(&state,label)?; return Ok(result);
         }
         "query-check" if label != MENU => {
@@ -318,6 +327,12 @@ pub(crate) async fn file_search(
             if label != "main" {
                 windows::set_expanded(&app, false, false).await?;
             }
+        }
+        "thumbnail" if label == "main" || label == RESULTS => {
+            ensure_query_surface(&state,label)?;
+            let result = thumbnails::load(&app, usize::from(label != "main"), request["id"].as_str().ok_or("file-search:query")?, request["ticket"].as_str().ok_or("file-search:query")?).await?;
+            ensure_query_surface(&state,label)?;
+            return Ok(result);
         }
         "context" if label == "main" => {
             let context = json!({"lang":if request["lang"]=="en" {"en"} else {"zh"},

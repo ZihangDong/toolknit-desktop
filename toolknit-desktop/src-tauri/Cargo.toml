@@ -57,6 +57,7 @@ libloading = "0.8"
 ort = { version = "=2.0.0-rc.10", default-features = false, features = ["directml", "load-dynamic"] }
 ndarray = "0.16"
 imageproc = { version = "0.25.0", default-features = false }
+resvg = { version = "=0.45.1", default-features = false, features = ["text", "raster-images"] }
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.54", features = ["Foundation", "Foundation_Collections", "Media_Ocr", "Graphics_Imaging", "Storage_Streams", "Globalization", "Win32_System_WinRT", "Win32_System_DataExchange", "Win32_System_Memory", "Win32_System_Time", "Win32_Foundation", "Win32_NetworkManagement_WNet", "Win32_Security", "Win32_Security_Cryptography", "Win32_Storage_FileSystem", "Win32_System_Registry", "Win32_System_SystemInformation", "Win32_System_Threading", "Win32_System_JobObjects", "Win32_System_LibraryLoader", "Win32_System_Com", "Win32_System_Services", "Win32_System_Pipes", "Win32_System_IO", "Win32_Security_Authorization", "Win32_System_Ole", "Win32_System_Com_StructuredStorage", "Win32_UI_Shell_Common", "Win32_UI_HiDpi", "Win32_UI_Accessibility", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell", "Win32_Graphics_Dwm", "Win32_Graphics_Dxgi", "Win32_Graphics_Dxgi_Common", "Win32_Graphics_Gdi"] }

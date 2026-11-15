@@ -18,6 +18,7 @@ const icons = () => createIcons({ icons: { Search, ChevronDown, ChevronsLeft, X,
 let disposed = false, generation = -1, expanded = false, composing = false, drag = null, suppressClick = false, morph;
 let barActive = false, draftDirty = false;
 let renderedLanguage = '';
+let motionTimer = null;
 const attribute = (node, name, value) => { if (node.getAttribute(name) !== value) node.setAttribute(name, value); };
 const styleValue = (node, name, value) => { if (node.style.getPropertyValue(name) !== value) node.style.setProperty(name, value); };
 
@@ -63,6 +64,24 @@ async function call(action, payload) {
   try { const next = await runtime.call(action, payload); if (!disposed && next) update(next); return next; }
   catch { if (!disposed) error(); return null; }
 }
+function settleMotion() {
+  clearTimeout(motionTimer); motionTimer = null;
+  morph?.cancel(); morph = null;
+  if (bar && !expanded) { bar.style.setProperty('--fs-origin-x', '0px'); bar.style.setProperty('--fs-origin-y', '0px'); }
+}
+function recoverMotion(owner, attempt = 0) {
+  clearTimeout(motionTimer);
+  motionTimer = setTimeout(async () => {
+    motionTimer = null;
+    if (disposed || generation !== owner || !morph) return;
+    try {
+      const state = await runtime.call('boot');
+      if (disposed || generation !== owner || !morph) return;
+      update(state);
+      if (morph && attempt < 2) recoverMotion(owner, attempt + 1);
+    } catch { if (!disposed && generation === owner && attempt < 2) recoverMotion(owner, attempt + 1); }
+  }, 450);
+}
 function update(state) {
   if (disposed || !state || Number(state.generation) < generation) return;
   if (state.context?.lang) setLangWithoutFade(state.context.lang);
@@ -90,7 +109,7 @@ function update(state) {
       styleValue(card, '--fs-entry-y', state.layout?.above ? '-5px' : '5px');
       if (queryKey(state.query || {}) !== panelQueryKey) { results.closeFilters(); panelQueryKey = queryKey(state.query || {}); results.session.set(state.query || {}, { immediate: true }); }
       if (active && !panelOpened) { results.session.start(); }
-      else if (!active && panelOpened) { results.closeFilters(); results.session.pause(); }
+      else if (!active && panelOpened) { results.closeFilters(); results.pause(); }
       panelOpened = active; if (languageChanged) results.render();
       if (state.index) results.setIndex(state.index);
     }
@@ -102,6 +121,7 @@ function update(state) {
     const bounds = bar.getBoundingClientRect(), style = getComputedStyle(bar);
     current = { width: `${bounds.width}px`, height: `${bounds.height}px`, borderRadius: style.borderRadius, transform: style.transform };
   }
+  if (morph && Number(state.generation) !== generation && !changed) settleMotion();
   generation = Number(state.generation) || 0;
   const layout = state.layout;
   if (layout && state.expanded) {
@@ -113,20 +133,22 @@ function update(state) {
   const wasActive = barActive;
   barActive = expanded && state.enabled && !state.hidden && !state.suspended;
   if (!barActive) { publisher.cancel(); composing = false; }
-  if (!expanded && inputRow.contains(document.activeElement)) document.activeElement.blur();
-  if (inputRow.inert !== !expanded) inputRow.inert = !expanded;
-  attribute(inputRow, 'aria-hidden', String(!expanded));
+  if (!barActive && inputRow.contains(document.activeElement)) document.activeElement.blur();
+  if (inputRow.inert !== !barActive) inputRow.inert = !barActive;
+  attribute(inputRow, 'aria-hidden', String(!barActive));
   if (capsule.disabled !== expanded) capsule.disabled = expanded;
   attribute(capsule, 'aria-hidden', String(expanded));
   attribute(capsule, 'aria-expanded', String(expanded));
   attribute(bar, 'data-expanded', String(expanded));
   if (changed) {
-    morph?.cancel();
+    clearTimeout(motionTimer); morph?.cancel();
     const capsuleFrame = { width: '148px', height: '48px', borderRadius: '24px', transform: `translate(${bar.style.getPropertyValue('--fs-origin-x') || '0px'}, ${bar.style.getPropertyValue('--fs-origin-y') || '0px'})` };
     const expandedFrame = { width: bar.style.getPropertyValue('--fs-width') || '500px', height: '56px', borderRadius: '28px', transform: 'translate(0,0)' };
     morph = bar.animate([current || (expanded ? capsuleFrame : expandedFrame), expanded ? expandedFrame : capsuleFrame],
       { duration: reduced ? 0 : 320, easing: 'cubic-bezier(.18,.88,.24,1)', fill: 'forwards' });
+    recoverMotion(generation);
   }
+  if (Number(state.settledGeneration) === generation || !state.enabled || state.hidden || state.suspended) settleMotion();
   if (state.query && !draftDirty && !composing && document.activeElement !== input && input.value !== (state.query.text || '')) input.value = state.query.text || '';
   if (clear.hidden !== !input.value) clear.hidden = !input.value;
   if (barActive && !wasActive && draftDirty) publisher.submit(input.value, { immediate: true });
@@ -166,7 +188,7 @@ scope.event(window, 'keydown', e => {
     e.preventDefault(); void call(bar ? 'navigate' : 'collapse', bar ? { key: 'Escape' } : undefined);
   }
 });
-scope.event(window, 'pagehide', () => { disposed = true; publisher?.dispose(); morph?.cancel(); results?.dispose(); menu?.dispose(); scope.dispose(); });
+scope.event(window, 'pagehide', () => { disposed = true; publisher?.dispose(); settleMotion(); results?.dispose(); menu?.dispose(); scope.dispose(); });
 translate();
 void (async () => {
   const unlisten = await runtime.listen(update);
@@ -174,8 +196,7 @@ void (async () => {
   scope.use(unlisten);
   const unlistenSettled = await runtime.onSettled(value => {
     if (bar && value === generation) {
-      morph?.cancel();morph = null;
-      if(!expanded){bar.style.setProperty('--fs-origin-x', '0px');bar.style.setProperty('--fs-origin-y', '0px');}
+      settleMotion();
     }
   });
   scope.use(unlistenSettled);

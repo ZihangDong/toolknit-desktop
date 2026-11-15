@@ -100,6 +100,7 @@ pub(super) fn begin(
     to: Rect,
     canvas: Rect,
 ) -> Result<(), String> {
+    app.state::<FileSearchState>().settled_generation.store(0, Ordering::Release);
     #[cfg(windows)]
     if let Some(window) = app.get_webview_window(BAR) {
         let hwnd = ::windows::Win32::Foundation::HWND(
@@ -129,7 +130,8 @@ pub(super) fn begin(
             };
             let result = on_main(&host, move |app| {
                 let state = app.state::<FileSearchState>();
-                if state.generation.load(Ordering::Acquire) != generation || !allowed(&state) {
+                if state.generation.load(Ordering::Acquire) != generation || !allowed(&state)
+                    || state.settled_generation.load(Ordering::Acquire) == generation {
                     return Ok(false);
                 }
                 if finished {

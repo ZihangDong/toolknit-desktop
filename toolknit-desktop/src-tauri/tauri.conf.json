@@ -66,6 +66,7 @@
       "../LICENSES/Download-Whisper-MIT.txt",
       "../LICENSES/Download-Models-Notice.txt",
       "../LICENSES/Image-PDF-Dependencies.txt",
+      "../LICENSES/SVG-Thumbnail-Dependencies.txt",
       "../src/core/opencc/LICENSE.txt",
       "../src/core/opencc/NOTICE.txt",
       "resources/qpdf/qpdf.exe",

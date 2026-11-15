@@ -65,3 +65,6 @@ ToolKnit's MIT license does not replace them.
 The new imageproc geometry dependency and its newly linked dependencies retain
 their original MIT, Apache-2.0, BSD and Zlib notices in
 toolknit-desktop/LICENSES/Local-OCR-Dependencies.txt, included with the desktop application.
+
+Static SVG file-search previews use resvg/usvg and their locked dependencies.
+License texts are distributed in toolknit-desktop/LICENSES/SVG-Thumbnail-Dependencies.txt.

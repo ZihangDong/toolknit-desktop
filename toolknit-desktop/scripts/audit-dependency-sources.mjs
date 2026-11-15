@@ -12,12 +12,16 @@ const read = path => readFile(new URL(path, root), 'utf8');
 const dependencies = await read('native_runtime/dependencies.rs');
 const pinned = await read('platform/dependency_download.rs');
 const records = JSON.parse(await read('native_runtime/local_translation/records.json'));
+const ocr = JSON.parse(await read('native_runtime/ocr/models.json'));
+const ocrVersion = (await read('native_runtime/ocr/runtime.rs')).match(/const VERSION: &str = "([^"]+)"/)?.[1];
+if (!ocrVersion) throw new Error('Missing OCR runtime version');
 const origin = pinned.match(/RESOURCE_ORIGIN: &str = "(https:[^"]+)"/)?.[1];
 if (!origin) throw new Error('Missing pinned resource origin');
 const sources = [...pinned.matchAll(/const (\w+_URL): &str =\s*"(https:[^"]+)"/g)].map(([, name, url]) => ({ name, url }));
 for (const model of ['base', 'small', 'medium']) sources.push({ name: `whisper-${model}`, url: `${origin}/models/whisper/ggml-${model}.bin` });
 for (const record of records.data) sources.push({ name: `translation-${record.name}`, url: `${origin}/translation/4.0.33/models/${record.attachment.filename}` });
-if (sources.length !== 4 + 3 + records.data.length || sources.some(source => new URL(source.url).origin !== origin)) throw new Error('Invalid resource source list');
+for (const file of ocr.files) sources.push({ name: `ocr-${file.name}`, url: `${origin}/models/ocr/pp-ocrv5-mobile/${ocrVersion}/${file.name}`, expected: [file.bytes, file.sha256] });
+if (sources.length !== 4 + 3 + records.data.length + ocr.files.length || sources.some(source => new URL(source.url).origin !== origin)) throw new Error('Invalid resource source list');
 const proxy = process.argv.find(arg => arg.startsWith('--proxy='))?.slice(8);
 if (proxy && !/^http:\/\/127\.0\.0\.1:\d+$/.test(proxy)) throw new Error('Only an explicitly selected local proxy is supported');
 const direct = process.argv.includes('--direct');
@@ -44,7 +48,7 @@ async function worker() {
 }
 await Promise.all([worker(), worker(), worker()]);
 const verified = [];
-if (process.argv.includes('--verify-small') || process.argv.includes('--verify-office')) {
+if (process.argv.includes('--verify-small') || process.argv.includes('--verify-office') || process.argv.includes('--verify-ocr')) {
   const directory = await mkdtemp(join(tmpdir(), 'toolknit-source-audit-'));
   try {
     const ffmpegBytes = Number(dependencies.match(/FFMPEG_ARCHIVE_BYTES: u64 = ([\d_]+)/)[1].replaceAll('_', ''));
@@ -53,12 +57,13 @@ if (process.argv.includes('--verify-small') || process.argv.includes('--verify-o
     const officeHash = dependencies.match(/LIBREOFFICE_ARCHIVE_SHA256: &str =\s*"([a-f\d]+)"/)[1];
     const bodySources = sources.filter(s =>
       (process.argv.includes('--verify-small') && ['FFMPEG_URL', 'MATTING_URL', 'whisper-base'].includes(s.name))
-      || (process.argv.includes('--verify-office') && s.name === 'LIBREOFFICE_URL'));
-    for (const { name, url } of bodySources) {
-      const expected = name.startsWith('FFMPEG_') ? [ffmpegBytes, ffmpegHash]
+      || (process.argv.includes('--verify-office') && s.name === 'LIBREOFFICE_URL')
+      || (process.argv.includes('--verify-ocr') && s.name.startsWith('ocr-')));
+    for (const { name, url, expected: expectedFile } of bodySources) {
+      const expected = expectedFile || (name.startsWith('FFMPEG_') ? [ffmpegBytes, ffmpegHash]
         : name.startsWith('LIBREOFFICE_') ? [officeBytes, officeHash]
         : name === 'MATTING_URL' ? [25888640, '07c308cf0fc7e6e8b2065a12ed7fc07e1de8febb7dc7839d7b7f15dd66584df9']
-        : [147951465, '60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe'];
+        : [147951465, '60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe']);
       const destination = join(directory, 'sample');
       const args = ['--fail', '--silent', '--show-error', '--connect-timeout', '8', '--max-time', '180', '--max-filesize', String(expected[0]), '--proto', '=https', '--output', destination, '--write-out', '%{http_code} %{time_total} %{speed_download}', url];
       if (proxy) args.unshift('--proxy', proxy);
@@ -85,3 +90,5 @@ if (process.argv.includes('--verify-small') || process.argv.includes('--verify-o
   } finally { await rm(directory, { recursive: true, force: true }); }
 }
 console.log(JSON.stringify({ measuredAt: new Date().toISOString(), route: proxy ? 'local-proxy' : direct ? 'direct' : 'default', results, verified }, null, 2));
+
+if (results.some(result => result.failed || result.origin !== origin) || verified.some(result => !result.verified)) process.exitCode = 1;

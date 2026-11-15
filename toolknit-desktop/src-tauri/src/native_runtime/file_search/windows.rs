@@ -339,6 +339,7 @@ fn apply(app: &tauri::AppHandle, generation: u64, focus: bool) -> Result<(), Str
         Ok(())
     })();
     state.adjusting.store(false, Ordering::Release);
+    if result.is_ok() { state.settled_generation.store(generation, Ordering::Release); }
     result
 }
 pub(super) async fn ready(app: &tauri::AppHandle, label: &str) -> Result<(), String> {
@@ -481,15 +482,15 @@ async fn transition_expanded(
     if !allowed(&state) {
         return Err("file-search:hidden".into());
     }
-    let generation = state.generation.fetch_add(1, Ordering::AcqRel) + 1;
     let layout = resolve(app, expanded)?;
-    let was_expanded = {
+    let (generation, was_expanded) = {
         let mut s = lock(&state.inner);
+        let generation = state.generation.fetch_add(1, Ordering::AcqRel) + 1;
         let old = s.expanded;
         s.expanded = expanded;
         s.anchor = Some(layout.anchor);
         s.layout = Some(layout.clone());
-        old
+        (generation, old)
     };
     if !expanded { let _=service::invalidate(app,1); }
     let result = on_main(app, move |host| {

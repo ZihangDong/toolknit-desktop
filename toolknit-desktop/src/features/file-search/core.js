@@ -60,26 +60,28 @@ export function createQuerySession({ search, check = null, invalidate = () => {}
   const barrier = createInvalidationBarrier(invalidate);
   const invalidateCurrent = () => barrier.invalidate();
   const emit = extra => changed({ query: { ...query }, rows: [...rows], cursor, ticket, loading, ...extra });
-  async function execute(append = false, background = false) {
+  async function execute(append = false, background = false, recovery = false) {
     if (disposed || composing || !ready || (append && (!cursor || loading))) return;
     const token = ++revision, page = append ? cursor : null;
-    loading = true; emit({ background });
+    loading = true; emit({ background: background || append });
     try {
       await barrier.wait();
       if (disposed || revision !== token || !ready || composing) return;
-      const data = await search({ query, cursor: page });
+      const data = await search({ query, cursor: page, ...(background && !append ? { limit: Math.min(10_000, Math.max(50, rows.length + (recovery ? 50 : 0))) } : {}) });
       if (disposed || revision !== token) return;
       const incoming = Array.isArray(data?.result?.rows) ? data.result.rows : [];
-      const ids = new Set(append ? rows.map(row => row.id) : []);
-      rows = [...(append ? rows : []), ...incoming.filter(row => { if (ids.has(row.id)) return false; ids.add(row.id); return true; })];
+      const keep = append && !data.replace;
+      const ids = new Set(keep ? rows.map(row => row.id) : []);
+      rows = [...(keep ? rows : []), ...incoming.filter(row => { if (ids.has(row.id)) return false; ids.add(row.id); return true; })];
       cursor = data.cursor || null; ticket = data.ticket || ''; loading = false;
-      emit({ background: false, total: data.result.total, extensions: data.result.extensions, index: data.index, generation: data.generation });
+      emit({ background: false, total: data.result.total, extensions: data.result.extensions, index: data.index, generation: data.generation, reconcile: background || append });
     } catch (error) {
       if (disposed || revision !== token) return;
       loading = false;
       if (errorCode(error) === 'cancelled') { ticket = ''; emit({ background: false }); return; }
-      if (append && errorCode(error) === 'stale-query') { cursor = null; rows = []; ticket = ''; void execute(false); return; }
-      rows = []; cursor = null; ticket = ''; emit({ background: false }); failed(error);
+      if (append && errorCode(error) === 'stale-query' && !recovery) { await execute(false, true, true); return; }
+      if (!background && !append) { rows = []; cursor = null; ticket = ''; }
+      emit({ background: false }); failed(error);
     }
   }
   function set(next, { immediate = false, force = false } = {}) {
@@ -92,7 +94,7 @@ export function createQuerySession({ search, check = null, invalidate = () => {}
     if (!composing && ready) { if (immediate) void execute(); else timer = setTimeout(() => void execute(), delay); }
   }
   return {
-    set, more: () => execute(true), refresh: () => set(query, { immediate: true, force: true }),
+    set, more: () => execute(true), refresh: () => { if (!loading) return execute(false, true); },
     async checkUpdate() {
       if (!check || disposed || !ready || composing || loading || checking || !ticket) return null;
       const token=revision, previous=ticket; checking=true;

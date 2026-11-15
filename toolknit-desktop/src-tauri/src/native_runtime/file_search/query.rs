@@ -250,7 +250,7 @@ pub(super) fn search_with_metadata(
     known_extensions: Option<&BTreeMap<String, usize>>,
     cancelled: impl Fn() -> bool,
 ) -> Result<Results, String> {
-    if !(1..=200).contains(&limit) {
+    if !(1..=10_000).contains(&limit) {
         return Err("file-search:query".into());
     }
     let query = query.clone().normalized()?;

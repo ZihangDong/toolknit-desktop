@@ -8,6 +8,8 @@ mod capture_tests;
 mod latency;
 #[path = "native_frame_tests.rs"]
 mod frame_tests;
+#[path = "native_paging_tests.rs"]
+mod paging_tests;
 use crate::native_runtime::quick_screenshot::ScreenshotState;
 
 // Real WebView2 and native HWNDs in an isolated process, outside the display.
@@ -167,6 +169,8 @@ async fn exercise(app: &tauri::AppHandle) -> Result<(), String> {
     assert_eq!(page["result"]["rows"][0]["name"], "合同.txt");
     assert_eq!(floating["result"]["rows"][0]["name"], "invoice.txt");
     assert_ne!(page["ticket"], floating["ticket"]);
+    assert!(thumbnails::load(app, 1, page["result"]["rows"][0]["id"].as_str().unwrap(), page["ticket"].as_str().unwrap()).await.is_err(),"thumbnails cannot borrow another surface's result lease");
+    assert_eq!(file_search(app.clone(),main.clone(),json!({"action":"thumbnail","id":page["result"]["rows"][0]["id"],"ticket":page["ticket"]})).await.unwrap_err(),"file-search:cancelled","inactive surface cannot request previews");
     assert_eq!(file_search(app.clone(),main.clone(),json!({"action":"query-check","ticket":page["ticket"]})).await.unwrap_err(),"file-search:cancelled");
     let ticket=page["ticket"].as_str().unwrap();
     assert_eq!(service::check_query(app,0,ticket).await?["changed"],false);
@@ -212,7 +216,36 @@ async fn exercise(app: &tauri::AppHandle) -> Result<(), String> {
     );
     service::clear(app).await?;
     assert_eq!(std::fs::read(source.join("合同.txt")).unwrap(), b"fixture");
+    paging_tests::verify(app, &fixture).await?;
+    if std::env::var_os("TOOLKNIT_FILE_SEARCH_IO_TEST_EXE").is_some() {
+        let photo=other.join("预览, photo 🖼.png");
+        image::RgbaImage::from_pixel(260,120,image::Rgba([230,30,15,255])).save(&photo).map_err(|_|"thumbnail:fixture")?;
+        let original=std::fs::read(&photo).map_err(|_|"thumbnail:fixture")?;
+        service::configure(app, vec![other.to_string_lossy().into_owned()]).await?;
+        let until=Instant::now()+Duration::from_secs(5);
+        while service::status(app)?["index"]["indexed"] != 1 {
+            if Instant::now()>until {return Err("thumbnail:index-timeout".into());}
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+        let result=service::search(app,0,query::Query { extension:"png".into(),..Default::default() },None).await?;
+        let row=&result["result"]["rows"][0];
+        lock(&app.state::<FileSearchState>().inner).preferences.enabled=false;
+        let preview=file_search(app.clone(),main.clone(),json!({"action":"thumbnail","id":row["id"],"ticket":result["ticket"]})).await;
+        lock(&app.state::<FileSearchState>().inner).preferences.enabled=true;
+        let preview=preview?;
+        let image=preview["image"].as_str().and_then(|v|v.strip_prefix("data:image/png;base64,")).ok_or("thumbnail:missing-image")?;
+        use base64::Engine;
+        let bytes=base64::engine::general_purpose::STANDARD.decode(image).map_err(|_|"thumbnail:base64")?;
+        let decoded=image::load_from_memory(&bytes).map_err(|_|"thumbnail:png")?.to_rgba8();
+        if decoded.width()!=128 || decoded.height()>128 || decoded.get_pixel(20,20)[0]<200 {return Err("thumbnail:incorrect-pixels".into());}
+        if std::fs::read(&photo).map_err(|_|"thumbnail:fixture")? != original {return Err("thumbnail:source-modified".into());}
+        service::invalidate(app,0)?;
+        if thumbnails::load(app,0,row["id"].as_str().ok_or("thumbnail:id")?,result["ticket"].as_str().ok_or("thumbnail:ticket")?).await.is_ok() {return Err("thumbnail:stale-lease-accepted".into());}
+        println!("WEBVIEW_THUMBNAIL current query lease -> real command -> ordinary child -> bounded PNG pixels and stale lease refusal passed");
+        service::clear(app).await?;
+    }
     std::fs::remove_dir_all(&fixture).map_err(|_| "fixture cleanup")?;
+    if std::env::var_os("TOOLKNIT_FILE_SEARCH_THUMBNAIL_ONLY").is_some() {shutdown(app);return Ok(());}
     windows::set_expanded(app, false, false).await?;
     let until = Instant::now() + Duration::from_secs(25);
     loop {

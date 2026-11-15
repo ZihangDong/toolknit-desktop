@@ -1,5 +1,7 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-11-15 文件搜索增量：辅助窗按 generation 与 `settledGeneration` 收回旧变形层，并有界补查丢失的结束通知；`features/file-search/thumbnails.js` 为虚拟行管理本地小图与取消，`native_runtime/file_search/thumbnails.rs` 在查询租约校验后复用普通权限的受限文件进程。索引不存图片正文，不增加提权服务能力。后续实测补齐隔离 SVG 静态渲染及 PNG 直解码；分页支持有界保留窗口和索引变化后重定位，列表按文件锚点增量合并。沿用 `file_search` 命令并新增桌面专属 `thumbnail` action，无新增工具、用户存储或 CLI/MCP 参数。详见 [缩略图与胶囊恢复](V33_FILE_SEARCH_THUMBNAILS_RECOVERY_20261115.zh-CN.md)。
+
 > 2026-11-13 本地扫描增量：PDF→Word 新增受限扫描图形分区、原图资产裁切和扫描文字样式适配，全部位于既有 feature 的 core/adapters。processor 与 Worker 复用原协议并接可选布尔策略，桌面 controller 显式开启；无新模型、原生命令、存储项或 AI 网络路径。图形裁切发生在 OCR 擦字之前，资产复用原 DOCX/编辑交接。来源与验证见 [合入说明](V33_PDF_WORD_LOCAL_SCAN_MERGE_20261113.zh-CN.md)。
 
 > 2026-11-09 PDF→Word 原始字体增量：`core/source-font.js` 校验原始程序，`adapters/source-fonts.js` 在既有 Worker 内恢复文档字体，`source-font-runtime.js` 管理 DOCX 引用与主编辑器 FontFace，`native_runtime/pdf/docx_fonts.rs` 负责原生发布校验。WordScene schema 1 增加可选 `fontAssetId` 与 font 资产，内部增加一次性 `source-fonts` Worker 请求；无新 DOM、事件、存储、Tauri 或 CLI/MCP 参数。字体按文档释放，新缺字只替换新 run；编辑边界使用真实笔画。`source-font-integrated-final` 已封存 193 个源码/测试文件：115 项发布、安全 1,927 项、独立 CLI 167 模块/78 能力、Rust 327 passed/30 ignored、20 份原生/应用检查、239 页外观、最新构建工作流与字体专项、许可和严格集成均通过。17 份完整载荷/场景不变，三份新鲜 WPS；F16 单像素差异单独核对。综合保持 12/20，未达 16/20；下面为历史检查点，详见[实施记录](V33_PDF_WORD_IMPLEMENTATION_20261106.zh-CN.md)。
