@@ -42,8 +42,11 @@ use system_runtime::*;
 mod office;
 use office::LibreOfficeRuntimeInfo;
 mod quick_screenshot;
+mod file_search;
 pub(crate) use quick_screenshot::open_clipboard_image;
 mod local_translation;
+#[path = "native_runtime/ocr/mod.rs"]
+mod local_ocr;
 mod runner;
 pub use runner::run;
 use runner::{minimize_main_window, show_main_window};

@@ -1,3 +1,4 @@
+import { writeUniqueBinaryFile } from '../../platform/binary-output.js';
 import {
   assemblePdf,
   assemblePdfWithTextEdits,
@@ -27,6 +28,7 @@ export function createPdfEditorExporter({
   getActiveOperation,
   getSources,
   getPages,
+  getSelectedIds = () => new Set(getPages().map(page => page.id)),
   getTextEdits,
   getInsertedTexts,
   getInsertedImages,
@@ -70,10 +72,10 @@ export function createPdfEditorExporter({
   async function writePdf(bytes, outputDir, fileName) {
     if (isTauri) {
       const invoke = await getInvoke();
-      return invoke('write_unique_file_bytes', {
+      return writeUniqueBinaryFile(invoke, {
         directory: outputDir,
         fileName,
-        bytes: Array.from(bytes)
+        bytes
       });
     }
     downloadBlob(new Blob([bytes], { type: 'application/pdf' }), fileName);
@@ -224,10 +226,12 @@ export function createPdfEditorExporter({
       if (getActiveOperation()) showToast(t('home.pdfEditor.busy'));
       return;
     }
+    const selection = getSelectedIds();
+    const pageIds = getPages().filter(page => selection.has(page.id)).map(page => page.id);
+    if (!pageIds.length) { showToast(t('home.pdfEditor.noSelection')); return; }
     const operation = beginOperation('export');
     showProcess('exporting', 3);
     try {
-      const pageIds = getPages().map(page => page.id);
       const bytes = await assemble(pageIds, operation);
       assertOperation(operation);
       const outputDir = await getOutputDir('PDF_Editor');
@@ -238,8 +242,8 @@ export function createPdfEditorExporter({
       const outputPath = await writePdf(bytes, outputDir, fileName);
       assertOperation(operation);
       setLocalizedProgress(100, 'exporting');
-      setSavedSnapshot();
-      showSuccess({ outputDir, outputPath, mode: 'export' }, operation.returnFocus);
+      if (pageIds.length === getPages().length) setSavedSnapshot();
+      showSuccess({ outputDir, outputPath, mode: 'export', count: pageIds.length }, operation.returnFocus);
     } catch (error) {
       const cancelled = operation.cancelled || error instanceof PdfEditorCancelledError;
       if (!isDisposed()) showToast(

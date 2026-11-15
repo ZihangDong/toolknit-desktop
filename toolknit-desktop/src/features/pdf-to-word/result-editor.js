@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { createModalSession } from '../../app/modal-runtime.js';
 import { createSnapshotHistory } from '../../shared/snapshot-history.js';
@@ -9,10 +9,12 @@ import { measureResultText } from './result-preview.js';
 import { wordError } from './core/input.js';
 import { readColorExtractorImageDimensions } from '../../color-extractor-core.js';
 
-export function createWordResultEditor({ overlay, byId, tr, enabled, pageNumber, changed, report }) {
+export function createWordResultEditor({ overlay, byId, tr, enabled, pageNumber, changed, report, resolveInsertedStyle = (text, style) => style,
+  fontContext = context => context }) {
   const scope = createLifecycleScope(), context = document.createElement('canvas').getContext('2d');
-  let baseline = null, edits = {}, derived = null, selected = null, revision = 0, saved = '{}', loadingImage = false;
+  let baseline = null, edits = {}, derived = null, selected = null, revision = 0, saved = '{}', loadingImage = false, imageRequest = null;
   const assets = new Map(), targetCache = new Map();
+  const changedPages = (before, after) => [...new Set([...Object.keys(before), ...Object.keys(after)].filter(key => JSON.stringify(before[key]) !== JSON.stringify(after[key])).map(key => Number(key.split('/')[0])))];
   const targetsFor = page => {
     if (!page) return [];
     if (!targetCache.has(page.number)) targetCache.set(page.number, resultTargets(page));
@@ -24,33 +26,43 @@ export function createWordResultEditor({ overlay, byId, tr, enabled, pageNumber,
     byId('Reset').disabled = !enabled() || !Object.keys(edits).length;
   };
   const history = createSnapshotHistory({ capture: () => structuredClone(edits),
-    apply: value => { edits = structuredClone(value); derived = null; revision++; selected = null; changed(); },
+    apply: value => { const pages = changedPages(edits, value); edits = structuredClone(value); derived = null; revision++; selected = null; changed({ pages }); },
     equals: (left, right) => JSON.stringify(left) === JSON.stringify(right), onChange: refresh,
     limit: 30, measure: value => JSON.stringify(value).length * 2, maxBytes: 2 * 1024 * 1024 });
-  const modal = createModalSession({ root: byId('EditOverlay'), background: overlay, initialFocus: byId('EditText'), onClose: () => modal.close() });
+  const modal = createModalSession({ root: byId('EditOverlay'), background: overlay, initialFocus: byId('EditText'), onClose: closeEdit });
   const documentValue = () => baseline ? derived ||= applyResultEdits(baseline, edits) : null;
   const target = () => targetsFor(baseline?.pages.find(page => page.number === pageNumber())).find(value => value.key === selected);
   function commit(key, value) {
     const next = { ...edits, [key]: value };
+    if (value.type === 'noop') delete next[key];
+    if (JSON.stringify(next) === JSON.stringify(edits)) return;
     const checked = applyResultEdits(baseline, next);
-    edits = next; derived = checked; revision++; history.commit(); changed();
+    edits = next; derived = checked; revision++; history.commit(); changed({ pages: [Number(key.split('/')[0])] });
   }
   function render() {
-    const root = byId('Regions'); root.replaceChildren();
+    const root = byId('Regions'), existing = new Map([...root.children].map(node => [node.dataset.key,node]));
+    const retained = new Set(); let position = 0;
     const currentPage = baseline?.pages.find(page => page.number === pageNumber());
-    const show = Boolean(currentPage && enabled() && byId('Structure').getAttribute('aria-pressed') === 'true');
+    // A sibling edit dialog makes the workbench inert. Late page/thumbnail
+    // rendering must keep its target until the dialog applies or cancels it.
+    const editing = byId('EditOverlay').classList.contains('visible') && !byId('EditOverlay').inert;
+    const show = Boolean(currentPage && (enabled() || editing) && byId('Structure').getAttribute('aria-pressed') === 'true');
     if (!show) selected = null;
+    const toggleLabel = byId('Structure').querySelector('[data-i18n]');
+    if (toggleLabel) { const key = show ? 'exitEdit' : 'structure'; toggleLabel.dataset.i18n = 'home.pdfWord.' + key; toggleLabel.textContent = tr(key); }
     if (show) {
       const targets = [...targetsFor(currentPage)].sort((a, b) => Number(a.type === 'text') - Number(b.type === 'text') || b.rect.width * b.rect.height - a.rect.width * a.rect.height);
       for (const item of targets) {
         if (edits[item.key]?.type === 'delete') continue;
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'pdf-word-region'; button.dataset.key = item.key; button.dataset.type = item.type;
+        const button = existing.get(item.key) || document.createElement('button'); button.type = 'button'; button.className = 'pdf-word-region'; button.dataset.key = item.key; button.dataset.type = item.type;
         const r = editedTextRect(item, edits[item.key]);
         Object.assign(button.style, { left: r.x / currentPage.width * 100 + '%', top: r.y / currentPage.height * 100 + '%', width: r.width / currentPage.width * 100 + '%', height: r.height / currentPage.height * 100 + '%' });
         button.setAttribute('aria-label', tr(item.type === 'text' ? 'textRegion' : 'imageRegion'));
-        button.setAttribute('aria-pressed', String(item.key === selected)); root.append(button);
+        button.setAttribute('aria-pressed', String(item.key === selected)); retained.add(item.key);
+        if(root.children[position]!==button)root.insertBefore(button,root.children[position]||null); position++;
       }
     }
+    for(const [key,node]of existing)if(!retained.has(key))node.remove();
     const value = target();
     byId('Selection').hidden = !show || !value || edits[selected]?.type === 'delete';
     byId('SelectionType').textContent = value ? tr(value.type === 'text' ? 'textRegion' : 'imageRegion') : '';
@@ -62,6 +74,7 @@ export function createWordResultEditor({ overlay, byId, tr, enabled, pageNumber,
     byId('EditText').value = edits[selected]?.text ?? value.text;
     byId('EditError').textContent = ''; modal.open();
   }
+  function closeEdit() { modal.close(); render(); }
   function remove() {
     if (!enabled() || !target()) return;
     try { commit(selected, { type: 'delete' }); selected = null; render(); } catch (error) { report(error); }
@@ -77,15 +90,17 @@ export function createWordResultEditor({ overlay, byId, tr, enabled, pageNumber,
   scope.event(byId('Edit'), 'click', openEdit);
   scope.event(byId('Delete'), 'click', remove);
   scope.event(byId('Deselect'), 'click', () => { selected = null; render(); });
-  scope.event(byId('EditCancel'), 'click', () => modal.close());
+  scope.event(byId('EditCancel'), 'click', closeEdit);
   scope.event(byId('EditForm'), 'submit', event => {
     event.preventDefault();
     if (!baseline || !target()) return;
     try {
-      const value = layoutEditedText(target(), byId('EditText').value,
-        (text, style) => measureResultText(text, style, context),
+      const measure = (text, style) => measureResultText(text, style, fontContext(context));
+      measure.metrics = (text, style) => measureResultText.metrics(text, style, fontContext(context));
+      measure.resolveStyle = resolveInsertedStyle;
+      const value = layoutEditedText(target(), byId('EditText').value, measure,
         { page: baseline.pages.find(page => page.number === pageNumber()), edits });
-      commit(selected, value); modal.close(); render();
+      commit(selected, value); closeEdit();
     } catch (error) { byId('EditError').textContent = tr('error.' + (error?.code || 'edit-text')); }
   });
   scope.event(byId('Replace'), 'click', () => { if (enabled() && !loadingImage) byId('ImageInput').click(); });
@@ -94,6 +109,7 @@ export function createWordResultEditor({ overlay, byId, tr, enabled, pageNumber,
     const value = target(), epoch = revision;
     if (!file || !enabled() || value?.type !== 'image' || loadingImage) return;
     loadingImage = true; byId('Replace').disabled = true; changed();
+    const ticket = imageRequest = Symbol('replacement');
     let bitmap;
     try {
       if (file.size <= 0 || file.size > 8 * 1024 * 1024 || !['image/png', 'image/jpeg'].includes(file.type)) throw wordError('edit-image');
@@ -118,7 +134,7 @@ export function createWordResultEditor({ overlay, byId, tr, enabled, pageNumber,
       const id = 'word-edit-' + crypto.randomUUID();
       assets.set(id, { id, bytes, format: 'png' }); commit(value.key, { type: 'image', assetId: id }); render();
     } catch (error) { if (epoch === revision) report(error); }
-    finally { bitmap?.close(); loadingImage = false; byId('Replace').disabled = false; changed(); }
+    finally { bitmap?.close(); if (imageRequest === ticket) { imageRequest = null; loadingImage = false; byId('Replace').disabled = false; changed(); } }
   });
   scope.event(byId('Undo'), 'click', () => { if (enabled()) history.undo(); });
   scope.event(byId('Redo'), 'click', () => { if (enabled()) history.redo(); });
@@ -140,9 +156,9 @@ export function createWordResultEditor({ overlay, byId, tr, enabled, pageNumber,
     get assets() { return assets; },
     editedAssets() { return [...new Set(Object.values(edits).filter(edit => edit.type === 'image').map(edit => edit.assetId))].map(id => assets.get(id)); },
     markSaved() { saved = JSON.stringify(edits); },
-    reset() { edits = {}; derived = null; selected = null; revision++; history.commit(); changed(); },
-    setBaseline(value) { baseline = value; edits = {}; derived = null; selected = null; revision++; saved = '{}'; assets.clear(); targetCache.clear(); history.reset(); render(); },
-    clear() { modal.close({ restore: false }); baseline = derived = null; edits = {}; selected = null; revision++; saved = '{}'; assets.clear(); targetCache.clear(); history.clear(); render(); },
+    reset() { const pages = changedPages(edits, {}); edits = {}; derived = null; selected = null; revision++; history.commit(); changed({ pages }); },
+    setBaseline(value) { baseline = value; edits = {}; derived = null; selected = null; revision++; imageRequest = null; loadingImage = false; saved = '{}'; assets.clear(); targetCache.clear(); history.reset(); render(); },
+    clear() { modal.close({ restore: false }); baseline = derived = null; edits = {}; selected = null; revision++; imageRequest = null; loadingImage = false; saved = '{}'; assets.clear(); targetCache.clear(); history.clear(); render(); },
     dispose() { modal.dispose(); scope.dispose(); assets.clear(); }
   };
 }

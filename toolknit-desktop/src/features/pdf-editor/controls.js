@@ -72,7 +72,7 @@ export function createPdfEditorControls({
     if (deleteBtn) deleteBtn.disabled = busy || !has || (!hasSelectedComponent && pages.length <= 1);
     if (extractBtn) extractBtn.disabled = busy || !has;
     if (replaceBtn) replaceBtn.disabled = busy;
-    if (exportBtn) exportBtn.disabled = busy || !has;
+    if (exportBtn) exportBtn.disabled = busy || !has || selectedCount === 0;
 
     const sourceRotationKnown = !page || page.sourceRotation == null || Number.isFinite(Number(page.sourceRotation));
     const contentEditingAllowed = has && sourceRotationKnown && pageSupportsContentEditing(page);
@@ -110,6 +110,7 @@ export function createPdfEditorControls({
     }
     for (const pageState of getPageStates().values()) {
       pageState.tile.classList.toggle('is-selected', selectedIds.has(pageState.id));
+      pageState.tile.classList.toggle('is-current', pageState.id === page?.id);
       pageState.selectButton.setAttribute('aria-pressed', String(selectedIds.has(pageState.id)));
     }
     updateZoomLabel();

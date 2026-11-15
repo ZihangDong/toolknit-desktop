@@ -1,5 +1,7 @@
 const entry = (desktop, names, scope = 'supported', note = '') => ({ desktop, scope, tools: names.map(name => `toolknit_${name}`), note });
 export const DESKTOP_COVERAGE = Object.freeze([
+  entry('word-to-pdf', ['word_to_pdf'], 'supported', 'DOC/DOCX, local LibreOffice Writer, single and batch output; interactive PDF preview remains on desktop.'),
+  entry('file-search', [], 'desktop-only', 'Personal persistent filename index, optional NTFS acceleration, floating windows and Explorer selection use explicit desktop scope controls.'),
   entry('quick-screenshot', [], 'desktop-only', 'Interactive selection, annotations and pinned windows require a visible desktop session.'),
   entry('clipboard-history', [], 'desktop-only', 'Background monitoring and encrypted personal history stay behind the desktop user controls.'),
   entry('excel-to-pdf', ['excel_to_pdf'], 'partial', 'XLSX only; uses LibreOffice and workbook print layout. Legacy XLS, desktop parameter UI and external workbook connections are excluded.'),

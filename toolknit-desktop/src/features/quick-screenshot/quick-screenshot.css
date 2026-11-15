@@ -83,9 +83,16 @@ html[data-theme="dark"] body:is(.shot-capture-body,.shot-viewer-body) .app-toast
 .shot-viewer-stage { display: flex; align-items: center; justify-content: center; flex: 1; min-height: 0; overflow: hidden; background: var(--shot-panel); cursor: grab; touch-action: none; }
 .shot-viewer-stage:active { cursor: grabbing; }
 .shot-viewer-stage img { max-width: none; flex-shrink: 0; user-select: none; pointer-events: none; object-fit: contain; }
-.shot-viewer-footer { height: 64px; padding: 8px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-shrink: 0; border-top: 1px solid var(--shot-line); }
+.shot-viewer-footer { min-height: 64px; padding: 8px 18px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; flex-shrink: 0; border-top: 1px solid var(--shot-line); }
 .shot-viewer-footer span { min-width: 46px; text-align: center; font-size: 14px; }
 .shot-viewer-footer label { display: flex; align-items: center; gap: 8px; margin: 0 12px; font-size: 14px; }
+@media (max-width: 700px) {
+  .shot-viewer .tk-tool-nav { height: 44px; min-height: 44px; flex: 0 0 44px; flex-direction: row; align-items: center; gap: 8px; padding: 4px 8px; }
+  .shot-viewer .tk-tool-nav .tk-nav-left { width: auto; flex: 0 1 auto; }
+  .shot-viewer .tk-tool-nav :is(.tk-nav-web,.tk-nav-support,.tk-nav-settings,.tk-nav-tag,.tk-nav-help,.tk-nav-feedback) { display: none; }
+  .shot-viewer-footer { gap: 3px; padding: 6px; }
+  .shot-viewer-footer label { margin: 0 4px; }
+}
 html:has(body.shot-history-body),body.shot-history-body,body.shot-history-body #screenshotRoot { background: transparent; }
 body.shot-history-body { --tk-window-bg: transparent; }
 .shot-history { --shot-origin-x: 48px; --shot-origin-y: 48px; position: relative; width: 100vw; height: 100vh; overflow: hidden; user-select: none; }

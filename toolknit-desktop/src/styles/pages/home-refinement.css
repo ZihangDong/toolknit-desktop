@@ -661,18 +661,43 @@
 }
 
 .app.is-v2-home .tool-feedback-prompt {
-  min-width: 240px;
+  flex: 1 1 100%;
+  min-width: 0;
   min-height: 36px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px 24px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.app.is-v2-home .home-provider-promo {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.app.is-v2-home .home-provider-promo .home-provider-links { gap: 12px; }
+
+.app.is-v2-home .tool-feedback-actions {
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
   margin-left: auto;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 12px;
-  line-height: 1.45;
   text-align: right;
 }
+
+.app.is-v2-home .tool-feedback-actions > span { min-width: 0; }
 
 .app.is-v2-home .tool-feedback-link {
   flex: 0 0 auto;
@@ -715,15 +740,6 @@
   line-height: 14px;
 }
 
-@media (max-width: 980px) {
-  .app.is-v2-home .tool-feedback-prompt {
-    flex: 1 1 100%;
-    justify-content: flex-start;
-    margin-left: 0;
-    text-align: left;
-  }
-}
-
 @media (max-width: 600px) {
   .app.is-v2-home .tool-feedback-prompt {
     align-items: stretch;
@@ -731,7 +747,9 @@
     gap: 8px;
   }
 
-  .app.is-v2-home .tool-feedback-link {
-    align-self: flex-start;
+  .app.is-v2-home .tool-feedback-actions {
+    justify-content: space-between;
+    margin-left: 0;
+    text-align: left;
   }
 }

@@ -1,12 +1,9 @@
+import { writeUniqueBinaryFile } from '../../platform/binary-output.js';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { createModalSession, setModalInteractivity } from '../../app/modal-runtime.js';
 import { mergePdfPages } from '../../pdf-merge-core.js';
 import { tauriCorePromise } from '../../platform/tauri-runtime.js';
 import { t } from '../../i18n.js';
-
-function outputParent(path) {
-  return String(path || '').replace(/[/\\][^/\\]+$/, '').replace(/\//g, '\\');
-}
 
 export function createPdfMergeExporter({
   isTauri = false,
@@ -83,10 +80,10 @@ export function createPdfMergeExporter({
       const { invoke } = await tauriCorePromise;
       const directory = await getOutputDir('PDF_Merge');
       assertCurrent(owner, id);
-      const path = await invoke('write_unique_file_bytes', {
+      const path = await writeUniqueBinaryFile(invoke, {
         directory,
         fileName: 'merged.pdf',
-        bytes: Array.from(bytes)
+        bytes
       });
       assertCurrent(owner, id);
       return path;

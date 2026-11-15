@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -13,6 +13,9 @@ const MAX_DOCX_IMAGE_SIDE: u32 = 8_192;
 const MAX_DOCX_IMAGE_PIXELS: u64 = 16_000_000;
 const WRITE_LIFETIME: Duration = Duration::from_secs(600);
 static DOCX_WRITES: OnceLock<Mutex<BTreeMap<String, Arc<DocxWrite>>>> = OnceLock::new();
+mod embedded_fonts {
+    include!("docx_fonts.rs");
+}
 
 struct PendingDocx {
     file: Option<std::fs::File>,
@@ -329,6 +332,8 @@ pub(crate) fn validate_docx_file(path: &Path) -> Result<(), String> {
     }
     let mut names = BTreeSet::new();
     let mut expanded = 0_u64;
+    let mut font_parts = BTreeSet::new();
+    let mut font_bytes = 0_u64;
     for index in 0..zip.len() {
         let entry = zip.by_index(index).map_err(|_| failure("output-invalid"))?;
         let name = entry.name().map_err(|_| failure("output-invalid"))?;
@@ -349,12 +354,23 @@ pub(crate) fn validate_docx_file(path: &Path) -> Result<(), String> {
             && !(lower.ends_with(".xml")
                 || lower.ends_with(".rels")
                 || lower.ends_with(".png")
-                || jpeg_part(&lower))
+                || jpeg_part(&lower)
+                || embedded_fonts::font_part(&name))
         {
             return Err(failure("output-invalid"));
         }
         if entry.size() > 64 * 1024 * 1024 {
             return Err(failure("output-large"));
+        }
+        if embedded_fonts::font_part(&name) {
+            font_parts.insert(name.to_string());
+            font_bytes += entry.size();
+            if font_parts.len() > embedded_fonts::MAX_FONTS
+                || entry.size() > embedded_fonts::MAX_FONT_BYTES
+                || font_bytes > embedded_fonts::MAX_TOTAL_FONT_BYTES
+            {
+                return Err(failure("output-large"));
+            }
         }
         expanded = expanded
             .checked_add(entry.size())
@@ -363,6 +379,28 @@ pub(crate) fn validate_docx_file(path: &Path) -> Result<(), String> {
             return Err(failure("output-large"));
         }
     }
+    let font_bindings = if font_parts.is_empty() {
+        BTreeMap::new()
+    } else {
+        let mut read_part = |name: &str, maximum: u64| -> Result<Vec<u8>, String> {
+            let mut entry = zip.by_name(name).map_err(|_| failure("output-invalid"))?;
+            if entry.size() > maximum {
+                return Err(failure("output-large"));
+            }
+            let mut bytes = Vec::new();
+            (&mut entry)
+                .take(maximum + 1)
+                .read_to_end(&mut bytes)
+                .map_err(|_| failure("output-invalid"))?;
+            if bytes.len() as u64 > maximum {
+                return Err(failure("output-large"));
+            }
+            Ok(bytes)
+        };
+        let table = read_part("word/fontTable.xml", 256 * 1024)?;
+        let relationships = read_part("word/_rels/fontTable.xml.rels", 64 * 1024)?;
+        embedded_fonts::bindings(&table, &relationships, &font_parts)?
+    };
     for required in [
         "[Content_Types].xml",
         "_rels/.rels",
@@ -393,6 +431,8 @@ pub(crate) fn validate_docx_file(path: &Path) -> Result<(), String> {
         }
         if name.ends_with(".xml") || name.ends_with(".rels") {
             validate_xml(&data, &name, &names)?;
+        } else if let Some(binding) = font_bindings.get(&name) {
+            embedded_fonts::validate(&mut data, binding)?;
         } else if jpeg_part(&name.to_ascii_lowercase()) {
             validate_jpeg(&data)?;
         } else if !data.starts_with(b"\x89PNG\r\n\x1a\n") {
@@ -614,7 +654,8 @@ mod docx_write_tests {
     fn docx_part_names_preserve_unicode_and_reject_unsafe_paths() {
         let mut nonce = [0_u8; 12];
         getrandom::getrandom(&mut nonce).unwrap();
-        let folder = std::env::temp_dir().join(format!("toolknit-docx-names-{}", hex::encode(nonce)));
+        let folder =
+            std::env::temp_dir().join(format!("toolknit-docx-names-{}", hex::encode(nonce)));
         std::fs::create_dir(&folder).unwrap();
         let file = folder.join("names.docx");
         for (name, valid) in [
@@ -623,8 +664,11 @@ mod docx_write_tests {
             ("word/%2e%2e/outside.xml", false),
             ("word\\outside.xml", false),
         ] {
-            let mut writer = zip::ZipWriter::new_append(std::io::Cursor::new(package(false))).unwrap();
-            writer.start_file(name, SimpleFileOptions::default()).unwrap();
+            let mut writer =
+                zip::ZipWriter::new_append(std::io::Cursor::new(package(false))).unwrap();
+            writer
+                .start_file(name, SimpleFileOptions::default())
+                .unwrap();
             writer.write_all(b"<part/>").unwrap();
             std::fs::write(&file, writer.finish().unwrap().into_inner()).unwrap();
             assert_eq!(validate_docx_file(&file).is_ok(), valid, "{name}");
@@ -728,6 +772,13 @@ mod docx_write_tests {
         assert!(file_stem("CON.docx").is_err());
         if let Ok(path) = std::env::var("TOOLKNIT_DOCX_TEST_FILE") {
             validate_docx_file(Path::new(&path)).unwrap();
+            let actual = std::fs::read(path).unwrap();
+            let id = begin_write(folder.clone(), "actual.docx".into(), actual.len() as u64).unwrap();
+            for (index, chunk) in actual.chunks(MAX_DOCX_CHUNK).enumerate() {
+                append_write(&id, (index * MAX_DOCX_CHUNK) as u64, chunk).unwrap();
+            }
+            let published = finalize_write(&id).unwrap();
+            assert_eq!(std::fs::read(published).unwrap(), actual);
         }
         std::fs::remove_dir_all(folder).unwrap();
     }

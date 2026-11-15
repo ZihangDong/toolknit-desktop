@@ -30,18 +30,6 @@ export function windowAt(desktop, point) {
   if (!r) return {x:0,y:0,width:desktop.bounds.width,height:desktop.bounds.height};
   return rectangle({x:r.x-desktop.bounds.x,y:r.y-desktop.bounds.y},{x:r.x+r.width-desktop.bounds.x,y:r.y+r.height-desktop.bounds.y},desktop.bounds.width,desktop.bounds.height);
 }
-export function parseTranslations(raw, lines) {
-  let value;
-  try { value = JSON.parse(String(raw).trim().replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'')); }
-  catch { throw new Error('screenshot:invalid-translation'); }
-  if (!Array.isArray(value) || value.length !== lines.length) throw new Error('screenshot:invalid-translation');
-  const mapped=new Map();
-  for (const item of value) {
-    if (!item || !Number.isInteger(item.id) || mapped.has(item.id) || !lines.some(l=>l.id===item.id) || typeof item.text!=='string' || !item.text.trim() || item.text.length>4000) throw new Error('screenshot:invalid-translation');
-    mapped.set(item.id,item.text.trim());
-  }
-  return lines.map(line=>({...line,text:mapped.get(line.id)}));
-}
 export function textLines(ctx, text, maxWidth) {
   const result=[];
   for (const paragraph of String(text).split('\n')) {
@@ -90,7 +78,7 @@ export function ocrLines(result) {
   return (Array.isArray(result?.lines) ? result.lines : []).filter(line => line && typeof line.text === 'string')
     .slice().sort((a,b) => a.y-b.y || a.x-b.x).map((line, index) => ({
     ...line, id: index,
-    text: normalizeOcrText(Array.isArray(line.words) && line.words.length ? joinOcrLine(line.words) : line.text)
+    text: normalizeOcrText(result.engine === 'pp-ocrv5-mobile' ? line.text : Array.isArray(line.words) && line.words.length ? joinOcrLine(line.words) : line.text)
   })).filter(line => line.text && [line.x,line.y,line.width,line.height].every(Number.isFinite) && line.width > 0 && line.height > 0);
 }
 function joinOcrLine(lines) {
@@ -114,7 +102,7 @@ export function formatOcrText(result) {
     ? result.lines.filter(line => typeof line?.text === 'string' && line.text.trim())
       .map((line, index) => ({
         ...line,
-        text: normalizeOcrText(Array.isArray(line.words) && line.words.length ? joinOcrLine(line.words) : line.text),
+        text: normalizeOcrText(result.engine === 'pp-ocrv5-mobile' ? line.text : Array.isArray(line.words) && line.words.length ? joinOcrLine(line.words) : line.text),
         id: Number.isInteger(line.id) ? line.id : index,
         x: Number(line.x), y: Number(line.y), width: Number(line.width), height: Number(line.height)
       }))
@@ -144,6 +132,7 @@ export function formatOcrText(result) {
   }).join('').trim() || fallback;
 }
 export function errorKey(error) {
+  if(String(error?.message||error).startsWith('ocr:'))return ({'not-installed':'ocrModelsMissing','cancelled':'cancelled','busy':'busy','image-too-large':'ocrTooLarge','desktop-only':'desktopOnly'})[String(error?.message||error).slice(4)]||'ocrFailed';
   if(String(error?.message||error).startsWith('translation:'))return ({'not-installed':'localMissing','cancelled':'cancelled','timeout':'localTimeout','busy':'busy','desktop-only':'desktopOnly'})[String(error?.message||error).slice(12)]||'localFailure';
   const code=String(error?.code || error?.message || error).replace(/^screenshot:/,'');
   if (code==='text-overflow') return 'textOverflow';

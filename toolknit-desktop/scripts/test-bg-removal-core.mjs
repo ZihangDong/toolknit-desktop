@@ -108,8 +108,10 @@ const modelCatalog = native.match(/pub const MATTING_MODELS:[\s\S]*?=\s*\[([\s\S
 assert.match(modelCatalog, /id:\s*"modnet"/, 'the supported matting catalog must expose MODNet');
 assert.doesNotMatch(modelCatalog, /id:\s*"(?:isnet|u2net)"/, 'models without complete official sources must not be exposed');
 assert.doesNotMatch(native, /matting:no-official-source|matting:download-busy/, 'download coordination must not leak internal busy/source errors');
-assert.match(native, /preload_onnx_libraries\(&dll\)/, 'ONNX Runtime must be preloaded before the worker starts');
-assert.match(native, /static LIBRARIES: OnceLock<Mutex<Vec<libloading::Library>>>/, 'native DLL handles must remain alive for the process');
+const onnxLoader = await readFile(new URL('../src-tauri/src/platform/onnx_runtime.rs', import.meta.url), 'utf8');
+assert.match(native, /crate::platform::onnx_runtime::prepare\(\)/, 'matting must share the process ONNX loader');
+assert.match(onnxLoader, /preload_onnx_libraries\(&dll\)/, 'ONNX Runtime must be preloaded before the worker starts');
+assert.match(onnxLoader, /static LIBRARIES: OnceLock<Mutex<Vec<libloading::Library>>>/, 'native DLL handles must remain alive for the process');
 for (const resource of [
   'resources/onnxruntime/onnxruntime.dll',
   'resources/onnxruntime/DirectML.dll',

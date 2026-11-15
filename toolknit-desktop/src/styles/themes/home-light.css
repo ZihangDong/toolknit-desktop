@@ -69,7 +69,7 @@ html[data-theme="light"] .app.is-v2-home :is(.home-search-field, .tool-result-em
   color: var(--tk-page-muted);
 }
 
-html[data-theme="light"] .app.is-v2-home .home-search-field :is(input, svg) {
+html[data-theme="light"] .app.is-v2-home .home-search-field :is(input, svg, button) {
   color: var(--tk-page-ink);
 }
 
@@ -90,6 +90,11 @@ html[data-theme="light"] .app.is-v2-home .home-search-field:focus-within {
 html[data-theme="light"] .app.is-v2-home .home-search-field input:focus-visible {
   outline: none;
   box-shadow: none;
+}
+
+html[data-theme="light"] .app.is-v2-home .home-search-field .home-search-clear:hover {
+  color: #111111;
+  background: rgba(0, 0, 0, 0.06);
 }
 
 html[data-theme="light"] .app.is-v2-home .home-search-field::after { display: none; }
@@ -130,6 +135,24 @@ html[data-theme="light"] .app.is-v2-home :is(.tool-result-card, .favorite-item) 
   -webkit-backdrop-filter: none;
   transform: none;
   transition: background-color 150ms ease;
+}
+
+html[data-theme="light"] .app.is-v2-home .tool-result-release-heading {
+  border-bottom-color: #dddddd;
+  color: var(--tk-page-ink);
+}
+
+html[data-theme="light"] .app.is-v2-home .tool-result-release-heading h3 {
+  border-color: #d7d7d7;
+  background: #ffffff;
+}
+
+html[data-theme="light"] .app.is-v2-home :is(.tool-result-release-subtitle, .tool-result-release-count) {
+  color: var(--tk-page-muted);
+}
+
+html[data-theme="light"] .app.is-v2-home .tool-result-release-rule {
+  background: linear-gradient(90deg, #d6d6d6, transparent);
 }
 
 html[data-theme="light"] .app.is-v2-home :is(.tool-result-card, .favorite-item, .github-strip)::before,

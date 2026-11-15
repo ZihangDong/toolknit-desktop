@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { loadCore } from './core-loader.mjs';
 import { withPdf, selectPages, createCanvas } from './pdf-headless.mjs';
 import { ToolKnitError } from './errors.mjs';
@@ -14,12 +14,13 @@ export async function convertPdfWord(args, options) {
   const { inspectSceneInk } = await loadCore('features/pdf-to-word/core/ink-coverage.js');
   const { createWordBytes } = await loadCore('features/pdf-to-word/adapters/docx.js');
   const { LIMITS } = await loadCore('features/pdf-to-word/core/input.js');
+  const { sceneLayoutBytes } = await loadCore('features/pdf-to-word/core/scene-budget.js');
   const { planContinuousSection } = await loadCore('features/pdf-to-word/adapters/docx-continuous.js');
   return withPdf(args.input.bytes, async (pdf, ops) => {
     const pages = selectPages(args.pages, pdf.numPages, LIMITS.selectedPages);
     const scenes = [], assets = [], canvas = createCanvas(1, 1), measurement = createCanvas(1, 1);
     const operation = { optionalContentConfig: await pdf.getOptionalContentConfig({ intent: 'display' }) };
-    let operations = 0, characters = 0, items = 0, assetBytes = 0;
+    let operations = 0, characters = 0, items = 0, assetBytes = 0, layoutBytes = 0;
     try {
       for (let index = 0; index < pages.length; index++) {
         options.reportProgress?.(5 + 75 * index / pages.length, `Analyzing page ${index + 1} of ${pages.length}.`);
@@ -30,14 +31,15 @@ export async function convertPdfWord(args, options) {
           if (operations > LIMITS.operations) throw new ToolKnitError('INPUT_TOO_LARGE', 'PDF operator complexity exceeds the conversion limit.');
           const plan = await adapter.renderPage(page, canvas, operation);
           snapshot.fonts = adapter.snapshotFonts(page, snapshot.fontIds);
-          const scene = prepareWordScene(snapshot, { measurementContext: measurement.getContext('2d') });
+          const scene = prepareWordScene(snapshot, { measurementContext: measurement.getContext('2d'), preserveGeometry: args.layout !== 'a4' });
           scene.inkCoverage = inspectSceneInk(scene, canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height, plan.scale);
           if (!scene.inkCoverage.accepted) throw new ToolKnitError('PROCESSING_FAILED', 'A page contains unsupported visible content; conversion was stopped to avoid dropping it.');
           const pageAssets = await adapter.collectPageAssets(scene, canvas, createCanvas);
           characters += scene.characters; items += scene.sources.length;
           assetBytes += pageAssets.reduce((sum, asset) => sum + asset.bytes.length, 0);
+          layoutBytes += sceneLayoutBytes(scene);
           if (characters > LIMITS.characters || items > LIMITS.items || assetBytes > LIMITS.assetBytes
-            || items * 1000 + characters * 4 + assetBytes * 4 > LIMITS.estimatedWorkingBytes) throw new ToolKnitError('INPUT_TOO_LARGE', 'PDF exceeds the text/image working budget.');
+            || items * 1000 + characters * 4 + assetBytes * 4 + layoutBytes > LIMITS.estimatedWorkingBytes) throw new ToolKnitError('INPUT_TOO_LARGE', 'PDF exceeds the text/image working budget.');
           scenes.push(scene); assets.push(...pageAssets);
         } finally { canvas.width = canvas.height = 0; page.cleanup(); }
       }

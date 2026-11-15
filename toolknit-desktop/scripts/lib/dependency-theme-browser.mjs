@@ -108,12 +108,17 @@ export async function checkDependencyTheme(browser, url, output) {
             list.append(row);
           }
         }, { lang: language, officeDetail });
-        for (const source of ['official', 'china', 'auto']) {
-          await click(`#${sources} [data-source="${source}"]`);
-          assert.equal(await page.locator(`#${sources} .active`).getAttribute('data-source'), source);
-          await page.waitForFunction(id => getComputedStyle(document.querySelector(`#${id} .active`)).backgroundColor === 'rgb(17, 17, 17)', sources);
-          assert.equal(await style(`#${sources} .active`, 'backgroundColor'), 'rgb(17, 17, 17)');
-          assert.equal(await style(`#${sources} .active`, 'color'), 'rgb(255, 255, 255)');
+        assert.equal(await page.locator(`#${sources} [data-source]`).count(), 0);
+        assert.match(await page.locator(`#${sources}`).textContent(), language === 'zh' ? /七彩云/ : /7Caiyun/);
+        if (id === 'ffmpegRuntime') {
+          const source = page.locator('#ffmpegRuntimeOverlay [data-home-link="ffmpegSource"]');
+          assert.equal((await source.textContent()).trim(), locale.settings.ffmpegSource);
+          assert.equal(await source.locator('svg.lucide-github').count(), 1, 'GitHub icon is rendered by the shared icon runtime');
+          const popupPromise = page.waitForEvent('popup');
+          await source.click();
+          const popup = await popupPromise;
+          await popup.waitForURL('https://github.com/ZihangDong/toolknit-ffmpeg-sources');
+          await popup.close();
         }
         assert.equal(await style(`#${id}Overlay .settings-btn:disabled`, 'backgroundColor'), 'rgb(213, 214, 217)');
         const action=`#${id}Overlay .transcription-model-actions .settings-btn:not(:disabled)`;
@@ -189,6 +194,25 @@ export async function checkDependencyTheme(browser, url, output) {
       for (const [id, trigger] of managers) {
         await click(`#${trigger}`);
         assert.notEqual(await style(`#${id}Overlay .transcription-model-panel`, 'backgroundColor'), 'rgb(255, 255, 255)');
+        if (id === 'ffmpegRuntime') {
+          const source = page.locator('#ffmpegRuntimeOverlay [data-home-link="ffmpegSource"]');
+          for (const [width, height] of [[1400, 887], [390, 740]]) {
+            await page.setViewportSize({ width, height });
+            await source.scrollIntoViewIfNeeded();
+            const fit = await source.evaluate(node => {
+              const r = node.getBoundingClientRect();
+              const panel = node.closest('.transcription-model-panel').getBoundingClientRect();
+              const icon = node.querySelector('svg').getBoundingClientRect();
+              return { fits: r.left >= panel.left && r.right <= panel.right && r.top >= panel.top && r.bottom <= panel.bottom,
+                iconWidth: icon.width, iconHeight: icon.height, color: getComputedStyle(node).color };
+            });
+            assert.equal(fit.fits, true, 'dark source button is reachable and fits the dialog');
+            assert.equal(fit.iconWidth, 16); assert.equal(fit.iconHeight, 16);
+            assert.notEqual(fit.color, 'rgb(0, 0, 0)');
+            await capture(`ffmpeg-source-dark-${width}`);
+          }
+          await page.setViewportSize({ width: 1400, height: 887 });
+        }
         await capture(`${id}-dark`);
         await click(`#${id}Close`);
       }

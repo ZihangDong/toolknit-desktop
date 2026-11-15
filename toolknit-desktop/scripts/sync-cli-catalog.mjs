@@ -28,7 +28,7 @@ function command(name) {
 const clean = text => text.replaceAll('|', '\\|').replaceAll('\n', ' ');
 const counts = Object.fromEntries(['supported', 'partial', 'desktop-only'].map(scope => [scope, DESKTOP_COVERAGE.filter(item => item.scope === scope).length]));
 const lines = [
-  '# V3.2 CLI / MCP 能力清单', '',
+  `# V${pkg.version.split('.').slice(0, 2).join('.')} CLI / MCP 能力清单`, '',
   `版本 ${pkg.version}，${TOOL_DEFINITIONS.length} 项 MCP 能力；CLI 可通过对应命令或通用 run 入口调用同一能力。本文由 scripts/sync-cli-catalog.mjs 从注册表生成。CLI 与桌面端独立安装和发布。`, '',
   '需要 Node.js >=22.13.0。本地工具不要求 AI Key；标有 AI 的操作仅在主动调用或明确开启 AI 模式时请求外部服务。', '',
   '## 能力目录', '',
@@ -42,7 +42,8 @@ const lines = [
   '## 运行边界', '',
   '- Windows 硬件能力取决于系统查询权限；其他平台不宣称具有完整硬件数据。',
   '- 音视频需要 FFmpeg；PPT/Excel 渲染需要 LibreOffice；离线转写需要已安装的 Whisper 模型。缺少依赖返回结构化错误，不自动下载大模型。',
-  '- PDF 转 Word 默认离线，AI 模式只辅助结构；复杂图形/公式可保留图像，扫描件 OCR 不在其转换范围。引擎遵循独立授权，联系 info@toolknit.com。',
+  '- PDF 转 Word 默认离线，AI 模式只辅助结构；复杂图形/公式可保留图像，CLI/MCP 暂不包含扫描 OCR；桌面端可按需安装本地 OCR 模型处理扫描/混合页。引擎遵循独立授权，联系 info@toolknit.com。',
+  '- V3.3 桌面 PDF 转 Word 仅提供本地原排版转换，编辑通过结构化 Word 文档模式交接；CLI/MCP 的既有 A4/AI 参数保持兼容，不依赖桌面界面或会话。',
   '- 只读文件扫描不删除内容。剪贴板监控、密码生成、系统清理和交互型悬浮窗口没有 headless 入口。',
   '- 直接调用 AI 文本/PDF 图像识别或开启 PDF-to-Word ai_mode 会发送相关文字/区域图像；桌面 Key 不与 CLI/MCP 共享。',
   '- 文件输出显式指定，默认拒绝覆盖。工具若返回 partial/no-reduction 等状态，应检查 outputs、warnings 和逐项结果。', ''

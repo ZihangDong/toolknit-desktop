@@ -92,4 +92,21 @@ const visit = node => {
 };
 visit(tree);
 assert.equal(runs.join(''), 'firstlast', 'actual DOCX text order follows the complete sentence, not glyph top edges');
+{
+  const cover = [text('reference', 240, 60), text('subtitle', 230, 170), text('first-field', 30, 290), text('second-field', 30, 360),
+    { ...text('title', 100, 130), size: 24, rect: { x: 100, y: 110, width: 210, height: 24 } }];
+  const makeScene = content => ({ number: 1, width: 400, height: 440, items: content, risks: [], rasterPage: false,
+    characters: content.reduce((n, item) => n + item.text.length, 0),
+    sources: content.map(item => ({ id: item.id, text: item.text, rect: item.rect, order: item.order, disposition: 'editable' })) });
+  const original = structuredClone(cover), doc = inferDocument([makeScene(cover)], { preserveGeometry: true });
+  assert(!doc.pages[0].blocks.some(block => block.type === 'columns'), 'vertically separated cover fields are not independent columns');
+  const result = await createWordBytes(doc, [], { preserveGeometry: true });
+  const xml = xml2js(await (await JSZip.loadAsync(result.bytes)).file('word/document.xml').async('string'), { captureSpacesBetweenElements: true });
+  assert.equal(allText(xml), 'referencetitlesubtitlefirst-fieldsecond-field', 'the actual Word stream reads the complete cover from top to bottom');
+  assert.deepEqual(cover, original, 'column evidence does not alter source coordinates or content');
+  const columns = [text('L1', 30, 60), text('L2', 30, 85), text('L3', 30, 110),
+    text('R1', 240, 65), text('R2', 240, 90), text('R3', 240, 115)];
+  const columnDoc = inferDocument([makeScene(columns)], { preserveGeometry: true });
+  assert(columnDoc.pages[0].blocks.some(block => block.type === 'columns'), 'staggered genuine column flows retain independent reading order');
+}
 console.log('PDF reading order checks passed: baseline bands, source immutability, atomic blocks and actual DOCX text stream.');

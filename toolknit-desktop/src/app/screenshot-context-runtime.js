@@ -5,6 +5,14 @@ export function createScreenshotContextRuntime({ isTauri, getAiPlatformConfig, g
   if (!isTauri) return;
   const runtime=createScreenshotRuntime({isTauri}), scope=createLifecycleScope();
   let disposed=false, timer;
+  // Warm a hidden, pixel-free shell after the main startup surface settles.
+  const prepare=()=>{
+    if(disposed)return;
+    if(document.documentElement.hasAttribute('data-tk-startup')){scope.timeout(prepare,500);return;}
+    void runtime.call('preferences').then(value=>{if(!disposed&&value.registered)return runtime.call('prepare');}).catch(()=>{});
+  };
+  scope.timeout(prepare,2500);
+  runtime.listen('screenshot-preferences-changed',prepare).then(unlisten=>scope.use(unlisten));
   const sync=()=>{
     clearTimeout(timer);
     timer=setTimeout(()=>{

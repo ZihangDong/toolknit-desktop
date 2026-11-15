@@ -7,8 +7,8 @@ export async function createController({runtime,tr,q,notify,save,getCurrentWindo
   const close=()=>void native.close().catch(()=>notify(tr('failed')));
   const navigate=target=>void runtime.call('navigate',{target}).catch(()=>notify(tr('failed')));
   image.src=data.shot.image;image.alt=tr('viewScreenshot');
-  function render(){image.style.width=`${data.shot.width*zoom}px`;image.style.height=`${data.shot.height*zoom}px`;image.style.transform=`translate(${x}px,${y}px)`;q('ZoomValue').textContent=`${Math.round(zoom*100)}%`;}
-  function fit(){zoom=Math.min((stage.clientWidth-40)/data.shot.width,(stage.clientHeight-40)/data.shot.height,1);x=0;y=0;render();}
+  function render(){image.style.width=`${data.shot.width*zoom}px`;image.style.height=`${data.shot.height*zoom}px`;image.style.transform=`translate(${x}px,${y}px)`;q('ZoomValue').textContent=`${zoom<.01?(zoom*100).toFixed(1):Math.round(zoom*100)}%`;}
+  function fit(){zoom=clamp(Math.min(Math.max(1,stage.clientWidth-40)/data.shot.width,Math.max(1,stage.clientHeight-40)/data.shot.height,1),.001,1);x=0;y=0;render();}
   async function action(value){
     if(value==='close')return close();if(value==='fit')return fit();if(value==='actual'){zoom=1;x=0;y=0;return render();}
     if(value==='zoom-in'||value==='zoom-out'){zoom=clamp(zoom*(value==='zoom-in'?1.25:.8),.02,8);return render();}

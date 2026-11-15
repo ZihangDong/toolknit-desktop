@@ -1,12 +1,9 @@
+import { writeUniqueBinaryFile } from '../../platform/binary-output.js';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { createPdfRotateExportJob } from './export-runtime.js';
 import { createModalSession } from '../../app/modal-runtime.js';
 import { tauriCorePromise } from '../../platform/tauri-runtime.js';
 import { t } from '../../i18n.js';
-
-function outputParent(path) {
-  return String(path || '').replace(/[/\\][^/\\]+$/, '').replace(/\//g, '\\');
-}
 
 export function createPdfRotateExporter({
   isTauri = false,
@@ -68,10 +65,10 @@ export function createPdfRotateExporter({
       const { invoke } = await tauriCorePromise;
       const directory = await getOutputDir('PDF_Rotate');
       assertCurrent(owner, id);
-      return invoke('write_unique_file_bytes', {
+      return writeUniqueBinaryFile(invoke, {
         directory,
         fileName,
-        bytes: Array.from(bytes)
+        bytes
       });
     }
 

@@ -436,6 +436,7 @@ body.v2-home-active .global-window-controls {
   }
 
   .app.is-v2-home .tool-result-grid,
+  .app.is-v2-home .tool-result-release-grid,
   .app.is-v2-home .favorites-content {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }

@@ -7,6 +7,7 @@
       import { compareVersions, createUpdateService, UPDATE_DOWNLOAD_PAGE } from './update-service.js';
       import { readResponseTextLimited } from './core/bounded-response.js';
       import { createLazyToolRegistry } from './app/lazy-tool-registry.js';
+      import { openWordDocumentSession } from './app/word-document-handoff.js';
       import { initUiSoundController } from './app/ui-sound-controller.js';
       import { createAiKeyStore } from './app/ai-key-store.js';
       import { createAiSettingsRuntime } from './app/ai-settings-runtime.js';
@@ -14,12 +15,15 @@
       import { createAutostartRuntime } from './app/autostart-runtime.js';
       import { createRecordingModeRuntime } from './app/recording-mode-runtime.js';
       import { createLocalTranslationSettings } from './app/local-translation-runtime.js';
+      import { createLocalOcrSettings } from './app/local-ocr-runtime.js';
       import { createHomeCustomToolsRuntime } from './app/home-custom-tools-runtime.js';
       import { createScreenshotContextRuntime } from './app/screenshot-context-runtime.js';
       import { createAuxiliaryToolNavigation } from './app/auxiliary-tool-navigation.js';
+      import { createFileSearchContextRuntime } from './app/file-search-context-runtime.js';
       import { createHomeExplorerRuntime } from './app/home-explorer-runtime.js';
       import { createFontSettingsRuntime } from './app/font-settings-runtime.js';
       import { createStartupRuntime } from './app/startup-runtime.js';
+      import { createReleaseAnnouncementRuntime } from './app/release-announcement-runtime.js';
       import { createWindowRuntime } from './app/window-runtime.js';
       import { createUpdateRuntime, scheduleAutomaticUpdateCheck } from './app/update-runtime.js';
       import { createModalRuntime } from './app/modal-runtime.js';
@@ -40,15 +44,14 @@
         CUSTOM_BACKGROUND_STORAGE_KEY
       } from './app/background-runtime.js';
       import { LAZY_TOOL_SPECS } from './features/lazy-tools.js';
-      import { joinPath, normalizeDesktopBytes, uniqueOutputDirectory, writeUniqueFile } from './features/ppt-workflows/shared.js';
+      import { normalizeDesktopBytes } from './features/ppt-workflows/shared.js';
       import { currentMonitor, getCurrentWindow, LogicalSize, tauriCorePromise, tauriEventPromise, loadTauriApp } from './platform/tauri-runtime.js';
       import { readTextDocument } from './shared/text-document-reader.js';
       import { formatFileSize } from './shared/file-size.js';
-      import { escapeHtml, escapeAttr } from './shared/html.js';
-      import { HELP_CONTENT, getHelpContent } from './help-data.js';
+      import { escapeHtml } from './shared/html.js';
+      import { getHelpContent } from './help-data.js';
       import { createDonationController } from './app/donation-controller.js';
       import { getLegalContent } from './legal-data.js';
-      import { normalizeAiProviderConfig } from './ai-provider-core.js';
       import { createAiRequestRuntime } from './app/ai-request-runtime.js';
       import { extractJson } from './app/json-extractor.js';
       import { createToastManager } from './app/toast-manager.js';
@@ -58,25 +61,6 @@
       import { createHomeController } from './app/home-controller.js';
       import { createScreenPickerSettingsRuntime } from './app/screen-picker-settings-runtime.js';
       import { createCustomBackgroundSettingsRuntime } from './app/custom-background-settings-runtime.js';
-      import {
-        PPT_TEXT_EXTRACT_LIMITS,
-        analyzePptxText,
-        buildPptTextAiMessages,
-        createPptTextMarkdown,
-        createPptTextJson,
-        createPptTextTxt,
-        normalizePptTextAiMode,
-        normalizePptTextFormat,
-        normalizePptTextPageSelection,
-        planPptTextExport,
-        sanitizePptTextBaseName
-      } from './ppt-text-extract-core.js';
-      import {
-        PPT_COMPRESS_LIMITS,
-        compressPptxBytes,
-        createPptCompressManifest,
-        sanitizePptCompressBaseName
-      } from './ppt-compress-core.js';
       import { TaskRunner } from '../shared/task-runtime.mjs';
       // Keep custom tool menus, but preserve native editing menus in text fields.
       document.addEventListener('contextmenu', (e) => {
@@ -562,13 +546,6 @@
         }
       }
 
-      // Intercept tool entry: check ffmpeg before opening the tool overlay
-      async function openToolWithFfmpegCheck(openFn) {
-        const ready = await ensureFfmpegAvailable();
-        if (ready) { openFn(); return; }
-        showDependencyGate({ openFn, needsFfmpeg: true, needsModel: false });
-      }
-
       // Storage path display + open folder
       const storagePathDisplay = document.getElementById('storagePathDisplay');
       const openStorageFolder = document.getElementById('openStorageFolder');
@@ -686,7 +663,7 @@
       const versionUpdateStatus = document.getElementById('versionUpdateStatus');
       const checkVersionUpdateBtn = document.getElementById('checkVersionUpdateBtn');
       const openReleasePageBtn = document.getElementById('openReleasePageBtn');
-      const APP_VERSION_FALLBACK = '3.2.0';
+      const APP_VERSION_FALLBACK = '3.3.0';
       let updateDialogController = null;
       const updateRuntime = createUpdateRuntime({
         isTauri,
@@ -1540,7 +1517,7 @@
         onOpenHelp: openHelpOverlay
       });
       const openExternalUrl = externalLinksRuntime.openExternalUrl;
-      const donationController = createDonationController({ openExternalUrl });
+      const donationController = createDonationController({ openExternalUrl, isTauri, notify: showToast });
       const currentNavigationPage = () => Array.from(document.querySelectorAll('[id$="Overlay"].visible, [id$="Workspace"].visible, [id$="Dialog"].visible'))
         .filter(page => !page.inert).sort((a, b) => (Number.parseInt(getComputedStyle(b).zIndex, 10) || 0) - (Number.parseInt(getComputedStyle(a).zIndex, 10) || 0))[0];
       createSettingsNavigationRuntime({ root: document, settingsOverlay, getActivePage: currentNavigationPage, onClose: closeSettingsOverlay });
@@ -1578,6 +1555,7 @@
       createAutostartRuntime({ isTauri, tauriCorePromise, tauriEventPromise, translate: t, onLanguageChange: onLangChange, notify: message => window.showToast?.(message) });
       createRecordingModeRuntime({ isTauri, translate: t, onLanguageChange: onLangChange, onOpenHelp: openHelpOverlay, notify: message => window.showToast?.(message) });
       createLocalTranslationSettings({ isTauri, translate: t, onLanguageChange: onLangChange, notify: message => window.showToast?.(message) });
+      createLocalOcrSettings({ isTauri, translate: t, onLanguageChange: onLangChange, notify: message => window.showToast?.(message) });
       createHomeCustomToolsRuntime({ isTauri, tauriCorePromise, translate: t, notify: message => window.showToast?.(message) });
       const openAuxiliaryTool = createAuxiliaryToolNavigation({ getActivePage: currentNavigationPage, openTool: toolId => lazyFeatureRegistry?.open(toolId), closePages: {
         donationOverlay: () => donationController.close(), settingsOverlay: closeSettingsOverlay,
@@ -1590,6 +1568,7 @@
         if (target === 'support') return donationController.open({ background: currentNavigationPage() });
         if (target === 'settings') return openNavigationSettings();
       }, notify: message => window.showToast?.(message) });
+      createFileSearchContextRuntime({ isTauri, getLang, onLangChange, translate: t, onNavigate: () => openAuxiliaryTool('file-search'), notify: message => window.showToast?.(message) });
 
 
       const callDeepSeek = createAiRequestRuntime({
@@ -1634,10 +1613,6 @@
             }
           }))
           .catch(error => console.error('Cannot listen for matting model progress:', error));
-      }
-
-      function settingsOverlayVisible() {
-        return Boolean(settingsOverlay?.classList.contains('visible'));
       }
 
       function queueMattingManagerRender() {
@@ -1972,6 +1947,7 @@
           checkLibreOfficeAvailable: checkLibreOfficeRuntimeAvailable,
           requestLibreOfficeRuntime: openFn => showDependencyGate({ openFn, needsFfmpeg: false, needsModel: false, needsLibreOffice: true }),
           openLazyTool: toolId => lazyFeatureRegistry.open(toolId),
+          openDocumentEditor: session => openWordDocumentSession(session, toolId => lazyFeatureRegistry.open(toolId)),
           continueToDraft: async (outline, sourceLabel) => {
             const instance = await lazyFeatureRegistry.open('ppt-draft');
             const importOutline = instance?.raw?.importOutline || instance?.importOutline;
@@ -2015,13 +1991,23 @@
         refreshIcons: () => createIcons({ icons })
       });
 
-      scheduleAutomaticUpdateCheck({
-        enabled: isTauri && !isScreenPickerWindow,
-        runtime: updateRuntime,
-        getDialogController: () => updateDialogController
-      });
-
-      createStartupRuntime({
+      const startupRuntime = createStartupRuntime({
         fontsReady: fontSettingsRuntime.ready,
         backgroundReady: isScreenPickerWindow ? Promise.resolve() : backgroundRuntime.whenHomeReady()
+      });
+      const releaseAnnouncement = createReleaseAnnouncementRuntime({
+        root: document.getElementById('releaseAnnouncement'),
+        background: document.querySelector('.app'),
+        appVersion: APP_VERSION_FALLBACK,
+        enabled: !isScreenPickerWindow && (isTauri || new URLSearchParams(location.search).get('preview') === 'release-notice')
+      });
+      void startupRuntime.ready.then(async () => {
+        releaseAnnouncement.openIfNeeded();
+        await releaseAnnouncement.acknowledged;
+        if (releaseAnnouncement.disposed) return;
+        scheduleAutomaticUpdateCheck({
+          enabled: isTauri && !isScreenPickerWindow,
+          runtime: updateRuntime,
+          getDialogController: () => updateDialogController
+        });
       });

@@ -51,12 +51,14 @@ try {
   await page.waitForSelector('#pdfWordOverlay.visible');
   await page.waitForFunction(() => !document.querySelector('[data-tk-page-transition-veil]') || getComputedStyle(document.querySelector('[data-tk-page-transition-veil]')).visibility === 'hidden');
   await page.locator('#pdfWordFileInput').setInputFiles({ name: 'benchmark.pdf', mimeType: 'application/pdf', buffer: bytes });
-  await page.waitForFunction(() => !document.querySelector('#pdfWordExport').disabled);
-  await page.locator('#pdfWordLocal').click();
-  if (pageRange) await page.locator('#pdfWordRange').fill(pageRange);
-  if (process.argv.includes('--continuous')) await page.locator('#pdfWordFlow').click();
   const started = performance.now();
-  const download = page.waitForEvent('download', { timeout: 120000 }); await page.locator('#pdfWordExport').click();
+  if (process.argv.includes('--continuous')) throw Error('Desktop A4 reflow was removed. Use the explicit CLI layout option for headless compatibility tests.');
+  const download = page.waitForEvent('download', { timeout: 180000 });
+  const pages = await Promise.race([page.waitForSelector('#pdfWordPagesOverlay.visible').then(() => true),page.waitForSelector('#pdfWordSuccessOverlay.visible').then(() => false),page.waitForFunction(() => document.querySelector('#pdfWordStatus').classList.contains('is-error')).then(async () => { throw Error(await page.locator('#pdfWordStatus').innerText()); })]);
+  if (pages) {
+    if (pageRange) { await page.locator('#pdfWordSelectPages').click(); await page.locator('#pdfWordSelectRange').fill(pageRange); await page.locator('#pdfWordSelectForm').evaluate(form=>form.requestSubmit()); await page.locator('#pdfWordSelectConfirm').click(); }
+    else await page.locator('#pdfWordAllPages').click();
+  }
   const exported = await Promise.race([download,
     page.waitForFunction(() => document.querySelector('#pdfWordStatus').classList.contains('is-error'), null, { timeout: 120000 })
       .then(async () => { throw Error(await page.locator('#pdfWordStatus').innerText()); })]);

@@ -17,7 +17,7 @@ export function createLocalTranslationSettings({root=document,isTauri=false,tran
     const busy=pending||state.installing;
     q('Summary').textContent=tr(state.ready?'ready':state.installing?'installing':'missing');
     q('Status').textContent=error?tr(error):tr(state.installing?({download:'downloading',verify:'verifying',testing:'testing'}[state.progress?.phase]||'installing'):state.ready?'ready':'missing');
-    const sourceKey={official:'sourceOfficial',accelerated:'sourceAccelerated',mozilla:'sourceMozilla'}[state.progress?.source];
+    const sourceKey={official:'sourceOfficial',accelerated:'sourceAccelerated',mozilla:'sourceMozilla','7caiyun':'source7caiyun'}[state.progress?.source];
     if(!error&&state.installing&&state.progress?.phase==='download'&&sourceKey)q('Status').textContent=tr('downloadingFrom',{source:tr(sourceKey)});
     q('SourceHint').textContent=tr('sourceHint');
     for(const button of q('SourceOptions').querySelectorAll('[data-source]')){

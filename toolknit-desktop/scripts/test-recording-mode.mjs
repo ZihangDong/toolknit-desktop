@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createRecordingModeState, isRecordingModeEnabled, readRecordingSnapshot, RECORDING_SNAPSHOT_KEY } from '../src/app/recording-mode-state.js';
+import { createRecordingModeState, isRecordingModeEnabled, readRecordingSnapshot, recordingFailureCode, RECORDING_SNAPSHOT_KEY } from '../src/app/recording-mode-state.js';
 import { createRecordingModeAdapter } from '../src/platform/recording-mode-runtime.js';
 
 const off = () => ({ autostart: false, clipboard: false, history: false });
@@ -172,3 +172,36 @@ function fixture(initial = off(), storage = memory()) {
   await assert.rejects(adapter.read(), /invalid-state/);
 }
 console.log('Recording mode passed: native preferences, snapshots, restart, rollback, concurrency, disposal and listener cleanup.');
+
+{
+  const f = fixture();
+  f.adapter.read = async () => { throw new Error('clipboard:key-missing'); };
+  await assert.rejects(f.model.setEnabled(true), error => error.message === 'recording:failed'
+    && error.stage === 'read' && error.code === 'clipboard:key-missing');
+  assert.equal(f.calls.length, 0, 'unreadable state must not mutate settings or claim failed rollback');
+}
+{
+  const f = fixture({ ...off(), clipboard: true });
+  const set = f.adapter.set;
+  f.adapter.set = async (key, value) => {
+    if (key === 'history' && value) throw new Error('screenshot:window-failed');
+    await set(key, value);
+  };
+  await assert.rejects(f.model.setEnabled(true), error => error.stage === 'history'
+    && error.code === 'screenshot:window-failed');
+  assert.deepEqual(f.native, { ...off(), clipboard: true }, 'independent clipboard setting survives window failure');
+}
+{
+  const f = fixture();
+  const read = f.adapter.read;
+  let reject;
+  f.adapter.read = () => new Promise((_, fail) => { reject = fail; });
+  const stale = f.model.refresh();
+  f.adapter.read = read;
+  await f.model.setEnabled(true);
+  reject(new Error('clipboard:busy')); await stale;
+  assert.equal(f.published.at(-1).enabled, true, 'stale read error cannot override later successful action');
+}
+assert.equal(recordingFailureCode(new Error('private-path/example')), 'recording:operation-failed');
+assert.equal(recordingFailureCode('screenshot:shortcut-conflict'), 'screenshot:shortcut-conflict');
+console.log('Recording mode diagnostics: safe codes, failed stage, no-write failure, protected independent settings and stale error passed.');

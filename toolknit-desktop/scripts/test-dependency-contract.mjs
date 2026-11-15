@@ -44,10 +44,12 @@ assert.match(styles, /\.dependency-gate-overlay\s*\{[\s\S]*?z-index:\s*1400/, 'd
 assert.match(main, /showDependencyGate\(\{ openFn, needsFfmpeg: true, needsModel: false \}\)/, 'FFmpeg tools must open the dependency gate');
 assert.match(main, /download_transcription_model'[\s\S]*?modelId:\s*'small'/, 'transcription dependency install must default to Whisper Small');
 assert.match(main, /invoke\('cancel_dependency_downloads'\)/, 'dependency downloads must be cancellable');
-assert.match(main, /function resolvedModelDownloadSource\(\)[\s\S]*?'auto-official' : 'auto-china'/, 'automatic model downloads must retain fallback');
+assert.match(main, /function resolvedModelDownloadSource\(\)[\s\S]*?'auto-official' : 'auto-china'/, 'legacy automatic source preferences remain accepted');
 
-assert.match(rust, /cdn\.npmmirror\.com\/binaries\/ffmpeg-static\/b6\.1\.1\/ffmpeg-win32-x64\.gz/, 'China source must use the npm mirror CDN');
-assert.match(rust, /const FFMPEG_ARCHIVE_BYTES: u64 = 29_581_307;/, 'FFmpeg download must use the compact compressed binary');
+assert.match(rust, /https:\/\/toolknit-downloads-u1ll6equ\.cdn\.7caiyun\.com\/runtime\/ffmpeg\/ffmpeg-6\.1\.6-toolknit-r3-win32-x64\.gz/, 'FFmpeg downloads must use the versioned traceable build at the pinned 7Caiyun origin');
+assert.doesNotMatch(rust, /cdn\.npmmirror\.com\/binaries\/ffmpeg-static|gh-proxy\.com\/https:\/\/github\.com\/eugeneware/, 'old FFmpeg mirrors must not remain active');
+assert.match(rust, /const FFMPEG_ARCHIVE_BYTES: u64 = 14_642_939;/, 'FFmpeg download must use the verified traceable binary size');
+assert.match(rust, /c4f982b2f82dda95e079bd26129435640bc31d36d05308fada77cebc47a61fe3/, 'FFmpeg archive hash must match the published traceable build');
 assert.match(rust, /reqwest::header::RANGE/, 'FFmpeg downloads must support resume');
 assert.match(rust, /FFMPEG_ARCHIVE_SHA256/, 'FFmpeg downloads must be integrity checked');
 assert.match(rust, /TOOLKNIT_FFMPEG_PATH/, 'FFmpeg detection must support an explicit system path');

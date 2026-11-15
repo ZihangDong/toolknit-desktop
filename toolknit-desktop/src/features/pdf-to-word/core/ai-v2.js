@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { LIMITS, wordError } from './input.js';
 import { union, intersect, contains, overlaps, right } from './geometry.js';
 import { validateCoverage, leafBlocks } from './layout.js';
@@ -28,7 +28,10 @@ function safeMath(page, image, sources) {
     || image.mathGlyphs.length !== image.sourceIds.length) return false;
   sources ||= new Map(page.sources.map(source => [source.id, source]));
   const ids = new Set(image.sourceIds);
-  return new Set(image.mathGlyphs.map(glyph => glyph.id)).size === ids.size && image.mathGlyphs.every(glyph => !glyph.raster && validMathStyle(glyph)
+  // Native accent ownership needs local precise-ink evidence, which is not
+  // part of the public AI payload. Keep these locally inferred structures out.
+  return !image.mathGlyphs.some(glyph => glyph.text === '\u02c6')
+    && new Set(image.mathGlyphs.map(glyph => glyph.id)).size === ids.size && image.mathGlyphs.every(glyph => !glyph.raster && validMathStyle(glyph)
     && ids.has(glyph.id) && sources.get(glyph.id)?.disposition === 'visible-image' && sources.get(glyph.id)?.text === glyph.text);
 }
 

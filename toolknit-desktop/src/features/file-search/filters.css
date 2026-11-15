@@ -1,0 +1,31 @@
+.fs-results, .fs-card { position: relative; }
+.fs-filter-row > label { flex: 0 1 240px; max-width: 50%; }
+.fs-select-control .tool-custom-select-trigger {
+  min-height: 32px; padding: 4px 7px; gap: 7px; border: 0;
+  background: transparent; color: var(--fs-text, #151619); box-shadow: none;
+  font: inherit; font-size: 13px; font-weight: 500;
+}
+.fs-select-control .tool-custom-select-trigger:hover:not(:disabled) {
+  background: var(--fs-soft, #f4f5f7); box-shadow: none;
+}
+.fs-select-control .tool-custom-select-trigger svg { width: 14px; height: 14px; stroke-width: 1.8; }
+.fs-select-menu.tool-custom-select-menu {
+  z-index: 2; background: var(--fs-surface, #fff); color: var(--fs-text, #151619);
+  border-color: var(--fs-line, #e9eaee); box-shadow: 0 8px 24px #0002;
+  font: inherit; font-size: 13px; scrollbar-color: var(--fs-muted, #777c85) transparent;
+}
+.fs-select-menu.tool-custom-select-menu button {
+  min-height: 34px; color: var(--fs-text, #151619); font: inherit; font-size: 13px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
+}
+.fs-select-menu.tool-custom-select-menu button:is(:hover, :focus-visible, .is-active, .is-selected) {
+  color: var(--fs-text, #151619); background: var(--fs-soft, #f4f5f7);
+}
+.fs-select-menu .tool-custom-select-search { color: var(--fs-text, #151619); }
+.fs-select-menu .tool-custom-select-search::placeholder { color: var(--fs-muted, #696c74); opacity: 1; }
+.fs-select-menu .tool-custom-select-empty { color: var(--fs-muted, #696c74); }
+@media (forced-colors: active) {
+  .fs-select-menu.tool-custom-select-menu { background: Canvas; color: CanvasText; border-color: ButtonText; }
+  .fs-select-menu.tool-custom-select-menu button { color: CanvasText; }
+  .fs-select-menu.tool-custom-select-menu button:is(:hover, :focus-visible, .is-active, .is-selected) { background: Highlight; color: HighlightText; }
+}

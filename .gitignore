@@ -116,5 +116,8 @@ toolknit-desktop/.codex-*.png
 # 本地文章草稿，不属于桌面端发布源码
 docs/articles/devto/
 
+# Local outreach drafts and submission receipts; not desktop source
+/.github-outreach/
+
 # Superseded local development checklist
 /toolknit-desktop/progress.txt

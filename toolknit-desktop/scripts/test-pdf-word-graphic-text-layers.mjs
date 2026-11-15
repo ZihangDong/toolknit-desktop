@@ -35,6 +35,42 @@ assert.equal(full.count, 0); assert.equal(full.items.length, 1, 'a full budget c
 const overlapping = fixture(); overlapping.items.push({ ...structuredClone(background), id: 'nested', sourceIds: [] });
 assert.equal(recoverGraphicTextLayers(overlapping).count, 0, 'overlapping crops must not retain a second painted copy of restored text');
 
+// The small neighbouring formula is inside the conservative proximity halo,
+// but outside the independently removable prose draw's actual bounds.
+const proseFixture = (phrase = 'Complete ordinary prose') => {
+  const value = fixture();
+  Object.assign(value.text[0], { text: phrase, font: 'ABCDEF+NimbusRomNo9L-Regu', bold: false, italic: false });
+  Object.assign(value.text[1], { text: '2', font: 'CMMI7', size: 6, rect: { x: 50, y: 31, width: 4, height: 5 } });
+  value.sources = value.text.map(item => ({ ...item, disposition: 'visible-image' }));
+  return value;
+};
+for (const phrase of ['Complete ordinary prose', '. Further ordinary explanation [']) {
+  const value = proseFixture(phrase), result = recoverGraphicTextLayers(value);
+  assert.equal(result.count, 1);
+  assert.deepEqual(result.items[0].backgroundPaintIndexes, [1], 'only the complete prose paint is removed');
+  assert.deepEqual(result.items[0].sourceIds, ['p1:t4'], 'the neighbouring formula stays in its original layer');
+  assert.equal(value.sources[0].disposition, 'editable');
+  assert.equal(value.sources[1].disposition, 'visible-image');
+  assert.equal(result.items.find(item => item.type === 'text').text, phrase);
+}
+for (const change of [
+  value => { value.text[1].rect.y = 28; },
+  value => { value.text[0].font = 'UnverifiedFace'; },
+  value => { value.text[0].ocr = true; },
+  value => { value.text[0].italic = true; },
+  value => { value.text[0].bold = true; },
+  value => { value.text[0].text = 'short word'; },
+  value => { value.text[0].text = 'Complete + ordinary prose'; },
+  value => { value.text[0].preciseInk = false; },
+  value => { value.text[0].alphabet = 'script'; },
+  value => { value.maxLayers = 0; },
+  value => { value.graphics = [{ thin: true, rect: { x: 30, y: 25, width: 80, height: .5 } }]; },
+]) {
+  const value = proseFixture(); change(value);
+  assert.equal(recoverGraphicTextLayers(value).count, 0, 'uncertain prose ownership keeps the original image');
+  assert(value.sources.every(source => source.disposition === 'visible-image'));
+}
+
 const directory = 'tmp/pdf-word-graphic-layers'; await mkdir(directory, { recursive: true });
 const pdf = await PDFDocument.create(), font = await pdf.embedFont(StandardFonts.Helvetica), page = pdf.addPage([320, 320]);
 // One compound paint describes a hollow border rather than a filled rectangle.

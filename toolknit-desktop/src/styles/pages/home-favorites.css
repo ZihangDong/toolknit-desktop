@@ -186,6 +186,7 @@
   opacity: 0;
   transform: translateX(-40%);
   transition: opacity 180ms ease, transform 280ms ease;
+  pointer-events: none;
 }
 
 .home-search-field:focus-within {
@@ -216,6 +217,29 @@
   background: transparent;
   font-size: 16px;
 }
+
+.home-search-field input[type="search"]::-webkit-search-cancel-button { display: none; -webkit-appearance: none; }
+
+.home-search-field .home-search-clear {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  flex: 0 0 32px;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.home-search-field .home-search-clear[hidden] { display: none; }
+.home-search-field .home-search-clear:hover { color: var(--ink); background: rgba(255, 255, 255, 0.08); }
+.home-search-field .home-search-clear:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+.home-search-field .home-search-clear svg { width: 16px; height: 16px; color: inherit; stroke: currentColor; }
 
 .home-search-field input::placeholder {
   color: #696965;
@@ -261,6 +285,59 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-top: 22px;
+}
+
+.tool-result-release-group {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.tool-result-release-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 5px 2px 9px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--ink);
+}
+
+.tool-result-release-heading h3 {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.tool-result-release-subtitle,
+.tool-result-release-count {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.tool-result-release-rule {
+  flex: 1 1 auto;
+  min-width: 12px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.17), transparent);
+}
+
+.tool-result-release-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  min-width: 0;
 }
 
 .tool-result-card {
@@ -417,6 +494,7 @@
   }
 
   .tool-result-grid,
+  .tool-result-release-grid,
   .favorites-content {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -456,6 +534,7 @@
   }
 
   .tool-result-grid,
+  .tool-result-release-grid,
   .favorites-content {
     grid-template-columns: 1fr;
   }

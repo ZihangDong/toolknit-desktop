@@ -1,32 +1,73 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { LIMITS, wordError, outputName } from './core/input.js';
 import { snapshotPage, snapshotFonts, renderPage, collectPageAssets } from './adapters/pdfjs.js';
 import { createWordWorker } from './worker-client.js';
 import { tauriCorePromise } from '../../platform/tauri-runtime.js';
-import { runWordAi } from './ai-runtime.js';
+import { needsPageOcr } from './core/ocr-scene.js';
+import { sourceFontCandidateName } from './core/source-font.js';
+import { recoverPageRasterMath } from './raster-math-pipeline.js';
+import { RASTER_MATH_LIMITS } from './core/raster-math-layout.js';
+import { collectScanFigureAssets } from './adapters/scan-figure-assets.js';
 
 const canvasFactory = (width = 1, height = 1) => { const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; return canvas; };
-export async function analyzeWordDocument({ pdf, pages, ops, operation, onProgress = () => {}, pageModes = {}, preserveGeometry = false, continuous = false }) {
+export async function analyzeWordDocument({ pdf, pages, ops, operation, onProgress = () => {}, pageModes = {}, preserveGeometry = false, continuous = false, recognizePage = null, preserveScanFigures = false, refineScanText = false }) {
   const worker = createWordWorker(); operation.worker = worker;
   const check = operation.check, canvas = canvasFactory();
-  let totalAssets = 0;
+  let totalAssets = 0, sourceFontsTried = false, rasterMathAttempts = 0; const assetOwners = new Map();
   try {
     operation.optionalContentConfig = await pdf.getOptionalContentConfig({ intent: 'display' }); check();
     for (let index = 0; index < pages.length; index++) {
       check(); onProgress({ key: 'analyzing', current: index + 1, total: pages.length });
       const page = await pdf.getPage(pages[index]); check();
+      let formulaAssets = [], figureAssets = [];
       try {
         page.cleanup();
         const snapshot = await snapshotPage(page, ops, check, operation.optionalContentConfig); check();
         const plan = await renderPage(page, canvas, operation, check); check();
         snapshot.fonts = snapshotFonts(page, snapshot.fontIds);
-        const scene = await worker.request('scene', { snapshot }); check();
+        if (!sourceFontsTried && preserveGeometry && !continuous && typeof FontFace === 'function' && typeof pdf.getData === 'function'
+          && Object.values(snapshot.fonts).some(font => font.data?.length && sourceFontCandidateName(font.name))) {
+          sourceFontsTried = true;
+          const sourceBytes = await pdf.getData(); check();
+          await worker.request('source-fonts', { bytes: sourceBytes, pages }, [sourceBytes.buffer]); check();
+        }
+        const typographyPixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        let scene = await worker.request('scene', { snapshot, pixels: typographyPixels, width: canvas.width, height: canvas.height, preserveGeometry: preserveGeometry === true && !continuous }, [typographyPixels.buffer]); check();
         const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
         scene.inkCoverage = await worker.request('ink', { scene, pixels, width: canvas.width, height: canvas.height, scale: plan.scale }, [pixels.buffer]); check();
         if (!scene.inkCoverage.accepted) throw wordError('coverage');
-        const assets = await collectPageAssets(scene, canvas, canvasFactory, check); check();
+        if (recognizePage && needsPageOcr(scene)) {
+          operation.addOcrBudget?.();
+          onProgress({ key: 'ocr', current: index + 1, total: pages.length });
+          const result = await recognizePage(canvas, operation.abort.signal); check();
+          const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+          const prepared = await worker.request('ocr', { scene, result, pixels, remainingPages: pages.length - index,
+            width: canvas.width, height: canvas.height, preserveGeometry, preserveScanFigures, refineScanText }, [pixels.buffer]); check();
+          scene = prepared.scene;
+          figureAssets = await collectScanFigureAssets(scene, canvas, canvasFactory, check); check();
+          const formulas = scene.items.filter(item => item.ocrMath);
+          if (formulas.length) formulaAssets = await collectPageAssets({ ...scene, items: formulas }, canvas, canvasFactory, check);
+          if (prepared.changed) canvas.getContext('2d').putImageData(new ImageData(prepared.pixels, canvas.width, canvas.height), 0, 0);
+        } else if (recognizePage && preserveGeometry && !continuous && rasterMathAttempts < RASTER_MATH_LIMITS.perDocument) {
+          rasterMathAttempts += await recoverPageRasterMath({ scene, page, ops, worker, recognizePage, operation, createCanvas: canvasFactory,
+            remaining: RASTER_MATH_LIMITS.perDocument - rasterMathAttempts,
+            onOcr: () => onProgress({ key: 'ocr', current: index + 1, total: pages.length }) }); check();
+          const formulas = scene.items.filter(item => item.ocrMath);
+          if (formulas.length) formulaAssets = await collectPageAssets({ ...scene, items: formulas }, canvas, canvasFactory, check);
+        }
+        const collected = [...formulaAssets, ...figureAssets, ...await collectPageAssets({ ...scene, items: scene.items.filter(item => !item.ocrMath&&!item.scanFigure) }, canvas, canvasFactory, check)]; check();
+        const assets = collected.filter(asset => {
+          const item = scene.items.find(item => item.assetId === asset.id);
+          // Exclusion indexes belong to this source's display list; identical
+          // image bytes cannot merge different proof of removed hidden text.
+          const fingerprint = item?.backgroundPaintIndexes?.length ? null : item?.fingerprint;
+          const existing = fingerprint && assetOwners.get(fingerprint);
+          if (existing) { item.assetId = existing; return false; }
+          if (fingerprint) assetOwners.set(fingerprint, asset.id);
+          return true;
+        });
         totalAssets += assets.reduce((sum, asset) => sum + asset.bytes.length, 0);
         if (totalAssets > LIMITS.assetBytes) throw wordError('asset-large');
         await worker.request('page', { scene, assets }, assets.map(asset => asset.bytes.buffer)); check();
@@ -36,35 +77,6 @@ export async function analyzeWordDocument({ pdf, pages, ops, operation, onProgre
     return { document, worker };
   } catch (error) { worker.dispose(); throw error; }
   finally { canvas.width = canvas.height = 0; operation.renderTask = null; operation.optionalContentConfig = null; }
-}
-
-export async function enhanceWordStructure({ pdf, operation, ...options }) {
-  const canvas = canvasFactory(); let rendered = null, scale = 1;
-  try {
-    operation.optionalContentConfig = await pdf.getOptionalContentConfig({ intent: 'display' }); operation.check();
-    // The workbench exports original formula images and has no formula-review UI.
-    // Unused math proposals must not spend requests or block ordinary layout.
-    return await runWordAi({ ...options, operation, layoutOnly: true, renderRegion: async (page, scope, signal) => {
-      const check = () => { operation.check(); if (signal.aborted) throw wordError('cancelled'); };
-      const abort = () => { try { operation.renderTask?.cancel(); } catch {} };
-      signal.addEventListener('abort', abort, { once: true });
-      try {
-        check();
-        if (rendered !== page.number) {
-          const sourcePage = await pdf.getPage(page.number);
-          try { check(); scale = (await renderPage(sourcePage, canvas, operation, check)).scale; check(); rendered = page.number; }
-          finally { sourcePage.cleanup(); }
-        }
-        check();
-        const rect = scope.rect, ratio = Math.min(scale, 1600 / Math.max(rect.width, rect.height));
-        const small = canvasFactory(Math.max(1, Math.ceil(rect.width * ratio)), Math.max(1, Math.ceil(rect.height * ratio)));
-        try {
-          small.getContext('2d').drawImage(canvas, rect.x * scale, rect.y * scale, rect.width * scale, rect.height * scale, 0, 0, small.width, small.height);
-          check(); return small.toDataURL('image/png');
-        } finally { small.width = small.height = 0; }
-      } finally { signal.removeEventListener('abort', abort); }
-    } });
-  } finally { canvas.width = canvas.height = 0; operation.renderTask = null; operation.optionalContentConfig = null; }
 }
 
 export async function publishWord({ bytes, name, isTauri, getOutputDir, operation, native = tauriCorePromise }) {

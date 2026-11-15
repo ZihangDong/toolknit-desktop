@@ -5,12 +5,12 @@ const LEGAL_CONTENT_ZH = {
     title: '程序声明',
     html: `<div class="help-doc">
       <h2>程序声明</h2>
-      <p>本声明适用于 ToolKnit Desktop 3.2.0 及本仓库发布的 CLI / MCP 组件，用于说明软件性质、数据边界、第三方依赖与责任范围。使用前请结合实际任务阅读；继续使用即表示你理解本声明所述边界。</p>
+      <p>本声明适用于 ToolKnit Desktop 3.3.0 及本仓库发布的 CLI / MCP 组件，用于说明软件性质、数据边界、第三方依赖与责任范围。使用前请结合实际任务阅读；继续使用即表示你理解本声明所述边界。</p>
 
       <h3>一、软件性质与源码许可</h3>
-      <p>ToolKnit Desktop 是 Windows 10 / 11（64 位）的免费、本地优先文件工作台。除单独授权组件外，自 2026-10-14 起新授权的作者代码及修改采用 <strong>PolyForm Noncommercial 1.0.0</strong>，允许遵守许可与 <code>NOTICE</code> 的非商业使用、修改及分发；商业用途需联系 info@toolknit.com 另行授权。版权归各自作者所有。这是源码可见许可，不是 OSI 定义的开源许可。旧 Apache-2.0 授权不撤销，未改动的旧代码及第三方贡献、依赖继续遵循原许可。</p>
-      <p>PDF 转 Word 自研引擎适用单独的源码阅览许可：允许阅读源码；运行、编译、修改、集成、分发或提供服务等其他用途，无论商业或非商业，均须事先联系 <strong>info@toolknit.com</strong> 取得书面授权。普通用户使用作者分发的官方应用或测试版转换文件，按应用条款执行，不因该引擎另行申请授权。完整范围与条款见随附 <code>LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md</code>；用户输入与输出文件不因此转为引擎源码许可。</p>
-      <p>ToolKnit 网页端、官网托管服务、域名、服务账号以及 ToolKnit 名称、Logo 和视觉标识不因代码公开而自动获得授权。网页端与源码可见的桌面仓库属于相关但边界独立的产品。</p>
+      <p>ToolKnit Desktop 是 Windows 10 / 11（64 位）的免费、本地优先文件工作台。当前 V3.3 作者自有源码统一采用 <strong>MIT 许可</strong>，允许商业及非商业使用、修改、编译、集成与分发，须保留版权和许可声明。第三方材料和既有 Apache-2.0 贡献继续遵循原许可，具体见随附 LICENSE、NOTICE 和 LICENSES。</p>
+      <p>PDF 转 Word 自研引擎与 CLI/MCP 派生适配器同样采用 MIT，无需另行书面授权。欢迎在项目介绍中注明 ToolKnit.com，并添加 DoFollow 外链；这是推荐，不是许可条件。输入文件和转换结果属于各自权利人。</p>
+      <p>ToolKnit 网页端、官网托管服务、域名、服务账号以及 ToolKnit 名称、Logo 和视觉标识不因代码公开而自动获得授权。网页端与开源桌面仓库属于相关但边界独立的产品。</p>
 
       <h3>二、本地文件处理</h3>
       <p>PDF、PPT、图像、音频、视频、文本、计算器、硬件查看和清理等非 AI 文件能力默认在用户设备上运行，源文件不会上传到 ToolKnit 服务器。输出文件写入用户选择的本地目录，程序默认不覆盖已有文件。</p>
@@ -28,7 +28,7 @@ const LEGAL_CONTENT_ZH = {
       <h3>四、其他网络访问</h3>
       <p>桌面端不会进行静默行为分析或广告追踪。以下操作可能联网：</p>
       <ul>
-        <li>用户在设置中下载 FFmpeg、Whisper 模型或 LibreOffice 时，访问所选的官方源或国内镜像，并进行完整性校验。</li>
+        <li>用户按需下载 FFmpeg、Whisper、MODNet、LibreOffice 或本地翻译资源时，访问七彩云并进行完整性校验。</li>
         <li>首页获取公开的 GitHub 仓库指标与公开支持记录；请求仅用于展示公开项目数据。</li>
         <li>启动后及设置页检查更新会读取 GitHub 与 AtomGit 的公开正式版本标签，不上传用户文件或进行使用计数。新版安装包通过 toolknit.com/exe.html 分发。</li>
         <li>用户点击网页端、GitHub、Issue 或其他外部链接时，由系统浏览器打开相应网站。</li>
@@ -40,8 +40,13 @@ const LEGAL_CONTENT_ZH = {
       <p>语言、输出目录、界面偏好、收藏、快捷键、已安装依赖状态和 AI 配置保存在本机应用数据中。AI Key 不会上传给 ToolKnit，但会在用户调用 AI 时作为鉴权信息发送给所选服务；请只在可信设备上配置并妥善保管。</p>
       <p>屏幕取色仅在用户点击启动或触发已配置快捷键后工作。取色期间，程序在内存中读取准星周围的 <strong>21 × 21</strong> 像素区域用于放大预览，并返回中心像素颜色；该像素区域不会保存为文件，也不会上传。</p>
 
+      <p>文件快速搜索仅在本机保存选定范围的文件名、路径、大小与时间。托盘运行继续更新，完全退出停止；清除索引不删除原文件。可选 NTFS 加速使用按需服务，安装时由 Windows 请求管理员确认。</p>
       <h3>六、第三方组件与按需依赖</h3>
+      <p>文件搜索复用了 Win顺（WinShun）的 MIT 匹配、拼音和 NTFS 元数据模块。WinShun 与拼音数据的原许可分别保留在随附的第三方声明中；不依赖 Qt 或 Everything。</p>
       <p>本软件使用 Tauri、Rust、PDF.js、pdf-lib、FFmpeg、Whisper、LibreOffice、JSZip、ExcelJS、Chart.js、Lucide 等开源组件或运行时。相关权利归各自权利人所有，具体版本、源码与许可应以仓库依赖清单、锁文件和第三方声明为准。</p>
+      <p>按需下载的 FFmpeg 6.1.6-toolknit-r3 Windows 构建由 ToolKnit 使用归档源码编译，适用 GNU GPL v3 或更新版本。对应主源码、依赖源码、构建脚本及原始许可在独立源码仓库提供；组件及工具链声明随应用附带。Whisper 项目使用 MIT 许可，Xenova 的 MODNet 模型卡标注 Apache-2.0。其他下载资源及其依赖仍适用各自的许可和声明。</p>
+      <p>FFmpeg 下载弹框的 GitHub 入口可查看固定版本的完整源码包、构建记录及许可；历史版本在同一仓库单独保留。</p>
+      <p>本地翻译使用 MTranServer（Apache-2.0，含 MPL-2.0 等组件）和 Mozilla 翻译模型；LibreOffice 运行时包含 MPL-2.0 等第三方许可。各组件来源及声明见随附的 <code>Download-Models-Notice.txt</code>。</p>
       <p>界面默认使用阿里巴巴普惠体 Medium / Bold（Copyright © 2019 Alibaba（中国）有限公司，字体设计：Alibaba Design、汉仪字库）及 Montserrat Regular / Bold（Montserrat Project Authors，依据 SIL Open Font License 1.1 发布）。字体权利归各自权利人所有，完整声明见安装包内 <code>assets/fonts/THIRD_PARTY_FONTS.md</code>。用户自行上传替换的字体由用户确认其使用和分发授权。</p>
       <p>FFmpeg、Whisper 模型和 LibreOffice 不随基础安装包全部内置。下载源、网络速度、磁盘空间、系统策略及第三方发布变化都可能影响安装和运行。</p>
 
@@ -51,14 +56,14 @@ const LEGAL_CONTENT_ZH = {
       <div class="help-note"><p>在适用法律允许的范围内，本软件按“现状”提供，不对特定用途适用性、持续可用性或无错误运行作出保证。开发者不对因错误操作、未备份、第三方服务变化、依赖故障或不可抗力造成的间接损失承担责任。</p></div>
 
       <h3>八、知识产权与品牌边界</h3>
-      <p>用户处理的文件、数据和依法享有权利的内容仍归用户或相应权利人所有。一般作者代码使用权以 PolyForm Noncommercial 1.0.0 为准，PDF 转 Word 引擎以其单独源码阅览许可为准；旧 Apache-2.0 授权与第三方许可保持有效。上述许可不授予 ToolKnit 商标、名称、Logo、视觉识别、官网、域名或托管服务的使用权，也不得冒充官方版本或官方账号。</p>
+      <p>作者自有代码（含 PDF 转 Word 引擎）按 MIT 许可使用；第三方材料与既有 Apache-2.0 授权保留原条款。用户文件和输出仍属于各自权利人。源码许可不授予 ToolKnit 商标、域名或托管服务权利，不得冒充官方版本或官方账号。</p>
 
       <h3>九、捐赠说明</h3>
       <p>捐赠完全自愿，用于 AI 开发与测试、兼容性测试、依赖与镜像验证、文档、安装包发布和开源维护。经作者确认后，赞助者可加入 ToolKnit 灰度体验群，参与版本交流、提前测试和功能建议收集；该群不解锁软件额外功能，也不构成购买、订阅、付费外包、技术支持合同或功能优先排期承诺。</p>
 
       <h3>十、更新与联系</h3>
       <p>本声明会随功能和数据边界变化而更新。正式安装包请从 toolknit.com/exe.html 获取；源代码和问题反馈见官方 GitHub / AtomGit 仓库；提交问题前请移除文件内容、密钥、密码、完整私人路径等敏感信息。</p>
-      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.2.0<br/>最后更新：2026 年 10 月 14 日<br/>开发者：董子航（Zihang Dong）</p></div>
+      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.3.0<br/>最后更新：2026 年 10 月 28 日<br/>开发者：董子航（Zihang Dong）</p></div>
     </div>`
   },
 
@@ -100,7 +105,7 @@ const LEGAL_CONTENT_ZH = {
 
       <h3>五、按需依赖</h3>
       <ul>
-        <li>FFmpeg、Whisper 模型和 LibreOffice 应优先通过 ToolKnit 设置页提供的官方源或国内镜像安装，并等待下载、安装和校验完整结束。</li>
+        <li>FFmpeg、Whisper 模型和 LibreOffice 可通过 ToolKnit 设置页按需安装，请等待下载、安装和校验完整结束。</li>
         <li>不要使用来源不明的可执行文件替换受管理运行时。手动配置路径时，用户应自行确认来源、版本和许可证。</li>
         <li>删除运行时会让对应工具暂时不可用，但不会删除用户输出文件。</li>
       </ul>
@@ -114,7 +119,7 @@ const LEGAL_CONTENT_ZH = {
       </ul>
 
       <h3>七、源码许可与品牌使用</h3>
-      <p>一般作者代码允许依照 PolyForm Noncommercial 1.0.0 非商业使用、修改和分发，并保留许可与必要声明；商业用途需另行授权。PDF 转 Word 引擎适用单独源码阅览许可，除阅览和官方应用使用例外外，商业及非商业使用均须联系 info@toolknit.com 取得书面授权。旧 Apache-2.0 授权和第三方许可不变。不得冒用 ToolKnit 名称、Logo、官网、域名、服务账号或视觉标识把第三方版本包装成官方版本，也不得把恶意软件与 ToolKnit 名义捆绑传播。</p>
+      <p>作者自有代码（含 PDF 转 Word 引擎）按 MIT 许可使用；第三方材料与既有 Apache-2.0 授权保留原条款。用户文件和输出仍属于各自权利人。源码许可不授予 ToolKnit 商标、域名或托管服务权利，不得冒充官方版本或官方账号。</p>
 
       <h3>八、捐赠与反馈</h3>
       <p>捐赠是自愿支持。赞助者可经确认加入灰度体验群，参与提前测试并提交功能建议，但不代表购买功能、获得技术支持合同或优先排期。反馈问题时请提供可复现步骤、版本与已脱敏日志，不要上传包含私人内容的原文件、密钥或密码。</p>
@@ -124,7 +129,7 @@ const LEGAL_CONTENT_ZH = {
 
       <h3>十、责任与规范变更</h3>
       <div class="help-note"><p>用户应对输入内容、操作授权、结果复核和最终用途负责。本规范会随当前功能边界更新；继续使用后续版本表示你理解当时版本中展示的最新说明。</p></div>
-      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.2.0<br/>最后更新：2026 年 10 月 14 日<br/>开发者：董子航（Zihang Dong）</p></div>
+      <div class="help-note"><p>适用版本：ToolKnit Desktop 3.3.0<br/>最后更新：2026 年 10 月 28 日<br/>开发者：董子航（Zihang Dong）</p></div>
     </div>`
   }
 };
@@ -134,12 +139,12 @@ const LEGAL_CONTENT_EN = {
     title: 'Program Declaration',
     html: `<div class="help-doc">
       <h2>Program Declaration</h2>
-      <p>This declaration applies to ToolKnit Desktop 3.2.0 and the CLI / MCP components published in this repository. It explains the software's nature, data boundaries, third-party dependencies, and limits of responsibility. Please read it in the context of your intended task before use.</p>
+      <p>This declaration applies to ToolKnit Desktop 3.3.0 and the CLI / MCP components published in this repository. It explains the software's nature, data boundaries, third-party dependencies, and limits of responsibility. Please read it in the context of your intended task before use.</p>
 
       <h3>1. Software and Source License</h3>
-      <p>ToolKnit Desktop is a free, local-first workspace for 64-bit Windows 10 / 11. Except for separately licensed components, newly licensed author-owned code and modifications from 2026-10-14 use <strong>PolyForm Noncommercial 1.0.0</strong>. Noncommercial use, modification and distribution must preserve LICENSE and required NOTICEs. Commercial use requires separate permission via info@toolknit.com. Copyright remains with each author. This is source-available software, not OSI-approved open source. Existing Apache-2.0 grants are not withdrawn; unchanged previously licensed code, third-party contributions and dependencies retain their original licenses.</p>
-      <p>The PDF-to-Word Engine uses a separate proprietary source-viewing license. Reading is permitted; other execution, compilation, modification, integration, distribution and service use require prior written authorization for both commercial and noncommercial purposes from <strong>info@toolknit.com</strong>. Ordinary use of official applications or test builds remains subject to the application's terms and does not itself require separate Engine authorization. See <code>LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md</code> for the scope and full terms. Input and output documents are not relicensed as Engine source.</p>
-      <p>The hosted ToolKnit website, domains, service accounts, ToolKnit name, logos, and visual identity are not automatically licensed with the source code. The hosted web product and the source-available desktop repository are related products with separate boundaries.</p>
+      <p>ToolKnit Desktop is a free, local-first workspace for 64-bit Windows 10 / 11. Author-owned source in V3.3 uses the <strong>MIT License</strong>, allowing commercial and noncommercial use, modification, compilation, integration and distribution with copyright and permission notices retained. Third-party material and existing Apache-2.0 contributions keep their licenses; see LICENSE, NOTICE and LICENSES.</p>
+      <p>The PDF-to-Word Engine and CLI/MCP adapter also use MIT; no separate written authorization is required. Credit to ToolKnit.com and a DoFollow backlink are recommended, not conditions of the license. Input files and converted output remain with their respective rightsholders.</p>
+      <p>The hosted ToolKnit website, domains, service accounts, ToolKnit name, logos, and visual identity are not automatically licensed with the source code. The hosted web product and the open-source desktop repository are related products with separate boundaries.</p>
 
       <h3>2. Local File Processing</h3>
       <p>Non-AI PDF, PPT, image, audio, video, text, calculator, hardware-inspection, and cleanup workflows run on the user's device by default. Source files are not uploaded to a ToolKnit server. Outputs are written to a user-selected local directory and existing files are not overwritten by default.</p>
@@ -157,7 +162,7 @@ const LEGAL_CONTENT_EN = {
       <h3>4. Other Network Access</h3>
       <p>The desktop app does not perform silent behavioral analytics or advertising tracking. It may access the network in these cases:</p>
       <ul>
-        <li>At the user's request, Settings downloads FFmpeg, Whisper models, or LibreOffice from the selected official source or China mirror and verifies the result.</li>
+        <li>On request, ToolKnit downloads and verifies FFmpeg, Whisper, MODNet, LibreOffice, and local translation resources from 7Caiyun.</li>
         <li>The home page reads public GitHub repository metrics and the public support record for display.</li>
         <li>Startup and Settings update checks read public stable version tags from GitHub and AtomGit without uploading user files or collecting usage counts. Installers are distributed at toolknit.com/exe.html.</li>
         <li>Website, GitHub, Issue, and other external links open in the system browser after the user clicks them.</li>
@@ -169,8 +174,13 @@ const LEGAL_CONTENT_EN = {
       <p>Language, output location, interface preferences, favorites, shortcuts, managed-runtime status, and AI configuration are stored in local application data. An AI key is not uploaded to ToolKnit, but it is sent as authentication to the selected provider when the user makes an AI request. Configure it only on a trusted device.</p>
       <p>The screen picker works only after the user starts it or invokes the configured shortcut. While active, it reads a <strong>21 × 21</strong> pixel region around the crosshair into memory for magnification and returns the center pixel color. That region is not saved as a file or uploaded.</p>
 
+      <p>Quick file search stores filename, path, size and time metadata locally for selected scopes. Indexing continues in the tray and stops on full exit. Clearing the index preserves source files. Optional NTFS acceleration uses an on-demand service installed through Windows administrator confirmation.</p>
       <h3>6. Third-Party Components and Optional Runtimes</h3>
+      <p>File search reuses MIT-licensed matching, pinyin and NTFS metadata modules from WinShun. The original WinShun and pinyin-data licenses are retained separately in the bundled notices. Qt and Everything are not required.</p>
       <p>The software uses open-source components or runtimes including Tauri, Rust, PDF.js, pdf-lib, FFmpeg, Whisper, LibreOffice, JSZip, ExcelJS, Chart.js, and Lucide. Rights remain with their respective owners. Refer to dependency manifests, lockfiles, and third-party notices for authoritative versions and licenses.</p>
+      <p>The optional FFmpeg 6.1.6-toolknit-r3 Windows build is compiled by ToolKnit from archived sources under GNU GPL v3 or later. Matching main and dependency sources, build scripts and original licenses are available in its separate source repository; component and toolchain notices accompany the application. The Whisper project uses the MIT license and Xenova's MODNet model card identifies Apache-2.0. Other downloaded resources and their dependencies retain their respective licenses and notices.</p>
+      <p>The FFmpeg download dialog links to the fixed source package, build records and licenses on GitHub. Historical versions remain separately available in the same repository.</p>
+      <p>Local translation uses MTranServer (Apache-2.0, including MPL-2.0 and other components) and Mozilla translation models. LibreOffice includes MPL-2.0 and other third-party licenses. Sources and notices are listed in the bundled <code>Download-Models-Notice.txt</code>.</p>
       <p>The default interface uses Alibaba PuHuiTi Medium / Bold (Copyright © 2019 Alibaba (China) Co., Ltd.; font design by Alibaba Design and Hanyi Fonts) and Montserrat Regular / Bold (Montserrat Project Authors, released under the SIL Open Font License 1.1). Rights remain with their respective owners. See <code>assets/fonts/THIRD_PARTY_FONTS.md</code> in the installation for full notices. Users are responsible for confirming rights to any font they upload as a replacement.</p>
       <p>FFmpeg, Whisper models, and LibreOffice are not all bundled with the base installer. Installation can be affected by the selected source, network speed, disk space, system policy, and upstream releases.</p>
 
@@ -180,14 +190,14 @@ const LEGAL_CONTENT_EN = {
       <div class="help-note"><p>To the extent permitted by applicable law, the software is provided “as is” without a warranty of fitness for a particular purpose, uninterrupted availability, or error-free operation. The developer is not responsible for indirect loss caused by misuse, missing backups, third-party service changes, dependency failures, or force majeure.</p></div>
 
       <h3>8. Intellectual Property and Brand Boundary</h3>
-      <p>Files and data processed by the user remain with the user or their rightful owners. General author-owned code uses PolyForm Noncommercial 1.0.0; the PDF-to-Word Engine uses its separate source-viewing license. Existing Apache-2.0 grants and third-party licenses remain valid. These licenses do not grant rights to ToolKnit trademarks, names, logos, visual identity, official websites, domains, or hosted services, and do not permit impersonating an official release or account.</p>
+      <p>Author-owned code, including the PDF-to-Word Engine, uses MIT. Third-party materials and prior Apache-2.0 grants retain their terms. User files and output remain with their respective rightsholders. The source license grants no ToolKnit trademark, domain or hosted-service rights, and does not permit impersonating an official release or account.</p>
 
       <h3>9. Donations</h3>
       <p>Donations are voluntary support for AI development and testing, compatibility testing, dependency and mirror verification, documentation, package distribution, and open-source maintenance. After confirmation by the author, supporters may join the ToolKnit preview group for release discussion, early testing, and feature-request collection. Group access does not unlock software features or create a purchase, subscription, paid-development contract, support contract, or priority roadmap commitment.</p>
 
       <h3>10. Updates and Contact</h3>
       <p>This declaration may be updated when features or data boundaries change. Get installers at toolknit.com/exe.html; use the official GitHub / AtomGit repositories for source code and reports. Remove file contents, keys, passwords, and private full paths from reports before submitting them.</p>
-      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.2.0<br/>Last updated: October 14, 2026<br/>Developer: Zihang Dong</p></div>
+      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.3.0<br/>Last updated: November 14, 2026<br/>Developer: Zihang Dong</p></div>
     </div>`
   },
 
@@ -229,7 +239,7 @@ const LEGAL_CONTENT_EN = {
 
       <h3>5. Optional Runtimes</h3>
       <ul>
-        <li>Install FFmpeg, Whisper models, and LibreOffice through the verified official source or China mirror offered in Settings, and wait for download, installation, and verification to finish.</li>
+        <li>Install FFmpeg, Whisper models, and LibreOffice through Settings, and wait for download, installation, and verification to finish.</li>
         <li>Do not replace a managed runtime with an executable from an untrusted source. Users who configure a path manually are responsible for its source, version, and license.</li>
         <li>Removing a runtime temporarily disables dependent tools but does not delete user output files.</li>
       </ul>
@@ -243,7 +253,7 @@ const LEGAL_CONTENT_EN = {
       </ul>
 
       <h3>7. Source License and Brand Use</h3>
-      <p>General author-owned code permits noncommercial use, modification and distribution under PolyForm Noncommercial 1.0.0 with required notices retained. Commercial use requires separate permission. The PDF-to-Word Engine has a separate source-viewing license: beyond viewing and its official-application exception, both commercial and noncommercial use require prior written authorization via info@toolknit.com. Existing Apache-2.0 grants and third-party licenses remain valid. Do not use ToolKnit names, logos, websites, domains, service accounts, or visual identity to present a third-party build as official, and do not bundle malware under the ToolKnit name.</p>
+      <p>Author-owned code, including the PDF-to-Word Engine, uses MIT. Third-party materials and prior Apache-2.0 grants retain their terms. User files and output remain with their respective rightsholders. The source license grants no ToolKnit trademark, domain or hosted-service rights, and does not permit impersonating an official release or account.</p>
 
       <h3>8. Donations and Feedback</h3>
       <p>Donations are voluntary. Confirmed supporters may join the preview group for early testing and feature requests, but this does not purchase a feature, support contract, or priority scheduling. When reporting a problem, provide reproducible steps, the app version, and sanitized logs. Do not upload source files containing private content, keys, or passwords.</p>
@@ -253,7 +263,7 @@ const LEGAL_CONTENT_EN = {
 
       <h3>10. Responsibility and Policy Changes</h3>
       <div class="help-note"><p>Users are responsible for input content, authorization, result review, and final use. This policy may be updated with the current feature boundary; continued use of a later release means you understand the latest policy shown for that release.</p></div>
-      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.2.0<br/>Last updated: October 14, 2026<br/>Developer: Zihang Dong</p></div>
+      <div class="help-note"><p>Applies to: ToolKnit Desktop 3.3.0<br/>Last updated: November 14, 2026<br/>Developer: Zihang Dong</p></div>
     </div>`
   }
 };

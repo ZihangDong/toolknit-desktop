@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { LIMITS, wordError, renderPlan } from '../core/input.js';
 import { encodeImageAsset } from './image-assets.js';
 import { matchRenderedTextOperations, mappedTextSelection } from '../core/render-text-map.js';
+import { missingFontAliases, missingFontContext } from './missing-font-context.js';
 export { canvasBytes } from './image-assets.js';
 const renderedScales = new WeakMap();
 const pageSnapshots = new WeakMap(), renderedPages = new WeakMap();
@@ -66,9 +67,15 @@ export async function renderPage(page, canvas, operation, check = () => {}) {
   canvas.width = plan.width; canvas.height = plan.height;
   renderedScales.set(canvas, plan.scale);
   const captured = pageSnapshots.get(page), context = { page, plan, operation, optionalContentConfig: operation.optionalContentConfig,
-    names: captured?.snapshot.operations.map(operation => operation.name), textBinding: null, displayList: null };
+    names: captured?.snapshot.operations.map(operation => operation.name), textBinding: null, displayList: null,
+    fontAliases: missingFontAliases(page, captured?.snapshot.fontIds) };
+  const originalContext = canvas.getContext('2d'), paintContext = missingFontContext(originalContext, context.fontAliases);
   renderedPages.set(canvas, context); pageSnapshots.delete(page);
-  const task = page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport: page.getViewport({ scale: plan.scale }), background: '#ffffff',
+  // PDF.js ignores canvasContext when canvas is supplied. Select the public
+  // context-only path only for an actual font override; other pages keep their
+  // existing renderer/context options.
+  const task = page.render({ canvas: paintContext === originalContext ? canvas : null, canvasContext: paintContext,
+    viewport: page.getViewport({ scale: plan.scale }), background: '#ffffff',
     ...(operation.optionalContentConfig ? { optionalContentConfigPromise: Promise.resolve(operation.optionalContentConfig) } : {}) });
   operation.renderTask = task;
   try {
@@ -91,20 +98,34 @@ export async function collectPageAssets(scene, canvas, createCanvas, check = () 
   const scaleX = renderedScales.get(canvas) ?? canvas.width / scene.width;
   const scaleY = renderedScales.get(canvas) ?? canvas.height / scene.height;
   const images = scene.items.filter(item => item.type === 'image');
-  const layers = images.filter(item => item.backgroundPaintIndexes?.length);
+  const sourceById = new Map((scene.sources||[]).map(source => [source.id,source]));
+  const layers = images.filter(item => item.backgroundPaintIndexes?.length || item.decorationTextPaintIndexes?.length);
   try {
     check();
     if (layers.length) {
-      if (layers.length > LIMITS.backgroundLayersPerPage || layers.some(item => !Array.isArray(item.backgroundPaintIndexes)
-        || item.backgroundPaintIndexes.length > LIMITS.operationsPerPage)) throw wordError('image');
-      const context = renderedPages.get(canvas), indexes = layers.flatMap(item => item.backgroundPaintIndexes);
+      if (layers.length > LIMITS.backgroundLayersPerPage || layers.some(item => {
+        const indexes = item.backgroundPaintIndexes?.length ? item.backgroundPaintIndexes : item.decorationTextPaintIndexes;
+        return !Array.isArray(indexes) || indexes.length > LIMITS.operationsPerPage || new Set(indexes).size !== indexes.length
+          || item.relativeTextPaintIndexes !== undefined && (!item.backgroundPaintIndexes?.length
+            || !Array.isArray(item.relativeTextPaintIndexes) || !item.relativeTextPaintIndexes.length
+            || new Set(item.relativeTextPaintIndexes).size !== item.relativeTextPaintIndexes.length
+            || item.relativeTextPaintIndexes.some(index => !Number.isInteger(index) || !indexes.includes(index)))
+          || item.decorationTextPaintIndexes?.length && (!item.decoration || !item.thin || item.sourceIds.length || item.backgroundPaintIndexes?.length);
+      })) throw wordError('image');
+      const owned = layers.flatMap(item => item.backgroundPaintIndexes || []);
+      if (new Set(owned).size !== owned.length) throw wordError('image');
+      // A complete editable text group may touch several independent rules.
+      // Its removal is shared; existing backdrop ownership remains unique.
+      const context = renderedPages.get(canvas), indexes = [...new Set([...owned, ...layers.flatMap(item => item.decorationTextPaintIndexes || [])])];
       if (!context || context.page.pageNumber !== scene.number || canvas.width !== context.plan.width || canvas.height !== context.plan.height
-        || indexes.length > LIMITS.operationsPerPage || new Set(indexes).size !== indexes.length
+        || indexes.length > LIMITS.operationsPerPage
         || indexes.some(index => !Number.isInteger(index) || index < 0 || !['showText', 'showSpacedText'].includes(context.names?.[index]))) throw wordError('image');
-      const excluded = mappedTextSelection(context.textBinding, indexes);
+      const relativeIndexes = [...new Set(layers.flatMap(item => item.relativeTextPaintIndexes || []))];
+      const excluded = mappedTextSelection(context.textBinding, indexes, relativeIndexes);
       if (!excluded) throw wordError('image');
       background = createCanvas(context.plan.width, context.plan.height);
-      const task = context.page.render({ canvas: background, canvasContext: background.getContext('2d'),
+      const originalContext = background.getContext('2d'), paintContext = missingFontContext(originalContext, context.fontAliases);
+      const task = context.page.render({ canvas: paintContext === originalContext ? background : null, canvasContext: paintContext,
         viewport: context.page.getViewport({ scale: context.plan.scale }), background: '#ffffff', operationsFilter: index => !excluded.has(index),
         ...(context.optionalContentConfig ? { optionalContentConfigPromise: Promise.resolve(context.optionalContentConfig) } : {}) });
       context.operation.renderTask = task;
@@ -116,7 +137,8 @@ export async function collectPageAssets(scene, canvas, createCanvas, check = () 
     }
     for (const item of images) {
       check();
-      const sourceCanvas = item.backgroundPaintIndexes?.length ? background : canvas, r = item.rect;
+      const excludedPaintIndexes = item.backgroundPaintIndexes?.length ? item.backgroundPaintIndexes : item.decorationTextPaintIndexes;
+      const sourceCanvas = excludedPaintIndexes?.length ? background : canvas, r = item.rect;
       const x = Math.max(0, Math.floor(r.x * scaleX)), y = Math.max(0, Math.floor(r.y * scaleY));
       const width = Math.min(canvas.width - x, Math.max(1, Math.ceil((r.x + r.width) * scaleX) - x));
       const height = Math.min(canvas.height - y, Math.max(1, Math.ceil((r.y + r.height) * scaleY) - y));
@@ -124,14 +146,15 @@ export async function collectPageAssets(scene, canvas, createCanvas, check = () 
       const crop = createCanvas(width, height);
       try {
         crop.getContext('2d').drawImage(sourceCanvas, x, y, width, height, 0, 0, width, height);
-        const { bytes, format } = await encodeImageAsset(crop, item, createCanvas, check, renderedScales.has(canvas));
+        const encoded = await encodeImageAsset(crop, item, createCanvas, check, renderedScales.has(canvas), { maxPixelScale: 2, sourceById });
+        const { bytes, format } = encoded;
         check(); total += bytes.length;
         if (total > LIMITS.assetBytes) throw wordError('asset-large');
         item.assetId = item.id;
         const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
         item.fingerprint = Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, '0')).join('');
-        assets.push({ id: item.id, bytes, width, height, format,
-          ...(item.backgroundPaintIndexes?.length ? { excludedPaintIndexes: [...item.backgroundPaintIndexes] } : {}) });
+        assets.push({ id: item.id, bytes, width: encoded.width || width, height: encoded.height || height, format,
+          ...(excludedPaintIndexes?.length ? { excludedPaintIndexes: [...excludedPaintIndexes] } : {}) });
       } finally { crop.width = crop.height = 0; }
     }
   } finally { if (background) background.width = background.height = 0; }

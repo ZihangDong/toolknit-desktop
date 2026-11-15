@@ -96,12 +96,12 @@ const sourceFile = {
   size: 12,
   async arrayBuffer() { return new Uint8Array([1, 2, 3]).buffer; }
 };
-await session.loadMainFile(sourceFile);
+assert.equal(await session.loadMainFile(sourceFile), true, 'handoff confirms a committed editor document');
 assert.equal(resetCount, 1);
 assert.equal(sources[0].name, 'replacement.pdf');
 assert.equal(pages.length, 2);
 assert.equal(currentId, pages[0].id);
-assert.deepEqual([...selectedIds], [pages[0].id]);
+assert.deepEqual([...selectedIds], pages.map(page => page.id));
 assert.equal(selectionAnchorId, pages[0].id);
 assert.deepEqual(lastProgress, [100, 'loadingDocument']);
 assert.equal(historyResetCount, 1);
@@ -155,6 +155,7 @@ await cancelledCreation;
 assert.equal(sources[0], createdSource, 'cancelling creation preserves the current document');
 assert.equal(pages[0], createdPage);
 documents.loadBytes = async () => { throw new Error('fixture:decode-failed'); };
+assert.equal(await session.loadMainFile(sourceFile), false, 'handoff reports failed decoding without replacing the document');
 await session.createBlankDocument();
 assert.equal(sources[0], createdSource, 'failed replacement must preserve the existing blank document');
 assert.equal(activeOperation, null);

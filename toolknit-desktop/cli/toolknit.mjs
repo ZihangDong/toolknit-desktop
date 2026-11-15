@@ -44,7 +44,7 @@ import { dispatchCatalogCli, extendedHelp } from './lib/catalog-cli.mjs';
 import { checkLibreOfficeAvailability } from './lib/ppt-render-runtime.mjs';
 import { TOOL_DEFINITIONS } from './lib/tool-definitions.mjs';
 
-const VERSION = '3.2.0';
+const VERSION = '3.3.0';
 const CLI_ABORT_CONTROLLER = new AbortController();
 let CLI_SIGNAL_COUNT = 0;
 
@@ -361,7 +361,7 @@ const MODEL_HELP = `离线模型管理（model）
   toolknit model install <base|small|medium> [--source auto|official|china] [--json]
   toolknit model use <base|small|medium> [--json]
 
-下载源：auto 先使用 Hugging Face 官方源，失败时自动切换至 hf-mirror 国内镜像；每次安装均校验 SHA-256。模型只存放在本机。`;
+下载源：七彩云。旧版 source 参数仍可使用，均指向同一下载源；每次安装均校验 SHA-256。模型只存放在本机。`;
 
 const MCP_HELP = `ToolKnit MCP 服务
 

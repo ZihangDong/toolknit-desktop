@@ -3,8 +3,8 @@ import { readFile, writeFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
-const identifier = 'LicenseRef-ToolKnit-PDF-Word-Source-View-1.0';
-const licenseName = 'ToolKnit-PDF-Word-Source-View-1.0.md';
+const identifier = 'MIT';
+const licenseName = 'MIT.txt';
 const license = await readFile(path.join(root, '..', 'LICENSES', licenseName), 'utf8');
 const check = process.argv.includes('--check');
 const canonical = value => value.replaceAll('\r\n', '\n');
@@ -18,11 +18,12 @@ async function visit(directory) {
 }
 await visit('src/features/pdf-to-word');
 sourceFiles.push('src-tauri/src/native_runtime/pdf/docx_write.rs');
+sourceFiles.push('src-tauri/src/native_runtime/pdf/docx_fonts.rs');
 sourceFiles.push('cli/lib/pdf-word-engine.mjs');
 for (const file of sourceFiles) {
   const target = path.join(root, file), original = await readFile(target, 'utf8');
   const lines = [`SPDX-License-Identifier: ${identifier}`, 'Copyright 2026 Zihang Dong.',
-    'Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com'];
+    'Licensed under the MIT License; see LICENSE and NOTICE.'];
   const header = file.endsWith('.css') ? `/* ${lines.join('\n * ')}\n */\n` : `${lines.map(line => `// ${line}`).join('\n')}\n`;
   if (check) assert(canonical(original).startsWith(header), `Engine license header missing: ${file}`);
   else if (!canonical(original).startsWith(header)) {

@@ -1,3 +1,4 @@
+import { copyPdfPages } from './core/pdf-page-copy.js';
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
 import fontkit from './pdf-lib-fontkit.js';
 import { encryptPdf as encryptPdfBytes, normalizePdfEncryptPermissions } from './pdf-encrypt-core.js';
@@ -133,7 +134,7 @@ export async function assemblePdf({ sources, pages, useObjectStreams = true, onP
       throw new Error(`Page ${pageRef.pageIndex + 1} is outside source index ${pageRef.sourceIndex}`);
     }
 
-    const [copiedPage] = await output.copyPages(sourceDoc, [pageRef.pageIndex]);
+    const [copiedPage] = await copyPdfPages(output, sourceDoc, [pageRef.pageIndex]);
     copiedPage.setRotation(degrees(
       copiedPage.getRotation().angle + normalizePageRotation(pageRef.rotation)
     ));
@@ -362,7 +363,7 @@ export async function assemblePdfWithTextEdits({
 
     const copiedPage = inPlaceOutput
       ? output.getPage(index)
-      : (await output.copyPages(sourceDoc, [pageRef.pageIndex]))[0];
+      : (await copyPdfPages(output, sourceDoc, [pageRef.pageIndex]))[0];
 
     for (const edit of editsByPageIndex.get(index) || []) {
       const text = String(edit?.text ?? '');

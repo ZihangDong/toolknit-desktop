@@ -8,9 +8,9 @@ import path from 'node:path';
 const read = p => readFile(p, 'utf8');
 const canonical = value => value.replace(/\r\n/g, '\n').trimEnd();
 const license = canonical(await read('../LICENSE'));
-assert.match(license, /^# PolyForm Noncommercial License 1\.0\.0/);
-// Official polyformproject.org text, with only line endings / final whitespace normalized.
-const expectedHash = '7779a554c40798f0f9c04960b82154d16dc0fa64349d401d24146e5c81f64093';
+assert.match(license, /^MIT License/);
+// Standard MIT terms with ToolKnit copyright; only EOL/final whitespace is normalized.
+const expectedHash = '1e4e478d3753164aa5c3da9f6c1f656265d9231b8755545e5735bbbe418711ae';
 assert.equal(createHash('sha256').update(license).digest('hex'), expectedHash);
 for (const file of ['LICENSE', 'cli/LICENSE']) assert.equal(canonical(await read(file)), license);
 const apache = canonical(await read('../LICENSES/Apache-2.0.txt'));
@@ -19,40 +19,56 @@ for (const file of ['LICENSES/Apache-2.0.txt', 'cli/LICENSES/Apache-2.0.txt']) a
 for (const file of ['../NOTICE', 'NOTICE', 'cli/NOTICE']) {
   const text = await read(file);
   assert.match(text, /Required Notice: Copyright 2026 Zihang Dong/);
-  assert.match(text, /Previously granted Apache-2\.0 rights are not withdrawn/);
+  assert.match(text, /Previously granted\s+Apache-2\.0 and other rights are not withdrawn/);
   assert.match(text, /Joshua-Zion PR #67/);
 }
-assert.equal(JSON.parse(await read('package.json')).license, 'SEE LICENSE IN NOTICE');
-assert.equal(JSON.parse(await read('cli/package.json')).license, 'SEE LICENSE IN NOTICE');
-assert.equal(JSON.parse(await read('package-lock.json')).packages[''].license, 'SEE LICENSE IN NOTICE');
-assert.equal(JSON.parse(await read('cli/npm-shrinkwrap.json')).packages[''].license, 'SEE LICENSE IN NOTICE');
+assert.equal(JSON.parse(await read('package.json')).license, 'MIT');
+assert.equal(JSON.parse(await read('cli/package.json')).license, 'MIT');
+assert.equal(JSON.parse(await read('package-lock.json')).packages[''].license, 'MIT');
+assert.equal(JSON.parse(await read('cli/npm-shrinkwrap.json')).packages[''].license, 'MIT');
 const cli = JSON.parse(await read('cli/package.json'));
 assert.ok(cli.files.includes('NOTICE'));
 assert.ok(cli.files.includes('LICENSES'));
 const resources = JSON.parse(await read('src-tauri/tauri.conf.json')).bundle.resources;
-for (const file of ['../LICENSE', '../NOTICE', '../LICENSES/Apache-2.0.txt', '../LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md']) assert.ok(resources.includes(file));
+for (const file of ['../LICENSE', '../NOTICE', '../LICENSES/Apache-2.0.txt', '../LICENSES/MIT.txt']) assert.ok(resources.includes(file));
+for (const file of ['Download-FFmpeg-GPL-3.0.txt', 'Download-FFmpeg-6.1.1-README.txt', 'Download-FFmpeg-ToolKnit-README.txt', 'Download-FFmpeg-Third-Party.txt', 'Download-FFmpeg-Toolchain.txt', 'Download-Mozilla-MPL-2.0.txt', 'Download-Whisper-MIT.txt', 'Download-Models-Notice.txt']) {
+  assert.ok(resources.includes(`../LICENSES/${file}`), `${file} must be bundled`);
+  assert.ok((await read(`LICENSES/${file}`)).trim(), `${file} must not be empty`);
+}
+const modelNotices = await read('LICENSES/Download-Models-Notice.txt');
+assert.match(modelNotices, /Xenova\/modnet[\s\S]*Apache-2\.0/);
+assert.match(modelNotices, /ggerganov\/whisper\.cpp[\s\S]*MIT/);
+assert.match(modelNotices, /https:\/\/github\.com\/ZihangDong\/toolknit-ffmpeg-sources/);
+assert.match(modelNotices, /6\.1\.6-toolknit-r3[\s\S]*GNU GPL version 3 or later/);
+assert.match(modelNotices, /ffmpeg-6\.1\.6-toolknit-3/);
+assert.match(modelNotices, /Legacy Gyan 6\.1\.1[\s\S]*unresolved/);
+const ffmpegNotice = await read('LICENSES/Download-FFmpeg-ToolKnit-README.txt');
+assert.match(ffmpegNotice, /x264, x265, LAME, Ogg, Vorbis, Opus, libvpx, WebP/);
+assert.match(ffmpegNotice, /zlib, dav1d and NVIDIA/);
+assert.match(ffmpegNotice, /ffmpeg-6\.1\.6-toolknit-3/);
+assert.match(await read('LICENSES/Download-FFmpeg-Third-Party.txt'), /NVIDIA[\s\S]*Permission is hereby granted/);
+assert.match(await read('LICENSES/Download-FFmpeg-Toolchain.txt'), /GCC Runtime Library Exception/);
 const cargo = await read('src-tauri/Cargo.toml');
-assert.match(cargo, /^license-file = "\.\.\/NOTICE"$/m);
-assert.doesNotMatch(cargo, /^license =/m);
-for (const file of ['../NOTICE', 'NOTICE']) {
+assert.match(cargo, /^license = "MIT"$/m);
+assert.doesNotMatch(cargo, /^license-file =/m);
+for (const file of ['../NOTICE', 'NOTICE', 'cli/NOTICE']) {
   const notice = await read(file);
-  assert.match(notice, /excluded\s+from the general PolyForm grant/);
-  assert.match(notice, /commercial\s+AND noncommercial use requires prior written authorization: info@toolknit\.com/);
-  assert.match(notice, /src\/features\/pdf-to-word\/\*\*/);
-  assert.match(notice, /src-tauri\/src\/native_runtime\/pdf\/docx_write\.rs/);
+  assert.match(notice, /PDF-to-Word Engine/);
+  assert.match(notice, /MIT/);
+  assert.match(notice, /not a license condition/);
+  assert.match(notice, /Third-party code/);
+  assert.doesNotMatch(notice, /requires prior written authorization|excluded\s+from the general PolyForm grant/);
 }
 execFileSync(process.execPath, ['scripts/sync-pdf-word-license.mjs', '--check'], { stdio: 'pipe', windowsHide: true });
-const engineLicense = await read('../LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md');
-assert.equal(canonical(await read('cli/LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md')), canonical(engineLicense),
-  'CLI NOTICE references the scoped exception, so its complete text must accompany the notice');
-assert.match(engineLicense, /Official application use/);
-assert.match(engineLicense, /commercial and noncommercial purposes/);
-assert.match(engineLicense, /info@toolknit\.com/);
-assert.match(engineLicense, /previously granted under Apache-2\.0, PolyForm/);
+const engineLicense = await read('../LICENSES/MIT.txt');
+for (const file of ['cli/LICENSES/MIT.txt', 'src/features/pdf-to-word/LICENSE.md', 'public/assets/licenses/pdf-word-engine.txt']) {
+  assert.equal(canonical(await read(file)), canonical(engineLicense));
+}
+assert.equal(canonical(engineLicense),license);
 assert.match(await read('src/features/color-space-compare/README.md'), /LICENSES\/Apache-2\.0\.txt/);
 for (const file of ['../README.md', '../README_EN.md', 'src/legal-data.js']) {
-  assert.match(await read(file), /PolyForm Noncommercial 1\.0\.0/);
-  assert.match(await read(file), /info@toolknit\.com/);
+  assert.match(await read(file), /MIT/);
+  assert.doesNotMatch(await read(file), /commercial use requires separate permission|商业用途需另行授权/i);
 }
 
 // Git's Windows checkout changes line endings, never license ownership or text.
@@ -66,14 +82,14 @@ try {
   };
   await mkdir(path.join(project, 'scripts'), { recursive: true });
   await copyFile('scripts/sync-pdf-word-license.mjs', path.join(project, 'scripts/sync-pdf-word-license.mjs'));
-  const lines = ['SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0',
+  const lines = ['SPDX-License-Identifier: MIT',
     'Copyright 2026 Zihang Dong.',
-    'Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com'];
+    'Licensed under the MIT License; see LICENSE and NOTICE.'];
   const jsHeader = lines.map(line => `// ${line}`).join('\n') + '\n';
   const cssHeader = `/* ${lines.join('\n * ')}\n */\n`;
-  const sourcePaths = ['src/features/pdf-to-word/sample.js', 'src-tauri/src/native_runtime/pdf/docx_write.rs', 'cli/lib/pdf-word-engine.mjs'];
-  const licensePaths = ['../LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md',
-    'LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md', 'src/features/pdf-to-word/LICENSE.md', 'public/assets/licenses/pdf-word-engine.txt'];
+  const sourcePaths = ['src/features/pdf-to-word/sample.js', 'src-tauri/src/native_runtime/pdf/docx_write.rs', 'src-tauri/src/native_runtime/pdf/docx_fonts.rs', 'cli/lib/pdf-word-engine.mjs'];
+  const licensePaths = ['../LICENSES/MIT.txt',
+    'LICENSES/MIT.txt', 'src/features/pdf-to-word/LICENSE.md', 'public/assets/licenses/pdf-word-engine.txt'];
   const invoke = (...args) => spawnSync(process.execPath, ['scripts/sync-pdf-word-license.mjs', ...args],
     { cwd: project, encoding: 'utf8', windowsHide: true, timeout: 10000 });
   for (const eol of ['\n', '\r\n']) {
@@ -93,7 +109,7 @@ try {
     assert.notEqual(invoke('--check').status, 0, 'Changed copyright must still fail.');
     assert.notEqual(invoke().status, 0, 'Sync must not replace an existing different SPDX header.');
     await fixture(sourcePaths[0], jsHeader);
-    await fixture(licensePaths[1], canonical(engineLicense).replace('info@toolknit.com', 'changed@example.invalid') + '\n');
+    await fixture(licensePaths[1], canonical(engineLicense).replace('Permission is hereby granted', 'Permission is hereby denied') + '\n');
     assert.notEqual(invoke('--check').status, 0, 'Changed license terms must still fail.');
   }
 } finally {
@@ -102,4 +118,4 @@ try {
   await rm(fixtureRoot, { recursive: true, force: true });
 }
 console.log('License checkout regression passed: LF, CRLF, mixed copies, idempotent sync and rejected missing/changed notices.');
-console.log('License contracts passed: scoped Engine terms, source headers, metadata, official-app exception, third-party and prior grants, and package inclusion.');
+console.log('License contracts passed: MIT Engine/source grants, headers, metadata, optional backlinks, third-party and prior grants, and package inclusion.');

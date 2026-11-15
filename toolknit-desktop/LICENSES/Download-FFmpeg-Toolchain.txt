@@ -1,0 +1,2729 @@
+Toolchain runtime notices for toolknit-win64-6.1.6-r3.
+Original copyright/license text, preserved from the recorded Ubuntu compiler packages.
+
+
+===== g++-mingw-w64-x86-64-posix.txt =====
+This work was packaged for Debian by:
+
+    Stephen Kitt <skitt@debian.org> on Tue, 07 Sep 2010 15:57:34 +0200
+
+It is based on the gcc-9-source package maintained by the Debian GCC
+Maintainers <debian-gcc@lists.debian.org>.
+
+The following is reproduced from the copyright file in gcc-9-source:
+
+This is the Debian GNU/Linux prepackaged version of the GNU compiler
+collection, containing Ada, C, C++, D, Fortran 95, Go, Objective-C,
+Objective-C++, and Modula-2 compilers, documentation, and support
+libraries.  In addition, Debian provides the gm2 compiler, either in
+the same source package, or built from a separate same source package.
+Packaging is done by the Debian GCC Maintainers
+<debian-gcc@lists.debian.org>, with sources obtained from:
+
+  ftp://gcc.gnu.org/pub/gcc/releases/  (for full releases)
+  svn://gcc.gnu.org/svn/gcc/           (for prereleases)
+  ftp://sourceware.org/pub/newlib/     (for newlib)
+  git://git.savannah.gnu.org/gm2.git   (for Modula-2)
+
+The current gcc-9 source package is taken from the SVN gcc-9-branch.
+
+Changes: See changelog.Debian.gz
+
+Debian splits the GNU Compiler Collection into packages for each language,
+library, and documentation as follows:
+
+Language       Compiler package  Library package    Documentation
+---------------------------------------------------------------------------
+Ada            gnat-9          libgnat-9          gnat-9-doc
+BRIG           gccbrig-9       libhsail-rt0
+C              gcc-9                              gcc-9-doc
+C++            g++-9           libstdc++6         libstdc++6-9-doc
+D              gdc-9
+Fortran 95     gfortran-9      libgfortran3       gfortran-9-doc
+Go             gccgo-9         libgo0
+Objective C    gobjc-9         libobjc2
+Objective C++  gobjc++-9
+Modula-2       gm2-9           libgm2
+
+For some language run-time libraries, Debian provides source files,
+development files, debugging symbols and libraries containing position-
+independent code in separate packages:
+
+Language  Sources      Development   Debugging            Position-Independent
+------------------------------------------------------------------------------
+C++                                  libstdc++6-9-dbg  libstdc++6-9-pic
+D         libphobos-9-dev
+
+Additional packages include:
+
+All languages:
+libgcc1, libgcc2, libgcc4       GCC intrinsics (platform-dependent)
+gcc-9-base                    Base files common to all compilers
+gcc-9-soft-float              Software floating point (ARM only)
+gcc-9-source                  The sources with patches
+
+Ada:
+libgnatvsn-dev, libgnatvsn9   GNAT version library
+
+C:
+cpp-9, cpp-9-doc            GNU C Preprocessor
+libssp0-dev, libssp0            GCC stack smashing protection library
+libquadmath0                    Math routines for the __float128 type
+fixincludes                     Fix non-ANSI header files
+
+C, C++ and Fortran 95:
+libgomp1-dev, libgomp1          GCC OpenMP (GOMP) support library
+libitm1-dev, libitm1            GNU Transactional Memory Library
+
+Biarch support: On some 64-bit platforms which can also run 32-bit code,
+Debian provides additional packages containing 32-bit versions of some
+libraries.  These packages have names beginning with 'lib32' instead of
+'lib', for example lib32stdc++6.  Similarly, on some 32-bit platforms which
+can also run 64-bit code, Debian provides additional packages with names
+beginning with 'lib64' instead of 'lib'.  These packages contain 64-bit
+versions of the libraries.  (At this time, not all platforms and not all
+libraries support biarch.)  The license terms for these lib32 or lib64
+packages are identical to the ones for the lib packages.
+
+
+COPYRIGHT STATEMENTS AND LICENSING TERMS
+
+
+GCC is Copyright (C) 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994,
+1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
+2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
+Free Software Foundation, Inc.
+
+GCC is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3, or (at your option) any later
+version.
+
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
+
+Files that have exception clauses are licensed under the terms of the
+GNU General Public License; either version 3, or (at your option) any
+later version.
+
+On Debian GNU/Linux systems, the complete text of the GNU General
+Public License is in `/usr/share/common-licenses/GPL', version 3 of this
+license in `/usr/share/common-licenses/GPL-3'.
+
+The following runtime libraries are licensed under the terms of the
+GNU General Public License (v3 or later) with version 3.1 of the GCC
+Runtime Library Exception (included in this file):
+
+ - libgcc (libgcc/, gcc/libgcc2.[ch], gcc/unwind*, gcc/gthr*,
+   gcc/coretypes.h, gcc/crtstuff.c, gcc/defaults.h, gcc/dwarf2.h,
+   gcc/emults.c, gcc/gbl-ctors.h, gcc/gcov-io.h, gcc/libgcov.c,
+   gcc/tsystem.h, gcc/typeclass.h).
+ - libatomic
+ - libdecnumber
+ - libgomp
+ - libitm
+ - libssp
+ - libstdc++-v3
+ - libobjc
+ - libgfortran
+ - The libgnat-9 Ada support library and libgnatvsn library.
+ - Various config files in gcc/config/ used in runtime libraries.
+ - libvtv
+
+The libbacktrace library is licensed under the following terms:
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    (1) Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+
+    (2) Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
+
+    (3) The name of the author may not be used to
+    endorse or promote products derived from this software without
+    specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+
+The libsanitizer libraries (libasan, liblsan, libtsan, libubsan) are
+licensed under the following terms:
+
+Copyright (c) 2009-2014 by the LLVM contributors.
+
+All rights reserved.
+
+Developed by:
+
+    LLVM Team
+
+    University of Illinois at Urbana-Champaign
+
+    http://llvm.org
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal with
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimers.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimers in the
+      documentation and/or other materials provided with the distribution.
+
+    * Neither the names of the LLVM Team, University of Illinois at
+      Urbana-Champaign, nor the names of its contributors may be used to
+      endorse or promote products derived from this Software without specific
+      prior written permission.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
+SOFTWARE.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+
+The libffi library is licensed under the following terms:
+
+    libffi - Copyright (c) 1996-2003  Red Hat, Inc.
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files (the
+    ``Software''), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL CYGNUS SOLUTIONS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+    OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+    ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+    OTHER DEALINGS IN THE SOFTWARE.
+
+
+The documentation is licensed under the GNU Free Documentation License (v1.2).
+On Debian GNU/Linux systems, the complete text of this license is in
+`/usr/share/common-licenses/GFDL-1.2'.
+
+
+GCC RUNTIME LIBRARY EXCEPTION
+
+Version 3.1, 31 March 2009
+
+Copyright (C) 2009 Free Software Foundation, Inc. <http://fsf.org/>
+
+Everyone is permitted to copy and distribute verbatim copies of this
+license document, but changing it is not allowed.
+
+This GCC Runtime Library Exception ("Exception") is an additional
+permission under section 7 of the GNU General Public License, version
+3 ("GPLv3"). It applies to a given file (the "Runtime Library") that
+bears a notice placed by the copyright holder of the file stating that
+the file is governed by GPLv3 along with this Exception.
+
+When you use GCC to compile a program, GCC may combine portions of
+certain GCC header files and runtime libraries with the compiled
+program. The purpose of this Exception is to allow compilation of
+non-GPL (including proprietary) programs to use, in this way, the
+header files and runtime libraries covered by this Exception.
+
+0. Definitions.
+
+A file is an "Independent Module" if it either requires the Runtime
+Library for execution after a Compilation Process, or makes use of an
+interface provided by the Runtime Library, but is not otherwise based
+on the Runtime Library.
+
+"GCC" means a version of the GNU Compiler Collection, with or without
+modifications, governed by version 3 (or a specified later version) of
+the GNU General Public License (GPL) with the option of using any
+subsequent versions published by the FSF.
+
+"GPL-compatible Software" is software whose conditions of propagation,
+modification and use would permit combination with GCC in accord with
+the license of GCC.
+
+"Target Code" refers to output from any compiler for a real or virtual
+target processor architecture, in executable form or suitable for
+input to an assembler, loader, linker and/or execution
+phase. Notwithstanding that, Target Code does not include data in any
+format that is used as a compiler intermediate representation, or used
+for producing a compiler intermediate representation.
+
+The "Compilation Process" transforms code entirely represented in
+non-intermediate languages designed for human-written code, and/or in
+Java Virtual Machine byte code, into Target Code. Thus, for example,
+use of source code generators and preprocessors need not be considered
+part of the Compilation Process, since the Compilation Process can be
+understood as starting with the output of the generators or
+preprocessors.
+
+A Compilation Process is "Eligible" if it is done using GCC, alone or
+with other GPL-compatible software, or if it is done without using any
+work based on GCC. For example, using non-GPL-compatible Software to
+optimize any GCC intermediate representations would not qualify as an
+Eligible Compilation Process.
+
+1. Grant of Additional Permission.
+
+You have permission to propagate a work of Target Code formed by
+combining the Runtime Library with Independent Modules, even if such
+propagation would otherwise violate the terms of GPLv3, provided that
+all Target Code was generated by Eligible Compilation Processes. You
+may then convey such a combination under terms of your choice,
+consistent with the licensing of the Independent Modules.
+
+2. No Weakening of GCC Copyleft.
+
+The availability of this Exception does not imply any general
+presumption that third-party software is unaffected by the copyleft
+requirements of the license of GCC.
+
+
+libquadmath/*.[hc]:
+
+   Copyright (C) 2010 Free Software Foundation, Inc.
+   Written by Francois-Xavier Coudert  <fxcoudert@gcc.gnu.org>
+   Written by Tobias Burnus  <burnus@net-b.de>
+
+This file is part of the libiberty library.
+Libiberty is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+Libiberty is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+
+libquadmath/math:
+
+atanq.c, expm1q.c, j0q.c, j1q.c, log1pq.c, logq.c:
+    Copyright 2001 by Stephen L. Moshier <moshier@na-net.ornl.gov>
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+coshq.c, erfq.c, jnq.c, lgammaq.c, powq.c, roundq.c:
+   Changes for 128-bit __float128 are
+   Copyright (C) 2001 Stephen L. Moshier <moshier@na-net.ornl.gov>
+   and are incorporated herein by permission of the author.  The author
+   reserves the right to distribute this material elsewhere under different
+   copying permissions.  These modifications are distributed here under
+   the following terms:
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+ldexpq.c:
+   * Conversion to long double by Ulrich Drepper,
+   * Cygnus Support, drepper@cygnus.com.
+
+cosq_kernel.c, expq.c, sincos_table.c, sincosq.c, sincosq_kernel.c,
+sinq_kernel.c, truncq.c:
+   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
+
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+isinfq.c:
+ * Written by J.T. Conklin <jtc@netbsd.org>.
+ * Change for long double by Jakub Jelinek <jj@ultra.linux.cz>
+ * Public domain.
+
+llroundq.c, lroundq.c, tgammaq.c:
+   Copyright (C) 1997, 1999, 2002, 2004 Free Software Foundation, Inc.
+   This file is part of the GNU C Library.
+   Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997 and
+                  Jakub Jelinek <jj@ultra.linux.cz>, 1999.
+
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+log10q.c:
+   Cephes Math Library Release 2.2:  January, 1991
+   Copyright 1984, 1991 by Stephen L. Moshier
+   Adapted for glibc November, 2001
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+remaining files:
+
+ * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+ *
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
+ * Permission to use, copy, modify, and distribute this
+ * software is freely granted, provided that this notice
+ * is preserved.
+
+
+gcc/go/gofrontend, libgo:
+
+Copyright (c) 2009 The Go Authors. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+   * Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the
+distribution.
+   * Neither the name of Google Inc. nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+D:
+gdc-9                         GNU D Compiler
+libphobos-9-dev               D standard runtime library
+
+The D source package is made up of the following components.
+
+The D front-end for GCC:
+ - d/*
+
+Copyright (C) 2004-2007 David Friedman
+Modified by Vincenzo Ampolo, Michael Parrot, Iain Buclaw, (C) 2009, 2010
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+On Debian GNU/Linux systems, the complete text of the GNU General
+Public License is in `/usr/share/common-licenses/GPL', version 2 of this
+license in `/usr/share/common-licenses/GPL-2'.
+
+
+The DMD Compiler implementation of the D programming language:
+ - d/dmd/*
+
+Copyright (c) 1999-2010 by Digital Mars
+All Rights Reserved
+written by Walter Bright
+http://www.digitalmars.com
+License for redistribution is by either the Artistic License or
+the GNU General Public License (v1).
+
+On Debian GNU/Linux systems, the complete text of the GNU General
+Public License is in `/usr/share/common-licenses/GPL', the Artistic
+license in `/usr/share/common-licenses/Artistic'.
+
+
+The Zlib data compression library:
+ - d/phobos/etc/c/zlib/*
+
+ (C) 1995-2004 Jean-loup Gailly and Mark Adler
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+
+
+The Phobos standard runtime library:
+ - d/phobos/*
+
+Unless otherwise marked within the file, each file in the source
+is under the following licenses:
+
+Copyright (C) 2004-2005 by Digital Mars, www.digitalmars.com
+Written by Walter Bright
+
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, in both source and binary form, subject to the following
+restrictions:
+
+ o  The origin of this software must not be misrepresented; you must not
+    claim that you wrote the original software. If you use this software
+    in a product, an acknowledgment in the product documentation would be
+    appreciated but is not required.
+ o  Altered source versions must be plainly marked as such, and must not
+    be misrepresented as being the original software.
+ o  This notice may not be removed or altered from any source
+    distribution.
+
+By plainly marking modifications, something along the lines of adding to each
+file that has been changed a "Modified by Foo Bar" line
+underneath the "Written by" line would be adequate.
+
+The libhsail-rt library is licensed under the following terms:
+
+   Copyright (C) 2015-2017 Free Software Foundation, Inc.
+   Contributed by Pekka Jaaskelainen <pekka.jaaskelainen@parmance.com>
+   for General Processor Tech.
+
+   Permission is hereby granted, free of charge, to any person obtaining a
+   copy of this software and associated documentation files
+   (the "Software"), to deal in the Software without restriction, including
+   without limitation the rights to use, copy, modify, merge, publish,
+   distribute, sublicense, and/or sell copies of the Software, and to
+   permit persons to whom the Software is furnished to do so, subject to
+   the following conditions:
+
+   The above copyright notice and this permission notice shall be included
+   in all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+   USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+libhsail-rt/rt/fp16.c is licensed under the following terms:
+
+   Copyright (C) 2008-2017 Free Software Foundation, Inc.
+   Contributed by CodeSourcery.
+
+   This file is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by the
+   Free Software Foundation; either version 3, or (at your option) any
+   later version.
+
+   This file is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   Under Section 7 of GPL version 3, you are granted additional
+   permissions described in the GCC Runtime Library Exception, version
+   3.1, as published by the Free Software Foundation.
+
+   You should have received a copy of the GNU General Public License and
+   a copy of the GCC Runtime Library Exception along with this program;
+   see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+   <http://www.gnu.org/licenses/>.
+
+gcc/gm2:
+Copyright (C) 2007-2019 Free Software Foundation, Inc.
+Contributed by Gaius Mulley <gaius@glam.ac.uk>.
+
+This file is part of GNU Modula-2.
+
+GNU Modula-2 is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3, or (at your option)
+any later version.
+
+GNU Modula-2 is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+gcc/gm2/**/*.texi:
+Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
+2011, 2012, 2012, 2013 Free Software Foundation, Inc.
+
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+
+gcc/gm2/gm2-coroutines:
+Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+              Free Software Foundation, Inc.
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+gcc/gm2/ulm-lib-gm2:
+Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
+              Free Software Foundation, Inc.
+
+GNU Modula-2 is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3, or (at your option) any later
+version.
+
+This file was originally part of the University of Ulm library
+
+Ulm's Modula-2 Library
+Copyright (C) 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993,
+1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005
+by University of Ulm, SAI, D-89069 Ulm, Germany
+
+gcc/gm2/ulm-lib-gm2/std/M2RTS.mod:
+gcc/gm2/ulm-lib-gm2/std/Storage.mod:
+gcc/gm2/ulm-lib-gm2/std/RTExceptions.mod:
+
+Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010 Free Software Foundation, Inc.
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+gcc/gm2/gm2-libs:
+Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+Free Software Foundation, Inc.
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+./gm2-libs/cbuiltin.def:
+./gm2-libs/MathLib0.def:
+./gm2-libs/SYSTEM.def:
+./gm2-libs/sckt.def:
+./gm2-libs/Indexing.def:
+./gm2-libs/Builtins.mod:
+./gm2-libs/SFIO.mod:
+./gm2-libs/MathLib0.mod:
+./gm2-libs/gdbif.mod:
+./gm2-libs/M2EXCEPTION.mod:
+./gm2-libs/SFIO.def:
+./gm2-libs/StringConvert.mod:
+./gm2-libs/StringConvert.def:
+./gm2-libs/config-host.in:
+./gm2-libs/Indexing.mod:
+./gm2-libs/errno.def:
+
+Copyright (C) 2001-2019 Free Software Foundation, Inc.
+Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
+
+GNU Modula-2 is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3, or (at your option)
+any later version.
+
+GNU Modula-2 is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+./gm2-libs/M2EXCEPTION.def:
+Library module defined by the International Standard
+Information technology - programming languages
+BS ISO/IEC 10514-1:1996E Part 1: Modula-2, Base Language.
+
+Copyright ISO/IEC (International Organization for Standardization
+and International Electrotechnical Commission) 1996, 1997, 1998,
+1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+
+gcc/gm2/gm2-libiberty/:
+Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+              Free Software Foundation, Inc.
+
+GNU Modula-2 is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3, or (at your option) any later
+version.
+
+GNU Modula-2 is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
+
+gcc/gm2/gm2-libs-iso/:
+This has a mix of licenses, both LGPL-2.1 and GPL-3.0, plus the apparently
+unmodified definition modules from ISO/IEC.
+
+gcc/gm2/gm2-libs-iso/*.def:
+
+Library module defined by the International Standard
+Information technology - programming languages
+BS ISO/IEC 10514-1:1996E Part 1: Modula-2, Base Language.
+
+Copyright ISO/IEC (International Organization for Standardization
+and International Electrotechnical Commission) 1996, 1997, 1998,
+1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+
+gcc/gm2/gm2-libs-iso/*.def:
+
+Copyright (C) 2008, 2009, 2010 Free Software Foundation, Inc.
+
+gcc/gm2/gm2-libs-iso/*.def:
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+gcc/gm2/gm2-libs-iso/*.mod:
+
+Copyright (C) 2012 Free Software Foundation, Inc.
+
+GNU Modula-2 is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3, or (at your option) any later
+version.
+
+GNU Modula-2 is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
+
+gcc/gm2/gm2-libs-iso/*.mod:
+
+Copyright (C) 2009, 2010 Free Software Foundation, Inc.
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+gcc/gm2/gm2-libs-min/*:
+Copyright (C) 2001-2019 Free Software Foundation, Inc.
+mix of GPL-3.0 and LGPL-3.0
+
+gcc/gm2/gm2-libs-pim/*:
+Copyright (C) 2001-2019 Free Software Foundation, Inc.
+mix of GPL-3.0 and LGPL-2.1/3
+
+gcc/gm2/gm2-libs-ch/*:
+Copyright (C) 2001-2019 Free Software Foundation, Inc.
+mix of GPL-3.0 and LGPL-2.1/3
+
+gcc/gm2/examples:
+Copyright (C) 2005-2015 Free Software Foundation, Inc.
+Mix of LGPL-2.1 and GPL-3.0.
+
+gcc/gm2/images:
+GPL-3+
+
+gcc/gm2/el/gm2-mode.el:
+;; Everyone is granted permission to copy, modify and redistribute
+;; GNU Emacs, but only under the conditions described in the
+;; GNU Emacs General Public License.   A copy of this license is
+;; supposed to have been given to you along with GNU Emacs so you
+;; can know your rights and responsibilities.  It should be in a
+;; file named COPYING.  Among other things, the copyright notice
+;; and this notice must be preserved on all copies.
+
+gcc/gm2/mc-boot/:
+Copyright (C) 2001-2018 Free Software Foundation, Inc.
+Contributed by Gaius Mulley <gaius@glam.ac.uk>.
+Mix of GPL-3 and LGPL-2.1.
+
+gcc/testsuite/gm2/:
+Copyright (C) 2001-2019 Free Software Foundation, Inc.
+Mix of GPL-2+ and GPL-3+
+
+libgm2:
+
+libgm2/libiso/:
+Copyright (C) 2008, 2009, 2010 Free Software Foundation, Inc.
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+libgm2/libpim/:
+Copyright (C) 2005-2014 Free Software Foundation, Inc.
+Mix of LGPL-2.1, LGPL-3 and GPL-3.
+
+libgm2/liblog/:
+Copyright (C) 2005-2018 Free Software Foundation, Inc.
+Mix of LGPL-2.1 and LGPL-3.
+
+libgm2/libpth/:
+Copyright: (C) 1999-2006 Ralf S. Engelschall <rse@gnu.org>
+License: LGPL-2.1+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Library General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ Library General Public License for more details.
+
+libgm2/libulm/:
+Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+              Free Software Foundation, Inc.
+
+GNU Modula-2 is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3, or (at your option) any later
+version.
+
+GNU Modula-2 is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
+
+libgm2/libcor/:
+Copyright (C) 2005-2019 Free Software Foundation, Inc.
+Contributed by Gaius Mulley <gaius@glam.ac.uk>.
+
+GNU Modula-2 is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3, or (at your option)
+any later version.
+
+GNU Modula-2 is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+libgm2/libmin/:
+Copyright (C) 2010, 2011, 2012, 2013 Free Software Foundation, Inc.
+
+GNU Modula-2 is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3, or (at your option) any later
+version.
+
+GNU Modula-2 is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
+
+libgm2/p2c/:
+Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+              Free Software Foundation, Inc.
+
+GNU Modula-2 is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3, or (at your option)
+any later version.
+
+GNU Modula-2 is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+newlib-X.Y.Z/:
+
+Upstream Authors:
+newlib@sources.redhat.com
+Jeff Johnston <jjohnstn@redhat.com>
+Tom Fitzsimmons <fitzsim@redhat.com>
+
+The newlib subdirectory is a collection of software from several sources.
+Each file may have its own copyright/license that is embedded in the source
+file.
+
+This list documents those licenses which are more restrictive than
+a BSD-like license or require the copyright notice
+to be duplicated in documentation and/or other materials associated with
+the distribution.  Certain licenses documented here only apply to
+specific targets.  Certain clauses only apply if you are building the
+code as part of your binary.
+
+Note that this list may omit certain licenses that
+only pertain to the copying/modifying of the individual source code.
+If you are distributing the source code, then you do not need to
+worry about these omitted licenses, so long as you do not modify the
+copyright information already in place.
+
+Parts of this work are licensed under the terms of the GNU General
+Public License. On Debian systems, the complete text of this license
+can be found in /usr/share/common-licenses/GPL.
+
+Parts of this work are licensed under the terms of the GNU Library
+General Public License. On Debian systems, the complete text of this
+license be found in /usr/share/common-licenses/LGPL.
+
+(1) University of California, Berkeley
+
+[1a]
+
+Copyright (c) 1990 The Regents of the University of California.
+All rights reserved.
+
+Redistribution and use in source and binary forms are permitted
+provided that the above copyright notice and this paragraph are
+duplicated in all such forms and that any documentation,
+and other materials related to such distribution and use
+acknowledge that the software was developed
+by the University of California, Berkeley.  The name of the
+University may not be used to endorse or promote products derived
+from this software without specific prior written permission.
+THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+[1b]
+
+Copyright (c) 1990 The Regents of the University of California.
+All rights reserved.
+
+Redistribution and use in source and binary forms are permitted
+provided that the above copyright notice and this paragraph are
+duplicated in all such forms and that any documentation,
+advertising materials, and other materials related to such
+distribution and use acknowledge that the software was developed
+by the University of California, Berkeley.  The name of the
+University may not be used to endorse or promote products derived
+from this software without specific prior written permission.
+THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+[1c]
+
+Copyright (c) 1981, 1983, 1986, 1988, 1989, 1991, 1992, 1993, 1994
+The Regents of the University of California.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. All advertising materials mentioning features or use of this software
+   must display the following acknowledgement:
+     This product includes software developed by the University of
+     California, Berkeley and its contributors.
+4. Neither the name of the University nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+[1d]
+
+Copyright (c) 1988, 1990, 1993 Regents of the University of California.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. Neither the name of the University nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+[1e]
+
+Copyright (c) 1982, 1986, 1989, 1991, 1993, 1994
+The Regents of the University of California.  All rights reserved.
+(c) UNIX System Laboratories, Inc.
+All or some portions of this file are derived from material licensed
+to the University of California by American Telephone and Telegraph
+Co. or Unix System Laboratories, Inc. and are reproduced herein with
+the permission of UNIX System Laboratories, Inc.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. All advertising materials mentioning features or use of this software
+   must display the following acknowledgement:
+     This product includes software developed by the University of
+     California, Berkeley and its contributors.
+4. Neither the name of the University nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+[1f]
+
+Copyright (c) 1987, 1988, 2000 Regents of the University of California.
+All rights reserved.
+
+Redistribution and use in source and binary forms are permitted
+provided that: (1) source distributions retain this entire copyright
+notice and comment, and (2) distributions including binaries display
+the following acknowledgement:  ``This product includes software
+developed by the University of California, Berkeley and its contributors''
+in the documentation or other materials provided with the distribution
+and in all advertising materials mentioning features or use of this
+software. Neither the name of the University nor the names of its
+contributors may be used to endorse or promote products derived
+from this software without specific prior written permission.
+THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+-------------------------------------------------------------
+ Please note that in some of the above alternate licenses, there is a
+ statement regarding that acknowledgement must be made in any
+ advertising materials for products using the code.  This restriction
+ no longer applies due to the following license change:
+
+  ftp://ftp.cs.berkeley.edu/pub/4bsd/README.Impt.License.Change
+
+ In some cases the defunct clause has been removed in modified newlib code and
+ in some cases, the clause has been left as-is.
+-------------------------------------------------------------
+
+(2) Cygwin (cygwin targets only)
+
+Copyright 2001 Red Hat, Inc.
+
+This software is a copyrighted work licensed under the terms of the
+Cygwin license.  Please consult the file "CYGWIN_LICENSE" for
+details.
+
+(3) David M. Gay at AT&T
+
+The author of this software is David M. Gay.
+
+Copyright (c) 1991 by AT&T.
+
+Permission to use, copy, modify, and distribute this software for any
+purpose without fee is hereby granted, provided that this entire notice
+is included in all copies of any software which is or includes a copy
+or modification of this software and in all copies of the supporting
+documentation for such software.
+
+THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
+WARRANTY.  IN PARTICULAR, NEITHER THE AUTHOR NOR AT&T MAKES ANY
+REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
+OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
+
+(4) Advanced Micro Devices
+
+Copyright 1989, 1990 Advanced Micro Devices, Inc.
+
+This software is the property of Advanced Micro Devices, Inc  (AMD)  which
+specifically  grants the user the right to modify, use and distribute this
+software provided this notice is not removed or altered.  All other rights
+are reserved by AMD.
+
+AMD MAKES NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, WITH REGARD TO THIS
+SOFTWARE.  IN NO EVENT SHALL AMD BE LIABLE FOR INCIDENTAL OR CONSEQUENTIAL
+DAMAGES IN CONNECTION WITH OR ARISING FROM THE FURNISHING, PERFORMANCE, OR
+USE OF THIS SOFTWARE.
+
+So that all may benefit from your experience, please report  any  problems
+or  suggestions about this software to the 29K Technical Support Center at
+800-29-29-AMD (800-292-9263) in the USA, or 0800-89-1131  in  the  UK,  or
+0031-11-1129 in Japan, toll free.  The direct dial number is 512-462-4118.
+
+Advanced Micro Devices, Inc.
+29K Support Products
+Mail Stop 573
+5900 E. Ben White Blvd.
+Austin, TX 78741
+800-292-9263
+
+(5) C.W. Sandmann
+
+Copyright (C) 1993 C.W. Sandmann
+
+This file may be freely distributed as long as the author's name remains.
+
+(6) Eric Backus
+
+(C) Copyright 1992 Eric Backus
+
+This software may be used freely so long as this copyright notice is
+left intact.  There is no warrantee on this software.
+
+(7) Sun Microsystems
+
+Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+
+Developed at SunPro, a Sun Microsystems, Inc. business.
+Permission to use, copy, modify, and distribute this
+software is freely granted, provided that this notice
+is preserved.
+
+(8) Hewlett Packard
+
+(c) Copyright 1986 HEWLETT-PACKARD COMPANY
+
+To anyone who acknowledges that this file is provided "AS IS"
+without any express or implied warranty:
+    permission to use, copy, modify, and distribute this file
+for any purpose is hereby granted without fee, provided that
+the above copyright notice and this notice appears in all
+copies, and that the name of Hewlett-Packard Company not be
+used in advertising or publicity pertaining to distribution
+of the software without specific, written prior permission.
+Hewlett-Packard Company makes no representations about the
+suitability of this software for any purpose.
+
+(9) Hans-Peter Nilsson
+
+Copyright (C) 2001 Hans-Peter Nilsson
+
+Permission to use, copy, modify, and distribute this software is
+freely granted, provided that the above copyright notice, this notice
+and the following disclaimer are preserved with no changes.
+
+THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE.
+
+(10) Stephane Carrez (m68hc11-elf/m68hc12-elf targets only)
+
+Copyright (C) 1999, 2000, 2001, 2002 Stephane Carrez (stcarrez@nerim.fr)
+
+The authors hereby grant permission to use, copy, modify, distribute,
+and license this software and its documentation for any purpose, provided
+that existing copyright notices are retained in all copies and that this
+notice is included verbatim in any distributions. No written agreement,
+license, or royalty fee is required for any of the authorized uses.
+Modifications to this software may be copyrighted by their authors
+and need not follow the licensing terms described here, provided that
+the new terms are clearly indicated on the first page of each file where
+they apply.
+
+(11) Christopher G. Demetriou
+
+Copyright (c) 2001 Christopher G. Demetriou
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. The name of the author may not be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+(12) SuperH, Inc.
+
+Copyright 2002 SuperH, Inc. All rights reserved
+
+This software is the property of SuperH, Inc (SuperH) which specifically
+grants the user the right to modify, use and distribute this software
+provided this notice is not removed or altered.  All other rights are
+reserved by SuperH.
+
+SUPERH MAKES NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, WITH REGARD TO
+THIS SOFTWARE.  IN NO EVENT SHALL SUPERH BE LIABLE FOR INDIRECT, SPECIAL,
+INCIDENTAL OR CONSEQUENTIAL DAMAGES IN CONNECTION WITH OR ARISING FROM
+THE FURNISHING, PERFORMANCE, OR USE OF THIS SOFTWARE.
+
+So that all may benefit from your experience, please report any problems
+or suggestions about this software to the SuperH Support Center via
+e-mail at softwaresupport@superh.com .
+
+SuperH, Inc.
+405 River Oaks Parkway
+San Jose
+CA 95134
+USA
+
+(13) Royal Institute of Technology
+
+Copyright (c) 1999 Kungliga Tekniska Hgskolan
+(Royal Institute of Technology, Stockholm, Sweden).
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. Neither the name of KTH nor the names of its contributors may be
+   used to endorse or promote products derived from this software without
+   specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY KTH AND ITS CONTRIBUTORS ``AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL KTH OR ITS CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+(14) Alexey Zelkin
+
+Copyright (c) 2000, 2001 Alexey Zelkin <phantom@FreeBSD.org>
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+(15) Andrey A. Chernov
+
+Copyright (C) 1997 by Andrey A. Chernov, Moscow, Russia.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+(16) FreeBSD
+
+Copyright (c) 1997-2002 FreeBSD Project.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+(17) S. L. Moshier
+
+Author:  S. L. Moshier.
+
+Copyright (c) 1984,2000 S.L. Moshier
+
+Permission to use, copy, modify, and distribute this software for any
+purpose without fee is hereby granted, provided that this entire notice
+is included in all copies of any software which is or includes a copy
+or modification of this software and in all copies of the supporting
+documentation for such software.
+
+THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
+WARRANTY.  IN PARTICULAR,  THE AUTHOR MAKES NO REPRESENTATION
+OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY OF THIS
+SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
+
+(18) Citrus Project
+
+Copyright (c)1999 Citrus Project,
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+(19) Todd C. Miller
+
+Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. The name of the author may not be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
+THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+(20) DJ Delorie (i386)
+
+Copyright (C) 1991 DJ Delorie
+All rights reserved.
+
+Redistribution and use in source and binary forms is permitted
+provided that the above copyright notice and following paragraph are
+duplicated in all such forms.
+
+This file is distributed WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+(21) Free Software Foundation LGPL License (*-linux* targets only)
+
+   Copyright (C) 1990-1999, 2000, 2001
+   Free Software Foundation, Inc.
+   This file is part of the GNU C Library.
+   Contributed by Mark Kettenis <kettenis@phys.uva.nl>, 1997.
+
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the GNU C Library; if not, write to the Free
+   Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+   02110-1301 USA
+
+(22) Xavier Leroy LGPL License (i[3456]86-*-linux* targets only)
+
+Copyright (C) 1996 Xavier Leroy (Xavier.Leroy@inria.fr)
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Library General Public License for more details.
+
+(23) Intel (i960)
+
+Copyright (c) 1993 Intel Corporation
+
+Intel hereby grants you permission to copy, modify, and distribute this
+software and its documentation.  Intel grants this permission provided
+that the above copyright notice appears in all copies and that both the
+copyright notice and this permission notice appear in supporting
+documentation.  In addition, Intel grants this permission provided that
+you prominently mark as "not part of the original" any modifications
+made to this software or documentation, and that the name of Intel
+Corporation not be used in advertising or publicity pertaining to
+distribution of the software or the documentation without specific,
+written prior permission.
+
+Intel Corporation provides this AS IS, WITHOUT ANY WARRANTY, EXPRESS OR
+IMPLIED, INCLUDING, WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY
+OR FITNESS FOR A PARTICULAR PURPOSE.  Intel makes no guarantee or
+representations regarding the use of, or the results of the use of,
+the software and documentation in terms of correctness, accuracy,
+reliability, currentness, or otherwise; and you rely on the software,
+documentation and results solely at your own risk.
+
+IN NO EVENT SHALL INTEL BE LIABLE FOR ANY LOSS OF USE, LOSS OF BUSINESS,
+LOSS OF PROFITS, INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES
+OF ANY KIND.  IN NO EVENT SHALL INTEL'S TOTAL LIABILITY EXCEED THE SUM
+PAID TO INTEL FOR THE PRODUCT LICENSED HEREUNDER.
+
+(24) Hewlett-Packard  (hppa targets only)
+
+(c) Copyright 1986 HEWLETT-PACKARD COMPANY
+
+To anyone who acknowledges that this file is provided "AS IS"
+without any express or implied warranty:
+    permission to use, copy, modify, and distribute this file
+for any purpose is hereby granted without fee, provided that
+the above copyright notice and this notice appears in all
+copies, and that the name of Hewlett-Packard Company not be
+used in advertising or publicity pertaining to distribution
+of the software without specific, written prior permission.
+Hewlett-Packard Company makes no representations about the
+suitability of this software for any purpose.
+
+(25) Henry Spencer (only *-linux targets)
+
+Copyright 1992, 1993, 1994 Henry Spencer.  All rights reserved.
+This software is not subject to any license of the American Telephone
+and Telegraph Company or of the Regents of the University of California.
+
+Permission is granted to anyone to use this software for any purpose on
+any computer system, and to alter it and redistribute it, subject
+to the following restrictions:
+
+1. The author is not responsible for the consequences of use of this
+   software, no matter how awful, even if they arise from flaws in it.
+
+2. The origin of this software must not be misrepresented, either by
+   explicit claim or by omission.  Since few users ever read sources,
+   credits must appear in the documentation.
+
+3. Altered versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.  Since few users
+   ever read sources, credits must appear in the documentation.
+
+4. This notice may not be removed or altered.
+
+(26) Mike Barcroft
+
+Copyright (c) 2001 Mike Barcroft <mike@FreeBSD.org>
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+(27) Konstantin Chuguev (--enable-newlib-iconv)
+
+Copyright (c) 1999, 2000
+   Konstantin Chuguev.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+   iconv (Charset Conversion Library) v2.0
+
+(27) Artem Bityuckiy (--enable-newlib-iconv)
+
+Copyright (c) 2003, Artem B. Bityuckiy, SoftMine Corporation.
+Rights transferred to Franklin Electronic Publishers.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+(28) Red Hat Incorporated
+
+Unless otherwise stated in each remaining newlib file, the remaining
+files in the newlib subdirectory default to the following copyright.
+It should be noted that Red Hat Incorporated now owns copyrights
+belonging to Cygnus Solutions and Cygnus Support.
+
+Copyright (c) 1994, 1997, 2001, 2002, 2003, 2004 Red Hat Incorporated.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+
+    Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+
+    The name of Red Hat Incorporated may not be used to endorse
+    or promote products derived from this software without specific
+    prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.  IN NO EVENT SHALL RED HAT INCORPORATED BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+The Debian packaging is:
+
+    Copyright © 2010-2019 Stephen Kitt <skitt@debian.org>
+
+and is licensed under the GPL version 3 or later, see above.
+
+
+gcc-mingw-w64-base.txt: identical license text to a preceding package (SHA-256 a481f772f7a53335f13b32c6c54eb1c8577ce97704edd3757ab7ed4287a8e96a).
+
+
+gcc-mingw-w64-x86-64-posix.txt: identical license text to a preceding package (SHA-256 a481f772f7a53335f13b32c6c54eb1c8577ce97704edd3757ab7ed4287a8e96a).
+
+
+===== mingw-w64-common.txt =====
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: mingw-w64
+Source: http://mingw-w64.sourceforge.net/
+
+Files: *
+Copyright: 2009-2016 the mingw-w64 project
+License: ZPL-2.1
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ .
+    1. Redistributions in source code must retain the accompanying
+       copyright notice, this list of conditions, and the following
+       disclaimer.
+    2. Redistributions in binary form must reproduce the accompanying
+       copyright notice, this list of conditions, and the following
+       disclaimer in the documentation and/or other materials provided
+       with the distribution.
+    3. Names of the copyright holders must not be used to endorse or
+       promote products derived from this software without prior
+       written permission from the copyright holders.
+    4. The right to distribute this software or to use it for any
+       purpose does not give you the right to use Servicemarks (sm) or
+       Trademarks (tm) of the copyright holders.  Use of them is
+       covered by separate agreement with the copyright holders.
+    5. If any files are modified, you must cause the modified files to
+       carry prominent notices stating that you changed the files and
+       the date of any change.
+ .
+ Disclaimer
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+ EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Files: mingw-w64-crt/cfguard/*
+       mingw-w64-crt/crt/*
+       mingw-w64-crt/include/*
+       mingw-w64-crt/intrincs/cpuid.c
+       mingw-w64-crt/intrincs/in*.c
+       mingw-w64-crt/intrincs/out*.c
+       mingw-w64-crt/intrincs/rdtsc.c
+       mingw-w64-crt/intrincs/readcr*.c
+       mingw-w64-crt/intrincs/readmsr.c
+       mingw-w64-crt/intrincs/writecr*.c
+       mingw-w64-crt/intrincs/writemsr.c
+       mingw-w64-crt/lib32/crtdll.def.in
+       mingw-w64-crt/libsrc/agt*.c
+       mingw-w64-crt/libsrc/cdo*.c
+       mingw-w64-crt/libsrc/dxva-uuid.c
+       mingw-w64-crt/libsrc/emostore_i.c
+       mingw-w64-crt/libsrc/iisext_i.c
+       mingw-w64-crt/libsrc/mtsadmin_i.c
+       mingw-w64-crt/libsrc/mtxadmin_i.c
+       mingw-w64-crt/libsrc/scard*.c
+       mingw-w64-crt/libsrc/scrnsave.c
+       mingw-w64-crt/libsrc/tsuserex_i.c
+       mingw-w64-crt/math/cbrt*.c
+       mingw-w64-crt/math/copysign*
+       mingw-w64-crt/math/cosh*.c
+       mingw-w64-crt/math/erfl.c
+       mingw-w64-crt/math/expf.c
+       mingw-w64-crt/math/fabs*.c
+       mingw-w64-crt/math/fdim*.c
+       mingw-w64-crt/math/fm*
+       mingw-w64-crt/math/fp*.c
+       mingw-w64-crt/math/i*
+       mingw-w64-crt/math/ldexp*.c
+       mingw-w64-crt/math/lgamma*.c
+       mingw-w64-crt/math/llr*
+       mingw-w64-crt/math/log10f.c
+       mingw-w64-crt/math/logf.c
+       mingw-w64-crt/math/lr*.c
+       mingw-w64-crt/math/m*
+       mingw-w64-crt/math/n*
+       mingw-w64-crt/math/powf.c
+       mingw-w64-crt/math/r*
+       mingw-w64-crt/math/signbit*.c
+       mingw-w64-crt/math/sinh*
+       mingw-w64-crt/math/t*
+       mingw-w64-crt/math/x86/acosf.c
+       mingw-w64-crt/math/x86/acosl.c
+       mingw-w64-crt/math/x86/asin*.c
+       mingw-w64-crt/math/x86/atan*.c
+       mingw-w64-crt/math/x86/ceil*.S
+       mingw-w64-crt/math/x86/_chgsignl.S
+       mingw-w64-crt/math/x86/cosf.c
+       mingw-w64-crt/math/x86/cosl_internal.S
+       mingw-w64-crt/math/x86/cossin.c
+       mingw-w64-crt/math/x86/exp2*.S
+       mingw-w64-crt/math/x86/fastmath.h
+       mingw-w64-crt/math/x86/floor*.S
+       mingw-w64-crt/math/x86/log*.S
+       mingw-w64-crt/math/x86/logb*.c
+       mingw-w64-crt/math/x86/scalbn*.S
+       mingw-w64-crt/math/x86/sinf.c
+       mingw-w64-crt/math/x86/sinl_internal.S
+       mingw-w64-crt/misc/*
+       mingw-w64-crt/profile/mcountFunc.S
+       mingw-w64-crt/stdio/atoll.c
+       mingw-w64-crt/stdio/_Exit.c
+       mingw-w64-crt/stdio/fopen64.c
+       mingw-w64-crt/stdio/fseeko64.c
+       mingw-w64-crt/stdio/ftello64.c
+       mingw-w64-crt/stdio/lltoa.c
+       mingw-w64-crt/stdio/lltow.c
+       mingw-w64-crt/stdio/lseek64.c
+       mingw-w64-crt/stdio/mingw_fprintfw.c
+       mingw-w64-crt/stdio/mingw_pformatw.c
+       mingw-w64-crt/stdio/mingw_printfw.c
+       mingw-w64-crt/stdio/mingw_snprintfw.c
+       mingw-w64-crt/stdio/mingw_sprintfw.c
+       mingw-w64-crt/stdio/mingw_vfprintfw.c
+       mingw-w64-crt/stdio/mingw_vprintfw.c
+       mingw-w64-crt/stdio/mingw_vsnprintfw.c
+       mingw-w64-crt/stdio/mingw_vsprintfw.c
+       mingw-w64-crt/stdio/snprintf.c
+       mingw-w64-crt/stdio/snwprintf.c
+       mingw-w64-crt/stdio/strtof.c
+       mingw-w64-crt/stdio/ulltoa.c
+       mingw-w64-crt/stdio/ulltow.c
+       mingw-w64-crt/stdio/v*scanf*
+       mingw-w64-crt/stdio/vs*printf*
+       mingw-w64-crt/stdio/wtoll.c
+       mingw-w64-crt/testcases/tstmainc.c
+       mingw-w64-crt/testcases/tstmaincpp.cpp
+       mingw-w64-crt/testcases/tstmain_sys_xxx.c
+       mingw-w64-crt/testcases/tstwassert.c
+       mingw-w64-crt/testcases/tstwassert_win.c
+       mingw-w64-crt/testcases/tstwinmain.c
+       mingw-w64-headers/crt/*
+       mingw-w64-headers/ddk/include/d3dnthal.h
+       mingw-w64-headers/ddk/include/ddk/afilter.h
+       mingw-w64-headers/ddk/include/ddk/atm.h
+       mingw-w64-headers/ddk/include/ddk/d4drvif.h
+       mingw-w64-headers/ddk/include/ddkernel.h
+       mingw-w64-headers/ddk/include/ddk/hidclass.h
+       mingw-w64-headers/ddk/include/ddk/ide.h
+       mingw-w64-headers/ddk/include/ddk/ioaccess.h
+       mingw-w64-headers/ddk/include/ddk/kbdmou.h
+       mingw-w64-headers/ddk/include/ddk/mcd.h
+       mingw-w64-headers/ddk/include/ddk/miniport.h
+       mingw-w64-headers/ddk/include/ddk/minitape.h
+       mingw-w64-headers/ddk/include/ddk/ndis*.h
+       mingw-w64-headers/ddk/include/ddk/ntagp.h
+       mingw-w64-headers/ddk/include/ddk/ntddk.h
+       mingw-w64-headers/ddk/include/ddk/ntddpcm.h
+       mingw-w64-headers/ddk/include/ddk/ntddsnd.h
+       mingw-w64-headers/ddk/include/ddk/ntifs.h
+       mingw-w64-headers/ddk/include/ddk/ntpoapi.h
+       mingw-w64-headers/ddk/include/ddk/ntstrsafe.h
+       mingw-w64-headers/ddk/include/ddk/parallel.h
+       mingw-w64-headers/ddk/include/ddk/pfhook.h
+       mingw-w64-headers/ddk/include/ddk/poclass.h
+       mingw-w64-headers/ddk/include/ddk/portcls.h
+       mingw-w64-headers/ddk/include/ddk/punknown.h
+       mingw-w64-headers/ddk/include/ddk/scsi*.h
+       mingw-w64-headers/ddk/include/ddk/smbus.h
+       mingw-w64-headers/ddk/include/ddk/srb.h
+       mingw-w64-headers/ddk/include/ddk/stdunk.h
+       mingw-w64-headers/ddk/include/ddk/storport.h
+       mingw-w64-headers/ddk/include/ddk/tdikrnl.h
+       mingw-w64-headers/ddk/include/ddk/tdistat.h
+       mingw-w64-headers/ddk/include/ddk/upssvc.h
+       mingw-w64-headers/ddk/include/ddk/usbscan.h
+       mingw-w64-headers/ddk/include/ddk/video*.h
+       mingw-w64-headers/ddk/include/ddk/wdm*.h
+       mingw-w64-headers/ddk/include/ddk/ws2san.h
+       mingw-w64-headers/ddk/include/ddk/xfilter.h
+       mingw-w64-headers/ddk/include/ddrawint.h
+       mingw-w64-headers/ddk/include/dmemmgr.h
+       mingw-w64-headers/ddk/include/dvp.h
+       mingw-w64-headers/include/*
+Copyright: public-domain
+License: public-domain
+
+Files: mingw-w64-crt/gdtoa/*
+       mingw-w64-crt/stdio/mingw_pformat.c
+Copyright: 1997-2001 Lucent Technologies
+License: Lucent
+ Permission to use, copy, modify, and distribute this software and
+ its documentation for any purpose and without fee is hereby
+ granted, provided that the above copyright notice appear in all
+ copies and that both that the copyright notice and this
+ permission notice and warranty disclaimer appear in supporting
+ documentation, and that the name of Lucent or any of its entities
+ not be used in advertising or publicity pertaining to
+ distribution of the software without specific, written prior
+ permission.
+ .
+ LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+ IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+ SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+ IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+ THIS SOFTWARE.
+
+Files: mingw-w64-crt/gdtoa/qnan.c
+       mingw-w64-crt/gdtoa/strtodnrp.c
+Copyright: 2004, 2005 David M. Gay
+           1998, 2000 Lucent Technologies
+License: David-Gay
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and
+ that both that the copyright notice and this permission notice and
+ warranty disclaimer appear in supporting documentation, and that the
+ name of the author or any of his current or former employers not be
+ used in advertising or publicity pertaining to distribution of the
+ software without specific, written prior permission.
+ .
+ THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.  IN
+ NO EVENT SHALL THE AUTHOR OR ANY OF HIS CURRENT OR FORMER EMPLOYERS
+ BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY
+ DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
+ ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+ OF THIS SOFTWARE.
+
+Files: mingw-w64-crt/math/s_erf.c
+       mingw-w64-crt/math/sf_erf.c
+       mingw-w64-crt/math/softmath/bsd_private.h
+       mingw-w64-crt/math/softmath/bsd_privatef.h
+       mingw-w64-crt/math/softmath/e_fmod.c
+       mingw-w64-crt/math/softmath/e_fmodf.c
+       mingw-w64-crt/math/softmath/e_pow.c
+       mingw-w64-crt/math/softmath/e_powf.c
+       mingw-w64-crt/math/softmath/e_remainder.c
+       mingw-w64-crt/math/softmath/e_remainderf.c
+       mingw-w64-crt/math/softmath/softmath_private.h
+Copyright: 1993 Sun Microsystems, Inc.
+License: Permissive-Sun
+ Permission to use, copy, modify, and distribute this software is
+ freely granted, provided that this notice is preserved.
+
+Files: mingw-w64-crt/misc/basename.c
+       mingw-w64-crt/misc/dirname.c
+       mingw-w64-crt/stdio/mingw_fprintf.c
+       mingw-w64-crt/stdio/mingw_pformat.*
+       mingw-w64-crt/stdio/mingw_printf.c
+       mingw-w64-crt/stdio/mingw_snprintf.c
+       mingw-w64-crt/stdio/mingw_sprintf.c
+       mingw-w64-crt/stdio/mingw_vfprintf.c
+       mingw-w64-crt/stdio/mingw_vprintf.c
+       mingw-w64-crt/stdio/mingw_vsnprintf.c
+       mingw-w64-crt/stdio/mingw_vsprintf.c
+Copyright: Keith Marshall
+License: Keith-Marshall
+ This is free software.  You may redistribute and/or modify it as you
+ see fit, without restriction of copyright.
+ .
+ This software is provided "as is", in the hope that it may be useful,
+ but WITHOUT WARRANTY OF ANY KIND, not even any implied warranty of
+ MERCHANTABILITY, nor of FITNESS FOR ANY PARTICULAR PURPOSE.  At no
+ time will the author accept any form of liability for any damages,
+ however caused, resulting from the use of this software.
+
+Files: mingw-w64-crt/misc/getopt.c
+Copyright: 2000 The NetBSD Foundation, Inc.
+           2002 Todd C. Miller <Todd.Miller@courtesan.com>
+License: BSD-2-clause-NetBSD and ISC
+
+Files: mingw-w64-crt/profile/gcrt0.c
+       mingw-w64-crt/profile/profil.*
+Copyright: 1998-2002 Red Hat, Inc.
+License: Cygwin
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License (GPL) as
+ published by the Free Software Foundation; either version 2 of the
+ License, or (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301,
+ USA.
+ .
+                         *** NOTE ***
+ .
+ In accordance with section 10 of the GPL, Red Hat permits programs
+ whose sources are distributed under a license that complies with the
+ Open Source definition to be linked with libcygwin.a without
+ libcygwin.a itself causing the resulting program to be covered by the
+ GNU GPL.
+ .
+ This means that you can port an Open Source(tm) application to
+ cygwin, and distribute that executable as if it didn't include a copy
+ of libcygwin.a linked into it.  Note that this does not apply to the
+ cygwin DLL itself.  If you distribute a (possibly modified) version
+ of the DLL you must adhere to the terms of the GPL, i.e. you must
+ provide sources for the cygwin DLL.
+ .
+ See http://www.opensource.org/docs/definition_plain.html for the
+ precise Open Source Definition referenced above.
+ .
+ Red Hat sells a special Cygwin License for customers who are unable
+ to provide their application in open source code form.  For more
+ information, please see:
+ http://www.redhat.com/software/tools/cygwin/, or call 866-2REDHAT
+ ext.  3007
+
+Files: mingw-w64-crt/profile/gmon.*
+       mingw-w64-crt/profile/mcount.c
+Copyright: 1983, 1992, 1993 The Regents of the University of California
+License: BSD-3-clause
+
+Files: mingw-w64-crt/stdio/strtok_r.c
+Copyright: 1988, 1993 The Regents of the University of California
+           1998 Softweyr LLC
+License: BSD-3-clause
+
+Files: mingw-w64-headers/crt/profile.h
+Copyright: 1992, 1993 The Regents of the University of California
+License: BSD-3-clause
+
+Files: mingw-w64-headers/crt/stdarg.h
+Copyright: 1989, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
+License: GPL-2+
+
+Files: mingw-w64-headers/ddk/include/ddk/csq.h
+Copyright: 2004 Vizzini (vizzini@plasmic.com)
+License: public-domain-Vizzini
+ THIS SOFTWARE IS NOT COPYRIGHTED
+ .
+ This source code is offered for use in the public domain. You may
+ use, modify or distribute it freely.
+ .
+ This code is distributed in the hope that it will be useful but
+ WITHOUT ANY WARRANTY. ALL WARRANTIES, EXPRESS OR IMPLIED ARE HEREBY
+ DISCLAIMED. This includes but is not limited to warranties of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Files: mingw-w64-headers/ddk/include/ddk/d3dhal.h
+       mingw-w64-headers/ddk/include/ddrawi.h
+       mingw-w64-headers/include/d3dhal.h
+       mingw-w64-headers/include/d3dvec.inl
+       mingw-w64-headers/include/ddrawi.h
+       mingw-w64-headers/include/dsdriver.h
+Copyright: 2000, 2001 Ove Kaaven
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/amaudio.h
+Copyright: 2010 Maarten Lankhorst for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/amstream.idl
+       mingw-w64-headers/include/austream.idl
+       mingw-w64-headers/include/d3dx9effect.h
+       mingw-w64-headers/include/d3dx9shape.h
+       mingw-w64-headers/include/ddstream.idl
+       mingw-w64-headers/include/dxfile.h
+       mingw-w64-headers/include/evcode.h
+       mingw-w64-headers/include/mmstream.idl
+Copyright: 2004, 2010 Christian Costa
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/amvideo.idl
+       mingw-w64-headers/include/ax*.idl
+Copyright: 2002, 2003 Robert Shearman
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/audevcod.h
+       mingw-w64-headers/include/dmo.h
+       mingw-w64-headers/include/dmoreg.h
+       mingw-w64-headers/include/dmort.h
+       mingw-w64-headers/include/dshow.h
+       mingw-w64-headers/include/mediaerr.h
+       mingw-w64-headers/include/vfwmsgs.h
+Copyright: 2002 Alexandre Julliard
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/ctxtcall.idl
+Copyright: 2008 Louis Lenders
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d10_1.idl
+       mingw-w64-headers/include/d3d11_1.idl
+       mingw-w64-headers/include/d3d11sdklayers.idl
+       mingw-w64-headers/include/dxgi1_2.idl
+       mingw-w64-headers/include/objectarray.idl
+       mingw-w64-headers/include/optary.idl
+       mingw-w64-headers/include/uiautomation*
+       mingw-w64-headers/include/urlhist.idl
+       mingw-w64-headers/include/wpcapi.idl
+Copyright: 2006, 2010-2014 Jacek Caban for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d10_1shader.h
+Copyright: 2010 Rico Schüller
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d10effect.h
+       mingw-w64-headers/include/d3d10misc.h
+       mingw-w64-headers/include/d3d10shader.h
+Copyright: 2008, 2009 Henri Verbeet for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d10.idl
+Copyright: 2007 Andras Kovacs
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d10sdklayers.idl
+       mingw-w64-headers/include/drmexternals.idl
+       mingw-w64-headers/include/mftransform.idl
+       mingw-w64-headers/include/wmdrmsdk.idl
+Copyright: 2016, 2017 Alistair Leslie-Hughes
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d11.idl
+Copyright: 2010 Rico Schüller
+           2013 Austin English
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d11_?.idl
+       mingw-w64-headers/include/dxgi1_?.idl
+       mingw-w64-headers/include/dxgicommon.idl
+Copyright: 2017 Ihsan Akmal
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d11shader.h
+       mingw-w64-headers/include/d3dcommon.idl
+       mingw-w64-headers/include/d3dcompiler.h
+Copyright: 2010 Matteo Bruni for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d8.h
+       mingw-w64-headers/include/d3d8caps.h
+       mingw-w64-headers/include/d3d8types.h
+Copyright: 2002-2003 Jason Edmeades
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d9caps.h
+       mingw-w64-headers/include/d3d9.h
+Copyright: 2002-2003 Jason Edmeades
+                     Raphael Junqueria
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d9types.h
+Copyright: 2002-2003 Jason Edmeades
+           2002-2003 Raphael Junqueria
+           2005 Oliver Steiber
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3d.h
+       mingw-w64-headers/include/ddraw.h
+       mingw-w64-headers/include/dinput.h
+       mingw-w64-headers/include/dplay.h
+       mingw-w64-headers/include/dsound.h
+Copyright: the Wine project
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3drmdef.h
+Copyright: 2007, 2010 Vijay Kiran Kamuju
+           2007 David Adam
+           2010 Christian Costa
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3drm.h
+Copyright: 2005 Peter Berg Larsen
+           2010 Christian Costa
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3drmobj.h
+Copyright: 2008 Vijay Kiran Kamuju
+           2010 Christian Costa
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3dtypes.h
+       mingw-w64-headers/include/d3dcaps.h
+Copyright: 1999, 2000 Peter Hunnisett
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/dpaddr.h
+       mingw-w64-headers/include/dplay8.h
+       mingw-w64-headers/include/dplobby8.h
+       mingw-w64-headers/include/dxdiag.h
+Copyright: 2002-2005 Raphael Junqueira
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3dx9.h
+Copyright: 2007 David Adam
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3dx9math.*
+       mingw-w64-headers/include/d3dx9mesh.h
+Copyright: 2007 David Adam
+           2007 Tony Wasserka
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3dx9shader.h
+Copyright: 2008 Luis Busquets
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3dx9anim.h
+       mingw-w64-headers/include/d3dx9xof.h
+Copyright: 2011 Dylan Smith
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/d3dx9core.h
+       mingw-w64-headers/include/d3dx9tex.h
+Copyright: 2007, 2008 Tony Wasserka
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/dls1.h
+       mingw-w64-headers/include/dls2.h
+       mingw-w64-headers/include/dmdls.h
+       mingw-w64-headers/include/dmerror.h
+       mingw-w64-headers/include/dmplugin.h
+       mingw-w64-headers/include/dmusbuff.h
+       mingw-w64-headers/include/dmusicc.h
+       mingw-w64-headers/include/dmusicf.h
+       mingw-w64-headers/include/dmusici.h
+       mingw-w64-headers/include/dmusics.h
+Copyright: 2003-2004 Rok Mandeljc
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/dmodshow.idl
+       mingw-w64-headers/include/medparam.idl
+       mingw-w64-headers/include/qnetwork.idl
+Copyright: 2007 Shane King
+License: LGPL-2+
+
+Files: mingw-w64-headers/include/dplobby.h
+Copyright: 1999 Francois Gouget
+           1999 Peter Hunnisett
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/dpnathlp.h
+       mingw-w64-headers/include/dvdmedia.h
+       mingw-w64-headers/include/vmr9.idl
+Copyright: 2006, 2008 Maarten Lankhorst
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/dsconf.h
+       mingw-w64-headers/include/dxerr8.h
+       mingw-w64-headers/include/dxerr9.h
+Copyright: 2003, 2004 Robert Reif
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/dxgiformat.idl
+Copyright: 2016 Józef Kucia for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/dxgitype.idl
+       mingw-w64-headers/include/dxgi.idl
+Copyright: 2007 Andras Kovacs
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/errors.h
+Copyright: 2006 Hans Leideker
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/mediaobj.idl
+Copyright: 2002 Alexandre Julliard
+           2004 Vincent Béron
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/msxml.idl
+Copyright: 2005 Mike McCormack
+           2005 Vijay Kiran Kamuju
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/msxml2.idl
+       mingw-w64-headers/include/msxml6.idl
+Copyright: 2005 Vijay Kiran Kamuju
+           2008 Alistair Leslie-Hughes
+           2010 Nikolay Sivov for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/msxml2did.h
+Copyright: 2005 Vijay Kiran Kamuju
+           2008 Alistair Leslie-Hughes
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/msxml6did.h
+Copyright: 2010 Nikolay Sivov for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/qedit.idl
+Copyright: 2008 Google (Lei Zhang)
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/xinput.h
+Copyright: 2008 Andrew Fenn
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/GL/*
+Copyright: 2013-2014 The Khronos Group Inc.
+License: expat
+
+Files: mingw-w64-headers/include/audioclient.idl
+       mingw-w64-headers/include/audiopolicy.idl
+       mingw-w64-headers/include/devicetopology.idl
+       mingw-w64-headers/include/endpointvolume.idl
+       mingw-w64-headers/include/mmdeviceapi.idl
+       mingw-w64-headers/include/propkeydef.h
+       mingw-w64-headers/include/propsys.idl
+       mingw-w64-headers/include/structuredquerycondition.idl
+Copyright: 2009 Maarten Lankhorst
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/corerror.h
+Copyright: 2008 James Hawkins
+           2014 Kai Tietz
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/ctfutb.idl
+Copyright: 2010 Justin Chevrier
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/downloadmgr.idl
+Copyright: 2005 Jacek Caban
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/fusion.idl
+Copyright: 2008 James Hawkins
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/icftypes.idl
+       mingw-w64-headers/include/netfw.idl
+Copyright: 2007 Jeff Latimer
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/knownfolders.h
+Copyright: 2010 Hans Leidekker for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/mscat.h
+       mingw-w64-headers/include/rpcsal.h
+       mingw-w64-headers/include/winhttp.h
+       mingw-w64-headers/include/winineti.h
+Copyright: 2004, 2007, 2011 Francois Gouget
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/mscoree.idl
+Copyright: 2007 Francois Gouget
+           2008 Alistair Leslie-Hughes
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/msctf.idl
+Copyright: 2008 Aric Stewart, CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/propkey.h
+Copyright: 2010 Maarten Lankhorst for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/propvarutil.h
+Copyright: 2008 James Hawkins for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/t2embapi.h
+Copyright: 2009 Andrew Nguyen
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/taskschd.idl
+       mingw-w64-headers/tlb/oleacc.dll.idl
+Copyright: 2013 Dmitry Timoshkov
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/textstor.idl
+Copyright: 2009 Aric Stewart, CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/wincodec.idl
+Copyright: 2009 Vincent Povirk for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/winddiui.h
+Copyright: 2007 Marcel Partap
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/windows.devices.enumeration.idl
+Copyright: 2021 Gijs Vermeulen
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/windows.devices.haptics.idl
+       mingw-w64-headers/include/windows.devices.power.idl
+       mingw-w64-headers/include/windows.foundation.numerics.idl
+       mingw-w64-headers/include/windows.gaming.input.custom.idl
+       mingw-w64-headers/include/windows.gaming.input.forcefeedback.idl
+       mingw-w64-headers/include/windows.gaming.input.idl
+       mingw-w64-headers/include/windows.globalization.idl
+       mingw-w64-headers/include/windows.system.idl
+       mingw-w64-headers/include/windows.system.power.idl
+       mingw-w64-headers/include/windows.system.userprofile.idl
+Copyright: 2021-2022 Rémi Bernon for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/windows.foundation.metadata.idl
+Copyright: 2022 Zhiyi Zhang for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/windows.gaming.ui.idl
+Copyright: 2022 Paul Gofman for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/windows.graphics.capture.idl
+       mingw-w64-headers/include/windows.graphics.directx.direct3d11.idl
+       mingw-w64-headers/include/windows.graphics.directx.idl
+       mingw-w64-headers/include/windows.graphics.effects.idl
+       mingw-w64-headers/include/windows.graphics.holographic.idl
+       mingw-w64-headers/include/windows.media.closedcaptioning.idl
+       mingw-w64-headers/include/windows.perception.spatial.idl
+       mingw-w64-headers/include/windows.perception.spatial.surfaces.idl
+       mingw-w64-headers/include/windows.security.credentials.idl
+       mingw-w64-headers/include/windows.system.profile.systemmanufacturers.idl
+       mingw-w64-headers/include/windows.ui.composition.idl
+       mingw-w64-headers/include/windows.ui.composition.interop.idl
+       mingw-w64-headers/include/windows.ui.core.idl
+       mingw-w64-headers/include/windows.ui.idl
+       mingw-w64-headers/include/windows.ui.viewmanagement.idl
+Copyright: 2022-2023 Mohamad Al-Jaf
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/windows.media.devices.idl
+Copyright: 2020 Rémi Bernon for CodeWeavers
+           2021 Andrew Eikum for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/windows.media.speechrecognition.idl
+Copyright: 2022 Bernhard Kölbl
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/windows.security.cryptography.idl
+       mingw-w64-headers/include/windows.system.threading.idl
+Copyright: 2022 Nikolay Sivov for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/windows.storage.streams.idl
+Copyright: 2021 Jactry Zeng for CodeWeavers
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/wmsbuffer.idl
+       mingw-w64-headers/include/wmsdkidl.idl
+Copyright: 2012 André Hentschel
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/xmldom.idl
+Copyright: 2005 Mike McCormack
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/xmldso.idl
+Copyright: 2005 Vijay Kiran Kamuju
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/include/xmllite.idl
+Copyright: 2010 Nikolay Sivov
+License: LGPL-2.1+
+
+Files: mingw-w64-headers/testcases/test_windowsnumerics.cpp
+Copyright: 2022 Alvin Wong
+License: expat
+
+Files: mingw-w64-headers/tlb/stdole2.idl
+Copyright: 2003 Robert Shearman
+           2005 Huw Davies
+License: LGPL-2.1+
+
+Files: mingw-w64-libraries/libmangle/*
+Copyright: 2009, 2010 mingw-w64 project
+License: expat
+
+Files: mingw-w64-libraries/pseh/*
+Copyright: 2004/2005, 2008, 2009, 2010 KJK::Hyperion
+License: expat
+
+Files: mingw-w64-libraries/winpthreads/*
+Copyright: 2011-2016 mingw-w64 project
+License: expat
+
+Files: mingw-w64-libraries/winpthreads/include/pthread.h
+       mingw-w64-libraries/winpthreads/include/pthread_compat.h
+Copyright: 2010 Lockless Inc.
+License: BSD-3-clause-Lockless
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ .
+  * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+  * Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
+  * Neither the name of Lockless Inc. nor the names of its
+    contributors may be used to endorse or promote products derived
+    from this software without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ "AS IS" AN ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ POSSIBILITY OF SUCH DAMAGE.
+
+Files: mingw-w64-libraries/winpthreads/src/clock.c
+       mingw-w64-libraries/winpthreads/src/nanosleep.c
+Copyright: public-domain
+License: public-domain
+
+Files: mingw-w64-libraries/winpthreads/src/libgcc/dll_math.c
+Copyright: 1992, 1993 The Regents of the University of California
+License: BSD-3-clause
+
+Files: mingw-w64-libraries/winpthreads/tests_pthread/*
+Copyright: 1998 John E. Bossom
+           1999, 2005 Pthreads-win32 contributors
+License: LGPL-2+
+
+Files: mingw-w64-libraries/winstorecompat/*
+Copyright: 2013-2016, 2018, 2022 mingw-w64 project
+License: expat
+
+Files: mingw-w64-tools/gendef/*
+Copyright: 2009-2016 mingw-w64 project
+License: GPL-3+
+
+Files: mingw-w64-tools/genidl/*
+Copyright: 2009-2016 mingw-w64 project
+License: GPL-3+
+
+Files: mingw-w64-tools/genpeimg/*
+Copyright: 2009-2016 mingw-w64 project
+License: GPL-3+
+
+Files: mingw-w64-tools/widl/*
+Copyright: 1996, 2000, 2002, 2010, 2017 Alexandre Julliard
+           1998-2000 Bertho A. Stultiens
+           1999 Corel Corporation
+           1999 Patrick Stridvall
+           1999 Rein Klazes
+           2001-2003 Jon Griffiths
+           2002, 2004 Ove Kaaven
+           2004 Alastair Bridgewater
+           2004 Mike McCormack
+           2004, 2005 Huw Davies
+           2005-2006 Eric Kohl
+           2005-2008 Robert Shearman
+           2006 Jacek Caban for CodeWeavers
+           2023 Mohamad Al-Jaf
+           The Wine project
+License: LGPL-2.1+
+
+Files: mingw-w64-tools/widl/src/port/getopt*.c
+Copyright: 1987-2002 Free Software Foundation, Inc.
+License: LGPL-2.1+
+
+Files: mingw-w64-tools/widl/src/port/port.c
+Copyright: 1991, 1992, 1996, 1998 Free Software Foundation, Inc.
+License: LGPL-2+
+
+Files: debian/*
+Copyright: 2009, 2010 Robert Millan
+           2010-2020, 2022-2023 Stephen Kitt <skitt@debian.org>
+           2022 Konstantin Demin
+           2023 John Scott <jscott@posteo.net>
+License: GPL-2+
+
+Files: debian/pkg-config-crosswrapper
+Copyright: 2004, 2005 Tollef Fog Heen <tfheen@err.no>
+License: GPL-2+
+
+Files: debian/*widl.1
+Copyright: 1993-2013 The Wine project authors
+License: LGPL-2.1+
+
+
+License: BSD-3-clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
+ 4. Neither the name of the University nor the names of its
+    contributors may be used to endorse or promote products derived
+    from this software without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS''
+ AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR
+ CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+License: LGPL-2+
+ On Debian systems the full text of the GNU Library General Public
+ License Version 2 can be found in the
+ `/usr/share/common-licenses/LGPL-2' file.
+
+License: LGPL-2.1+
+ On Debian systems the full text of the GNU Lesser General Public
+ License Version 2.1 can be found in the
+ `/usr/share/common-licenses/LGPL-2.1' file.
+
+License: GPL-2+
+ On Debian systems the full text of the GNU General Public
+ License Version 2 can be found in the
+ `/usr/share/common-licenses/GPL-2' file.
+
+License: GPL-3+
+ On Debian systems the full text of the GNU General Public
+ License Version 3 can be found in the
+ `/usr/share/common-licenses/GPL-3' file.
+
+License: expat
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+
+License: BSD-2-clause-NetBSD
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND
+ CONTRIBUTORS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS BE LIABLE FOR ANY
+ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+License: ISC
+ Permission to use, copy, modify, and distribute this software for any
+ purpose with or without fee is hereby granted, provided that the
+ above copyright notice and this permission notice appear in all
+ copies.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ PERFORMANCE OF THIS SOFTWARE.
+
+License: public-domain
+ This file has no copyright assigned and is placed in the Public
+ Domain.
+
+
+mingw-w64-x86-64-dev.txt: identical license text to a preceding package (SHA-256 af23297b7d17e8e31817a5d58088de6fdafe34705bb5a7d1d330f08711b31314).

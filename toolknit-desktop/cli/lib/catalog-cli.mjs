@@ -8,7 +8,7 @@ const MAX_ARGUMENT_BYTES = 8 * 1024 * 1024;
 const usage = message => new ToolKnitError('USAGE', message);
 const catalogHelp = 'toolknit tools list [--json]\ntoolknit tools coverage [--json]\ntoolknit tools describe <toolknit_name> [--json]\ntoolknit run <toolknit_name> --arguments-file <request.json> [--json]\ntoolknit run <toolknit_name> --arguments-stdin [--json]';
 export function extendedHelp() {
-  return '\nV3.2 tools (also available through MCP):\n' + EXTENDED_OPERATIONS.map(item => `  toolknit ${item.command.join(' ')} --help`).join('\n') + '\n\n' + catalogHelp;
+  return '\nTools (also available through MCP):\n' + EXTENDED_OPERATIONS.map(item => `  toolknit ${item.command.join(' ')} --help`).join('\n') + '\n\n' + catalogHelp;
 }
 function decodeJson(bytes) {
   try { return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
@@ -42,7 +42,9 @@ function commandHelp(operation) {
     'Existing inputs are never replaced; writes require an explicit destination.'].join('\n');
 }
 function fieldFor(token, properties) {
-  const alias = { input: properties.input_paths ? 'input_paths' : 'input_path', output: 'output_path', format: properties.target_format ? 'target_format' : 'format' };
+  // With a single/batch union, --input denotes one file. Batch callers use
+  // --input-paths or structured arguments; array-only operations keep --input.
+  const alias = { input: properties.input_path ? 'input_path' : 'input_paths', output: 'output_path', format: properties.target_format ? 'target_format' : 'format' };
   return alias[token] || token.replaceAll('-', '_');
 }
 function valueFor(value, schema) {

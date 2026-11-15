@@ -135,6 +135,50 @@ assert.equal(opened[0][0], 'https://toolknit.com/docs');
 assert.equal(blocked.length, 2);
 links.dispose();
 
+// Dependency source links use the same validated system-browser navigation as
+// homepage links, including native failures and listener cleanup.
+for (const [linkKey, expectedUrl] of [
+  ['ffmpegSource', 'https://github.com/ZihangDong/toolknit-ffmpeg-sources'],
+  ['niuniu', 'https://s2acf.fucksb.com/register?aff=28G79Z33FT63'],
+  ['doufu', 'https://doufuapi.com/register?aff=TWKCBH9RGLN3'],
+  ['malian', 'https://www.mlai.online/register?aff=5Q2VVMD7YJVB']
+]) {
+  const source = new FakeElement('ffmpeg-source');
+  source.dataset.homeLink = linkKey;
+  const root = new FakeRoot([source]);
+  root.querySelectorAll = selector => selector === '[data-home-link]' ? [source] : [];
+  for (const native of [false, true]) {
+    const calls = [];
+    const runtime = createExternalLinksRuntime({
+      root, isTauri: native,
+      windowRef: { open: (...args) => calls.push(args) },
+      tauriCorePromise: Promise.resolve({ invoke: async (...args) => calls.push(args) })
+    });
+    const click = new Event('click', { cancelable: true });
+    source.dispatchEvent(click);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(click.defaultPrevented, true);
+    assert.deepEqual(calls, native ? [['open_url', { url: expectedUrl }]]
+      : [[expectedUrl, '_blank', 'noopener,noreferrer']]);
+    runtime.dispose(); runtime.dispose();
+    source.dispatchEvent(new Event('click'));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(calls.length, 1, 'disposing the source link removes its listener');
+  }
+  const errors = [], toasts = [];
+  const failed = createExternalLinksRuntime({
+    root, isTauri: true,
+    windowRef: { showToast: message => toasts.push(message), open: () => assert.fail('no browser fallback in Tauri') },
+    tauriCorePromise: Promise.resolve({ invoke: async () => { throw new Error('native-open-failed'); } }),
+    onError: error => errors.push(error.message)
+  });
+  source.dispatchEvent(new Event('click'));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(errors, ['native-open-failed']);
+  assert.deepEqual(toasts, ['common.openLinkFailed']);
+  failed.dispose();
+}
+
 const aiElements = [
   'settingsApiKey', 'apiKeyOverlay', 'apiKeyBack', 'apiKeyInput', 'apiKeyToggle',
   'apiKeySave', 'apiKeyClear', 'apiKeyStatus', 'apiKeyDropdown', 'apiKeyDropdownTrigger',
@@ -159,8 +203,8 @@ home.dispose();
 // Home batching changes only the card projection and survives a new runtime.
 {
   const batchRoot = makeByIdRoot(['homeToolSearch', 'homeToolGrid', 'homeToolLoadMore', 'homeToolLoadMoreButton', 'homeLazyLoadToggle', 'homeLazyLoadStatus']);
-  const discoveries = ['quick-screenshot', 'pdf-to-scan', 'duplicate-file-cleanup', 'pdf-to-word', 'clipboard-history', 'image-to-pdf'];
-  const tools = Array.from({ length: 27 }, (_, index) => {
+  const discoveries = ['word-to-pdf', 'pdf-to-word', 'image-to-pdf', 'pdf-to-scan', 'quick-screenshot', 'duplicate-file-cleanup', 'clipboard-history'];
+  const tools = Array.from({ length: 28 }, (_, index) => {
     const tool = new FakeElement();
     tool.dataset.tool = discoveries[index - 21] || `fixture-${index}`;
     tool.closest = () => ({ dataset: { category: tool.dataset.tool.includes('pdf') ? 'pdf' : 'creative' } });
@@ -181,12 +225,13 @@ home.dispose();
   assert.equal(count(), 24);
   chips[1].dispatchEvent(new Event('click'));
   const ids = () => [...batchRoot.getElementById('homeToolGrid').innerHTML.matchAll(/data-home-tool="([^"]+)"/g)].map(match => match[1]);
-  assert.deepEqual(ids(), discoveries, 'new features are filtered before pagination, including older enhanced tools');
+  assert.deepEqual(ids(), discoveries, 'new features are filtered before pagination, including the V3.3 Word tool');
+  assert.deepEqual([...batchRoot.getElementById('homeToolGrid').innerHTML.matchAll(/data-release-version="([^"]+)"/g)].map(match => match[1]), ['3.3', '3.2'], 'new-feature groups sort newest first');
   assert.equal(batchRoot.getElementById('homeToolLoadMore').hidden, true);
   assert.equal(chips[1].getAttribute('aria-pressed'), 'true');
   const search = batchRoot.getElementById('homeToolSearch');
   search.value = 'pdf'; search.dispatchEvent(new Event('input'));
-  assert.deepEqual(ids(), ['pdf-to-scan', 'pdf-to-word', 'image-to-pdf'], 'search intersects the new-feature filter');
+  assert.deepEqual(ids(), ['word-to-pdf', 'pdf-to-word', 'image-to-pdf', 'pdf-to-scan'], 'search intersects version groups');
   search.value = 'fixture'; search.dispatchEvent(new Event('input'));
   assert.equal(count(), 0, 'search does not leak tools from other categories');
   search.value = ''; search.dispatchEvent(new Event('input'));
@@ -194,20 +239,20 @@ home.dispose();
   assert.deepEqual(ids(), discoveries, 'disabling batching preserves the new-feature filter');
   toggle.dispatchEvent(new Event('click'));
   chips[2].dispatchEvent(new Event('click'));
-  assert.deepEqual(ids(), ['pdf-to-scan', 'pdf-to-word', 'image-to-pdf'], 'featured tools retain their original categories');
+  assert.deepEqual(ids(), ['word-to-pdf', 'pdf-to-word', 'image-to-pdf', 'pdf-to-scan'], 'featured tools retain their original categories');
   chips[0].dispatchEvent(new Event('click'));
   assert.equal(count(), 12, 'returning to all resets pagination');
   assert.equal(chips[1].getAttribute('aria-pressed'), 'false');
   toggle.dispatchEvent(new Event('click'));
-  assert.equal(count(), 27);
+  assert.equal(count(), 28);
   assert.equal(toggle.getAttribute('aria-pressed'), 'false');
   assert.equal(batchRoot.getElementById('homeToolLoadMore').hidden, true);
   assert.equal(values.get('toolknit_home_lazy_load'), 'false');
   runtime.renderHomeTools({ resetPagination: true });
-  assert.equal(count(), 27, 'filter/language refresh does not restore batching');
+  assert.equal(count(), 28, 'filter/language refresh does not restore batching');
   runtime.dispose();
   runtime = createHomeExplorerRuntime({ root: batchRoot, storage });
-  assert.equal(count(), 27, 'preference survives runtime recreation');
+  assert.equal(count(), 28, 'preference survives runtime recreation');
   toggle.dispatchEvent(new Event('click'));
   assert.equal(count(), 12);
   runtime.dispose();
@@ -526,6 +571,22 @@ modalSession.dispose();
   documentRef.dispatchEvent(escape);
   assert.equal(escape.defaultPrevented, true);
   assert.equal(closed, 1, 'the fallback focus keeps Escape owned by the modal');
+  session.dispose();
+}
+
+{
+  const documentRef = new FakeRoot(), modal = new FakeElement('requiredNotice');
+  const first = new FakeElement('first'), last = new FakeElement('last');
+  for (const item of [first, last]) { item.tabIndex = 0; item.focus = () => { documentRef.activeElement = item; }; }
+  modal.querySelectorAll = () => [first, last];
+  modal.contains = node => node === first || node === last;
+  let closed = 0;
+  const session = createModalSession({ root: modal, documentRef, initialFocus: first, canClose: () => false, onClose: () => { closed++; } });
+  session.open();last.focus();
+  const tab = new Event('keydown', { cancelable: true });Object.defineProperty(tab,'key',{value:'Tab'});documentRef.dispatchEvent(tab);
+  assert.equal(tab.defaultPrevented,true);assert.equal(documentRef.activeElement,first,'mandatory notices still trap keyboard focus');
+  const escape = new Event('keydown', { cancelable: true });Object.defineProperty(escape,'key',{value:'Escape'});documentRef.dispatchEvent(escape);
+  assert.equal(escape.defaultPrevented,true);assert.equal(closed,0,'mandatory notice consumes Escape without dismissal');
   session.dispose();
 }
 

@@ -1,5 +1,23 @@
 use super::*;
 
+#[cfg(any(windows, test))]
+pub(super) fn encode_desktop_bgra(width: u32, height: u32, mut pixels: Vec<u8>) -> Result<Vec<u8>, String> {
+    use image::{codecs::png::{CompressionType, FilterType, PngEncoder}, ImageEncoder};
+    check_pixels(width,height)?;
+    let count=width as usize * height as usize;
+    if pixels.len()!=count*4 { return Err("screenshot:capture-failed".into()); }
+    // GDI's alpha is undefined. Keep the aligned four-byte pixels so this
+    // transform remains vectorizable; RGB compaction was slower in benchmarks.
+    for pixel in pixels.chunks_exact_mut(4) {
+        pixel.swap(0,2);pixel[3]=255;
+    }
+    let mut encoded=Vec::new();
+    PngEncoder::new_with_quality(&mut encoded,CompressionType::Fast,FilterType::Adaptive)
+        .write_image(&pixels,width,height,image::ExtendedColorType::Rgba8)
+        .map_err(|_| "screenshot:capture-failed")?;
+    Ok(encoded)
+}
+
 #[cfg(windows)]
 pub(super) fn capture() -> Result<(Desktop, Vec<u8>), String> {
     use windows::Win32::{
@@ -97,16 +115,8 @@ pub(super) fn capture() -> Result<(Desktop, Vec<u8>), String> {
     {
         return Err("screenshot:capture-failed".into());
     }
-    for pixel in pixels.chunks_exact_mut(4) {
-        pixel.swap(0, 2);
-        pixel[3] = 255;
-    }
-    let bitmap = image::RgbaImage::from_raw(bounds.width, bounds.height, pixels)
-        .ok_or("screenshot:capture-failed")?;
-    let mut output = std::io::Cursor::new(Vec::new());
-    image::DynamicImage::ImageRgba8(bitmap)
-        .write_to(&mut output, image::ImageFormat::Png)
-        .map_err(|_| "screenshot:capture-failed")?;
+    drop(surface);
+    let output=encode_desktop_bgra(bounds.width,bounds.height,pixels)?;
     unsafe extern "system" fn enumerate(hwnd: HWND, context: LPARAM) -> BOOL {
         if !IsWindowVisible(hwnd).as_bool() || IsIconic(hwnd).as_bool() {
             return BOOL(1);
@@ -160,8 +170,24 @@ pub(super) fn capture() -> Result<(Desktop, Vec<u8>), String> {
             windows,
             monitors: Vec::new(),
         },
-        output.into_inner(),
+        output,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn screenshot_bgra_png_preserves_colors_rows_and_opaque_pixels() {
+        let raw=vec![1,2,3,0, 11,12,13,40, 21,22,23,255, 31,32,33,0, 41,42,43,127, 51,52,53,255];
+        let encoded=encode_desktop_bgra(3,2,raw.clone()).unwrap();
+        let image=image::load_from_memory(&encoded).unwrap().to_rgba8();
+        let expected:Vec<u8>=raw.chunks_exact(4).flat_map(|p|[p[2],p[1],p[0],255]).collect();
+        assert_eq!(image.as_raw(),&expected);
+        assert_eq!(image.dimensions(),(3,2));
+        assert!(encode_desktop_bgra(3,2,vec![0;23]).is_err());
+        assert!(encode_desktop_bgra(0,2,vec![]).is_err());
+    }
 }
 
 #[cfg(not(windows))]

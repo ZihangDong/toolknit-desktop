@@ -1,5 +1,18 @@
 /* Shared dependency managers reuse the approved offline speech dialog.
    Keep the existing light-theme overrides isolated from this dark extension. */
+.transcription-model-source {
+  margin-top: 18px;
+}
+
+.transcription-model-source .settings-btn {
+  gap: 8px;
+}
+
+.transcription-model-source svg {
+  width: 16px;
+  height: 16px;
+}
+
 :is(#transcriptionModelOverlay, html:not([data-theme="light"]) .transcription-model-overlay) {
   padding: clamp(18px, 4vw, 56px);
   background: rgba(4, 4, 5, 0.72);

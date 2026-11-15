@@ -1,0 +1,28 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>ToolKnit 文件搜索验收</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font:15px "Segoe UI","Microsoft YaHei",sans-serif;background:#e9f5e7;color:#173e22}
+#surface{position:fixed;inset:0;width:100%;height:100%;border:0;background:repeating-linear-gradient(135deg,#eef9ec 0 20px,#dff0dc 20px 40px);cursor:pointer}
+aside{position:absolute;right:22px;top:22px;bottom:22px;width:330px;padding:22px;background:white;border-radius:18px;box-shadow:0 5px 24px #16371822;overflow:auto}
+h1{font-size:21px;margin:0 0 14px}p{font-size:13px;line-height:1.7}button{font:inherit}aside button{display:block;width:100%;border:0;border-radius:10px;padding:12px;margin:10px 0;background:#17281d;color:white;cursor:pointer}aside button:disabled{opacity:.5}#count{font-size:26px;font-weight:700}#status{white-space:pre-wrap;color:#314d38}small{color:#657c69}
+</style><button id="surface" aria-label="底层点击测试区域"></button>
+<aside><h1>文件搜索 · 验收面板</h1><p>本窗口只用于测试。绿色斜纹是搜索浮窗底下的独立窗口。</p>
+<p>底层区域收到点击：<span id="count">0</span> 次</p>
+<button id="expand">1. 展开测试浮窗</button>
+<p>点击输入框与结果卡片之间的绿色间隙。计数应增加，浮窗应收起；再展开，右键分别测试临时隐藏和停用。</p>
+<button id="enable">恢复／重新启用胶囊</button>
+<button id="capture">2. 展开浮窗并开始截图</button>
+<p>进入截图时，搜索窗和本面板应完全消失，画面里无黑块；按 Esc 取消后搜索窗应恢复。不要保存或复制，本轮只验证显示。</p>
+<button id="finish">3. 完成并关闭测试</button>
+<p id="status" role="status">准备就绪</p><small>仅索引合成样本；截图只在本进程内临时展示，不上传。</small></aside>
+<script>
+let clicks=0;
+const status=document.getElementById('status');
+document.getElementById('surface').onclick=()=>{document.getElementById('count').textContent=String(++clicks);status.textContent='底层窗口已收到点击';};
+for(const action of ['expand','enable','capture','finish']) document.getElementById(action).onclick=async()=>{
+  const button=document.getElementById(action);button.disabled=true;
+  status.textContent=action==='capture'?'即将开始截图，请按 Esc 取消后观察恢复':'正在执行…';
+  try{await window.__TAURI_INTERNALS__.invoke('file_search_acceptance',{action});status.textContent=action==='capture'?'截图已启动；取消后请检查是否正确恢复':'操作已执行';}
+  catch(e){status.textContent=String(e);}finally{button.disabled=false;}
+};
+window.__fileSearchAcceptanceReady=true;
+</script></html>

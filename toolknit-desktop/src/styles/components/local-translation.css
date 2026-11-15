@@ -1,21 +1,21 @@
-.settings-overlay.v2-settings .settings-v2-translation-card .settings-v2-toggle-row {
+.settings-overlay.v2-settings :is(.settings-v2-translation-card, .settings-v2-ocr-card) .settings-v2-toggle-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
 }
-.settings-overlay.v2-settings .settings-v2-translation-card .settings-v2-btn {
+.settings-overlay.v2-settings :is(.settings-v2-translation-card, .settings-v2-ocr-card) .settings-v2-btn {
   white-space: nowrap;
 }
 @media (max-width: 600px) {
-  .settings-overlay.v2-settings .settings-v2-translation-card .settings-v2-toggle-row {
+  .settings-overlay.v2-settings :is(.settings-v2-translation-card, .settings-v2-ocr-card) .settings-v2-toggle-row {
     grid-template-columns: minmax(0, 1fr);
   }
-  .settings-overlay.v2-settings .settings-v2-translation-card .settings-v2-btn {
+  .settings-overlay.v2-settings :is(.settings-v2-translation-card, .settings-v2-ocr-card) .settings-v2-btn {
     justify-self: start;
   }
 }
-#localTranslationStatus {font-size:16px;line-height:1.5;margin:20px 0 12px;color:var(--ink);}
-#localTranslationProgress {width:100%;height:8px;accent-color:var(--ink);}
-#localTranslationBytes {display:block;margin:8px 0 20px;font-size:14px;color:var(--ink);}
-#localTranslationOverlay .local-translation-actions {display:flex;gap:12px;flex-wrap:wrap;margin-top:20px;}
-#localTranslationOverlay [hidden] {display:none;}
-#localTranslationOverlay .transcription-model-actions.local-translation-actions .settings-btn[hidden] {display:none;}
+:is(#localTranslationStatus, #localOcrStatus) {font-size:16px;line-height:1.5;margin:20px 0 12px;color:var(--ink);}
+:is(#localTranslationProgress, #localOcrProgress) {width:100%;height:8px;accent-color:var(--ink);}
+:is(#localTranslationBytes, #localOcrBytes) {display:block;margin:8px 0 20px;font-size:14px;color:var(--ink);}
+:is(#localTranslationOverlay, #localOcrOverlay) .local-translation-actions {display:flex;gap:12px;flex-wrap:wrap;margin-top:20px;}
+:is(#localTranslationOverlay, #localOcrOverlay) [hidden] {display:none;}
+:is(#localTranslationOverlay, #localOcrOverlay) .transcription-model-actions.local-translation-actions .settings-btn[hidden] {display:none;}

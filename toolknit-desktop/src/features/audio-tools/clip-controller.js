@@ -9,12 +9,6 @@ import {
   isAudioClipSupportedName
 } from '../../audio-clip-core.js';
 
-function outputParentFolder(outputPath) {
-  const value = String(outputPath || '').trim().replace(/[\\/]+$/, '');
-  const parent = value.replace(/[/\\][^/\\]+$/, '');
-  return parent && parent !== value ? parent : value;
-}
-
 export function createAudioClipController({
   overlay,
   isTauri = false,

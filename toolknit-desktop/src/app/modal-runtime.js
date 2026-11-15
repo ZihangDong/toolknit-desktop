@@ -59,11 +59,11 @@ export function createModalSession({ root, background, initialFocus, onClose, ca
       root.focus?.({ preventScroll: true });
     }
     scope.event(documentRef, 'keydown', event => {
-      if (root.inert || !root.classList.contains('visible') || (!root.contains(documentRef.activeElement) && !root.contains(event.target)) || !canClose()) return;
+      if (root.inert || !root.classList.contains('visible') || (!root.contains(documentRef.activeElement) && !root.contains(event.target))) return;
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
-        onClose?.();
+        if (canClose()) onClose?.();
       } else if (event.key === 'Tab') {
         const items = focusableItems();
         const index = items.indexOf(documentRef.activeElement);

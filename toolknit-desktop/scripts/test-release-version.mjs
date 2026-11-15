@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { assertNpmReleaseNotes } from './lib/release-note-contract.mjs';
+import './test-release-note-contract.mjs';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -141,7 +143,7 @@ const desktopToolCount = Object.keys(LAZY_TOOL_SPECS).length;
 assert.match(repositoryReadme, new RegExp(`^${desktopToolCount} 项桌面工具 ·`, 'm'), 'Repository README must match the current desktop catalog');
 assert.match(zhHelpSource, new RegExp(`${desktopToolCount} 个桌面工具`), 'Chinese help overview must match the desktop catalog');
 assert.match(enHelpSource, new RegExp(`${desktopToolCount} desktop tools`), 'English help overview must match the desktop catalog');
-assert.match(repositoryReadme, /\*\*77 项 CLI \/ MCP 能力\*\*/, 'Repository README must state the current 77-capability MCP contract');
+assert.match(repositoryReadme, /\*\*78 项 CLI \/ MCP 能力\*\*/, 'Repository README must state the current 78-capability MCP contract');
 const publishedVersion = captureExactlyOnce(releaseNotes, /^# ToolKnit Desktop (\d+\.\d+\.\d+)\r?\n/, 'Published release version');
 const versionParts = value => value.split('.').map(Number);
 const publishedParts = versionParts(publishedVersion), currentParts = versionParts(fullVersion);
@@ -149,6 +151,10 @@ const firstDifference = publishedParts.findIndex((part, index) => part !== curre
 assert.ok(firstDifference === -1 || publishedParts[firstDifference] < currentParts[firstDifference], 'Published notes cannot announce an unreleased future version');
 if (publishedVersion !== fullVersion) {
   assert.match(await readText('../changelog.md'), new RegExp(`^## V${escapeRegExp(seriesVersion)}（未发布）`, 'm'), 'A development version must have an unreleased changelog section');
+  assert.match(repositoryReadme, new RegExp(`V${escapeRegExp(seriesVersion)} 开发中，尚未发布`), 'Development README must not present the new source version as released');
+  assert.match(await readText('../README_EN.md'), new RegExp(`V${escapeRegExp(seriesVersion)} is in development and has not been released`));
+  assert.match(zhHelpSource, new RegExp(`尚未发布的 V${escapeRegExp(seriesVersion)} 开发版本`));
+  assert.match(enHelpSource, new RegExp(`unreleased V${escapeRegExp(seriesVersion)} development version`));
 }
 // Only the current release section defines this catalog; older notes stay intact.
 const currentReleaseNotes = releaseNotes.split(/\r?\n---\s*\r?\n/, 1)[0];
@@ -164,9 +170,8 @@ if (releasedToolCount !== desktopToolCount) {
     'Source documentation must direct readers to the download page for installer availability');
 }
 if (publishedVersion === fullVersion) {
-  assert.match(currentReleaseNotes, /CLI \/ MCP 源码扩展至 77 项能力/, 'Release notes must distinguish current source capabilities from npm availability');
-  assert.match(currentReleaseNotes, new RegExp(`npm CLI / MCP ${escapeRegExp(fullVersion)} 已于 \\d{4}-\\d{2}-\\d{2} 发布`), 'Release notes must record the independently verified npm publication date');
-  assert.match(currentReleaseNotes, new RegExp(`npmjs\\.com/package/@toolknit/cli/v/${escapeRegExp(fullVersion)}`), 'Release notes must link the published npm version');
+  const catalog = await readJson('cli/guides/CLI_CAPABILITIES.json');
+  assertNpmReleaseNotes(currentReleaseNotes, { sourceCapabilities: catalog.tools.length, desktopVersion: fullVersion });
 }
 
 const manifestVersions = new Map([
@@ -306,12 +311,15 @@ assert.match(zhUsageSource, /随当前功能边界更新/, 'Chinese usage policy
 assert.match(enUsageSource, /with the current feature boundary/, 'English usage policy must use a version-independent feature boundary');
 
 for (const [name, locale] of [['Chinese', zhLocale], ['English', enLocale]]) {
-  for (const key of ['recommendedProviders', 'malian', 'doufu', 'customTools', 'customToolsTitle', 'customToolsDescription', 'openWebWorkbench']) {
+  for (const key of ['niuniu', 'niuniuAi', 'clearToolSearch', 'aiProviderPrompt', 'aiProvidersAria', 'malian', 'doufu', 'customTools', 'customToolsTitle', 'customToolsDescription', 'openWebWorkbench']) {
     assert.ok(locale.home?.[key]?.trim(), `${name} home ${key} must be translated`);
   }
   assert.equal(locale.home?.supportCostNote, undefined, `${name} obsolete homepage cost copy must be removed`);
   assert.equal(locale.home?.supportGroupNote, undefined, `${name} obsolete homepage group copy must be removed`);
+  assert.ok(locale.home?.releaseNotice?.eyebrow?.includes(`V${seriesVersion}`), `${name} first-run notice must cover the current release`);
+  assert.match(locale.home?.releaseNotice?.wait ?? '', /\{seconds\}/, `${name} reading countdown keeps its seconds placeholder`);
 }
+assert.deepEqual(Object.keys(zhLocale.home.releaseNotice).sort(), Object.keys(enLocale.home.releaseNotice).sort(), 'First-run notice translations match');
 assert.match(zhLocale.home?.supportPage?.supporterBenefit ?? '', /灰度体验群/, 'Chinese support copy must explain preview-group access');
 assert.match(enLocale.home?.supportPage?.supporterBenefit ?? '', /preview group/i, 'English support copy must explain preview-group access');
 assert.match(zhLegalSource, /灰度体验群/, 'Chinese legal copy must define the preview-group boundary');

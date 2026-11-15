@@ -1,3 +1,9 @@
+# Historical V3.2 license reference
+
+This text records the earlier Engine license. Current V3.3 author-owned Engine code is licensed under MIT; see the repository LICENSE and NOTICE. Earlier releases retain their distributed notices.
+
+---
+
 # ToolKnit PDF-to-Word Engine Source Viewing License 1.0
 
 SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
@@ -12,7 +18,8 @@ This license applies only to author-owned material first provided under this
 license in the following repository-relative locations (the "Engine"):
 
 - `toolknit-desktop/src/features/pdf-to-word/` and its subdirectories;
-- `toolknit-desktop/src-tauri/src/native_runtime/pdf/docx_write.rs`.
+- `toolknit-desktop/src-tauri/src/native_runtime/pdf/docx_write.rs`;
+- `toolknit-desktop/src-tauri/src/native_runtime/pdf/docx_fonts.rs`.
 
 Copies, translations, adaptations, extracted portions and compiled forms of
 that material remain subject to the applicable rights and permissions below.

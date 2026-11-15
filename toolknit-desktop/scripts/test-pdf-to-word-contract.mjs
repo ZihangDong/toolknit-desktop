@@ -10,8 +10,8 @@ assert.equal(spec.overlayId, 'pdfWordOverlay'); assert.equal(spec.init, 'initPdf
 assert.equal((await spec.markup()).default, markup);
 const ids = [...markup.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
 assert.equal(ids.length, new Set(ids).size);
-for (const id of ['pdfWordOverlay', 'pdfWordEmptyPick', 'pdfWordExport', 'pdfWordCanvas', 'pdfWordCancel', 'pdfWordThumbnails', 'pdfWordReset', 'pdfWordEditText']) assert(ids.includes(id));
-for (const id of ['pdfWordAnalyze', 'pdfWordFallback', 'pdfWordReview', 'pdfWordAuto', 'pdfWordFontSize']) assert(!ids.includes(id));
+for (const id of ['pdfWordOverlay', 'pdfWordEmptyPick', 'pdfWordCancel', 'pdfWordSelector', 'pdfWordPagesOverlay', 'pdfWordEditDocument', 'pdfWordOpenFolder', 'pdfWordSuccessOk']) assert(ids.includes(id));
+for (const id of ['pdfWordAnalyze', 'pdfWordFallback', 'pdfWordReview', 'pdfWordAuto', 'pdfWordFontSize', 'pdfWordCanvas', 'pdfWordStructure', 'pdfWordRange', 'pdfWordAi', 'pdfWordFlow', 'pdfWordEditText']) assert(!ids.includes(id), 'pure converter excludes inline editing and desktop AI/A4 options');
 for (const language of ['zh', 'en']) {
   const dictionary = JSON.parse(await read(`src/locales/${language}.json`));
   for (const [, key] of markup.matchAll(/data-i18n(?:-aria-label|-title)?="([^"]+)"/g)) {
@@ -21,7 +21,11 @@ for (const language of ['zh', 'en']) {
 }
 const controller = await read('src/features/pdf-to-word/controller.js');
 assert(!controller.includes('.innerHTML')); assert(!controller.includes("from '@tauri-apps"));
-assert(controller.includes('createLifecycleScope')); assert(controller.includes('requestAiKeyConfiguration'));
+assert(controller.includes('createLifecycleScope')); assert(!controller.includes('requestAiKeyConfiguration'));
+assert(controller.includes('preserveScanFigures: true, refineScanText: true'), 'desktop enables accepted local scan refinements');
+assert(controller.includes('openDocumentEditor(session)'));
+const handoff = await read('src/app/word-document-handoff.js');
+assert(handoff.includes('session.release()')); assert(handoff.includes('openDocumentSession'));
 const native = await read('src-tauri/src/native_runtime/pdf/docx_write.rs');
 const runner = await read('src-tauri/src/native_runtime/runner.rs');
 for (const command of ['begin_pdf_to_word_write', 'append_pdf_to_word_chunk', 'finalize_pdf_to_word_write', 'discard_pdf_to_word_write', 'open_pdf_to_word_result']) {

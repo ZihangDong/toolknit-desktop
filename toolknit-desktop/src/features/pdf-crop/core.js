@@ -1,3 +1,4 @@
+import { copyPdfPages } from '../../core/pdf-page-copy.js';
 import { PDFDocument } from 'pdf-lib';
 import { flattenPdfFormForPageCopy } from '../../pdf-document-structure.js';
 
@@ -240,7 +241,7 @@ export async function exportCroppedPdfPage({
   flattenPdfFormForPageCopy(source);
   assertActive(shouldCancel);
   const output = await PDFDocument.create();
-  const [page] = await output.copyPages(source, [pageIndex]);
+  const [page] = await copyPdfPages(output, source, [pageIndex]);
   output.addPage(page);
   assertActive(shouldCancel);
   return new Uint8Array(await output.save({ useObjectStreams: true }));
@@ -257,7 +258,7 @@ export async function splitCroppedPdfPages({ bytes, crops, baseName, shouldCance
   for (let index = 0; index < pages.length; index += 1) {
     assertActive(shouldCancel);
     const document = await PDFDocument.create();
-    const [page] = await document.copyPages(source, [index]);
+    const [page] = await copyPdfPages(document, source, [index]);
     document.addPage(page);
     output.push({
       fileName: createPdfCropPageFileName(baseName, index + 1, pages.length),

@@ -54,7 +54,7 @@ assert.match(preview, /function deleteSelected/);
 assert.match(preview, /pages\.length - chosen < 2/);
 assert.doesNotMatch(preview, /\.innerHTML\s*=|\.addEventListener\(/);
 
-assert.match(exporter, /write_unique_file_bytes/);
+assert.match(exporter, /writeUniqueBinaryFile/);
 assert.match(exporter, /URL\.revokeObjectURL/);
 assert.match(exporter, /assertCurrent\(owner, id\)/);
 assert.match(exporter, /invoke\('open_path', \{ path: lastOutputPath \}\)/);

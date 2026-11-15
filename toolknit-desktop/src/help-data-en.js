@@ -1,4 +1,11 @@
 export const HELP_CONTENT_EN = {
+  'file-search': {
+    title: 'Quick file search',
+    html: `<div class="help-doc"><h2>Quick file search</h2><p>Find local files by name or path, including Chinese and pinyin matching. Filter extensions and sort by name, size or modification time. Everything is not required.</p>
+      <ol class="help-steps"><li>Choose Enable quick search and approve the initial administrator request. Accessible disks, connected mapped drives and conservative exclusions are managed automatically. Available results remain searchable while indexing continues.</li><li>Type keywords or select an extension. Space-separated terms are combined. Images show local thumbnails, including static SVG graphics. Unreadable or oversized images and other files keep colored type icons. Loading more and refreshing preserve the loaded range and scroll position. The single row action reveals and selects the file in Explorer without executing it.</li><li>Enable the desktop capsule for quick access. Escape or an outside click collapses it. Its context menu opens the tool page, hides the capsule until restart, or disables it.</li></ol>
+      <p>Supported NTFS volumes use acceleration automatically; other locations use standard indexing. Routine restarts normally need no new elevation, while service upgrades, repairs or a different account may need approval. Indexing continues in the tray, stops when ToolKnit fully exits, and catches up next launch. The more menu pauses, resumes or rebuilds the index without deleting source files.</p>
+      <p>The index stores file metadata locally. Visible images are read on demand to create small previews; files are not uploaded or modified, and cloud placeholders are not downloaded. Internal system data and known caches are excluded, while ordinary documents and project deliverables remain searchable. Disconnected locations do not block other drives. Network neighbours are not discovered automatically. This feature is desktop-only.</p></div>`
+  },
   'image-to-pdf': {
     title: 'Images to PDF',
     html: `<div class="help-doc"><h2>Images to PDF</h2><p>Combine images into one PDF, with optional scanned appearance. Processing stays local and requires no AI, Office or extra model.</p>
@@ -8,26 +15,27 @@ export const HELP_CONTENT_EN = {
   },
   'pdf-to-word': {
     title: 'PDF to Word',
-    html: `<div class="help-doc"><h2>PDF to Word</h2><p>Convert native Chinese, English and mixed PDFs into editable DOCX locally. No Python, Office or additional model is required. Originals are unchanged; desktop results use unique filenames in the PDF_Word output folder.</p><h3>Workflow</h3><p>Choose a PDF, enter its password if needed, select pages and layout, then analyze. Review structural overlays and warnings, optionally adjust a page to a single column or retain headers as body content, and export.</p><h3>Scope</h3><p>Paragraphs, headings, headers, footers, ruled tables, answer grids and columns are reconstructed. Scanned pages are not OCRed. Complex content requires confirmation before being retained as non-editable images. Font availability and Office applications can affect wrapping and pagination.</p><h3>Optional AI</h3><p>Selecting AI assisted export sends visible region crops and text to your configured image-capable service, prioritizing the current page and uncertain regions. Each export permits up to 8 requests within a 90-second budget. Validated regions can be reused during the current file session; results show reviewed, remaining and reused counts. AI cannot rewrite source text or cross existing table and column boundaries. Unreviewed formula proposals retain the original formula images. Errors are visible and local export remains available. The structure preview is not a Word renderer.</p><h3>Limits</h3><p>One PDF up to 64 MiB and 300 source pages; up to 100 selected pages and 64 MiB output per conversion. Additional image and text complexity limits apply. Cancellation or closing stops work and removes incomplete output; a file already atomically published remains. Complex clipping is retained as visible images. Signatures, active forms, attachments and external links are not preserved as active objects.</p></div>`
+    html: `<div class="help-doc"><h2>PDF to Word</h2><p>Convert PDF to editable DOCX while preserving page positions. Processing stays on this computer. No AI key is needed; scanned pages require the optional local OCR models. Originals stay unchanged and files are saved under PDF_Word with unique names.</p><h3>Workflow</h3><ol class="help-steps"><li>Upload one PDF and enter its opening password if required. Single-page documents start directly.</li><li>For multiple pages, convert all or choose pages. The readonly selector has a large preview on the left and page selection on the right. Select, clear, invert or append ranges. Choose at least one page. Going back clears the upload.</li><li>On completion, edit the document, reveal it in its folder or close. Closing resets the converter and keeps the saved Word file.</li></ol><h3>Continue editing</h3><p>Edit document transfers the converted structure into the PDF editor's Word document mode and clears the converter. Select text or images to edit, delete or replace. Undo, redo and reset are available. Font sizing is automatic; independent fonts, colors and styles are preserved. Export remains DOCX and creates a separate result. This mode accepts the current conversion session, not arbitrary external DOCX files.</p><h3>Scans and complex content</h3><p>Scanned and mixed pages use optional local PP-OCRv5 models. Text and ruled tables receive additional geometry and font calibration. Reliable native formulas can become editable equations; simple scanned identities have strict confidence gates. Complex two-dimensional formulas, handwriting, vertical text, blur, artwork and unsupported tables may remain images. Verify the output in a real document reader; successful conversion does not guarantee perfect fidelity.</p><h3>Limits and safety</h3><p>Input and output are each limited to 64 MiB. Sources may contain up to 300 pages; convert at most 100 pages per operation. The maximum original paper side is 1584 pt. Native conversion has a ten-minute budget; scans receive a bounded page-based allowance, excluding dependency setup time. Cancelling clears unfinished work while completed files remain. Hidden or covered content is not deliberately restored. Desktop AI layout and A4 reflow controls have been removed; existing explicit CLI/MCP options remain compatible. The conversion engine has separate licensing terms.</p></div>`
   },
   'recording-mode': {
     title: 'One-click Recording Mode',
     html: `<div class="help-doc"><h2>One-click Recording Mode</h2><p>Enable this mode from the home prompt or Settings to turn on Windows startup, live clipboard monitoring and floating screenshot history together. The mode is on only when all three actual settings are on. Pausing any one of them updates the mode status.</p>
       <h3>Enable, disable and launch</h3><p>Enabling saves your previous three settings. Disabling restores them without deleting clipboard records, screenshots or files. Without a saved snapshot, disabling turns all three off. If enabling fails, the app attempts to restore settings changed by that operation and reports the failure; check the actual state.</p><p>Windows startup uses the current user's configuration and normally needs no administrator access. Startup launches into the system tray; its menu can toggle startup and recording. Enabling clipboard monitoring also resumes it at the next launch; pausing disables resume. This mode does not change screenshot shortcuts, AI credentials or excluded applications.</p>
+      <h3>Shortcut conflicts and setup failures</h3><p>Screenshot hotkeys are independent of recording mode. If another app owns Alt+Q, recording mode, clipboard monitoring and floating history can still be enabled. Only hotkey capture is affected. Choose another combination in Quick Screenshot, or close the conflicting app and save the shortcut again. Registry edits, disabling antivirus and administrator access are not required for this conflict.</p><p>Other setup failures show the failed step and a stable error code. Click the switch to retry a failed status read. The saved snapshot contains settings from before enabling the mode; it is neither current status nor history data and should not be deleted as a troubleshooting shortcut.</p>
       <h3>Screenshots and history</h3><p>Alt+Q starts capture by default; change or disable it on the Quick Screenshot page in Creative tools. Floating history has a draggable round Logo: click to expand, then click a thumbnail to open a pinned viewer. The floating window shares encrypted clipboard history, with image, text and file filters and full timestamps. Defaults are 7 days, 2000 records and 256 MB. Monitoring captures copies from other applications; enabling the window alone does not enable monitoring. Right-click to hide until ToolKnit restarts or turn off the window.</p>
       <p>The floating window shows the first 20 records in its saved order. Search scans all retained content, sources, file paths and notes, returning the first 20 matches. Drag a card's small grip to save its position. New records enter at the top; the bottom record leaves the floating view but stays in full history. The bottom switch controls recording and the bar tracks scrolling. Right-click to edit a history note, view, copy or confirm deletion from shared history, never original files. The menu can restore the main app.</p>
       <p>Use the top-right switch beside the menu to open saved phrases. A phrase only needs a title and content. Search updates as you type; click to copy, right-click to edit or delete, and use the grip to reorder. Successful copies show a white capsule at the bottom center of the primary display. Phrase content, history text and original images can be dragged to applications that accept them. Image dragging supplies the original PNG file; acceptance depends on the target application and never sends a message automatically. Text history can be saved as a phrase, with duplicates detected. Phrases remain independent of history expiry, clearing and the 20-item view. Each mode keeps its search and scroll position. Phrases are encrypted locally, limited to 2000 items and 16 MiB, with 64 KiB per text. Capacity limits ask for manual cleanup instead of deleting old phrases.</p>
-      <h3>Why can OCR be inaccurate?</h3><p>Local OCR uses installed Windows recognition language packs and needs no AI. Small text, blur, complex layouts and mixed languages can cause mistakes. Capture clear text and check your Windows OCR language packs. Review both recognition and translation results.</p><p>For AI extraction, configure the service URL, API key and an image-capable model under AI in Settings. Clicking AI extraction sends the selected region. Unsupported models produce an error; there is no extra vision-confirmation step.</p>
-      <h3>Screenshot translation: OCR and AI paths</h3><p>Install the local Chinese/English translation models from Settings first. Targets are Chinese and English only. Missing or unavailable models block translation with an installation prompt.</p><p>Without configured AI: local OCR, then local translation. With configured AI and a key: local OCR locates text, AI corrects recognition, then local models translate it. AI may improve recognition but depends on the model and network; better accuracy or speed is not guaranteed. On AI failure, you must explicitly confirm using the original OCR result.</p><p>Translated text overlays the source text and supports undo. Double-click to edit or copy it. Local model installation does not configure AI, and recording mode never installs models, sends images or invokes AI automatically.</p>
+      <h3>Why can OCR be inaccurate?</h3><p>Local OCR uses shared PP-OCRv5 mobile models, needs no AI key and does not require a Windows Chinese OCR pack. Small text, blur, complex layouts and mixed languages can cause mistakes. Capture clear text and check your local OCR models in Settings. Review both recognition and translation results.</p><p>For AI extraction, configure the service URL, API key and an image-capable model under AI in Settings. Clicking AI extraction sends the selected region. Unsupported models produce an error; there is no extra vision-confirmation step.</p>
+      <h3>Screenshot translation: local OCR and local translation</h3><p>Install the local OCR and Chinese-English translation models in Settings once, then work offline. Target languages are Simplified Chinese and English.</p><p>OCR extracts the selected text and feeds it directly to local translation. This flow never reads an AI key or uploads images or text, even when AI is configured. It has no AI fallback confirmation and does not depend on your network or AI service.</p><p>Translations cover the source text and support undo. Double-click to edit or copy, and review the results. Only the separate AI content extraction action sends the selected region to your configured image-capable service.</p>
       <h3>Home prompt and privacy</h3><p>The prompt is hidden while the mode is on and appears at each launch otherwise. Close dismisses it for this launch; Never show again persists. Settings always provides the mode switch.</p><p>Pause monitoring before copying passwords or private content, or exclude applications. Not all applications mark sensitive clipboard content. Local OCR and translation do not upload content; only explicit AI actions send necessary screenshot regions to your configured service.</p></div>`
   },
   'quick-screenshot': {
     title: 'Quick Screenshot',
     html: `<div class="help-doc"><h2>Quick Screenshot</h2><p>Find it in Creative tools. On Windows desktop, Alt+Q starts capture by default. Change or disable the shortcut on the tool page. Capture a detected window or drag a region, with green selection borders and a pixel/color magnifier.</p>
-      <h3>Annotations and output</h3><p>Add rectangles, ellipses, arrows, freehand strokes, mosaics and text. Select, move or resize annotations; double-click text to edit. Ctrl+Z undoes; Ctrl+Y or Ctrl+Shift+Z redoes; Delete removes; arrow keys move by one pixel, or 10 with Shift. Ctrl+S saves, Ctrl+C copies, Enter confirms and Escape cancels the current operation or capture.</p><p>PNG/JPG files use unique names in the Screenshots output subdirectory. The success dialog can reveal the result in Explorer. Pinned viewers support zoom, dragging, save and copy.</p>
+      <h3>Annotations and output</h3><p>Add rectangles, ellipses, arrows, freehand strokes, mosaics and text. Select, move or resize annotations; double-click text to edit. Ctrl+Z undoes; Ctrl+Y or Ctrl+Shift+Z redoes; Delete removes; arrow keys move by one pixel, or 10 with Shift. Ctrl+S saves, Ctrl+C copies and finishes the capture, and Enter confirms. Escape directly cancels capture, including a selection, drag or recognition task; an open text dialog or dropdown closes first.</p><p>PNG/JPG files use unique names in the Screenshots output subdirectory. Successful capture saving closes the overlay with a small notification; failed saving preserves edits for retry. Pinned viewers fit the image and monitor, and support zoom, dragging, save and copy.</p>
       <h3>Floating history and saved phrases</h3><p>Off by default; click the draggable round Logo to expand. Images open at full quality in a pinned viewer. The first 20 records follow the saved order; drag a card grip to reorder. New records enter at the top, and the bottom record leaves the floating view while full history remains intact. Search scans retained content, sources, file paths and notes. Right-click to edit a history note, view, copy or confirm deletion from shared history, never original files. The bottom switch controls recording. The menu opens the main app or Clipboard History, hides until restart or turns off the window.</p><p>Saved phrases are an independent encrypted collection with just a title and content. Create, edit, search, copy, reorder or delete; only text history can be imported. Copies show a white capsule at the bottom center of the desktop. Drag text or a history image into an application that accepts it; images use the original PNG file and dropping never sends a message automatically. History expiry or clearing does not delete phrases. Each mode keeps its search and scroll position. Limits are 2000 phrases / 16 MiB, 64 KiB per text and 256 bytes per title. Over-limit writes preserve existing data. Searching history image notes does not run OCR.</p>
-      <h3>OCR and AI</h3><p>Local OCR uses installed Windows OCR language packs and needs no API Key. AI extraction sends the selected region only when requested, using your configured image-capable model. Screenshot translation requires local Chinese/English models installed in Settings: configured AI and a key enable recognition correction before local translation; otherwise local OCR feeds local translation. AI failure requires confirmation to use OCR. Translation overlays support undo; double-click to edit or copy and review the results.</p>
-      <h3>Limits</h3><p>System capture and global shortcuts require Windows desktop; the browser only previews the UI. Each image is limited to 32 million pixels and 32 MiB of encoded data. Viewers share a 64 MiB budget with at most 8 windows. History uses clipboard retention and capacity settings, with a 20 MiB limit for each image record. Protected or special GPU content may not capture. Native OCR, save and copy cannot be interrupted once dispatched; closing prevents late results from updating the UI.</p></div>`
+      <h3>OCR and translation</h3><p>Local OCR uses the shared PP-OCRv5 mobile models and needs no key. Screenshot translation sends the recognized text directly to local Chinese-English models, entirely on this computer. Install both model sets in Settings first. Translation overlays support undo; double-click to edit or copy. The separate AI content extraction action uses your configured image-capable model and sends the selected region only when requested.</p>
+      <h3>Limits</h3><p>System capture and global shortcuts require Windows desktop; the browser only previews the UI. Each image is limited to 32 million pixels and 32 MiB of encoded data. Viewers share a 64 MiB budget with at most 8 windows. History uses clipboard retention and capacity settings, with a 20 MiB limit for each image record. Protected or special GPU content may not capture. OCR supports cancellation, with an encoded input limit of 24 MiB. Completed save/copy operations cannot be undone; closing prevents late results from updating the UI.</p></div>`
   },
   'duplicate-file-cleanup': {
     title: 'Clean Duplicate Files',
@@ -45,8 +53,8 @@ export const HELP_CONTENT_EN = {
     title: 'Overview',
     html: `<div class="help-doc">
       <h2>ToolKnit Overview</h2>
-      <p>ToolKnit 3.2 is a <strong>local-first</strong> Windows toolbox with 73 desktop tools in the current test catalog across 12 categories and 77 capabilities exposed to IDE Agents through CLI / MCP. Basic file processing stays local; AI tools send the necessary content to your selected provider only when explicitly invoked.</p>
-      <p>V3.1 has been released with PDF to Scanned PDF, Clean Duplicate Files and Quick Screenshot. This is the V3.2 development version. Desktop and CLI/MCP releases are separate; check the official download page and npm for their versions.</p>
+      <p>ToolKnit 3.3 is a <strong>local-first</strong> Windows toolbox with 75 desktop tools in the current release across 12 categories and 78 capabilities exposed to IDE Agents through CLI / MCP. Basic file processing stays local; AI tools send the necessary content to your selected provider only when explicitly invoked.</p>
+      <p>This is the V3.3 release, adding file search and Word to PDF, with improved local OCR, scanned PDF to Word and screenshots. Desktop installers and CLI/MCP are distributed separately through the website and npm.</p>
 
       <h3>Tool Categories</h3>
       <div class="help-tool-grid">
@@ -101,10 +109,10 @@ export const HELP_CONTENT_EN = {
       </ol>
 
       <h3>First Launch</h3>
-      <p>No optional component is forced on first launch. Related tools prompt for an on-demand install: FFmpeg is about 29 MB, the recommended Whisper Small model about 465 MB, and the LibreOffice download about 356 MB. After download reaches 100%, verification, extraction, or installation may still be running.</p>
+      <p>No optional component is forced on first launch. Related tools prompt for an on-demand install: FFmpeg is about 14 MB, the recommended Whisper Small model about 465 MB, and the LibreOffice download about 356 MB. After download reaches 100%, verification, extraction, or installation may still be running.</p>
 
       <div class="help-note">
-        <p>FFmpeg, Whisper, and LibreOffice support Auto, Official, or China mirror sources. LibreOffice powers Excel to PDF, PPT to PDF, and PPT to Image. A rare offline Windows installation without WebView2 must go online once to install Microsoft Edge WebView2 Runtime.</p>
+        <p>FFmpeg, Whisper, and LibreOffice download on demand from 7Caiyun and are verified locally. LibreOffice powers Word to PDF, Excel to PDF, PPT to PDF, and PPT to Image. A rare offline Windows installation without WebView2 must go online once to install Microsoft Edge WebView2 Runtime.</p>
       </div>
     </div>`
   },
@@ -125,10 +133,10 @@ export const HELP_CONTENT_EN = {
       <p>Audio & Video to Text needs one local model before first use. <strong>Small</strong> is the default recommendation; Base is smaller and faster, while Medium prioritizes quality. Recognition works offline after download. Only optional AI refinement sends recognized text to your provider; media is never uploaded.</p>
 
       <h3>FFmpeg Runtime</h3>
-      <p>Audio conversion, clipping, audio extraction, video conversion, frame export, GIF export, and transcription preparation require FFmpeg. It is no longer bundled into the installer. Install it from Auto, Official, or China mirror here, or accept the dependency prompt when entering a supported tool.</p>
+      <p>Audio conversion, clipping, audio extraction, video conversion, frame export, GIF export, and transcription preparation require FFmpeg. It is no longer bundled into the installer. Install it here or accept the dependency prompt when entering a supported tool.</p>
 
       <h3>LibreOffice Runtime</h3>
-      <p>LibreOffice powers Excel to PDF, PPT to PDF, and PPT to Image. Choose Auto, Official, or China mirror; after download, allow verification and extraction to finish. Conversion then works offline.</p>
+      <p>LibreOffice powers Word to PDF, Excel to PDF, PPT to PDF, and PPT to Image. After download, allow verification and extraction to finish. Conversion then works offline.</p>
 
       <h3>Window, Sound, and Shortcut</h3>
       <p>Configure resize behavior and small, large, or custom corner radius. Maximized windows remove rounding and cover the screen; rounding returns after restore. Global sounds have a master switch and three styles. Screen Color Picker defaults to <code>Ctrl+Shift+C</code>, can be customized or reset, minimizes the main window while picking, and returns the selected color to the Color Extractor.</p>
@@ -449,6 +457,20 @@ export const HELP_CONTENT_EN = {
     </div>`
   },
 
+  'word-to-pdf': {
+    title: 'Word to PDF',
+    html: `<div class="help-doc"><h2>Word to PDF</h2>
+      <p>New in V3.3. Local LibreOffice Writer converts DOC / DOCX to PDF with selectable text. Files stay local and originals stay unchanged.</p>
+      <ol class="help-steps"><li>Select or drop up to 20 Word documents, each at most 50 MiB.</li>
+      <li>Start conversion. Install the Office runtime when prompted, then convert offline. WPS or Microsoft Office cannot replace this runtime.</li>
+      <li>Choose Show in folder to select the saved PDF, or Import into PDF Editor to view and edit it. Choose a file from the result selector for a batch.</li>
+      <li>Close clears the queue for the next conversion without deleting saved files. A partial batch stays in the queue so you can retry unfinished files without repeating successful conversions.</li></ol>
+      <p>Each PDF keeps its source name inside a unique folder. Existing outputs are never overwritten. Cancel or return to stop unfinished work.</p>
+      <p>Macros are disabled and external links or indexes are not explicitly refreshed. DOCX macros, embedded objects and external resources are rejected. Save password-protected documents as unprotected copies first. Missing fonts or complex layouts can differ from Word; preview before sharing.</p>
+      <p>Development CLI: <code>toolknit word to-pdf --input source.docx --output result.pdf --json</code>. MCP: <code>toolknit_word_to_pdf</code>. Published npm 3.2.0 does not include this tool.</p>
+    </div>`
+  },
+
   'excel-to-pdf': {
     title: 'Excel to PDF',
     html: `<div class="help-doc">
@@ -681,7 +703,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       </ol>
 
       <div class="help-note">
-        <p>First-time audio conversion prompts for the FFmpeg runtime (about 29 MB). It works offline after verification and installation.</p>
+        <p>First-time audio conversion prompts for the FFmpeg runtime (about 14 MB). It works offline after verification and installation.</p>
       </div>
 
       <h3>Format Guide</h3>
@@ -763,7 +785,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       </ol>
 
       <div class="help-note">
-        <p>Video conversion runs only in the desktop app and uses bundled FFmpeg locally. Each file can be up to 10 GB, with up to 30 files in one batch.</p>
+        <p>Video conversion runs only in the desktop app and uses an on-demand FFmpeg installation locally. Each file can be up to 10 GB, with up to 30 files in one batch.</p>
       </div>
     </div>`
   },
@@ -981,7 +1003,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       <p>After connecting ToolKnit CLI to an MCP-capable IDE, you can ask an Agent in plain language to process local files from the project. The Agent calls real ToolKnit tools; it does not need the desktop app to stay open and should not claim a result without a tool call.</p>
 
       <h3>Current scope</h3>
-      <div class="help-agent-scope"><p>V3.2 exposes <strong>77 capabilities</strong>. Use CLI 3.2.0 or later; the desktop app does not need to stay open.</p><ul>
+      <div class="help-agent-scope"><p>V3.3 exposes <strong>78 capabilities</strong>, adding Word to PDF. The corresponding npm version is 3.3.0. The CLI runs independently of the desktop app.</p><ul>
         <li><strong>PDF and Office</strong>: inspect, merge, split, rotate, encrypt/decrypt, compress, enhance, export images, convert to Word, extract text/Markdown, crop, number pages, create scan effects or blank PDFs, and render XLSX to PDF. Word defaults to local analysis; complex regions may remain images. Excel rendering needs LibreOffice.</li>
         <li><strong>PPT</strong>: PDF/image export, asset/text extraction, compression, AI outlines and editable drafts.</li>
         <li><strong>Images</strong>: PDF creation, format conversion, compression, crop/rotate/flip, color replacement, icon archives, palette extraction, stitching and color-space conversion.</li>
@@ -1178,12 +1200,12 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
       <div class="help-faq-item">
         <div class="help-faq-q">Q: How much space does FFmpeg need?</div>
-        <div class="help-faq-a">A: The current Windows runtime download is about 29 MB. It is installed under ToolKnit local app data, not your output folder, and works offline after installation.</div>
+        <div class="help-faq-a">A: The current Windows runtime download is about 14 MB. It is installed under ToolKnit local app data, not your output folder, and works offline after installation.</div>
       </div>
 
       <div class="help-faq-item">
         <div class="help-faq-q">Q: What if the FFmpeg download fails?</div>
-        <div class="help-faq-a">A: In Settings > FFmpeg Runtime, switch between Auto, Official, and China mirror, then retry. The download is integrity-checked; do not replace the executable with one from an unknown website.</div>
+        <div class="help-faq-a">A: Check your connection and retry in Settings > FFmpeg Runtime. The download is integrity-checked; do not replace the executable with one from an unknown website.</div>
       </div>
 
       <div class="help-faq-item">
@@ -1193,7 +1215,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
       <div class="help-faq-item">
         <div class="help-faq-q">Q: What are Whisper and LibreOffice used for?</div>
-        <div class="help-faq-a">A: Whisper models run local audio/video transcription; the recommended Small model is about 465 MB. LibreOffice powers Excel to PDF, PPT to PDF, and PPT to Image; its download is about 356 MB. Both are optional.</div>
+        <div class="help-faq-a">A: Whisper models run local audio/video transcription; the recommended Small model is about 465 MB. LibreOffice powers Word to PDF, Excel to PDF, PPT to PDF, and PPT to Image; its download is about 356 MB. Both are optional.</div>
       </div>
 
       <div class="help-faq-item">
@@ -1203,6 +1225,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
     </div>`
   },
 
+  'local-ocr': { title: 'Local OCR and model licensing', html: `<div class="help-doc"><h2>Local text recognition</h2><p>Screenshot OCR and scanned PDF to Word share PP-OCRv5 mobile models. Install once in Settings, then use offline. Images and documents stay on this computer. Screenshot translation also needs the local translation models. Missing models during capture open the main window manager; capture again after installation.</p><p>Supports clear printed Chinese/English, common contracts, notices, columns and ruled tables. Blur, handwriting, vertical text, complex formulas and unusual fonts remain difficult. Check names, amounts and dates. Preserved illustrations are not necessarily editable text.</p><p>Models Copyright PaddlePaddle Authors, Apache-2.0. ToolKnit converts pinned upstream weights to ONNX without retraining. <a href="https://toolknit-downloads-u1ll6equ.cdn.7caiyun.com/models/ocr/pp-ocrv5-mobile/README-SOURCE-LICENSE.txt" target="_blank" rel="noopener noreferrer">Model sources and licensing</a> are distributed alongside the models. Installed models retain the license and hash manifest. Third-party rights remain separate from ToolKnit's own code licenses.</p></div>` },
   'faq-privacy': {
     title: 'Privacy & Security',
     html: `<div class="help-doc">
@@ -1242,7 +1265,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
   'transcription': {
     title: 'Audio & Video to Text',
-    html: `<div class="help-doc"><h2>Audio & Video to Text</h2><p>Use the bundled offline Whisper engine to recognize Chinese and English in local audio or video. Media files are never uploaded.</p><h3>First use</h3><ol class="help-steps"><li>Open Settings and choose Offline transcription models</li><li>Small is recommended; Base is faster and smaller, while Medium uses more disk space for higher quality</li><li>Choose automatic, official, or China mirror download. A verified model works offline afterwards</li></ol><h3>Outputs and refinement</h3><p>Every run keeps the original JSON, SRT, and TXT. When AI refinement is enabled, only recognized subtitle text is sent to your configured AI provider; subtitle IDs and timecodes cannot be added, removed, split, or merged.</p><div class="help-note"><p>AI can improve punctuation, grammar, and clear context mistakes, but cannot hear the source audio. Verify names, numbers, and unclear speech against the original recording.</p></div></div>`
+    html: `<div class="help-doc"><h2>Audio & Video to Text</h2><p>Use the bundled offline Whisper engine to recognize Chinese and English in local audio or video. Media files are never uploaded.</p><h3>First use</h3><ol class="help-steps"><li>Open Settings and choose Offline transcription models</li><li>Small is recommended; Base is faster and smaller, while Medium uses more disk space for higher quality</li><li>Download from 7Caiyun. A verified model works offline afterwards</li></ol><h3>Outputs and refinement</h3><p>Every run keeps the original JSON, SRT, and TXT. When AI refinement is enabled, only recognized subtitle text is sent to your configured AI provider; subtitle IDs and timecodes cannot be added, removed, split, or merged.</p><div class="help-note"><p>AI can improve punctuation, grammar, and clear context mistakes, but cannot hear the source audio. Verify names, numbers, and unclear speech against the original recording.</p></div></div>`
   },
 
   'large-file-cleanup': {
@@ -1314,7 +1337,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
   'developer-tools': {
     title: 'Developer Tools',
-    html: `<div class="help-doc"><h2>Developer Tools in 3.2</h2><p>This release adds local-first tools that load on demand and release Workers, canvases, and temporary jobs when closed.</p><h3>Markdown Document Editor</h3><p>GFM, task lists, Mermaid, math, outline navigation, draft recovery, and offline Markdown/HTML export are supported. Local images are organized into an assets folder during export.</p><h3>Smart Color Replacement</h3><p>Sample source and target colors, tune perceptual tolerance, feathering, luminance preservation, and 8-connected smart protection. Preview work runs in a Worker; Rust exports at original resolution.</p><h3>Hash &amp; Crypto</h3><p>Includes common hashes, HMAC, SM algorithms, AES file encryption, RSA, and SM2. Legacy algorithms are compatibility-only, and sensitive inputs are not persisted.</p></div>`
+    html: `<div class="help-doc"><h2>Developer Tools in 3.3</h2><p>These local-first tools load on demand and release Workers, canvases, and temporary jobs when closed.</p><h3>Markdown Document Editor</h3><p>GFM, task lists, Mermaid, math, outline navigation, draft recovery, and offline Markdown/HTML export are supported. Local images are organized into an assets folder during export.</p><h3>Smart Color Replacement</h3><p>Sample source and target colors, tune perceptual tolerance, feathering, luminance preservation, and 8-connected smart protection. Preview work runs in a Worker; Rust exports at original resolution.</p><h3>Hash &amp; Crypto</h3><p>Includes common hashes, HMAC, SM algorithms, AES file encryption, RSA, and SM2. Legacy algorithms are compatibility-only, and sensitive inputs are not persisted.</p></div>`
   },
   'hardware-tools': {
     title: 'Hardware Tools Overview',

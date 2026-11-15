@@ -1,5 +1,45 @@
 # ToolKnit Desktop V3.0 架构迁移报告
 
+> 2026-11-15 文件搜索增量：辅助窗按 generation 与 `settledGeneration` 收回旧变形层，并有界补查丢失的结束通知；`features/file-search/thumbnails.js` 为虚拟行管理本地小图与取消，`native_runtime/file_search/thumbnails.rs` 在查询租约校验后复用普通权限的受限文件进程。索引不存图片正文，不增加提权服务能力。后续实测补齐隔离 SVG 静态渲染及 PNG 直解码；分页支持有界保留窗口和索引变化后重定位，列表按文件锚点增量合并。沿用 `file_search` 命令并新增桌面专属 `thumbnail` action，无新增工具、用户存储或 CLI/MCP 参数。详见 [缩略图与胶囊恢复](V33_FILE_SEARCH_THUMBNAILS_RECOVERY_20261115.zh-CN.md)。
+
+> 2026-11-13 本地扫描增量：PDF→Word 新增受限扫描图形分区、原图资产裁切和扫描文字样式适配，全部位于既有 feature 的 core/adapters。processor 与 Worker 复用原协议并接可选布尔策略，桌面 controller 显式开启；无新模型、原生命令、存储项或 AI 网络路径。图形裁切发生在 OCR 擦字之前，资产复用原 DOCX/编辑交接。来源与验证见 [合入说明](V33_PDF_WORD_LOCAL_SCAN_MERGE_20261113.zh-CN.md)。
+
+> 2026-11-09 PDF→Word 原始字体增量：`core/source-font.js` 校验原始程序，`adapters/source-fonts.js` 在既有 Worker 内恢复文档字体，`source-font-runtime.js` 管理 DOCX 引用与主编辑器 FontFace，`native_runtime/pdf/docx_fonts.rs` 负责原生发布校验。WordScene schema 1 增加可选 `fontAssetId` 与 font 资产，内部增加一次性 `source-fonts` Worker 请求；无新 DOM、事件、存储、Tauri 或 CLI/MCP 参数。字体按文档释放，新缺字只替换新 run；编辑边界使用真实笔画。`source-font-integrated-final` 已封存 193 个源码/测试文件：115 项发布、安全 1,927 项、独立 CLI 167 模块/78 能力、Rust 327 passed/30 ignored、20 份原生/应用检查、239 页外观、最新构建工作流与字体专项、许可和严格集成均通过。17 份完整载荷/场景不变，三份新鲜 WPS；F16 单像素差异单独核对。综合保持 12/20，未达 16/20；下面为历史检查点，详见[实施记录](V33_PDF_WORD_IMPLEMENTATION_20261106.zh-CN.md)。
+
+> 2026-11-10 PDF→Word 边界：转换页仅做本地转换和只读选页，WordScene、资产与 Worker 经应用交接服务进入共享文档编辑模式。字形/表格/公式的来源验证归 feature-local core，字体度量、原图采样复用、实际行框校准与 DOCX 保存策略归 adapters；Canvas 与 Writer 共用定位及原预算。两行等式由来源专属 core 建立完整可选证明，独立 DOCX adapter 复用逐行度量并写出标准 eqArr；来源副本计入原预算，首行度量与完整外框分别保存。生成 OCR 字体经严格程序解析后，由文档独占的上下文共用绘字与测量，统一限制路径点数/字节并在关闭时释放；画布重置的空字距按原生零值处理，新增缺字仅使用已核实的本地字族。没有新增 DOM、命令、事件、存储或 CLI/MCP 参数。独立原稿、实际阅读器与综合验收分别记录，最新源码和门禁结论以[实施记录](V33_PDF_WORD_IMPLEMENTATION_20261106.zh-CN.md)的封存检查点为准，不在架构摘要重复维护动态测试计数。
+
+> 2026-11-08 PDF→Word 标题拟合：新增 `adapters/native-display-typography.js`、`missing-font-context.js` 与 `text-rendering.js`。原生候选按实际 Writer 绘字比较，未知标题与扫描粗体策略分开；已知缺失字体仅改 Canvas 选择。编辑器复用同一同步文本绘制，不依赖异步预览的执行时序。扫描弱汉字的额外候选在既有路径之后使用独立额度。`display-local-final` 固定 20 份、239 页外观均通过，严格综合仍为 11/20；17 份完整 Word 载荷及场景不变，一份既有扫描证书按完整新证据复验。115 项发布检查、1,905 项安全检查、独立 CLI 158 纯模块/78 能力、完整 Rust 和最新构建工作流通过。无新公开参数、场景字段、存储或命令；详情见[实施记录](V33_PDF_WORD_IMPLEMENTATION_20261106.zh-CN.md)。
+
+> 2026-11-08 PDF→Word 增量：`native-blackboard-math.js` 限定原生实数空间幂与完整同一行成员式；分组只有在整式来源、样式、几何及遮挡检查通过后连接留白。OCR 局部字体提案沿用完整笔画路径，追加独立预算，不改远处样式。当前 `blackboard-local-final` 再跑固定 20 份、239 页：18 份完整 Word 载荷不变，11 份综合证书的载荷与场景保持。五条完整成员式、一条组件和八张完整表格均有独立来源及 WPS 回存证据。发布 115 项、独立 CLI 155 纯模块/78 能力、完整 Rust 和最新构建工作流通过；综合仍为 11/20，未达到 16/20。详细边界与限制见 [实施记录](V33_PDF_WORD_IMPLEMENTATION_20261106.zh-CN.md)。
+
+> 2026-11-08 PDF→Word 精确文字：OCR 在原图中核对空标点框、相邻误分、混合字体、行首笔画和平方单位；中文全角标点不用拉丁字体隐式替字。`ocr-rule-ownership.js` 在既有预算内保护填写线及插值边缘，独立字形证明可排除误检的大标题笔画；原生矢量不变。`core/ocr-table-cells.js` 按完整网格和精确字形拆分跨格 OCR 行，可选证据与原生范围分开，来源/像素预算不扩张。均在既有懒加载转换边界内，无新 DOM、命令、事件、存储或 CLI/MCP 参数。固定 20 份、239 页全部生成并通过原生校验，19/20 外观通过，严格综合提升至 11/20，16/20 目标仍未达到；另有两个真实扫描表格衍生件通过逐格及删字检查。详见 [实施与验收](V33_PDF_WORD_IMPLEMENTATION_20261106.zh-CN.md)。
+> 同日补充：独立原生标量走来源基线框，普通短词/刻度恢复普通文字。纯模块 `ocr-fragment-ownership.js` 与 `ocr-signature-forms.js` 分别处理唯一完整字形证明的边缘重复、明确签字/日期锚点的开放双格。既有 OCR 排版适配器增加三字括号编号的原墨校准；填写线重复记录按原锚点和连续墨迹合并，已确认的结构线峰值不切分邻字，不修改表格线账本。WordScene 仅增加可选内部 `ocrShortLabelFit`，无新模块、命令、存储或 CLI/MCP 参数。`source-fields-final` 当时通过 115 项发布脚本、安全 1,899 项、CLI 独立消费 153 个纯模块及浏览器工作流；综合仍为 11/20，整篇扫描合同尚有默认回退行与位置问题，未颁发新证书。完整 Rust 与来源绑定见实施记录。
+
+> 2026-11-07 中文 OCR 字位：`adapters/ocr-glyph-alignment.js` 在 Worker 内按原文字顺序完整归属墨迹簇，提供有界字形对照、像素预算及失败回退；原生校准不变。`core/ocr-rule-ownership.js` 复用孤立线条证据补足短填写线及漏检端点，只保护测量/擦除，不改表格线界。 大字号标题横笔继续按有界字位误差核对；`core/ocr-figure-ownership.js` 在纯逻辑边界核对原生图注及相邻插图，OCR 判断与重建共用，防止图中文字被重写。只新增 WordScene 可选证据字段 `ocrGlyphAlignment`，无公开命令、用户存储或 CLI 参数变化；完整矩阵和部分验收限制见实施记录。
+
+> 2026-11-07 PDF→Word 定位与 OCR 行：`adapters/text-layout.js` 统一 Writer/Canvas 实际子 run 原点；`core/ocr-line-bands.js` 只按原图空白与完整局部框分配行墨迹，不把图示框作为表格。`adapters/ocr-line-typography.js` 在页级预算内核对拉丁短行的完整像素；填写线归属沿用原图线条和 CTC，原始识别证据不改。均位于现有懒加载 Worker 边界，无新增 DOM、事件、原生命令或用户存储；CLI/MCP 参数保持兼容。该阶段完整矩阵 19/20 外观通过，严格综合为 6/20，详见实施记录。
+
+> 2026-11-06 PDF 转 Word 重构：转换控制器仅管理本地转换与只读选页；`app/word-document-handoff.js` 将已脱离来源生命周期的 WordScene/Worker 交给 PDF 编辑器的结构化文档适配器，继续导出 DOCX。Canvas 与 Writer 共用字体/定位规则，编辑保留各 run 样式；共享工作台增加可选布局、只读页栏和局部失效接口。移除桌面 AI/A4 控件与失效 page-strip，保留 CLI/MCP 参数兼容。序号/示例/标签横线表格与编码修复分配归 `core/indexed-horizontal-tables.js` / `horizontal-tables.js`；浅下标证据归 `math.js` / `math-rows.js`，阅读器放行归 `native-math-policy.js`，不扩张扫描或未知字体支持。局部裁剪和细线无字背景沿用既有绘制索引映射及预算，不增加跨 feature 依赖。75 工具、12 分类、78 CLI/MCP，不新增原生命令或用户存储。实现、完整语料与尚未达标的质量边界见 [重构实施记录](V33_PDF_WORD_IMPLEMENTATION_20261106.zh-CN.md)。
+
+> 2026-11-06 本地 OCR：`native_runtime/ocr` 统一模型安装、CPU 推理、取消和空闲回收；`platform/onnx_runtime` 与抠图共用 DLL 生命周期。`local_ocr` 为受窗口/会话限制的新命令；PDF 场景识别在 Worker 中重建文字/表格，截图复用本地翻译。75 工具、12 分类、78 CLI/MCP；160 个命令实现 / 159 个名称。扫描 OCR 本轮仅用于桌面端。见 [OCR 实施记录](V33_OCR_IMPLEMENTATION_20261106.zh-CN.md)。
+
+> 2026-11-05 截图提速：原生 startup 模块持有空窗口创建锁、条件合成等待、主线程就绪校验和可选计时；前端 capture-source 持有二进制图像解码及 URL 释放。新增仅截图窗口/活动会话可用的 quick_screenshot_image 命令；既有 boot 保留兼容，新增 prepare/prepared action，不变更用户设置。75 工具、12 分类、78 CLI/MCP；159 个命令实现 / 158 个名称。验证边界见[截图提速记录](V33_SCREENSHOT_STARTUP_20261105.zh-CN.md)。
+
+> 2026-11-05 冗余清理：组合根移除迁移遗留的 PPT 导入与未调用包装；六处输出路径旧函数移除。搜索页不再请求空交接，原生旧 action 保留 null 兼容；开发监听及发布审计隔离生成物/外联草稿。75 工具、12 分类、78 CLI/MCP 与公开契约不变；见[清理记录](V33_REDUNDANCY_CLEANUP_20261105.zh-CN.md)。
+
+> 2026-11-04 文件搜索增量：`features/file-search` 持有工具页、共享结果视图与独立胶囊；`native_runtime/file_search` 持有索引、查询租约、原生窗口和可选 NTFS 服务，`filesystem_worker` 以普通权限独立进程隔离共享目录访问。复用平台调用、导航、主窗恢复、自绘菜单、阴影和截图辅助窗注册。新增一个 `file_search` 命令、限定窗口的事件监听能力及独立本机缓存；75 工具、12 分类、78 CLI/MCP，158 个 Tauri 实现 / 157 个名称。实际验证与剩余管理员/桌面验收见 [文件搜索实施记录](V33_FILE_SEARCH_IMPLEMENTATION.zh-CN.md)。
+
+> 2026-10-31 首页新功能发现：分类标签为“新功能”，按 V3.3、V3.2 分组且新版本在前；V3.2 的六项入口继续显示，搜索仅筛卡片并自动隐藏空版本组。DOM/data-home-tool、原类别和启动行为不变，无 storage、Tauri 或 CLI/MCP 契约变化；白天/深色、多窗口宽度、中英文回归见 `test:home-settings-browser.mjs`。
+
+> 2026-11-02 V3.3 Word 转 PDF：`features/word-to-pdf/{tool,template,controller,core}` 负责转换队列，移除独立 preview 模块；结果通过现有 lazy 导航与 `pdf-editor.openWithFile` 交接。复用平台调用、Office 门禁、共享导航与结果弹框；Rust `office/word.rs` 与 CLI `word-runtime.mjs` 共用 UNO/Python 驱动及不包含用户资料的扩展注册缓存。当前 74 工具、12 分类、78 CLI/MCP，157 个 Tauri 实现 / 156 个名称；本轮未增加原生命令、storage key 或依赖。首页“新功能”按 V3.3/V3.2 分组。边界与验证见 [Word 转 PDF 维护说明](WORD_TO_PDF.zh-CN.md)。
+
+> 2026-10-28 记录模式增量：原生 `quick_screenshot` 的 `configure` 按快捷键是否改变/可选 `updateShortcut` 意图决定注册，历史显示独立；返回保留 `error` 状态。`app/recording-mode-state.js` 记录失败阶段和稳定代码，runtime 支持读状态失败重试，迟到失败不覆盖成功状态。无新增 command/DOM/storage/event，工具数量不变；见[维护记录](V33_RECORDING_MODE_REPAIR_20261028.zh-CN.md)。
+
+
+> 2026-10-28 V3.3 PDF 增量：`core/pdf-page-copy.js` 统一编辑、拆分、合并、旋转、裁剪及页码工具的共享资源复制，CLI 打包显式包含该模块；`shared/pdf-page-retention.js` 管理解码页面租约，编辑器 preview 自持有界画布缓存。`platform/binary-output.js` 封装原始二进制调用，原生 media IO 新增 `write_unique_file_binary`，复用已有唯一路径保存并在阻塞线程写盘。当前 155 个 Tauri 实现 / 154 个名称，73 工具、12 分类、77 CLI/MCP 能力不变。界面保持既有 DOM/storage/event，新增 `.is-current` 编辑器当前页样式；说明和验证见 [PDF 大文件修复记录](V33_PDF_LARGE_DOCUMENT_REPAIR_20261028.zh-CN.md)。
+
+> 2026-10-28 V3.3 开发启动：从已发布 V3.2 主分支创建 `V3.3`，桌面/Tauri/Rust/CLI/MCP 源码版本统一为 3.3.0，尚未发布。仅同步版本、界面标识、当前文档和版本测试，未改变模块边界、用户存储或工具契约。仍为 73 工具、12 分类、77 项 CLI/MCP；后续增量见根目录 `changelog.md` 的 V3.3 未发布节。下方 V3.2/V3.0 条目均为历史记录。
+
 > 2026-10-23 发布前增量：新增 `app/settings-navigation-runtime.js` 管理设置页 Escape 消费顺序，应用组合根只注入当前页面与既有关闭函数；无新 DOM ID、事件、存储、Tauri 或 CLI/MCP 契约。Excel 原生 UNO 脚本只编辑工作副本，增加隐藏工作表可见性校验，并用实际 XLSX/XLS/ODS 导出正文验证。依赖升级和实际包文件一致性检查、原生 ZIP 读取适配及主题提示文字修补详见[发布前报告](V32_RELEASE_PREFLIGHT_20261023.zh-CN.md)。73 工具、12 分类、77 项 CLI/MCP 保持不变。
 
 > 2026-10-22 PDF 工作台导航修补：`shared/pdf-workbench.js` 在动态兄弟工作台最终挂载后调用 `prepareToolPageChrome`，沿用共享导航样式、图标和全局动作代理；翻译按 `data-i18n` 标签更新，避免覆盖动画图标容器。没有新增 DOM ID、事件、存储、原生命令或依赖；四个二级工作台和全部 16 个 PDF 工具入口的导航回归及责任边界见 [导航维护记录](PDF_WORKBENCH_NAVIGATION.zh-CN.md)。

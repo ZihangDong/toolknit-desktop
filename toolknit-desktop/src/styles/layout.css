@@ -402,3 +402,7 @@
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
       }
+
+      .transition-mask:not(.visible) .tk-mascot-lg {
+        animation-play-state: paused;
+      }

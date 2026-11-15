@@ -6,6 +6,15 @@ use std::{
 };
 
 pub(crate) const NETWORK_IDLE_TIMEOUT: Duration = Duration::from_secs(20);
+pub(crate) const RESOURCE_ORIGIN: &str = "https://toolknit-downloads-u1ll6equ.cdn.7caiyun.com";
+pub(crate) const FFMPEG_URL: &str = "https://toolknit-downloads-u1ll6equ.cdn.7caiyun.com/runtime/ffmpeg/ffmpeg-6.1.6-toolknit-r3-win32-x64.gz";
+pub(crate) const LIBREOFFICE_URL: &str = "https://toolknit-downloads-u1ll6equ.cdn.7caiyun.com/runtime/libreoffice/LibreOffice_26.2.5_Win_x86-64.msi";
+pub(crate) const MATTING_URL: &str = "https://toolknit-downloads-u1ll6equ.cdn.7caiyun.com/models/modnet.onnx";
+pub(crate) const TRANSLATION_ENGINE_URL: &str = "https://toolknit-downloads-u1ll6equ.cdn.7caiyun.com/translation/4.0.33/mtranserver.exe";
+
+pub(crate) fn resource_url(path: &str) -> String {
+    format!("{RESOURCE_ORIGIN}/{path}")
+}
 
 // A deadline applies to each network wait, not the entire multi-GB transfer.
 pub(crate) async fn network<T>(

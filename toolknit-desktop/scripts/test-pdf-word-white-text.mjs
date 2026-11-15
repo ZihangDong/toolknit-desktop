@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, setTextRenderingMode, TextRenderingMode, setStrokingRgbColor, setLineWidth } from 'pdf-lib';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import JSZip from 'jszip';
 import { spatialIndex } from '../src/features/pdf-to-word/core/geometry.js';
-import { hasDarkTextBackground } from '../src/features/pdf-to-word/core/text-background.js';
+import { hasDarkTextBackground, hasWhiteTextBackground } from '../src/features/pdf-to-word/core/text-background.js';
 import { snapshotPage, snapshotFonts, renderPage, collectPageAssets } from '../src/features/pdf-to-word/adapters/pdfjs.js';
 import { prepareWordScene } from '../src/features/pdf-to-word/adapters/scene.js';
 import { inferDocument } from '../src/features/pdf-to-word/core/layout.js';
@@ -21,6 +21,14 @@ for (const change of [
 assert(!hasDarkTextBackground({ ...item, preciseInk: false }, spatialIndex([paint]), spatialIndex([item])));
 assert(!hasDarkTextBackground(item, spatialIndex([paint, { ...paint, order: 2, solidRect: false }]), spatialIndex([item])));
 assert(!hasDarkTextBackground(item, spatialIndex([paint]), spatialIndex([item, { ...item, order: 2 }])));
+const invisible={...item,color:'FFFFFF'};
+assert(hasWhiteTextBackground(invisible,spatialIndex([]),spatialIndex([invisible])));
+assert(hasWhiteTextBackground(invisible,spatialIndex([{...paint,color:'FFFFFF'}]),spatialIndex([invisible])));
+for(const change of [{solidRect:false},{opaque:false},{color:'FFFFFE'},{color:'202020'},{color:undefined}])
+  assert(!hasWhiteTextBackground(invisible,spatialIndex([{...paint,...change}]),spatialIndex([invisible])));
+assert(!hasWhiteTextBackground({...invisible,preciseInk:false},spatialIndex([]),spatialIndex([invisible])));
+assert(!hasWhiteTextBackground({...invisible,color:'FFFFFE'},spatialIndex([]),spatialIndex([invisible])));
+assert(!hasWhiteTextBackground(invisible,spatialIndex([]),spatialIndex([invisible,{...item,order:2}])));
 
 const directory = 'tmp/pdf-word-white-text'; await mkdir(directory, { recursive: true });
 const pdf = await PDFDocument.create(), font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -38,6 +46,9 @@ page.drawText('PARTIAL-BACKGROUND', { x: 40, y: 160, size: 12, font, color: whit
 page.drawRectangle({ x: 20, y: 100, width: 220, height: 30, color: dark });
 page.drawRectangle({ x: 20, y: 100, width: 220, height: 30, color: white });
 page.drawText('COVERED-BACKGROUND', { x: 40, y: 110, size: 12, font, color: white });
+page.pushOperators(setTextRenderingMode(TextRenderingMode.FillAndOutline),setStrokingRgbColor(0,0,0),setLineWidth(.5));
+page.drawText('OUTLINED-WHITE', { x: 40, y: 80, size: 12, font, color: white });
+page.pushOperators(setTextRenderingMode(TextRenderingMode.Fill));
 page.drawText('Ordinary body', { x: 40, y: 50, size: 12, font });
 const bytes = await pdf.save(); await writeFile(`${directory}/source.pdf`, bytes);
 const task = getDocument({ data: bytes.slice(), fontExtraProperties: true, useSystemFonts: false, verbosity: 0,
@@ -51,7 +62,9 @@ try {
   const sourceFor = text => scene.sources.find(source => source.text === text);
   for (const label of ['Editable header', 'Visible amount 123.45', 'Ordinary body']) assert.equal(sourceFor(label).disposition, 'editable');
   assert.equal(sourceFor('HIDDEN').disposition, 'excluded-hidden');
-  const protectedLabels = ['WHITE-ON-WHITE', 'TRANSLUCENT', 'PARTIAL-BACKGROUND', 'COVERED-BACKGROUND'];
+  const invisibleLabels = ['WHITE-ON-WHITE'];
+  for(const label of invisibleLabels) assert.equal(sourceFor(label).disposition,'excluded-hidden',label+' proven white-on-white text is neither editable nor a table-blocking image');
+  const protectedLabels = ['TRANSLUCENT', 'PARTIAL-BACKGROUND', 'COVERED-BACKGROUND','OUTLINED-WHITE'];
   for (const label of protectedLabels) assert.equal(sourceFor(label).disposition, 'visible-image');
   const assets = await collectPageAssets(scene, canvas, createCanvas);
   const background = scene.items.find(item => item.backgroundPaintIndexes?.length);
@@ -69,7 +82,7 @@ try {
   const output = await createWordBytes(inferDocument([scene], { preserveGeometry: true }), assets,
     { preserveGeometry: true, measurementContext: createCanvas(1, 1).getContext('2d') });
   const xml = await (await JSZip.loadAsync(output.bytes)).file('word/document.xml').async('string');
-  for (const label of ['HIDDEN', ...protectedLabels]) assert(!xml.includes(label));
+  for (const label of ['HIDDEN', ...invisibleLabels, ...protectedLabels]) assert(!xml.includes(label));
   assert(xml.includes('FFFFFF'));
   await writeFile(`${directory}/result.docx`, output.bytes);
   canvas.width = canvas.height = image.width = image.height = 0;

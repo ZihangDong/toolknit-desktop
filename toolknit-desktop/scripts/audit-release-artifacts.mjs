@@ -24,7 +24,10 @@ const config = JSON.parse(await read('src-tauri/tauri.conf.json'));
 assert.equal(config.version, pkg.version);
 assert.equal(config.build.frontendDist, '../dist');
 assert.ok(config.app.windows.every(window => window.devtools === false));
-assert.deepEqual(config.app.security.capabilities, ['default', 'screenshot-windows', 'desktop-feedback']);
+assert.deepEqual(config.app.security.capabilities, ['default', 'screenshot-windows', 'desktop-feedback', 'file-search-windows']);
+const fileSearchCapability = JSON.parse(await read('src-tauri/capabilities/file-search.json'));
+assert.deepEqual(fileSearchCapability.windows, ['file-search-bar','file-search-results','file-search-menu']);
+assert.deepEqual(fileSearchCapability.permissions, ['core:event:allow-listen','core:event:allow-unlisten']);
 const feedbackCapability=JSON.parse(await read('src-tauri/capabilities/desktop-feedback.json'));
 assert.deepEqual(feedbackCapability.windows,['screenshot-toast']);
 assert.deepEqual(feedbackCapability.permissions,['core:event:allow-listen','core:event:allow-unlisten']);
@@ -37,7 +40,7 @@ const trackedFiles = execFileSync('git', ['ls-files', '-z'], {
 }).toString('utf8').split('\0').filter(Boolean);
 assert.ok(!trackedFiles.some(isPrivateSkillFile), 'Private Skills must not be tracked in the repository');
 const requiredAssets = ['logo.png', 'assets/spider.png', 'assets/backgrounds/default-dark-mountain.jpg',
-  'assets/donate/alipay-qr.jpg', 'assets/donate/wechat-qr.png', 'assets/donate/donation-support.webp'];
+  'assets/donate/ToolKnit-Alipay.png', 'assets/donate/ToolKnit-WeChat.png'];
 for (const asset of requiredAssets) {
   assert.ok(publicFiles.includes(`public/${asset}`), `Required source asset missing: ${asset}`);
   assert.ok(distFiles.includes(`dist/${asset}`), `Required built asset missing: ${asset}`);

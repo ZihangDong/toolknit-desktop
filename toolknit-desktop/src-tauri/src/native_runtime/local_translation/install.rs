@@ -75,17 +75,16 @@ pub(super) async fn install(root: &Path,state: &TranslationState,source: Downloa
     safe_dir(root)?;
     let staging=root.join("staging-4.0.33");safe_dir(&staging)?;
     let cache=root.join("downloads-4.0.33");safe_dir(&cache)?;
-    let client=reqwest::Client::builder().https_only(true).connect_timeout(Duration::from_secs(20)).timeout(Duration::from_secs(600)).build().map_err(|_|"translation:download")?;
+    let client=reqwest::Client::builder().https_only(true).redirect(reqwest::redirect::Policy::none()).connect_timeout(Duration::from_secs(20)).build().map_err(|_|"translation:download")?;
     let mut received=0;
     download_candidates(&client,&source.candidates(),&cache.join(ENGINE_NAME),ENGINE_BYTES,ENGINE_HASH,state,&mut received,&report).await?;
     std::fs::copy(cache.join(ENGINE_NAME),staging.join(ENGINE_NAME)).map_err(|_|"translation:storage")?;
     for record in records() {
         let source=cache.join(&record.attachment.filename);
-        let url=format!("https://firefox-settings-attachments.cdn.mozilla.net/{}",record.attachment.location);
-        // Model files stay on Mozilla's CDN; a transient failure gets one bounded retry.
-        download_candidates(&client,&[("mozilla",url.clone()),("mozilla",url)],&source,record.attachment.size,&record.attachment.hash,state,&mut received,&report).await?;
+        let url=dependency_download::resource_url(&format!("translation/4.0.33/models/{}",record.attachment.filename));
+        download_candidates(&client,&[("7caiyun",url.clone()),("7caiyun",url)],&source,record.attachment.size,&record.attachment.hash,state,&mut received,&report).await?;
         check_cancel(&state.install_cancel)?;
-        report(Progress{phase:"verify".into(),received,total:DOWNLOAD_BYTES,source:"mozilla".into()});
+        report(Progress{phase:"verify".into(),received,total:DOWNLOAD_BYTES,source:"7caiyun".into()});
         let destination=model_path(&staging,&record);
         safe_dir(destination.parent().ok_or("translation:storage")?)?;
         let limit=record.decompressed_size;
@@ -223,5 +222,15 @@ mod tests {
         assert_eq!(network(std::future::pending::<Result<(),reqwest::Error>>(),&cancel,Duration::from_millis(10)).await.unwrap_err(),"translation:download");
         cancel.store(true,Ordering::Relaxed);
         assert_eq!(network(std::future::pending::<Result<(),reqwest::Error>>(),&cancel,Duration::from_secs(20)).await.unwrap_err(),"translation:cancelled");
+    }
+
+    #[tokio::test]
+    async fn translation_network_timeout_restarts_for_each_active_chunk() {
+        let cancel=AtomicBool::new(false);
+        let start=Instant::now();
+        for _ in 0..3 {
+            network(async { tokio::time::sleep(Duration::from_millis(50)).await; Ok::<_,reqwest::Error>(()) },&cancel,Duration::from_millis(100)).await.unwrap();
+        }
+        assert!(start.elapsed() >= Duration::from_millis(100));
     }
 }

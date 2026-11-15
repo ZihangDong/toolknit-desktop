@@ -1,3 +1,4 @@
+import { copyPdfPages } from './core/pdf-page-copy.js';
 import { PDFDocument } from 'pdf-lib';
 import { flattenPdfFormForPageCopy } from './pdf-document-structure.js';
 
@@ -74,7 +75,7 @@ export async function splitPdfPages({ documents, pages, onProgress }) {
     }
 
     const outputPdf = await PDFDocument.create();
-    const [copiedPage] = await outputPdf.copyPages(sourcePdf, [pageIndex - 1]);
+    const [copiedPage] = await copyPdfPages(outputPdf, sourcePdf, [pageIndex - 1]);
     outputPdf.addPage(copiedPage);
     const output = {
       fileIndex,

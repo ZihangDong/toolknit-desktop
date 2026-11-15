@@ -1,3 +1,4 @@
+import { copyPdfPages } from './core/pdf-page-copy.js';
 import { PDFDocument, degrees } from 'pdf-lib';
 import { flattenPdfFormForPageCopy } from './pdf-document-structure.js';
 
@@ -94,7 +95,7 @@ export async function rotatePdfPages({ fileData, pages, onProgress }) {
 
   for (let outputIndex = 0; outputIndex < normalizedPages.length; outputIndex++) {
     const { pageIndex, rotation } = normalizedPages[outputIndex];
-    const [copiedPage] = await outputPdf.copyPages(sourcePdf, [pageIndex - 1]);
+    const [copiedPage] = await copyPdfPages(outputPdf, sourcePdf, [pageIndex - 1]);
     copiedPage.setRotation(degrees((copiedPage.getRotation().angle + rotation) % 360));
     outputPdf.addPage(copiedPage);
     await onProgress?.({ completed: outputIndex + 1, total: normalizedPages.length });

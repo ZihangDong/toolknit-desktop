@@ -3,37 +3,53 @@ import { createSnapshotHistory } from '../../shared/snapshot-history.js';
 import { createAiRequestRuntime } from '../../app/ai-request-runtime.js';
 import { tauriCorePromise } from '../../platform/tauri-runtime.js';
 import { createLocalTranslationRuntime } from '../../platform/local-translation-runtime.js';
+import { createLocalOcrRuntime } from '../../platform/local-ocr-runtime.js';
 import { enhanceToolSelect } from '../../tool-custom-select.js';
 import { t } from '../../i18n.js';
 import { clamp, rectangle, contains, moveRect, handlePoints, resizeRect, resizeAnnotation, windowAt, formatOcrText, ocrLines, fitText, tightenTextAnnotation, isPaintStroke, MAX_ANNOTATIONS, MAX_POINTS, MAX_TOTAL_POINTS, errorKey } from './core.js';
-import { RECOGNITION_PROMPT, translationBlocks, resolveTranslationBatches, createTranslationRequestBudget, layoutTranslations } from './translation.js';
+import { translationBlocks, layoutTranslations } from './translation.js';
 import { renderEditor, composeScreenshot, createPaintScratch } from './renderer.js';
+import { loadCaptureSource, waitForCaptureStage } from './capture-source.js';
 
 export async function createController(services, data) {
   const { runtime, tr, q, notify, showDialog, getContext } = services;
   const scope = createLifecycleScope(), canvas = q('Canvas'), source = q('Desktop');
   const sampler = document.createElement('canvas'), scratch = createPaintScratch();
+  scope.use(()=>{sampler.width=sampler.height=scratch.pixels.width=scratch.pixels.height=scratch.mask.width=scratch.mask.height=1;});
+  try {
   const state = { width: data.desktop.bounds.width, height: data.desktop.bounds.height, crop: null, candidate: null, items: [], selected: null, original: false };
-  let disposed = false, tool = 'select', drag = null, frame = 0, nextId = 0, busy = false, taskRevision = 0, abort = null, pointer = null;
-  let ocrCache = null, recognitionCache = null;
+  let disposed = false, closing = false, tool = 'select', drag = null, frame = 0, nextId = 0, busy = false, taskRevision = 0, abort = null, pointer = null;
+  let canvasBounds, pendingHover, capturedPointer = null, originalPointer = null, originalButton, lastActions;
+  let ocrCache = null, activeAiProvider = null;
   const localTranslation = createLocalTranslationRuntime({isTauri: services.isTauri, session: data.session});
-  const languageSelect = enhanceToolSelect(q('Language'));
-  scope.use(() => languageSelect?.dispose());
+  const localOcr = createLocalOcrRuntime({isTauri: services.isTauri, session: data.session});
+  let languageSelect;
   function stage(key, vars) { q('Busy').querySelector('[data-i18n]').textContent = tr(key, vars); }
   const snapshot = () => structuredClone({ crop: state.crop, items: state.items });
   const history = createSnapshotHistory({ capture: snapshot, apply(value) { Object.assign(state, structuredClone(value)); state.selected = null; draw(); }, equals: (a, b) => JSON.stringify(a) === JSON.stringify(b), onChange: () => updateActions(), limit: 30, measure: value => JSON.stringify(value).length*2, maxBytes: 8*1024*1024 });
   const requestAi = createAiRequestRuntime({ isTauri: services.isTauri, getConfig: () => getContext().provider,
     getApiKey: async () => (await tauriCorePromise).invoke('load_ai_api_key'), translate: t });
-  source.src = data.image;
-  await source.decode();
-  sampler.width = state.width; sampler.height = state.height;
-  const sample = sampler.getContext('2d', { willReadFrequently: true }); sample.drawImage(source, 0, 0);
-  try { q('Language').value = (await localTranslation.call('status')).targetLanguage; }
-  catch { q('Language').value = 'zh-Hans'; }
+  await loadCaptureSource({source,data,runtime,scope,signal:services.signal,isCurrent:()=>!scope.disposed&&(services.isCurrent?.()??true)});
+  services.mark?.('decode');
+  const sample = sampler.getContext('2d', { willReadFrequently: true });
+  let sampled = false;
+  function ensureSample() {
+    if(sampled)return;
+    sampler.width=state.width;sampler.height=state.height;
+    sample.drawImage(source,0,0);sampled=true;
+  }
+  languageSelect = enhanceToolSelect(q('Language'));
+  scope.use(() => languageSelect?.dispose());
+  q('Language').value = 'zh-Hans';
   languageSelect?.refresh();
-  function currentPoint(e) { const r = canvas.getBoundingClientRect(); return { x: clamp((e.clientX-r.left)*state.width/r.width, 0, state.width-1), y: clamp((e.clientY-r.top)*state.height/r.height, 0, state.height-1) }; }
+  function currentPoint(e) { const r = canvasBounds || canvas.getBoundingClientRect(); return { x: clamp((e.clientX-r.left)*state.width/r.width, 0, state.width-1), y: clamp((e.clientY-r.top)*state.height/r.height, 0, state.height-1) }; }
   function physicalScale() { return { x: canvas.width/state.width, y: canvas.height/state.height }; }
-  function queueDraw() { if (!frame) frame = requestAnimationFrame(() => { frame = 0; if (!disposed) draw(); }); }
+  function queueDraw() { if (!frame) frame = requestAnimationFrame(() => {
+    frame = 0;if(disposed||closing)return;
+    const hover=pendingHover;pendingHover=null;
+    if(hover&&!drag&&!busy){const p=currentPoint(hover);pointer=p;if(!state.crop){state.candidate=windowAt(data.desktop,p);magnify(hover,p);}}
+    draw();
+  }); }
   function monitorArea(point) {
     const origin = data.desktop.bounds;
     const area = data.desktop.monitors?.find(r => contains(r, { x: point.x+origin.x, y: point.y+origin.y }));
@@ -55,10 +71,13 @@ export async function createController(services, data) {
     q('Dimensions').hidden = false;
   }
   function updateActions() {
+    const signature=[busy,closing,tool,history?.canUndo(),history?.canRedo(),state.original].join(':');
+    if(signature===lastActions)return;
+    lastActions=signature;
     const toolbar = q('Toolbar');
     toolbar.querySelectorAll('[data-shot-action]').forEach(b => {
       const a = b.dataset.shotAction;
-      b.disabled = busy || (a==='undo'&&!history?.canUndo()) || (a==='redo'&&!history?.canRedo());
+      b.disabled = closing || busy || (a==='undo'&&!history?.canUndo()) || (a==='redo'&&!history?.canRedo());
       if (b.hasAttribute('data-shot-tool')) b.setAttribute('aria-pressed', String(a===tool));
     });
     toolbar.querySelectorAll('input,select').forEach(input => { input.disabled = busy; });
@@ -69,10 +88,11 @@ export async function createController(services, data) {
   function draw() {
     renderEditor(canvas,state,source,scratch,physicalScale()); positionTools(); updateActions();
   }
-  function resize() { const dpr = Math.min(devicePixelRatio||1,2); canvas.width = Math.round(innerWidth*dpr); canvas.height = Math.round(innerHeight*dpr); draw(); }
+  function resize() { const dpr = Math.min(devicePixelRatio||1,2); canvas.width = Math.round(innerWidth*dpr); canvas.height = Math.round(innerHeight*dpr);canvasBounds=canvas.getBoundingClientRect();draw(); }
   function magnify(e,p) {
     const box = q('Magnifier'); box.hidden = Boolean(state.crop || busy);
     if (box.hidden) return;
+    ensureSample();
     const pixels = q('Pixels').getContext('2d'); pixels.imageSmoothingEnabled = false;
     pixels.fillStyle='#000';pixels.fillRect(0,0,126,126);pixels.drawImage(sampler, Math.floor(p.x)-10,Math.floor(p.y)-10,21,21,0,0,126,126);
     pixels.strokeStyle='#22c55e';pixels.lineWidth=1;pixels.strokeRect(60,60,6,6);
@@ -101,9 +121,10 @@ export async function createController(services, data) {
     }});requestAnimationFrame(()=>input.focus());
   }
   function down(e) {
-    if(busy||e.button!==0||state.original)return;
+    if(disposed||closing||busy||e.button!==0||state.original)return;
+    pendingHover=null;
     canvas.focus();const p=currentPoint(e);pointer=p;
-    canvas.setPointerCapture(e.pointerId);
+    canvas.setPointerCapture(e.pointerId);capturedPointer=e.pointerId;
     if(!state.crop){drag={kind:'crop',start:p,window:windowAt(data.desktop,p),before:snapshot()};return;}
     const selected=state.items.find(a=>a.id===state.selected&&!isPaintStroke(a)), handle=tool==='select'?handleAt(selected||state.crop,p):-1;
     if(handle>=0){drag={kind:selected?'resize-item':'resize-crop',handle,start:p,original:structuredClone(selected||state.crop),before:snapshot()};return;}
@@ -120,8 +141,9 @@ export async function createController(services, data) {
     state.items.push(item);state.selected=isPaintStroke(item)?null:item.id;drag={kind:'draw',start:p,item,before:history.current};draw();
   }
   function move(e) {
-    if(busy)return;const p=currentPoint(e);pointer=p;
-    if(!drag){if(!state.crop){state.candidate=windowAt(data.desktop,p);magnify(e,p);}queueDraw();return;}
+    if(disposed||closing||busy)return;
+    if(!drag){pendingHover={clientX:e.clientX,clientY:e.clientY};queueDraw();return;}
+    pendingHover=null;const p=currentPoint(e);pointer=p;
     const d=drag, dx=p.x-d.start.x,dy=p.y-d.start.y;
     if(d.kind==='crop'){state.crop=rectangle(d.start,p,state.width,state.height);state.candidate=null;}
     if(d.kind==='move-crop')state.crop=moveRect(d.original,dx,dy,state.width,state.height);
@@ -147,9 +169,15 @@ export async function createController(services, data) {
     move(e);
     if(drag.kind==='crop'&&Math.hypot(currentPoint(e).x-drag.start.x,currentPoint(e).y-drag.start.y)<4)state.crop=drag.window;
     if(drag.kind==='draw'&&!isPaintStroke(drag.item))tool='select';
-    drag=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);commit();
+    drag=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);capturedPointer=null;commit();
   }
-  function rollbackDrag() {if(!drag)return;Object.assign(state,structuredClone(drag.before));drag=null;state.selected=null;draw();}
+  function releasePointers() {
+    for(const [target,id] of [[canvas,capturedPointer],[originalButton,originalPointer]]) {
+      if(id!==null&&target?.hasPointerCapture(id))target.releasePointerCapture(id);
+    }
+    capturedPointer=originalPointer=null;
+  }
+  function rollbackDrag() {if(!drag)return;Object.assign(state,structuredClone(drag.before));drag=null;releasePointers();state.selected=null;if(!disposed&&!closing)draw();}
   function imagePayload(items=state.items) {
     const image=composeScreenshot(source,state.crop,items,scratch);
     return {session:data.session,image:image.toDataURL('image/png'),origin:[state.crop.x,state.crop.y],format:q('Jpeg').checked?'jpg':'png'};
@@ -169,45 +197,46 @@ export async function createController(services, data) {
     if(encoded.length>7_500_000)throw new Error('screenshot:image-too-large');return encoded;
   }
   function backgroundColor(line,crop) {
+    ensureSample();
     const x=clamp(Math.round(crop.x+line.x),0,state.width-1),y=clamp(Math.round(crop.y+line.y-2),0,state.height-1),rgb=sample.getImageData(x,y,1,1).data;
     return { background:`rgb(${rgb[0]},${rgb[1]},${rgb[2]})`,color:(rgb[0]*.299+rgb[1]*.587+rgb[2]*.114)>140?'#111111':'#ffffff' };
   }
-  function recognitionContent(image, blocks) {
-    const x=Math.max(0,Math.floor(Math.min(...blocks.map(b=>b.x))-8)),y=Math.max(0,Math.floor(Math.min(...blocks.map(b=>b.y))-8));
-    const width=Math.min(image.width-x,Math.ceil(Math.max(...blocks.map(b=>b.x+b.width))-x+8));
-    const height=Math.min(image.height-y,Math.ceil(Math.max(...blocks.map(b=>b.y+b.height))-y+8));
-    const tile=document.createElement('canvas');tile.width=width;tile.height=height;
-    tile.getContext('2d').drawImage(image,x,y,width,height,0,0,width,height);
-    try { return [
-      {type:'text',text:JSON.stringify({blocks:blocks.map(b=>({id:b.id,text:b.text,box:[(b.x-x)/width,(b.y-y)/height,b.width/width,b.height/height]}))})},
-      {type:'image_url',image_url:{url:visionImage(tile),detail:'high'}}
-    ]; } finally { tile.width=tile.height=1; }
-  }
   async function run(action) {
-    if(disposed)return;
-    if(action==='cancel'){abort?.abort();taskRevision++;return runtime.call('cancel',{session:data.session}).catch(()=>notify(tr('failed')));}
+    if(disposed||closing)return;
+    if(action==='cancel'){
+      closing=true;abort?.abort();taskRevision++;drag=null;pendingHover=null;state.original=false;releasePointers();
+      try {await waitForCaptureStage(runtime.call('cancel',{session:data.session}),{timeoutMs:2500});}
+      catch {if(!disposed){closing=false;busy=false;abort=null;activeAiProvider=null;draw();notify(tr('failed'));}}
+      return;
+    }
     if(busy||drag)return;
     if(['select','rectangle','ellipse','arrow','brush','mosaic','text'].includes(action)){tool=action;state.original=false;if(action!=='select')state.selected=null;draw();return;}
     if(action==='undo'){history.undo();return;}if(action==='redo'){history.redo();return;}
     if(action==='original')return;
     if(!state.crop)return;
     stage('processing');
-    busy=true;updateActions();const owner=++taskRevision,provider=structuredClone(getContext().provider||{}),crop=structuredClone(state.crop);abort=new AbortController();
-    const current=()=>!disposed&&owner===taskRevision&&!abort?.signal.aborted;
+    busy=true;updateActions();const owner=++taskRevision,crop=structuredClone(state.crop);
+    const provider=action==='ai-extract'?structuredClone(getContext().provider||{}):null;
+    activeAiProvider=provider;abort=new AbortController();
+    // Capture this run's signal: abort may be cleared/replaced by cancel or the next action.
+    const signal=abort.signal;
+    const current=()=>!disposed&&owner===taskRevision&&!signal.aborted;
     try {
       if(action==='ai-translate') {
         const status=await localTranslation.call('status');
         if(!current())return;
         if(!status.ready||status.installing){notify(tr('localMissing'));return;}
+        if(languageRevision===0&&['zh-Hans','en'].includes(status.targetLanguage)){q('Language').value=status.targetLanguage;languageSelect?.refresh();}
       }
       if(action==='save'){await services.save(imagePayload(),current);return;}
-      if(['confirm','copy','pin'].includes(action)){await runtime.call(action,imagePayload());if(action==='copy')notify(tr('copied'));return;}
+      if(['confirm','copy','pin'].includes(action)){await runtime.call(action==='copy'?'confirm':action,imagePayload());return;}
       const selectedImage=composeScreenshot(source,crop,state.items.filter(item=>!item.translation),scratch);
       async function recognize() {
         stage('recognizing');
         const image=selectedImage.toDataURL('image/png'),language=getContext().lang==='en'?'en':'zh';
         if(ocrCache?.image===image&&ocrCache.language===language)return ocrCache.result;
-        const result=await runtime.call('ocr',{session:data.session,image,language});
+        await localOcr.ensure(signal); if(!current())throw new Error('ocr:cancelled');
+        const result=await localOcr.recognize(image,signal);
         if(current())ocrCache={image,language,result};
         return result;
       }
@@ -218,43 +247,13 @@ export async function createController(services, data) {
       }
       if(action==='ai-extract'){
         stage('extracting');
-        const result=await requestAi([{role:'user',content:[{type:'text',text:tr('extractPrompt')},{type:'image_url',image_url:{url:visionImage(selectedImage),detail:'high'}}]}],abort.signal,8000,{expectedProvider:provider,temperature:0,timeoutMs:90000});
+        const result=await requestAi([{role:'user',content:[{type:'text',text:tr('extractPrompt')},{type:'image_url',image_url:{url:visionImage(selectedImage),detail:'high'}}]}],signal,8000,{expectedProvider:provider,temperature:0,timeoutMs:90000});
         if(current())showText(tr('aiExtract'),result);return;
       }
       if(action==='ai-translate'){
         const ocr=await recognize();if(!current())return;
-        const blocks=translationBlocks(ocrLines(ocr));if(!blocks.length){notify(tr('noText'));return;}
+        const lines=translationBlocks(ocrLines(ocr));if(!lines.length){notify(tr('noText'));return;}
         const language=q('Language').value;
-        const signal=abort.signal,budget=createTranslationRequestBudget(undefined,45000),providerKey=JSON.stringify(provider);
-        const options={signal,current,budget,progress:(key,vars)=>{if(current())stage(key==='batch'?'correcting':key,vars);}};
-        let lines=blocks;
-        const configured=Boolean(provider.url&&provider.model&&(await (await tauriCorePromise).invoke('load_ai_api_key')));
-        if(!current())return;
-        if(configured&&recognitionCache?.image===ocrCache.image&&recognitionCache.language===ocrCache.language&&recognitionCache.provider===providerKey)lines=recognitionCache.lines;
-        else if(configured) {
-          const recognized=await resolveTranslationBatches(blocks,(batch,maxTokens,timeoutMs)=>requestAi([
-            {role:'system',content:RECOGNITION_PROMPT},{role:'user',content:recognitionContent(selectedImage,batch)}
-          ],signal,maxTokens,{expectedProvider:provider,temperature:0,timeoutMs}),options);
-          if(!current())return;
-          if(recognized.failed.length) {
-            const message=document.createElement('p');
-            message.textContent=`${tr(errorKey(recognized.failed[0].error))} ${tr('fallbackPrompt')}`;
-            q('Busy').hidden=true;
-            const proceed=await new Promise(resolve=>{
-              const cancelled=()=>{services.closeDialog();resolve(false);};
-              signal.addEventListener('abort',cancelled,{once:true});
-              showDialog(tr('fallbackTitle'),message,{confirmLabel:tr('fallbackContinue'),
-                onConfirm:()=>{signal.removeEventListener('abort',cancelled);resolve(true);},
-                onDismiss:()=>{signal.removeEventListener('abort',cancelled);resolve(false);}});
-            });
-            if(!current()||!proceed)return;
-            q('Busy').hidden=false;
-            notify(tr('recognitionFallback'));
-          } else {
-            lines=recognized.lines;
-            recognitionCache={image:ocrCache.image,language:ocrCache.language,provider:providerKey,lines};
-          }
-        }
         stage('translatingLocal');
         const texts=await localTranslation.translate(lines.map(line=>line.text.replace(/\n/g,' ')),language,signal);
         if(!current())return;
@@ -274,14 +273,16 @@ export async function createController(services, data) {
         }else notify(tr('translated'));
       }
     }catch(e){if(current()){notify(tr(errorKey(e)));}}
-    finally{if(!disposed&&owner===taskRevision){busy=false;abort=null;draw();}}
+    finally{if(!disposed&&owner===taskRevision){busy=false;abort=null;activeAiProvider=null;draw();}}
   }
   scope.event(canvas,'pointerdown',down);scope.event(canvas,'pointermove',move);scope.event(canvas,'pointerup',up);scope.event(canvas,'pointercancel',rollbackDrag);
+  scope.event(canvas,'lostpointercapture',()=>{capturedPointer=null;rollbackDrag();});
+  scope.event(window,'blur',rollbackDrag);
   scope.event(canvas,'dblclick',e=>{if(busy||!state.crop)return;const item=[...state.items].reverse().find(a=>a.kind==='text'&&contains(a,currentPoint(e)));if(item)editText(item);});
-  const originalButton=q('Toolbar').querySelector('[data-shot-action="original"]');
+  originalButton=q('Toolbar').querySelector('[data-shot-action="original"]');
   function startOriginal() {if(!disposed&&!busy&&!drag&&state.crop){state.original=true;draw();}}
   function endOriginal() {if(state.original){state.original=false;if(!disposed)draw();}}
-  scope.event(originalButton,'pointerdown',e=>{if(e.button!==0||originalButton.disabled)return;e.preventDefault();originalButton.focus();originalButton.setPointerCapture(e.pointerId);startOriginal();});
+  scope.event(originalButton,'pointerdown',e=>{if(e.button!==0||originalButton.disabled)return;e.preventDefault();originalButton.focus();originalButton.setPointerCapture(e.pointerId);originalPointer=e.pointerId;startOriginal();});
   scope.event(window,'pointerup',endOriginal);scope.event(window,'pointercancel',endOriginal);
   scope.event(originalButton,'lostpointercapture',endOriginal);scope.event(originalButton,'blur',endOriginal);
   scope.event(window,'blur',endOriginal);scope.event(document,'visibilitychange',()=>{if(document.hidden)endOriginal();});
@@ -297,13 +298,13 @@ export async function createController(services, data) {
     const owner=++languageRevision,value=q('Language').value;
     languageWrite=languageWrite.then(()=>localTranslation.call('target',{target:value})).catch(()=>{if(!disposed&&owner===languageRevision)notify(tr('localFailure'));});
   });
-  scope.event(q('Abort'),'click',()=>{abort?.abort();taskRevision++;busy=false;abort=null;draw();notify(tr('cancelled'));});
+  scope.event(q('Abort'),'click',()=>{abort?.abort();taskRevision++;busy=false;abort=null;activeAiProvider=null;draw();notify(tr('cancelled'));});
   scope.event(document,'keydown',e=>{
     if(e.target===originalButton&&(e.key===' '||e.key==='Enter')){e.preventDefault();startOriginal();return;}
-    if(state.original){e.preventDefault();if(e.key==='Escape')endOriginal();return;}
     if(q('Dialog').classList.contains('visible')||e.target.closest('input, textarea, select, .tool-custom-select, .tool-custom-select-menu, [contenteditable="true"]'))return;
     const key=e.key.toLowerCase(),modifier=e.ctrlKey||e.metaKey;
-    if(key==='escape'){e.preventDefault();if(busy){q('Abort').click();return;}if(drag){rollbackDrag();return;}if(state.selected){state.selected=null;draw();return;}if(state.crop){state.crop=null;state.items=[];q('Dimensions').hidden=true;commit();return;}void run('cancel');return;}
+    if(key==='escape'){e.preventDefault();void run('cancel');return;}
+    if(state.original){e.preventDefault();return;}
     if(busy)return;
     if(modifier&&['z','y','s','c'].includes(key)){e.preventDefault();void run(key==='s'?'save':key==='c'?'copy':key==='y'||e.shiftKey?'redo':'undo');return;}
     if(key==='enter'){e.preventDefault();void run('confirm');return;}
@@ -315,8 +316,13 @@ export async function createController(services, data) {
   toolbarObserver.observe(q('Toolbar'));scope.use(()=>toolbarObserver.disconnect());
   scope.event(window,'resize',resize);history.reset();resize();canvas.focus();
   return {finishCapture:()=>runtime.call('cancel',{session:data.session}),
+    afterReady(){const owner=languageRevision;void localTranslation.call('status').then(status=>{
+      if(disposed||owner!==languageRevision||!['zh-Hans','en'].includes(status.targetLanguage))return;
+      q('Language').value=status.targetLanguage;languageSelect?.refresh();
+    }).catch(()=>{});},
     copyText:async text=>{try{await runtime.call('copy-text',{session:data.session,text});notify(tr('copied'));}catch{notify(tr('failed'));}},
-    contextChanged(next){if(busy&&JSON.stringify(next.provider)!==JSON.stringify(data.context?.provider)){abort?.abort();taskRevision++;busy=false;abort=null;notify(tr('providerChanged'));}data.context=next;draw();},
-    dispose(){if(disposed)return;disposed=true;taskRevision++;abort?.abort();ocrCache=recognitionCache=null;cancelAnimationFrame(frame);scope.dispose();history.clear();state.items=[];sampler.width=sampler.height=scratch.pixels.width=scratch.pixels.height=scratch.mask.width=scratch.mask.height=1;canvas.width=canvas.height=1;source.removeAttribute('src');q('Toolbar').hidden=true;q('Magnifier').hidden=true;q('Dimensions').hidden=true;q('Busy').hidden=true;}
+    contextChanged(next){if(busy&&activeAiProvider&&JSON.stringify(next.provider||{})!==JSON.stringify(activeAiProvider)){abort?.abort();taskRevision++;busy=false;abort=null;activeAiProvider=null;notify(tr('providerChanged'));}data.context=next;lastActions=null;draw();},
+    dispose(){if(disposed)return;disposed=true;taskRevision++;abort?.abort();drag=null;pendingHover=null;releasePointers();ocrCache=activeAiProvider=null;cancelAnimationFrame(frame);scope.dispose();history.clear();state.items=[];sampler.width=sampler.height=scratch.pixels.width=scratch.pixels.height=scratch.mask.width=scratch.mask.height=1;canvas.width=canvas.height=1;source.removeAttribute('src');q('Toolbar').hidden=true;q('Magnifier').hidden=true;q('Dimensions').hidden=true;q('Busy').hidden=true;}
   };
+  } catch(error) {scope.dispose();source.removeAttribute('src');canvas.width=canvas.height=1;throw error;}
 }

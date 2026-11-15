@@ -1,8 +1,8 @@
 #[tauri::command]
-pub(crate) fn reveal_in_folder(path: String) -> Result<(), String> {
+pub(crate) async fn reveal_in_folder(path: String) -> Result<(), String> {
     // Keep the legacy command name, but make its intended behavior explicit:
     // select an existing file, or open an existing directory.
-    open_path(path)
+    open_path(path).await
 }
 
 fn resolve_open_folder(path: &str) -> Result<std::path::PathBuf, String> {
@@ -31,7 +31,15 @@ fn resolve_open_folder(path: &str) -> Result<std::path::PathBuf, String> {
 }
 
 #[tauri::command]
-pub(crate) fn open_path(path: String) -> Result<(), String> {
+pub(crate) async fn open_path(path: String) -> Result<(), String> {
+    // Shell and filesystem calls may wait on Explorer or a network location.
+    // Keep this off the UI thread while preserving both command contracts.
+    tauri::async_runtime::spawn_blocking(move || open_path_blocking(&path))
+        .await
+        .map_err(|_| "Could not open file location".to_string())?
+}
+
+fn open_path_blocking(path: &str) -> Result<(), String> {
     let target = resolve_open_folder(&path)?;
     let requested = std::path::PathBuf::from(path);
     let canonical_requested = requested
@@ -40,17 +48,13 @@ pub(crate) fn open_path(path: String) -> Result<(), String> {
     let is_file = canonical_requested.is_file();
     #[cfg(target_os = "windows")]
     {
-        use std::os::windows::process::CommandExt;
-        let mut command = std::process::Command::new("explorer");
         if is_file {
-            command.arg(format!("/select,{}", canonical_requested.display()));
+            crate::platform::file_location::reveal_file(&canonical_requested)
+                .map_err(|_| "Could not select file in containing folder".to_string())?;
         } else {
-            command.arg(&target);
+            crate::platform::file_location::open_directory(&target)
+                .map_err(|_| "Could not open folder".to_string())?;
         }
-        command
-            .creation_flags(0x08000000)
-            .spawn()
-            .map_err(|e| e.to_string())?;
     }
     #[cfg(target_os = "macos")]
     {
@@ -100,6 +104,20 @@ pub(crate) fn open_recycle_bin() -> Result<(), String> {
 mod external_open_security_tests {
     use super::*;
 
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "Opens Explorer; run explicitly with qa-open-location-native.ps1"]
+    fn open_path_native_explorer_qa() {
+        let path = std::env::var("TOOLKNIT_OPEN_LOCATION_QA_PATH").expect("QA path is required");
+        let command = std::env::var("TOOLKNIT_OPEN_LOCATION_QA_COMMAND").unwrap_or_default();
+        let result = match command.as_str() {
+            "reveal_in_folder" => tauri::async_runtime::block_on(reveal_in_folder(path)),
+            "file_search" => crate::platform::file_location::reveal_file(std::path::Path::new(&path)),
+            _ => tauri::async_runtime::block_on(open_path(path)),
+        };
+        assert!(result.is_ok(), "Native location request failed: {result:?}");
+    }
+
     #[test]
     fn external_urls_require_web_protocol_host_and_no_credentials() {
         assert!(validate_external_url("https://toolknit.com/changelog.html").is_ok());
@@ -144,7 +162,12 @@ mod external_open_security_tests {
         assert_eq!(resolve_open_folder(file.to_str().unwrap()).unwrap(), root.canonicalize().unwrap());
         assert!(file.canonicalize().unwrap().is_file());
         assert!(resolve_open_folder("relative-output").is_err());
+        assert!(resolve_open_folder("").is_err());
+        assert!(resolve_open_folder("C:relative-output").is_err());
+        assert!(resolve_open_folder("shell:Downloads").is_err());
+        assert!(resolve_open_folder("C:\\bad\0name").is_err());
         assert!(resolve_open_folder(root.join("missing").to_str().unwrap()).is_err());
+        assert!(open_path_blocking(root.join("missing").to_str().unwrap()).is_err());
 
         std::fs::remove_dir_all(root).unwrap();
     }

@@ -2,13 +2,15 @@
 
 <img src="assets/readme/v3.1/01-hero.webp" alt="ToolKnit Desktop: a boy and his head-perched spider make everyday desktop work simpler" width="100%" />
 
-# ToolKnit Desktop 3.2
+# ToolKnit Desktop 3.3
+
+> V3.3 released November 15, 2026. Windows Desktop and npm CLI / MCP 3.3.0 are available. Author-owned source uses the MIT License.
 
 **One toolbox for the little tasks scattered across your desktop.**
 
-73 desktop tools · 12 categories · 77 CLI / MCP capabilities · Local first
+75 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
 
-[Source licenses and separate PDF-to-Word authorization](#source-license)
+[MIT source license and attribution](#source-license)
 
 <p align="center">
 <a href="https://toolknit.com/exe.html"><img src="assets/readme/v3.1/link-download-en.svg" alt="Download for Windows" width="192" height="40" /></a>
@@ -34,11 +36,23 @@ Most need no account. Supported file tasks run locally in your browser. Network 
 
 ### Then bring it to your desktop
 
-For everyday file work, [install the Windows app](https://toolknit.com/exe.html). V3.2 contains **73 tools**, with PDF to Word, Images to PDF, expanded floating history and saved phrases.
+V3.3 contains **75 desktop tools**. File search and Word to PDF are new, with improvements to local OCR, scanned PDF to Word and screenshots.
+Available installers are listed on the [Windows download page](https://toolknit.com/exe.html).
 Set an output folder and favorite your tools. Install models only when needed.
 Enable **one-click recording mode** for startup, clipboard monitoring and floating history. Press `Alt + Q` to capture.
-The home page's V3.2 feature filter groups six new or enhanced tools.
+The home page groups **New features** by **V3.3 and V3.2**, newest first.
 See [Get started](#08--get-started) for installation requirements and instructions.
+
+### V3.3 highlights
+
+- **File search:** a main workspace and desktop capsule with Chinese names, pinyin, filters and sorting. Image previews, pagination and refresh preserve your position.
+- **Word to PDF:** batch DOC / DOCX conversion, cancellation, retry and PDF Editor handoff.
+- **Local OCR:** screenshots and scanned PDFs share PP-OCRv5. Download models when needed; no AI key is required for recognition.
+- **PDF to Word:** improved text placement, fonts, tables and common formulas. Complex diagrams remain images while body text stays editable.
+- **Screenshots and PDFs:** reduced capture startup work; fixed overlays remaining after Escape and multi-page PDF export failures.
+- **MIT source license:** author-owned code, including the PDF-to-Word Engine, uses MIT. Credits and backlinks are recommended, not required.
+
+See the [changelog](changelog.md) and [V3.3 release notes](docs/desktop-update.en.md) for details.
 
 ### People weaving it together
 
@@ -114,16 +128,15 @@ Find the tool under Creative. Screenshots share history with content copied from
 
 | Task | How it works |
 | --- | --- |
-| Extract text | Local Windows OCR; small text, complex backgrounds and layouts can reduce accuracy |
+| Extract text | Local PP-OCRv5; downloads models on first use and needs no AI key |
 | AI extraction | Sends the selected region to your configured image-capable model for text extraction |
 | Screenshot translation | Requires the local Chinese / English model installed in Settings; recognition is followed by local translation and an image overlay |
 
-Screenshot translation supports **Chinese and English only**. Without AI configuration, local OCR feeds the local translator.
-With image-capable AI configured, OCR locates text and AI corrects it before local translation.
-If AI fails, you choose whether to use OCR instead. The full translation remains copyable even when it cannot fit.
+Screenshot translation supports **Chinese and English**. Local OCR feeds the local translator without calling an AI model.
+AI extraction is a separate action; it sends the selected region only when explicitly used. The full translation remains copyable even when it cannot fit.
 
 Translation components are downloaded on demand: approximately **192 MiB downloaded / 225 MiB installed**, separate from the main installer.
-External AI latency depends on the provider. There is no fixed completion-time guarantee. Check recognition and translation results.
+AI extraction latency depends on the provider. Check recognition on small text or complex backgrounds, as well as translations.
 
 ## 04 / Find what you copied
 
@@ -135,7 +148,7 @@ External AI latency depends on the provider. There is no fixed completion-time g
 
 Text, images and file paths stay in a searchable timeline. Filter, favorite and store records with local encryption. Monitoring preferences survive restarts.
 
-| Action | How it works in V3.2 |
+| Action | How it works in V3.3 |
 | --- | --- |
 | Browse floating history | Shares the full history database; shows the first 20 records, type filters and detailed timestamps |
 | Search and annotate | Searches content, source and notes as you type; right-click to add a note or delete |
@@ -164,26 +177,27 @@ A Windows-account-protected backup can restore a missing key file. Without a usa
 | --- | --- |
 | PDF | Merge, split, crop, page numbers, rotate, export images / Word, compress, encrypt, decrypt, edit and extract text / Markdown |
 | PPT | Export PDF / images, extract pictures and text, compress, generate AI outlines or editable PPTX drafts |
+| File search (new in V3.3) | Local filename / pinyin search, filters, sorting, image thumbnails, incremental results, Explorer reveal and a desktop capsule |
+| Word (new in V3.3) | Local DOC / DOCX to PDF; batches, cancellation, retry and handoff to PDF Editor |
 | Excel | Convert XLSX / XLS / ODS to PDF; select all or visible sheets, paper size, orientation and scaling |
 | Cleanup | Analyze large files, clean C drive and scan duplicates by file type |
 
 ### PDF to Word: convert, then edit
 
-Local analysis reconstructs text, paragraphs, tables and columns into editable DOCX. No Python, Office, GPU or extra model needed.
-Handles papers, contracts, ebooks, invoices, quotes and common tables. Improves Chinese fonts, reading order, spacing and pagination.
+**Available in V3.3.** The desktop app reconstructs text, paragraphs, tables and columns locally, preserving source page layout in DOCX.
+Text-based PDFs need no Python, Office, GPU or extra model. Scanned pages use local OCR with a model downloaded on demand. Files stay on the device.
 
 | Option | Purpose |
 | --- | --- |
-| Preserve original pages | Keeps source page sizes and content positions, prioritizing layout |
-| Continuous A4 layout | Fits content to A4 and splits pages at safe content boundaries |
-| Start editing | Change text, delete content or replace images; automatic font sizing, undo, redo and reset |
-| AI layout assistance | Optional image-capable AI reviews local structure; keeps source text and supports continuing after timeouts |
+| Multiple pages | Convert every page or choose pages in a read-only selector |
+| Edit document | Open the shared workbench in Word document mode; export DOCX after editing |
+| Show in folder | Open File Explorer with the result selected |
+| Close result | Clear the current session and keep the saved file |
 
-Three panes: settings, preview and page navigation. Select pages, cancel processing or export a fresh result.
-Fixes include table backgrounds blocking text, short fields becoming images and reader-specific spacing.
-Complex formulas and uncertain regions remain local images. **No scan OCR. Not every element will be editable or render identically in every reader.**
-Limit: **64 MiB / 100 pages per file**. Only enabled AI processing sends necessary regional images and text.
-**This custom engine has a separate source license. Commercial and noncommercial reuse both require written permission.** [Read the terms](#separate-pdf-to-word-engine-terms).
+The conversion page handles processing. Returning from page selection clears the upload. After conversion, edit text, delete content or replace images, with undo, redo and reset.
+Mixed fonts, sizes and source positions are preserved. Some common formulas with complete source evidence become editable; complex or uncertain regions remain images. **Not every element will be editable or render identically in every reader.**
+Limit: **64 MiB / 100 pages per file**. CLI/MCP retain existing A4/AI options; scanned OCR is currently desktop-only. See the [implementation and verification notes](toolknit-desktop/docs/PDF_TO_WORD.zh-CN.md).
+**The V3.3 Engine uses MIT and permits reuse under its terms.** [Read the source license](#source-license).
 
 ### Images to PDF: turn pictures into a document
 
@@ -195,6 +209,7 @@ Limit: **64 MiB / 100 pages per file**. Only enabled AI processing sends necessa
 ### PDF editing and selection: start with a blank page
 
 Create a blank A4 PDF without uploading a file. Add multiline text, images and shapes, with undo and redo.
+PDF Editor initially selects every imported page and exports the checked pages. Export is disabled when none are selected.
 Improves rotated-page editing, edge placement and preview/export consistency. Fixes missing images after undo and stale state on rapid reopen.
 
 The split workspace starts with no pages selected. Enter `1-10`, then `15-20`, to select **16 pages** without `11-14`.
@@ -205,7 +220,7 @@ Shared navigation, themes, input underlines and completion dialogs reduce flashi
 
 ### Output and cleanup
 
-Excel's All worksheets option includes hidden sheets and changes only a temporary copy. Text-layer PDF extraction needs no AI key. Use the separate AI vision tools for scanned text.
+Excel's All worksheets option includes hidden sheets and changes only a temporary copy. Extract native PDF text directly. For scans, use local screenshot OCR or scanned PDF to Word. AI vision extraction is a separate optional action.
 Duplicates are checked by content. Nothing is selected for deletion by default. Keep at least one copy per group; confirmed files are rechecked before moving to the Recycle Bin.
 
 File tools preserve originals by default and write results to the output directory.
@@ -222,7 +237,7 @@ Crop, compress, convert and stitch images; generate icons or remove backgrounds 
 Convert audio and video, trim audio, extract sound, capture video frames, create GIFs, transcribe offline and edit Markdown.
 
 FFmpeg, LibreOffice, transcription and background-removal models are installed on demand. Existing usable runtimes are reused where supported.
-Downloads support source fallback, resume and integrity checks. Failed updates preserve usable components. Network speeds vary.
+Runtimes and models use pinned Qicaiyun downloads with resume and integrity checks. Failed updates preserve usable components.
 Background removal offers CPU mode. Automatic mode retries on CPU after GPU failure. Missing components get a specific error.
 WPS / Microsoft Office is not LibreOffice and cannot replace workflows that need `soffice`.
 
@@ -234,9 +249,9 @@ WPS / Microsoft Office is not LibreOffice and cannot replace workflows that need
 
 **Desktop for visual interaction. CLI for batches. Agents for orchestration.**
 
-The V3.2 source expands from 46 to **77 CLI / MCP capabilities**, exposed through `@toolknit/cli`.
+V3.3 exposes **78 CLI / MCP capabilities**, adding Word to PDF. npm 3.3.0 is also published.
 
-> Desktop V3.2 and [npm CLI / MCP 3.2.0](https://www.npmjs.com/package/@toolknit/cli/v/3.2.0) are both released. Install each independently.
+> [npm CLI / MCP 3.3.0](https://www.npmjs.com/package/@toolknit/cli/v/3.3.0) is published and runs independently of Desktop.
 
 | Area | Examples |
 | --- | --- |
@@ -247,9 +262,9 @@ The V3.2 source expands from 46 to **77 CLI / MCP capabilities**, exposed throug
 | File inspection | Read-only scanning, dependency checks and structured JSON results |
 
 Progress, cancellation and explicit errors are supported. Originals and existing outputs stay protected. Unicode paths, long paths and model downloads are improved.
-Windows, clipboard monitoring and system cleanup remain desktop interactions. **77 interfaces do not map one-to-one to 73 desktop tools.**
+Windows, clipboard monitoring and system cleanup remain desktop interactions. **The catalog has 78 interfaces and 75 desktop tools; these do not map one-to-one.**
 
-Use **`@toolknit/cli` 3.2.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for all 77 capabilities. Requires Node.js **22.13+**.
+Use **`@toolknit/cli` 3.3.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for the 78 capabilities. Requires Node.js **22.13+**.
 
 ```powershell
 npm install --global @toolknit/cli
@@ -332,11 +347,11 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 ## Complete tool catalog
 
 <details>
-<summary><strong>Expand 73 desktop tools / 12 categories</strong></summary>
+<summary><strong>Expand 75 desktop tools / 12 categories</strong></summary>
 
 | Category | Count | Tools |
 | --- | ---: | --- |
-| PDF | 16 | Merge, split, page numbers, crop, export images, export Word, scanned-style PDF, images to PDF, text / Markdown extraction, editor with blank PDF creation, rotate, encrypt, decrypt, compress, text enhancement, Excel to PDF |
+| PDF | 17 | Merge, split, page numbers, crop, export images, export Word, scanned-style PDF, images to PDF, text / Markdown extraction, editor with blank PDF creation, rotate, encrypt, decrypt, compress, text enhancement, Excel to PDF, Word to PDF |
 | PPT | 7 | Export PDF, export images, extract images, AI text extraction, compress, AI outline, AI draft / PPTX |
 | Image | 7 | Crop, smart color replacement, background removal, format conversion, compress, stitch, icon generator |
 | Audio | 4 | Format conversion, BPM measurement, trim, extract audio |
@@ -344,7 +359,7 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 | Text | 5 | Markdown editor, media transcription, teleprompter, text statistics, text formatting |
 | Calculator | 5 | Body fat, timestamp, mortgage, interest, password generator |
 | Creative | 4 | Palette extraction, color-space comparison, quick screenshot, typing test |
-| Cleanup | 3 | AI large-file cleanup, C drive cleanup, duplicate files |
+| Cleanup | 4 | Quick file search, AI large-file cleanup, C drive cleanup, duplicate files |
 | AI | 5 | PDF to Markdown, text polishing, translation, document generation, spreadsheet generation |
 | Hardware | 8 | System overview, CPU / memory, GPU / displays, motherboard / firmware, storage / health, network / devices, power / sensors, clipboard history |
 | Developer | 6 | JSON formatting, Base64, URL encoding / decoding, UUID, JWT viewer, Hash & Crypto |
@@ -369,9 +384,9 @@ Custom tools: WeChat **wunanvip6**. Code licensing requests, including commercia
 
 ### Prerequisites
 
-**Confirm authorization before running the source.** This branch includes the PDF-to-Word Engine.
-Running, testing or building the complete app with that Engine requires prior written permission. Reading the source does not.
-Normal use of official apps and the official CLI follows their applicable terms. See the [Engine license](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md).
+**Build and reuse under MIT.** This branch includes the PDF-to-Word Engine.
+You may run, test and build this source under MIT; retain the copyright and permission notices when distributing it.
+Current author-owned desktop and CLI/MCP code, including the PDF-to-Word Engine, uses the [MIT License](LICENSE).
 
 Use a supported Windows 10 / 11 system with Node.js **22.13+** (24 recommended), Rust stable **1.90+**, Visual Studio C++ Build Tools (Desktop development with C++ and Windows SDK), and Microsoft Edge WebView2 Runtime.
 Initial npm and Rust dependency installation requires a connection. Install using the existing lockfiles.
@@ -436,39 +451,15 @@ Third-party components retain their own licenses. See `package-lock.json` and `s
 
 ## Source license
 
-**Visible source is not blanket permission to reuse it. Licenses differ by component.**
+**Author-owned desktop source in the current V3.3 version uses the [MIT License](LICENSE), including the PDF-to-Word Engine and CLI/MCP adapter.**
 
-| Scope | License and limits |
-| --- | --- |
-| General author-owned code | From 2026-10-14, [PolyForm Noncommercial 1.0.0](LICENSE); compliant noncommercial use, modification and distribution must retain notices. Commercial use needs separate permission |
-| Custom PDF-to-Word Engine | A [separate source-viewing license](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md); **excluded from the general PolyForm grant** |
-| Prior grants and third parties | Earlier Apache-2.0 and other grants are not revoked. Third-party code, fonts, models and runtimes retain their licenses |
+- Commercial and noncommercial use, modification, compilation, redistribution, and integration are permitted. No separate Engine permission is required.
+- Retain the MIT copyright and permission notice with copies or substantial portions.
+- Please consider crediting [ToolKnit.com](https://toolknit.com) and adding a DoFollow link in your project description. This is a recommendation, not a license condition.
+- Third-party code, fonts, models, runtimes, and the Apache-2.0 contribution from PR #67 retain their licenses. See [NOTICE](NOTICE).
+- The license does not grant ToolKnit branding, domains, hosted services, or web code absent from this repository. Input files and converted output remain with their respective rightsholders.
 
-### Separate PDF-to-Word Engine terms
-
-Applies to author-owned Engine material in:
-
-- All of [`toolknit-desktop/src/features/pdf-to-word/`](toolknit-desktop/src/features/pdf-to-word/).
-- [`toolknit-desktop/src-tauri/src/native_runtime/pdf/docx_write.rs`](toolknit-desktop/src-tauri/src/native_runtime/pdf/docx_write.rs).
-
-| Activity | Separate authorization |
-| --- | --- |
-| Read the implementation; keep private copies needed for viewing | Not required. Retain license and copyright notices |
-| Execute, compile, test or modify Engine source | **Prior written permission required for BOTH commercial and noncommercial purposes** |
-| Integrate into a product, redistribute or offer a conversion service | **Prior written permission required, even when offered free of charge** |
-| Normally use an official app, test build or official CLI/MCP package | Follow the application's terms. No separate request solely because of this Engine license; commercial-use rights are not expanded |
-
-Engine copies and adapters in the official npm package retain the same license. Moving, renaming or extracting code does not change its terms.
-The official-app exception **does not permit Engine extraction, reuse or building modified versions**.
-Your input files and converted output do not become the author's property or inherit the Engine source license.
-
-Contact **[info@toolknit.com](mailto:info@toolknit.com)**. Describe the intended use, deployment and distribution scope.
-An email request, donation, payment or publicly available source is not authorization.
-
-Copyright remains with the respective authors. These are source-available licenses, **not OSI-approved open-source licenses**.
-Independent implementations of general ideas that do not copy protected expression remain unaffected. So do express hosting-platform rights and non-waivable legal rights.
-ToolKnit branding, domains and hosted services are not licensed by the source license.
-This is a summary. See [NOTICE](NOTICE), the [Engine license](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md) and [Apache-2.0](LICENSES/Apache-2.0.txt) for the applicable terms.
+Earlier releases retain their distributed notices, and existing Apache-2.0 and other grants are not revoked. The [historical Engine terms](LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md) document earlier versions and do not restrict current V3.3 MIT code.
 
 ## Star History
 

@@ -19,7 +19,7 @@ for(let x=332;x<340;x+=2){ctx.fillStyle=x%4?'#14965c':'#ffffff';ctx.fillRect(x,2
 const image=fixture.toDataURL('image/png'),out=path.resolve('tmp/quick-screenshot-browser');
 await mkdir(out,{recursive:true});
 const server=await preview({configFile:false,preview:{host:'127.0.0.1',port:0,open:false}});
-const browser=await chromium.launch({headless:true,...(process.env.TOOLKNIT_TEST_BROWSER?{executablePath:process.env.TOOLKNIT_TEST_BROWSER}:{})});
+const browser=await chromium.launch({headless:true,...(process.env.TOOLKNIT_TEST_BROWSER?{executablePath:process.env.TOOLKNIT_TEST_BROWSER}:process.env.TOOLKNIT_TEST_BROWSER_CHANNEL?{channel:process.env.TOOLKNIT_TEST_BROWSER_CHANNEL}:{})});
 const errors=[],results=[],url=server.resolvedUrls.local[0];
 async function open(role,theme,width=1400,height=900,dpr=1,{warmMenu=false}={}){
   const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:dpr});
@@ -111,6 +111,16 @@ async function open(role,theme,width=1400,height=900,dpr=1,{warmMenu=false}={}){
           if(r.action==='copy'||r.action==='pin')return {enabled:!window.__paused};
         }
         if(command==='load_ai_api_key')return window.__shotKeyMissing?'':'local-test-key';
+        if(command==='quick_screenshot_image'){
+          if(window.__hangCaptureImage)await new Promise(resolve=>window.__releaseCaptureImage=resolve);
+          return Uint8Array.from(atob(image.split(',')[1]),value=>value.charCodeAt(0)).buffer;
+        }
+        if(command==='local_ocr'){
+          const r=args.request;
+          if(r.action==='status')return {ready:true,installing:false};
+          if(r.action==='recognize')return {engine:'pp-ocrv5-mobile',text:'Scrambled fallback',lines:[{id:1,text:'Second line',x:50,y:110,width:240,height:24},{id:0,text:'Sample text',x:50,y:50,width:240,height:44}]};
+          if(r.action==='cancel')return;
+        }
         if(command==='local_translation'){
           const r=args.request;
           if(r.action==='status')return {ready:window.__localReady,targetLanguage:window.__localTarget};
@@ -125,20 +135,12 @@ async function open(role,theme,width=1400,height=900,dpr=1,{warmMenu=false}={}){
         if(command==='request_private_ai_completion'){
           if(window.__shotAiFailure)throw window.__shotAiFailure;
           if(window.__shotAiDeferred)return new Promise(resolve=>{window.__shotFinishAi=()=>resolve({content:'Late result must be ignored'});});
-          const structured=args.request.messages.some(m=>m.role==='system');
-          if(!structured)return {content:'Extracted sample text'};
-          const user=args.request.messages.find(m=>m.role==='user'),vision=Array.isArray(user.content);
-          const input=JSON.parse(vision?user.content[0].text:user.content),batch=input.blocks||input.lines;
-          if(vision&&window.__shotRejectVision)throw 'ai-provider:http_error:400';
-          if(vision&&window.__shotTruncateRemaining>0){window.__shotTruncateRemaining--;throw 'ai-provider:response_truncated';}
-          if(vision&&window.__shotTruncateMulti&&batch.length>1)throw 'ai-provider:response_truncated';
-          if(!vision&&window.__shotMalformedPart&&batch.some(line=>line.id===1))return {content:'[]'};
-          return {content:JSON.stringify(batch.map(line=>({id:line.id,text:vision?`Corrected text ${line.id}`:
-            window.__shotLongTranslation&&line.id===0?'A very long translation\n'.repeat(140):line.id===0?'Translated':'Second line'})))};
+          return {content:'Extracted sample text'};
         }
         if(command==='cancel_private_ai_completion')return;
         if(command==='quick_screenshot'){
           const r=args.request;
+          if(r.action==='cancel'&&window.__shotCancelFailure)throw Error('screenshot:window-failed');
           if(r.action==='hide-history'||r.action==='close-history'){
             if(window.__hideFailure)throw 'screenshot:window-hide-failed';
             window.__nativeHistoryHidden=true;return null;
@@ -151,16 +153,23 @@ async function open(role,theme,width=1400,height=900,dpr=1,{warmMenu=false}={}){
             return null;
           }
           if(r.action==='menu-dismiss')return null;
-          if(r.action==='boot')return {context:structuredClone(shared),feedback:{revision:1,kind:'copied',lang:shared.lang},session:1,shot,desktop:{bounds:{x:-1400,y:-100,width:1400,height:900},windows:[{x:-1300,y:-20,width:800,height:440}],monitors:[{x:-1400,y:-100,width:1400,height:900}]},image};
+          if(r.action==='boot'){
+            if(window.__hangCaptureBoot)await new Promise(resolve=>window.__releaseCaptureBoot=resolve);
+            return {context:structuredClone(shared),feedback:{revision:1,kind:'copied',lang:shared.lang},session:window.__captureSession||1,shot,desktop:{bounds:{x:-1400,y:-100,width:1400,height:900},windows:[{x:-1300,y:-20,width:800,height:440}],monitors:[{x:-1400,y:-100,width:1400,height:900}]},...(role==='capture'&&r.binary?{}:{image})};
+          }
           if(r.action==='metadata')return {context:structuredClone(shared)};
           if(r.action==='expand'){
             if(window.__shotExpandFailure)throw new Error('Window temporarily unavailable');
             await window.__shotResize(r.expanded);
             return {origin:r.expanded?{x:188,y:48}:{x:48,y:48},width:r.expanded?376:96,height:r.expanded?760:96};
           }
-          if(r.action==='save')return 'C:/TestOutput/Screenshots/test.png';
+          if(r.action==='save'){
+            if(window.__shotFailSave)throw new Error('screenshot:save-failed');
+            if(role==='capture'&&r.finish)window.__shotEmit('screenshot-ended');
+            return 'C:/TestOutput/Screenshots/test.png';
+          }
           if(r.action==='ocr')return {text:'Scrambled fallback',lines:[{id:1,text:'Second line',x:50,y:110,width:240,height:24},{id:0,text:'Sample text',x:50,y:50,width:240,height:44}]};
-          if(r.action==='confirm'||r.action==='cancel'||r.action==='pin')window.__shotEmit('screenshot-ended');
+          if((r.action==='confirm'&&!window.__shotInspectOnly)||r.action==='cancel'||r.action==='pin')window.__shotEmit('screenshot-ended');
           return null;
         }
         throw new Error(`Unexpected command: ${command}`);
@@ -174,6 +183,16 @@ try{
     if(process.env.TOOLKNIT_SHOT_SCOPE==='history')break;
     const {page,context}=await open('capture',theme,width,height,dpr);
     await page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='ready'));
+    const pixelReads=await page.evaluate(async()=>{
+      const prototype=CanvasRenderingContext2D.prototype,read=prototype.getImageData;let count=0;
+      prototype.getImageData=function(...args){count++;return read.apply(this,args);};
+      try {
+        const canvas=document.getElementById('shotCanvas');
+        for(let i=0;i<100;i++)canvas.dispatchEvent(new PointerEvent('pointermove',{clientX:200+i,clientY:200,button:0,bubbles:true}));
+        await new Promise(requestAnimationFrame);return count;
+      } finally {prototype.getImageData=read;}
+    });
+    assert(pixelReads<=2,'one burst of high-frequency hover input samples at most once per frame');
     await page.mouse.move(width*.2,height*.2);await page.mouse.click(width*.2,height*.2);
     await page.locator('#shotToolbar').waitFor({state:'visible'});
     await page.waitForFunction(()=>{const r=document.getElementById('shotToolbar').getBoundingClientRect();return r.right<=innerWidth+1&&r.bottom<=innerHeight+1;});
@@ -193,11 +212,12 @@ try{
       await page.mouse.up();
     };
     const exportShot=async()=>{
-      const count=await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='copy').length);
+      // Keep the fake surface for pixel assertions; completion is tested below.
+      const count=await page.evaluate(()=>{window.__shotInspectOnly=true;return window.__shotCalls.filter(c=>c.args?.request?.action==='confirm').length;});
       await page.locator('#shotCanvas').focus();await page.keyboard.press('Control+c');
-      await page.waitForFunction(n=>window.__shotCalls.filter(c=>c.args?.request?.action==='copy').length>n,count);
+      await page.waitForFunction(n=>window.__shotCalls.filter(c=>c.args?.request?.action==='confirm').length>n,count);
       await page.waitForFunction(()=>document.getElementById('shotBusy').hidden);
-      const request=await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='copy').at(-1).args.request);
+      const request=await page.evaluate(()=>{window.__shotInspectOnly=false;return window.__shotCalls.filter(c=>c.args?.request?.action==='confirm').at(-1).args.request;});
       const img=await loadImage(request.image),buffer=createCanvas(img.width,img.height),c=buffer.getContext('2d');c.drawImage(img,0,0);
       return (x,y)=>[...c.getImageData(x-request.origin[0],y-request.origin[1],1,1).data];
     };
@@ -242,11 +262,12 @@ try{
     assert.equal(await original.getAttribute('aria-pressed'),'false','losing focus restores edits');await page.mouse.up();
     await original.hover();await page.mouse.down();await original.dispatchEvent('pointercancel');
     assert.equal(await original.getAttribute('aria-pressed'),'false','pointer cancellation restores edits');await page.mouse.up();
+    const confirmsBeforeCompare=await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='confirm').length);
     for(const key of ['Space','Enter']){
       await original.focus();await page.keyboard.down(key);assert.equal(await original.getAttribute('aria-pressed'),'true');
       await page.keyboard.up(key);assert.equal(await original.getAttribute('aria-pressed'),'false');
     }
-    assert.ok(await page.evaluate(()=>!window.__shotCalls.some(c=>c.args?.request?.action==='confirm')),'keyboard compare must not confirm the screenshot');
+    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='confirm').length),confirmsBeforeCompare,'keyboard compare must not confirm the screenshot');
     await page.screenshot({path:path.join(out,`capture-toolbar-${theme}-${width}.png`)});
     await page.locator('[data-shot-action="text"]').click();await page.mouse.click(width*.25,height*.4);
     await page.locator('#shotDialog textarea').fill('A sample annotation with multiple words');
@@ -327,50 +348,27 @@ try{
     await page.evaluate(()=>{window.__shotContext.provider.model='changed-vision';window.__shotEmit('screenshot-context-changed');});
     await expectToast('providerChanged');
     await page.evaluate(()=>{window.__shotFinishAi();window.__shotAiDeferred=false;});
-    await page.locator('[data-shot-action="ai-translate"]').click();await page.waitForFunction(()=>document.getElementById('shotBusy').hidden);
-    await expectToast('translated');
-    const translationCalls=await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion'&&c.args.request.messages.some(m=>m.role==='system')));
-    assert.ok(translationCalls.length);
-    assert.ok(translationCalls.some(c=>Array.isArray(c.args.request.messages[1].content)),'translation first corrects OCR against the image');
-    const textCalls=translationCalls.filter(c=>typeof c.args.request.messages[1].content==='string');
-    assert.equal(textCalls.length,0,'translation never sends text to the external AI');
-    assert.ok(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='local_translation'&&c.args.request.action==='translate').at(-1).args.request.texts.every(t=>t.startsWith('Corrected text'))),'corrected extraction feeds the local engine');
-    for(const call of translationCalls){assert.equal(call.args.request.temperature,0);assert.ok(call.args.request.maxTokens>=4096&&call.args.request.maxTokens<=16384);}
-    const ocrCount=await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='ocr').length);
-    const visionCount=await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion'&&c.args.request.messages.some(m=>m.role==='system')&&Array.isArray(c.args.request.messages[1].content)).length);
+    const beforeLocalAi=await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion').length);
+    const beforeLocalKeys=await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='load_ai_api_key').length);
+    await page.evaluate(()=>{window.__shotAiFailure='ai-provider:network_error';});
+    await page.locator('[data-shot-action="ai-translate"]').click();await expectToast('translated');
+    assert.deepEqual(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='local_translation'&&c.args.request.action==='translate').at(-1).args.request.texts),['Sample text','Second line'],'raw OCR directly feeds local translation despite configured AI errors');
+    const ocrCount=await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='local_ocr'&&c.args?.request?.action==='recognize').length);
     await clearToasts();await page.locator('[data-shot-action="ai-translate"]').click();await expectToast('translated');
-    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='ocr').length),ocrCount,'repeat translation reuses OCR of the unchanged source');
-    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion'&&c.args.request.messages.some(m=>m.role==='system')&&Array.isArray(c.args.request.messages[1].content)).length),visionCount,'repeat translation reuses image correction');
+    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='local_ocr'&&c.args?.request?.action==='recognize').length),ocrCount,'repeat translation reuses OCR of the unchanged source');
     await clearToasts();await page.evaluate(()=>{window.__shotContext.lang=window.__shotContext.lang==='zh'?'en':'zh';window.__shotEmit('screenshot-context-changed');});
-    await page.locator('[data-shot-action="ai-translate"]').click();
-    await page.waitForFunction(()=>document.getElementById('shotBusy').hidden);
-    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='ocr').length),ocrCount+1,'a language change invalidates OCR anchors');
-    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion'&&c.args.request.messages.some(m=>m.role==='system')&&Array.isArray(c.args.request.messages[1].content)).length),visionCount+1,'image correction must use the current language anchors');
+    await page.locator('[data-shot-action="ai-translate"]').click();await page.waitForFunction(()=>document.getElementById('shotBusy').hidden);
+    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='local_ocr'&&c.args?.request?.action==='recognize').length),ocrCount+1,'a language change invalidates OCR anchors');
     await clearToasts();await page.evaluate(value=>{window.__shotContext.lang=value;window.__shotEmit('screenshot-context-changed');},language);
-    await clearToasts();await page.evaluate(()=>{window.__shotTruncateRemaining=1;window.__shotContext.provider.model='retry-vision';window.__shotEmit('screenshot-context-changed');});
+    await page.evaluate(()=>{window.__shotKeyMissing=true;window.__shotContext.provider.url='invalid-config';window.__shotEmit('screenshot-context-changed');});
     await page.locator('[data-shot-action="ai-translate"]').click();await expectToast('translated');
-    assert.ok(await page.evaluate(()=>window.__shotCalls.some(c=>c.command==='request_private_ai_completion'&&c.args.request.maxTokens===16384)),'a truncated response retries with a larger budget');
-    await clearToasts();await page.evaluate(()=>{window.__shotTruncateMulti=true;window.__shotContext.provider.model='split-vision';window.__shotEmit('screenshot-context-changed');});
-    await page.locator('[data-shot-action="ai-translate"]').click();await expectToast('translated');
-    assert.ok(await page.evaluate(()=>window.__shotCalls.some(c=>c.command==='request_private_ai_completion'&&Array.isArray(c.args.request.messages[1]?.content)&&JSON.parse(c.args.request.messages[1].content[0].text).blocks?.length===1)),'persistent recognition truncation splits the failing batch');
-    await clearToasts();await page.evaluate(()=>{window.__shotTruncateMulti=false;window.__shotRejectVision=true;window.__shotContext.provider.model='text-only';window.__shotEmit('screenshot-context-changed');});
-    const localCalls=()=>page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='local_translation'&&c.args.request.action==='translate').length);
-    const beforeFallback=await localCalls();
-    await page.locator('[data-shot-action="ai-translate"]').click();await page.locator('#shotDialogCancel').waitFor({state:'visible'});
-    assert.ok((await page.locator('#shotDialogContent').textContent()).includes(texts.fallbackPrompt));
-    assert.equal(await localCalls(),beforeFallback,'no silent fallback');
-    await page.locator('#shotDialogCancel').click();await page.waitForFunction(()=>document.getElementById('shotBusy').hidden);
-    assert.equal(await localCalls(),beforeFallback,'declining leaves the screenshot unchanged');
-    await page.locator('[data-shot-action="ai-translate"]').click();await page.locator('#shotDialogOk').click();await expectToast('translated');
-    assert.deepEqual(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='local_translation'&&c.args.request.action==='translate').at(-1).args.request.texts),['Sample text','Second line']);
-    await clearToasts();await page.evaluate(()=>{window.__shotRejectVision=false;window.__shotKeyMissing=true;});
-    const beforeNoKey=await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion').length);
-    await page.locator('[data-shot-action="ai-translate"]').click();await expectToast('translated');
-    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion').length),beforeNoKey,'no AI key uses OCR directly');
+    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion').length),beforeLocalAi,'local translation never invokes AI');
+    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='load_ai_api_key').length),beforeLocalKeys,'local translation never reads the AI key');
+    await page.evaluate(()=>{window.__shotAiFailure='';window.__shotContext.provider.url='https://api.example.com/v1';window.__shotEmit('screenshot-context-changed');});
     await clearToasts();await page.evaluate(()=>{window.__localReady=false;});
-    const beforeMissing=await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion'||c.args.request?.action==='ocr'||c.args.request?.action==='translate').length);
+    const beforeMissing=await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion'||(c.command==='local_ocr'&&c.args.request?.action==='recognize')||c.args.request?.action==='translate').length);
     await page.locator('[data-shot-action="ai-translate"]').click();await expectToast('localMissing');
-    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion'||c.args.request?.action==='ocr'||c.args.request?.action==='translate').length),beforeMissing,'readiness gate precedes extraction');
+    assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='request_private_ai_completion'||(c.command==='local_ocr'&&c.args.request?.action==='recognize')||c.args.request?.action==='translate').length),beforeMissing,'readiness gate precedes extraction');
     await clearToasts();await page.evaluate(()=>{window.__localReady=true;window.__localFailure='translation:timeout';});
     await page.locator('[data-shot-action="ai-translate"]').click();await expectToast('localTimeout');
     await clearToasts();await page.evaluate(()=>{window.__localFailure='';window.__localDeferred=true;});
@@ -389,7 +387,7 @@ try{
     await page.locator('[data-shot-action="ai-translate"]').click();await expectToast('translated');
     assert.equal(await page.evaluate(()=>window.__shotCalls.filter(c=>c.command==='local_translation'&&c.args.request.action==='translate').at(-1).args.request.target),'en');
     await page.evaluate(()=>{window.__shotKeyMissing=false;});
-    await clearToasts();await page.evaluate(()=>{window.__shotRejectVision=false;window.__shotContext.provider.model='vision-restored';window.__shotEmit('screenshot-context-changed');});
+    await clearToasts();await page.evaluate(()=>{window.__shotContext.provider.model='vision-restored';window.__shotEmit('screenshot-context-changed');});
     await clearToasts();await page.evaluate(()=>{window.__shotLongTranslation=true;});
     await page.locator('[data-shot-action="ai-translate"]').click();await page.locator('#shotDialog textarea').waitFor();
     assert.match(await page.locator('#shotDialog textarea').inputValue(),/A very long translation/,'overflow retains complete translation text');
@@ -398,25 +396,90 @@ try{
     await page.screenshot({path:path.join(out,`translation-partial-${theme}-${width}.png`)});
     await page.locator('#shotDialogOk').click();await page.evaluate(()=>{window.__shotLongTranslation=false;});await clearToasts();
     await page.locator('[data-shot-action="ai-translate"]').click();await expectToast('translated');
-    await page.locator('[data-shot-action="save"]').click();await page.locator('#shotDialogFolder').waitFor({state:'visible'});
+    await page.evaluate(()=>{window.__shotFailSave=true;});
+    await page.locator('[data-shot-action="save"]').click();
+    await page.waitForFunction(()=>!document.getElementById('shotBusy') || document.getElementById('shotBusy').hidden);
+    assert.equal(await page.locator('#shotToolbar').isVisible(),true,'failed saving keeps the edited capture for retry');
+    await page.evaluate(()=>{window.__shotFailSave=false;});
+    await clearToasts();
     await page.screenshot({path:path.join(out,`capture-${theme}-${width}.png`)});
-    const beforeReveal=await page.evaluate(()=>window.__shotCalls.length);
-    await page.locator('#shotDialogFolder').click();
-    await page.waitForFunction(()=>window.__shotCalls.some(c=>c.command==='open_path'&&c.args.path==='C:/TestOutput/Screenshots/test.png'));
-    const revealCalls=await page.evaluate(start=>window.__shotCalls.slice(start),beforeReveal);
-    assert.ok(revealCalls.findIndex(c=>c.args?.request?.action==='cancel')<revealCalls.findIndex(c=>c.command==='open_path'),'capture ends before revealing the saved file');
-    assert.ok(revealCalls.some(c=>c.args?.request?.action==='cancel'),'Open folder exits capture');
+    await page.locator('[data-shot-action="save"]').click();
+    await page.waitForFunction(()=>document.getElementById('shotToolbar').hidden);
+    assert.ok(await page.evaluate(()=>window.__shotCalls.some(c=>c.args?.request?.action==='save'&&c.args.request.finish===true)),'capture save requests completion');
+    assert.equal(await page.locator('#shotDesktop').getAttribute('src'),null,'successful save releases capture pixels');
     assert.equal(await page.locator('#shotToolbar').isVisible(),false);
     assert.equal(await page.locator('#shotDialog').isVisible(),false);
     await page.evaluate(()=>window.__shotEmit('screenshot-opened',2));
     await page.waitForFunction(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length===2);
     await page.mouse.click(width*.3,height*.25);
-    await page.keyboard.press('Enter');
+    await page.keyboard.press('Control+c');
     await page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='confirm'));
     assert.equal(await page.locator('#shotToolbar').isVisible(),false);
     await page.evaluate(()=>window.__shotEmit('screenshot-opened',2));
     await page.waitForFunction(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length===3);
+    // A single Escape must leave capture, including selection and a held drag.
+    await page.mouse.click(width*.3,height*.25);
+    const cancels=await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='cancel').length);
     await page.keyboard.press('Escape');
+    await page.waitForFunction(n=>window.__shotCalls.filter(c=>c.args?.request?.action==='cancel').length===n+1,cancels);
+    assert.equal(await page.locator('#shotDesktop').getAttribute('src'),null,'Escape after a crop releases the full-screen source');
+    for(let repeat=0;repeat<8;repeat++){
+      const ready=await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length);
+      await page.evaluate(id=>{window.__captureSession=id;window.__shotEmit('screenshot-opened',id);},100+repeat);
+      await page.waitForFunction(n=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length===n+1,ready);
+      await page.mouse.move(width*.2,height*.2);await page.mouse.down();await page.mouse.move(width*.6,height*.6);
+      await page.keyboard.press('Escape');await page.mouse.up();
+      await page.waitForFunction(()=>document.getElementById('shotDesktop').getAttribute('src')===null);
+      assert.equal(await page.locator('#shotCanvas').evaluate(n=>n.width===1&&n.height===1),true,'cancelled drag frees the backing canvas');
+    }
+    const readyBeforeHang=await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length);
+    await page.evaluate(()=>{window.__hangCaptureImage=true;window.__captureSession=201;window.__shotEmit('screenshot-opened',201);});
+    await page.waitForFunction(()=>typeof window.__releaseCaptureImage==='function');
+    await page.evaluate(()=>{window.__shotEmit('screenshot-ended',201);window.__hangCaptureImage=false;window.__captureSession=202;window.__shotEmit('screenshot-opened',202);});
+    await page.waitForFunction(n=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length===n+1,readyBeforeHang,{timeout:2500});
+    await page.evaluate(()=>{window.__releaseCaptureImage();window.__shotEmit('screenshot-ended',201);});
+    await page.waitForTimeout(30);
+    assert.notEqual(await page.locator('#shotDesktop').getAttribute('src'),null,'late old pixels/end event cannot clear the new capture');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>document.getElementById('shotDesktop').getAttribute('src')===null);
+    for(const action of ['escape','button']){
+      const ready=await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length);
+      await page.evaluate(id=>{window.__captureSession=id;window.__localReady=true;window.__localDeferred=true;delete window.__localFinish;window.__shotEmit('screenshot-opened',id);},action==='escape'?203:204);
+      await page.waitForFunction(n=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length===n+1,ready);
+      await page.mouse.click(width*.3,height*.25);
+      if(action==='escape'){
+        await page.locator('[data-shot-action="ai-translate"]').click();
+        await page.waitForFunction(()=>typeof window.__localFinish==='function');
+      }
+      if(action==='escape')await page.keyboard.press('Escape');else await page.locator('[data-shot-action="cancel"]').click();
+      await page.waitForFunction(()=>document.getElementById('shotDesktop').getAttribute('src')===null);
+      await page.evaluate(()=>{window.__localFinish?.();window.__localDeferred=false;});
+      assert.equal(await page.locator('#shotBusy').isVisible(),false,'processing cancellation removes the busy cover');
+    }
+    if(theme==='light'&&width===1400){
+      const readyBeforeFailure=await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length);
+      await page.evaluate(()=>{window.__captureSession=207;window.__localReady=true;window.__localDeferred=true;delete window.__localFinish;window.__shotEmit('screenshot-opened',207);});
+      await page.waitForFunction(n=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length===n+1,readyBeforeFailure);
+      await page.mouse.click(width*.3,height*.25);
+      await page.locator('[data-shot-action="ai-translate"]').click();
+      await page.waitForFunction(()=>typeof window.__localFinish==='function');
+      await page.evaluate(()=>window.__shotCancelFailure=true);
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(()=>document.getElementById('shotBusy').hidden);
+      assert.equal(await page.locator('[data-shot-action="cancel"]').isEnabled(),true,'failed cancellation restores controls instead of retaining a busy latch');
+      await page.evaluate(()=>{window.__shotCancelFailure=false;window.__localFinish();window.__localDeferred=false;});
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(()=>document.getElementById('shotDesktop').getAttribute('src')===null);
+      await page.evaluate(()=>{window.__captureSession=205;window.__hangCaptureBoot=true;window.__shotEmit('screenshot-opened',205);});
+      await page.waitForFunction(()=>typeof window.__releaseCaptureBoot==='function');
+      await page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='cancel'&&c.args.request.session===205),null,{timeout:11000});
+      const ready=await page.evaluate(()=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length);
+      await page.evaluate(()=>{window.__hangCaptureBoot=false;window.__captureSession=206;window.__shotEmit('screenshot-opened',206);});
+      await page.waitForFunction(n=>window.__shotCalls.filter(c=>c.args?.request?.action==='ready').length===n+1,ready);
+      await page.evaluate(()=>window.__releaseCaptureBoot());
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(()=>document.getElementById('shotDesktop').getAttribute('src')===null);
+    }
     results.push(`capture ${theme} ${width}x${height} DPR${dpr}: compact toolbar, auto-select/drag shapes, fixed brush/mosaic, stroke pixels, undo/redo, hold compare, ordered OCR, AI success/error Toast, missing key, cancel/late result, provider change, output, reopen`);await context.close();
   }
   for(const theme of ['light','dark']){
@@ -436,7 +499,21 @@ try{
     await page.waitForFunction(()=>window.__shotCalls.some(c=>c.command==='open_path'&&c.args.path==='C:/TestOutput/Screenshots/test.png'));
     assert.ok(await page.locator('#shotViewImage').isVisible(),'revealing a file keeps the viewer open');
     assert.ok(await page.evaluate(()=>!window.__shotCalls.some(c=>c.args?.request?.action==='cancel')),'viewer reveal must not cancel another capture');
-    results.push(`viewer ${theme}: shared chrome, zoom, pin, save`);await context.close();
+    for(const [vw,vh] of [[480,320],[320,220]]){
+      await page.setViewportSize({width:vw,height:vh});
+      await page.waitForTimeout(60);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'compact viewer has no horizontal overflow');
+      assert(await page.locator('#shotViewImage').evaluate(n=>parseFloat(n.style.width)>0&&parseFloat(n.style.height)>0),'fit stays positive in tiny work areas');
+      assert(await page.locator('#shotViewerStage').evaluate(n=>n.clientHeight>=60),'compact chrome leaves usable image height');
+      assert(await page.locator('.tk-tool-nav').evaluate(n=>n.getBoundingClientRect().height<=48),'compact viewer keeps navigation in one row');
+      assert.notEqual(await page.locator('#shotZoomValue').textContent(),'0%');
+      for(const action of ['copy','save','close']){
+        const r=await page.locator(`[data-shot-action="${action}"]`).boundingBox();
+        assert(r&&r.y>=0&&r.y+r.height<=vh,`${action} stays reachable in ${vw}x${vh}`);
+      }
+      await page.screenshot({path:path.join(out,`viewer-${theme}-${vw}.png`)});
+    }
+    results.push(`viewer ${theme}: shared chrome, zoom, pin, save and compact sizes`);await context.close();
     const shelf=await open('history',theme,96,96);
     await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===6);
     assert.ok(await shelf.page.locator('#shotHistoryBubble img').evaluate(img=>img.complete&&img.naturalWidth>0),'reuse the real logo asset');

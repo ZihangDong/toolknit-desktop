@@ -1,3 +1,4 @@
+import { copyPdfPages } from '../../core/pdf-page-copy.js';
 import { PDFDocument } from 'pdf-lib';
 import { flattenPdfFormForPageCopy } from '../../pdf-document-structure.js';
 import { splitPdfPages } from '../../pdf-split-core.js';
@@ -31,7 +32,7 @@ export async function buildPdfSplitOutput({ documents, pages, mode, assertCurren
       source = await PDFDocument.load(documents[fileIndex].fileData.slice());
       flattenPdfFormForPageCopy(source); sources.set(fileIndex, source);
     }
-    const [page] = await output.copyPages(source, [pageIndex - 1]); output.addPage(page);
+    const [page] = await copyPdfPages(output, source, [pageIndex - 1]); output.addPage(page);
     onProgress((index + 1) / pages.length * 90);
     await new Promise(resolve => setTimeout(resolve, 0));
   }

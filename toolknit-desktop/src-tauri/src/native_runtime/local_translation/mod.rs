@@ -9,11 +9,17 @@ const RECORDS: &str = include_str!("records.json");
 const ENGINE_NAME: &str = "mtranserver.exe";
 const ENGINE_BYTES: u64 = 129_295_360;
 const ENGINE_HASH: &str = "70999a5842984247aeacbd381bc1df26737a129e1a6683be3572bd0cc1b5a798";
-const ENGINE_URL: &str = "https://github.com/xxnuo/MTranServer/releases/download/v4.0.33/mtranserver-4.0.33-windows-amd64.exe";
+const ENGINE_URL: &str = crate::platform::dependency_download::TRANSLATION_ENGINE_URL;
 const DOWNLOAD_BYTES: u64 = 201_647_315;
 
 fn lock<T>(value: &Mutex<T>) -> std::sync::MutexGuard<'_, T> { value.lock().unwrap_or_else(|e| e.into_inner()) }
-fn root() -> Result<PathBuf, String> { Ok(toolknit_app_data_dir()?.join("local-translation")) }
+fn root() -> Result<PathBuf, String> {
+    #[cfg(test)]
+    if let Some(root) = std::env::var_os("TOOLKNIT_OCR_WEBVIEW_APPDATA") {
+        return Ok(PathBuf::from(root).join("ToolKnit/local-translation"));
+    }
+    Ok(toolknit_app_data_dir()?.join("local-translation"))
+}
 fn installed(root: &Path) -> PathBuf { root.join(VERSION) }
 fn check_cancel(cancel: &AtomicBool) -> Result<(), String> {
     if cancel.load(Ordering::Relaxed) { Err("translation:cancelled".into()) } else { Ok(()) }
@@ -54,7 +60,7 @@ fn mutate(state: &TranslationState) -> Result<MutationGuard<'_>, String> {
 #[serde(rename_all = "camelCase")]
 struct Record { source_language: String, target_language: String, file_type: String, attachment: Attachment, decompressed_hash: String, decompressed_size: u64 }
 #[derive(Deserialize)]
-struct Attachment { hash: String, size: u64, filename: String, location: String }
+struct Attachment { hash: String, size: u64, filename: String }
 #[derive(Deserialize)]
 struct Catalogue { data: Vec<Record> }
 fn records() -> Vec<Record> { serde_json::from_str::<Catalogue>(RECORDS).expect("pinned model manifest").data }
@@ -66,8 +72,9 @@ fn complete(dir: &Path) -> bool {
     std::fs::read_to_string(dir.join("ready")).is_ok_and(|s| s == ENGINE_HASH)
         && regular_size(&dir.join(ENGINE_NAME), ENGINE_BYTES)
         && records().iter().all(|r| regular_size(&model_path(dir,r),r.decompressed_size))
-        && std::fs::read_to_string(dir.join("config/records.json")).is_ok_and(|s| s == RECORDS)
+        && std::fs::read_to_string(dir.join("config/records.json")).is_ok_and(|s| same_records(&s))
 }
+fn same_records(value: &str) -> bool { value.lines().eq(RECORDS.lines()) }
 #[derive(Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct Progress { phase: String, received: u64, total: u64, source: String }
@@ -76,13 +83,7 @@ struct Progress { phase: String, received: u64, total: u64, source: String }
 enum DownloadSource { #[default] Auto, Official, Accelerated }
 impl DownloadSource {
     fn candidates(self) -> Vec<(&'static str, String)> {
-        let official = ("official", ENGINE_URL.to_string());
-        let accelerated = ("accelerated", format!("https://gh-proxy.com/{ENGINE_URL}"));
-        match self {
-            Self::Auto => vec![official, accelerated],
-            Self::Official => vec![official],
-            Self::Accelerated => vec![accelerated],
-        }
+        vec![("7caiyun", ENGINE_URL.to_string())]
     }
 }
 #[derive(Default)]
@@ -199,17 +200,26 @@ pub(super) fn shutdown(app: &tauri::AppHandle) {
 }
 
 #[cfg(test)]
+pub(super) async fn ocr_translation_fixture(dir: &Path, texts: &[String]) -> Result<Vec<String>, String> {
+    let state = TranslationState::default();
+    process::translate(dir, &state, texts, "en", &AtomicBool::new(false)).await
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test] fn translation_sources_are_pinned_and_reject_arbitrary_urls() {
-        assert_eq!(DownloadSource::Auto.candidates(),vec![("official",ENGINE_URL.into()),("accelerated",format!("https://gh-proxy.com/{ENGINE_URL}"))]);
-        assert_eq!(DownloadSource::Official.candidates().len(),1);
-        assert_eq!(DownloadSource::Accelerated.candidates().len(),1);
+        assert_eq!(DownloadSource::Auto.candidates(),vec![("7caiyun",ENGINE_URL.into())]);
+        assert_eq!(DownloadSource::Official.candidates(), DownloadSource::Auto.candidates());
+        assert_eq!(DownloadSource::Accelerated.candidates(), DownloadSource::Auto.candidates());
         assert!(serde_json::from_value::<Request>(serde_json::json!({"action":"install"})).is_ok());
         assert!(serde_json::from_value::<Request>(serde_json::json!({"action":"install","source":"accelerated"})).is_ok());
         assert!(serde_json::from_value::<Request>(serde_json::json!({"action":"install","source":"https://example.invalid/model.exe"})).is_err());
     }
     #[test] fn translation_manifest_is_pinned_and_bounded() {
+        let unix=RECORDS.replace("\r\n","\n");
+        assert!(same_records(&unix));assert!(same_records(&unix.replace('\n',"\r\n")));
+        assert!(!same_records(&unix.replace("sourceLanguage","unexpectedLanguage")),"line-ending compatibility never accepts changed manifest fields");
         let records=records();assert_eq!(records.len(),7);
         assert_eq!(ENGINE_BYTES+records.iter().map(|r|r.attachment.size).sum::<u64>(),DOWNLOAD_BYTES);
         for r in records { assert!(valid_target(&r.source_language)&&valid_target(&r.target_language)); assert!(!r.attachment.filename.contains('/'));assert_eq!(r.decompressed_hash.len(),64);assert_eq!(r.attachment.hash.len(),64); assert!(matches!(r.file_type.as_str(),"model"|"lex"|"vocab"|"srcvocab"|"trgvocab")); }

@@ -14,13 +14,23 @@ const files = await Promise.all([
   readFile(new URL('../src/features/ppt-render/controller.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/excel-to-pdf/controller.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/pdf-to-scan/controller.js', import.meta.url), 'utf8'),
-  readFile(new URL('../src/features/pdf-to-scan/processor.js', import.meta.url), 'utf8')
+  readFile(new URL('../src/features/pdf-to-scan/processor.js', import.meta.url), 'utf8'),
+  readFile(new URL('../src-tauri/src/platform/file_location.rs', import.meta.url), 'utf8'),
+  readFile(new URL('../src/features/cleanup-tools/large-file-controller.js', import.meta.url), 'utf8')
 ]);
 
-const [native, merge, rotate, split, pageNumber, crop, editor, pdfToImage, pdfCompress, pptRender, excel, pdfScanController, pdfScanProcessor] = files;
+const [native, merge, rotate, split, pageNumber, crop, editor, pdfToImage, pdfCompress, pptRender, excel, pdfScanController, pdfScanProcessor, location, cleanup] = files;
 
-assert.match(native, /format!\("\/select,\{\}", canonical_requested\.display\(\)\)/,
-  'Windows file reveal must use Explorer selection');
+assert.match(native, /file_location::reveal_file\(&canonical_requested\)/, 'all output/cleanup file reveals use the shared native selection boundary');
+assert.match(native, /file_location::open_directory\(&target\)/, 'directories use the same native Shell boundary');
+assert.match(native, /spawn_blocking/, 'waiting on a Shell location must not block the UI thread');
+assert.doesNotMatch(native.slice(native.indexOf('fn open_path_blocking'), native.indexOf('fn open_recycle_bin')), /\/select,|Command::new\("explorer"\)/,
+  'file locations cannot go back through Explorer command-line quoting');
+assert.match(location, /SHOpenFolderAndSelectItems/, 'shared Windows selection uses item identifiers, not path arguments');
+assert.match(location, /SEE_MASK_IDLIST/, 'directory opens address the validated directory item itself');
+assert.doesNotMatch(location, /SHOpenFolderAndSelectItems\(folder\.0,\s*None/,
+  'zero-item selection opens a parent folder instead of the requested directory');
+assert.match(cleanup, /invoke\('open_path', \{ path: candidate\.path \}\)/, 'AI cleanup passes the complete candidate path, not its display hint');
 assert.match(native, /canonical_requested\.is_file\(\)/, 'native reveal must distinguish files from directories');
 assert.match(native, /Path must be absolute/, 'native reveal must reject relative paths');
 assert.match(merge, /invoke\('open_path', \{ path: lastOutputPath \}\)/, 'PDF merge must pass the actual output file');

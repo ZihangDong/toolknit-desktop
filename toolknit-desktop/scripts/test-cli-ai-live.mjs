@@ -86,7 +86,7 @@ async function test(name, action) {
 }
 try {
   await client.connect(transport);
-  assert.equal((await client.listTools()).tools.length, 77);
+  assert.equal((await client.listTools()).tools.length, 78);
   await test('polish-cli', async () => {
     const child = spawn(process.execPath, [entry, 'run', 'toolknit_ai_polish', '--arguments-stdin', '--json'], { cwd: root, env: process.env, windowsHide: true });
     let stdout = '', errors = '';

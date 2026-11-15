@@ -34,10 +34,6 @@ function formatFileSize(bytes) {
   return `${value} B`;
 }
 
-function outputParent(path) {
-  return String(path || '').replace(/[/\\][^/\\]+$/, '');
-}
-
 export function createAudioExtractController({
   overlay,
   isTauri = false,

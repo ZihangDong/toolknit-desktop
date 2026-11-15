@@ -58,15 +58,10 @@ async function saveConfig(value) {
   await writeOutputFile(MODEL_CONFIG, Buffer.from(JSON.stringify(value, null, 2)), { overwrite: true });
 }
 
-function sourceUrl(model, source) {
+export function transcriptionModelSource(model, source) {
   const selected = String(source || 'auto').trim().toLowerCase();
-  const base = selected === 'china'
-    ? 'https://hf-mirror.com/ggerganov/whisper.cpp/resolve/main'
-    : selected === 'official' || selected === 'auto'
-      ? 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main'
-      : null;
-  if (!base) throw new ToolKnitError('INVALID_ARGUMENT', '--source must be auto, official, or china.');
-  return `${base}/${model.file_name}`;
+  if (!['auto', 'official', 'china'].includes(selected)) throw new ToolKnitError('INVALID_ARGUMENT', '--source must be auto, official, or china.');
+  return `https://toolknit-downloads-u1ll6equ.cdn.7caiyun.com/models/whisper/${model.file_name}`;
 }
 
 export async function listTranscriptionModels() {
@@ -91,10 +86,9 @@ export async function installTranscriptionModel({ model_id, source = 'auto' }, o
   await assertNoLinkedParents(MODEL_ROOT);
   await mkdir(MODEL_ROOT, { recursive: true });
   const destination = modelPath(model);
-  const candidates = normalizedSource === 'auto' ? ['auto', 'china'] : [normalizedSource];
   const result = await downloadVerifiedModel({ model, destination, signal: options.signal,
     reportProgress: (value, message) => report(options, value, message),
-    sources: candidates.map(candidate => ({ name: candidate === 'auto' ? 'official' : candidate, url: sourceUrl(model, candidate) })) });
+    sources: [{ name: '7caiyun', url: transcriptionModelSource(model, normalizedSource) }] });
   const current = await config();
   if (!result.already_installed && (!current.current_model || model.id === 'small')) await saveConfig({ current_model: model.id });
   report(options, 100, `${model.display_name} model is ready.`);

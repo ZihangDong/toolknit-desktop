@@ -9,6 +9,7 @@ import { createToastManager } from '../../app/toast-manager.js';
 import { createPageTransitionRuntime } from '../../app/page-transition-runtime.js';
 import { GripVertical } from 'lucide';
 import { errorKey } from './core.js';
+import { waitForCaptureStage, prewarmCaptureSource } from './capture-source.js';
 import { captureMarkup, viewerMarkup, historyMarkup, historyMenuMarkup, feedbackMarkup } from './auxiliary-template.js';
 import '../../styles/tokens.css';
 import '../../styles/base.css';
@@ -36,7 +37,7 @@ const toast=createToastManager({getLanguage:getLang}), notify=message=>{
   else toast.show(message);
 };
 const output=createOutputRuntime({isTauri,tauriCorePromise,translate:t,notify});
-let context={},controller,bootRevision=0,disposed=false,dialogAction,dialogDismiss,dialogPath='',dialogKeepOpen=false,openingFolder=false,bootQueue=Promise.resolve();
+let context={},controller,bootRevision=0,loadingSession=null,requestedSession=null,disposed=false,dialogAction,dialogDismiss,dialogPath='',dialogKeepOpen=false,openingFolder=false,bootQueue=Promise.resolve(),captureBootAbort=null;
 root.innerHTML=role==='toast'?feedbackMarkup:role==='history-menu'?historyMenuMarkup:role==='history'?historyMarkup:role==='viewer'?viewerMarkup:captureMarkup;
 document.body.classList.add(`shot-${role}-body`);
 const dialogRoot=q('Dialog');
@@ -74,31 +75,42 @@ if(dialogRoot){
 }
 const services={root,runtime,lifecycle,tr,q,notify,refresh,showDialog,closeDialog,output,isTauri,getContext:()=>context,getCurrentWindow,createPageTransition:createPageTransitionRuntime,async save(payload,isCurrent=()=>!disposed){
   const directory=await output.getOutputDir('Screenshots');if(!isCurrent())return;
-  const path=await runtime.call('save',{...payload,directory});if(!isCurrent())return path;
+  const path=await runtime.call('save',{...payload,directory,...(role==='capture'?{finish:true}:{})});if(!isCurrent()||role==='capture')return path;
   const p=document.createElement('p');p.textContent=path;showDialog(tr('saved'),p,{folder:path});return path;
 }};
 services.feedback=async kind=>{try{await runtime.call('feedback',{kind});}catch{toast.show(tr({copied:'historyCopied',phraseAdded:'phraseAdded',orderSaved:'historyOrderSaved'}[kind]));}};
-async function bootSession(revision){
+async function bootSession(revision,signal){
   let data;
+  const started=performance.now(), timing={};
+  const mark=name=>{timing[name]=performance.now()-started;};
+  const wait=value=>role==='capture'?waitForCaptureStage(value,{signal}):value;
   try{
     if(disposed||revision!==bootRevision)return;
-    data=await runtime.call(role==='history-menu'?'menu-boot':'boot');if(disposed||revision!==bootRevision)return;
+    data=await wait(runtime.call(role==='history-menu'?'menu-boot':'boot',role==='capture'?{binary:true}:{}));if(disposed||revision!==bootRevision)return;
+    mark('boot');
+    if(role==='capture'&&Number.isSafeInteger(data.session))requestedSession=data.session;
     applyContext(data.context,role!=='history-menu');
+    if(role==='capture'&&data.prepared){await wait(import('./capture-editor.js'));await prewarmCaptureSource({signal}).catch(()=>{});if(!disposed&&revision===bootRevision){refresh();await wait(runtime.call('prepared'));}return;}
     if(role==='history-menu'&&controller){await controller.update(data);return;}
+    if(role==='capture'&&controller?.session===data.session)return;
+    if(role==='capture')loadingSession=data.session;
     if(controller)controller.dispose();
-    const module=await (role==='toast'?import('./feedback-window.js'):role==='history-menu'?import('./history-menu-window.js'):role==='history'?import('./history-window.js'):role==='viewer'?import('./viewer-window.js'):import('./capture-editor.js'));
+    const module=await wait(role==='toast'?import('./feedback-window.js'):role==='history-menu'?import('./history-menu-window.js'):role==='history'?import('./history-window.js'):role==='viewer'?import('./viewer-window.js'):import('./capture-editor.js'));
     if(disposed||revision!==bootRevision)return;
-    const next=await module.createController(services,data);
+    mark('module');
+    const next=await module.createController({...services,mark,signal,isCurrent:()=>!disposed&&revision===bootRevision},data);
     if(disposed||revision!==bootRevision){next.dispose();return;}
-    controller=next;refresh();
-    if(role==='capture')await runtime.call('ready',{session:data.session});
-  }catch(e){if(!disposed&&revision===bootRevision){controller?.dispose();controller=null;q('Desktop')?.removeAttribute('src');notify(tr(errorKey(e)));if(role==='capture'&&isTauri&&data?.session)void runtime.call('cancel',{session:data.session}).catch(()=>{});}}
+    controller=next;if(role==='capture')next.session=data.session;refresh();
+    mark('editor');
+    if(role==='capture'){mark('ready');await wait(runtime.call('ready',{session:data.session,timing}));if(!disposed&&revision===bootRevision)next.afterReady?.();}
+  }catch(e){if(!disposed&&revision===bootRevision){controller?.dispose();controller=null;q('Desktop')?.removeAttribute('src');notify(tr(errorKey(e)));const session=data?.session??requestedSession;if(role==='capture'&&isTauri&&Number.isSafeInteger(session))void runtime.call('cancel',{session}).catch(()=>{});}}
+  finally{if(revision===bootRevision)loadingSession=null;}
 }
-function boot(){const revision=++bootRevision;bootQueue=bootQueue.then(()=>bootSession(revision));return bootQueue;}
+function boot(session){if(role==='capture'&&Number.isSafeInteger(session)&&(session===loadingSession||session===controller?.session))return bootQueue;const revision=++bootRevision;if(role==='capture'){requestedSession=Number.isSafeInteger(session)?session:null;captureBootAbort?.abort();captureBootAbort=new AbortController();}const signal=captureBootAbort?.signal;bootQueue=bootQueue.catch(()=>{}).then(()=>bootSession(revision,signal));return bootQueue;}
 async function bind(){
   const handlers=role==='toast'?[]:[['screenshot-context-changed',async()=>{try{const data=await runtime.call('metadata');if(!disposed)applyContext(data.context);}catch{/* window is closing */}}]];
   if(role==='capture'){
-    handlers.unshift(['screenshot-opened',boot],['screenshot-ended',()=>{bootRevision++;controller?.dispose();controller=null;closeDialog();}]);
+    handlers.unshift(['screenshot-opened',boot],['screenshot-ended',session=>{if(Number.isSafeInteger(session)&&session!==(requestedSession??loadingSession??controller?.session))return;bootRevision++;captureBootAbort?.abort();loadingSession=requestedSession=null;controller?.dispose();controller=null;q('Desktop')?.removeAttribute('src');closeDialog();}]);
   }
   if(role==='history-menu')handlers.unshift(['screenshot-menu-opened',boot]);
   for(const [name,handler]of handlers){
@@ -106,5 +118,5 @@ async function bind(){
   }
   await boot();
 }
-lifecycle.event(window,'pagehide',()=>{disposed=true;bootRevision++;controller?.dispose();modal.dispose();toast.dispose?.();lifecycle.dispose();});
+lifecycle.event(window,'pagehide',()=>{disposed=true;bootRevision++;captureBootAbort?.abort();controller?.dispose();modal.dispose();toast.dispose?.();lifecycle.dispose();});
 void bind().catch(()=>notify(tr('failed')));

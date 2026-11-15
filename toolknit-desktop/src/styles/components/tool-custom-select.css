@@ -114,6 +114,11 @@
 .tool-custom-select-menu[hidden] {
   display: none !important;
 }
+.tool-custom-select-menu [hidden] { display: none; }
+.tool-custom-select-menu.is-searchable { display: flex; flex-direction: column; overflow: hidden; }
+.tool-custom-select-search { box-sizing: border-box; width: 100%; min-width: 0; flex: 0 0 36px; border: 0; padding: 7px 10px; background: transparent; color: inherit; font: inherit; }
+.tool-custom-select-options { min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.tool-custom-select-empty { margin: 8px 10px; font-size: 12px; color: inherit; }
 
 .tool-custom-select-menu button {
   width: 100%;
@@ -133,6 +138,7 @@
 
 .tool-custom-select-menu button:hover,
 .tool-custom-select-menu button:focus-visible,
+.tool-custom-select-menu button.is-active,
 .tool-custom-select-menu button.is-selected {
   color: #111111;
   background: #e9eaec;

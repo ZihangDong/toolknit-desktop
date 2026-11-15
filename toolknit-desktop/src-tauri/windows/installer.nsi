@@ -450,6 +450,8 @@ LangString upgradeUninstallReboot ${LANG_ENGLISH} "Removing the previous version
 LangString upgradeUninstallReboot ${LANG_SIMPCHINESE} "旧版本卸载需要重启 Windows。本次安装已停止，避免重启时误删新版文件。请保存工作、自行重启电脑后，再运行本安装包。"
 LangString appFileReleaseFailed ${LANG_ENGLISH} "Application files are still in use or access was denied (Windows code $ToolKnitFileError).$\n$ToolKnitFileToCheck$\nExit ToolKnit from the system tray and check permissions, then Retry. Cancel stops this operation."
 LangString appFileReleaseFailed ${LANG_SIMPCHINESE} "程序文件仍被占用或没有访问权限（Windows 代码 $ToolKnitFileError）。$\n$ToolKnitFileToCheck$\n请从系统托盘退出 ToolKnit 并检查权限后重试；取消将停止操作。"
+LangString fileSearchCleanupFailed ${LANG_ENGLISH} "ToolKnit could not remove its file-search accelerator. Accept the Windows administrator prompt and retry, or cancel to keep the installation."
+LangString fileSearchCleanupFailed ${LANG_SIMPCHINESE} "无法移除 ToolKnit 文件搜索加速服务。请允许 Windows 管理员确认后重试，或取消以保留安装。"
 
 Function .onInit
   ; NSIS has already parsed /D= here; MultiUser initialization otherwise overwrites it.
@@ -847,6 +849,10 @@ FunctionEnd
 
 Section Uninstall
   !insertmacro CheckIfAppIsRunning "${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
+
+  !ifmacrodef TOOLKNIT_SEARCH_PREUNINSTALL
+    !insertmacro TOOLKNIT_SEARCH_PREUNINSTALL
+  !endif
 
   uninstall_wait_for_files:
     StrCpy $ToolKnitFileToCheck "$INSTDIR\${MAINBINARYNAME}.exe"

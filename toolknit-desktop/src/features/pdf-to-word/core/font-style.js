@@ -1,6 +1,8 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
+import { sourceFirstLevelIndexRegion } from './source-first-level-index.js';
+import { nativeUnicodeScalarMetric } from './native-unicode-scalars.js';
 const family = value => typeof value === 'string' && value.length <= 160 ? value.replace(/^[A-Z]{6}\+/, '') : '';
 const texFamilies = /^(CMR|CMB|CMBX|CMMI|CMMIB|CMTI|CMBXTI|CMSY|CMBSY|MSBM|CMEX)([1-9]\d?)$/;
 
@@ -34,6 +36,29 @@ const scriptCapitals = [0x1d49c, 0x212c, 0x1d49e, 0x1d49f, 0x2130, 0x2131, 0x1d4
 const doubleCapitals = [0x1d538, 0x1d539, 0x2102, 0x1d53b, 0x1d53c, 0x1d53d, 0x1d53e, 0x210d, 0x1d540,
   0x1d541, 0x1d542, 0x1d543, 0x1d544, 0x2115, 0x1d546, 0x2119, 0x211a, 0x211d, 0x1d54a, 0x1d54b,
   0x1d54c, 0x1d54d, 0x1d54e, 0x1d54f, 0x1d550, 0x2124];
+
+/** Classification only: retain the original Unicode spelling and style in
+ * sources, ASTs and output. Broad NFKC would also change unrelated text.
+ */
+export function mathClassificationText(text) {
+  if (typeof text !== 'string' || text.length > 8192) return '';
+  return text.replace(/[\u{1d400}-\u{1d7ff}ℬℰℱℋℐℒℳℛℜℑℎℓℝℤℂℍℕℙℚ]/gu,
+    character => /^[\p{L}\p{N}]$/u.test(character) ? character.normalize('NFKC') : character);
+}
+
+/** Explicit OMML style protects mathematical italic Latin from readers that
+ * fold its Unicode spelling during save. Other Unicode alphabets still need
+ * separate reader evidence; this never normalizes or rewrites source text.
+ */
+export function mathUnicodeRunStyle(text, { sourceProvenItalicGamma = false, sourceProvenUnicodeScalar = false, sourceIndexRegion = null } = {}) {
+  if(typeof text!=='string'||!text||text.length>4096)return null;
+  const letters=[...text], indexSource=sourceFirstLevelIndexRegion(sourceIndexRegion);
+  const indexText=indexSource && letters.length===1 && [indexSource.base,indexSource.index].some(g=>g.text===text);
+  return letters.every(c=>/^\p{L}$/u.test(c)&&(c==='ℎ'
+    ||c.codePointAt(0)>=0x1d434&&c.codePointAt(0)<=0x1d467
+    ||sourceProvenItalicGamma&&c.codePointAt(0)===0x1d6fe
+    ||(sourceProvenUnicodeScalar&&letters.length===1||indexText)&&Boolean(nativeUnicodeScalarMetric(c))))?'italic':null;
+}
 
 /** The Unicode glyph used for measuring OMML's source-bound script alphabet. */
 export function mathDisplayText(text, alphabet, bold = false) {

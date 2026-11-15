@@ -1,11 +1,14 @@
 pub mod paths;
 pub(crate) mod dependency_download;
+pub(crate) mod onnx_runtime;
 pub(crate) mod runtime_discovery;
 pub(crate) mod protected_data;
 #[cfg(feature = "qa-devtools")]
 pub mod qa_devtools;
 pub mod security;
 pub(crate) mod window_visibility;
+pub(crate) mod file_location;
+pub(crate) mod auxiliary_windows;
 #[cfg(any(target_os = "windows", test))]
 pub(crate) mod window_shadow;
 #[cfg(target_os = "windows")]

@@ -2,6 +2,7 @@ import { IMAGE_BATCH_LIMITS } from '../../image-batch-core.js';
 import { PDF_EDITOR_LIMITS } from '../../core/limits/pdf.js';
 import { fitInitialPdfPlacement } from './placement.js';
 import { insertedTextLayout } from '../../core/pdf-inserted-text.js';
+import { moveFocusOutOfHiddenRegion } from '../../shared/tool-page-shell.js';
 import {
   assertImagePixelLimit,
   readEncodedImageDimensions,
@@ -245,6 +246,7 @@ export function createPdfEditorContentEditing({
 
   function closeEditModal() {
     if (!editModal) return;
+    moveFocusOutOfHiddenRegion(editModal);
     editModal.classList.remove('visible');
     editModal.inert = true;
     editModal.setAttribute('aria-hidden', 'true');

@@ -138,7 +138,7 @@ export function createPdfEditorFileSession({
       documentCommitted = true;
       stagedDocument = null;
       const firstPageId = stagedPages[0]?.id || null;
-      setSelectedIds(firstPageId ? new Set([firstPageId]) : new Set());
+      setSelectedIds(new Set(stagedPages.map(page => page.id)));
       setCurrentId(firstPageId);
       setSelectionAnchorId(firstPageId);
       setLocalizedProgress(90, 'preparingPages');
@@ -152,6 +152,7 @@ export function createPdfEditorFileSession({
       setBaselineSnapshot(cloneState(firstSnapshot));
       setSavedSnapshot(blank ? null : cloneState(firstSnapshot));
       setLocalizedProgress(100, 'loadingDocument');
+      return true;
     } catch (error) {
       const cancelled = operation?.cancelled || error instanceof PdfEditorCancelledError;
       if (stagedDocument) {
@@ -164,6 +165,7 @@ export function createPdfEditorFileSession({
           cancelled ? 4500 : 9000
         );
       }
+      return false;
     } finally {
       if (operation) delete operation.loadingTask;
       endOperation(operation);

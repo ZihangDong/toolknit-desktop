@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { contains, intersect, union, right, bottom, median } from './geometry.js';
 import { buildParagraphs, groupLines, isOption } from './text.js';
 
@@ -76,11 +76,14 @@ export function ruledTableGrids(rules) {
 }
 
 export function ruledTables(lines, rules, grids = ruledTableGrids(rules)) {
-  const tables = [];
+  const tables = [], owned = new Set();
   const items = lines.flatMap(line => line.items);
   for (const grid of grids) {
+    // Competing grids must never own the same source or overlapping raster
+    // footprint: a later fit fallback would otherwise redraw another table's text.
+    if (tables.some(table => { const overlap = intersect(grid.rect, table.rect); return overlap && overlap.width > 1 && overlap.height > 1; })) continue;
     // Borders separate cells even when their text has less than a word gap.
-    const candidates = items.filter(item => contains(grid.rect, item.rect, 1));
+    const candidates = items.filter(item => contains(grid.rect, item.rect, 1) && !item.sourceIds.some(id => owned.has(id)));
     if (!candidates.length) continue;
     const cells = grid.cells.map(cell => {
       const members = candidates.filter(item => contains(cell.rect, item.rect, 1));
@@ -89,6 +92,7 @@ export function ruledTables(lines, rules, grids = ruledTableGrids(rules)) {
     const sourceIds = cells.flatMap(cell => cell.sourceIds);
     if (new Set(sourceIds).size !== sourceIds.length || sourceIds.length !== candidates.flatMap(item => item.sourceIds).length) continue;
     tables.push({ ...grid, id: candidates[0].id + ':table', type: 'table', cells, sourceIds });
+    sourceIds.forEach(id => owned.add(id));
   }
   return tables;
 }

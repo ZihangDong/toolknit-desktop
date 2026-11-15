@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import fontkit from '@pdf-lib/fontkit';
 import { LIMITS, wordError } from './input.js';
 import { normalizeTexSymbol, texSymbolCandidate } from './tex-symbol.js';
-import { glyphInkBounds } from './font-outline.js';
+import { glyphInkBounds, glyphStrokeBounds } from './font-outline.js';
 import { identifyTexRadicalPart, texRadicalPartCandidate } from './tex-radical.js';
 import { identifyTexDelimiter, texDelimiterCandidate } from './tex-delimiter.js';
 
@@ -21,9 +21,9 @@ export function createGlyphMetrics(fonts) {
     }
     return parsed.get(id);
   };
-  const measure = (id, glyph, { fillOnly = false } = {}) => {
+  const measure = (id, glyph, { fillOnly = false, stroke = null } = {}) => {
     if (!glyph?.fontChar || glyph.accent || fonts[id]?.type3 || fonts[id]?.vertical || fonts[id]?.missingFile) return null;
-    const key = `${id}:${glyph.fontChar}:${fillOnly ? 'fill' : 'stroke'}`;
+    const key = `${id}:${glyph.fontChar}:${fillOnly ? 'fill' : 'stroke'}:${stroke ? JSON.stringify(stroke) : ''}`;
     if (cache.has(key)) return cache.get(key);
     let result = null;
     try {
@@ -31,7 +31,9 @@ export function createGlyphMetrics(fonts) {
       if (face && face.unitsPerEm > 0 && [...glyph.fontChar].length === 1) {
         const outline = face.glyphForCodePoint(glyph.fontChar.codePointAt(0));
         if (outline.id !== 0) {
-          const box = glyphInkBounds(outline, fillOnly), unit = face.unitsPerEm;
+          const unit = face.unitsPerEm;
+          const box = stroke ? glyphStrokeBounds(outline, { ...stroke, width: stroke.width * unit }) : glyphInkBounds(outline, fillOnly);
+          if (!box) return null;
           const values = [box.minX / unit, box.minY / unit, box.maxX / unit, box.maxY / unit];
           if (values.every(Number.isFinite) && values.every(value => Math.abs(value) <= 8)
             && values[2] > values[0] && values[3] > values[1]) result = values;

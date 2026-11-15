@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 import { independentTextGroups } from './text-paint-groups.js';
 import { LIMITS } from './input.js';
 
@@ -30,15 +30,38 @@ export function matchRenderedTextOperations(source, display, names) {
       if (!renderedGroup || renderedGroup.some(index => !mapped.has(index))) return null;
     }
   }
-  return { mapping, groupByIndex };
+  const relativeSourceGroups = new Map(), relativeDisplayGroups = new Map();
+  independentTextGroups(rendered, { relativeMoves: true }).forEach(group => group.forEach(index => relativeDisplayGroups.set(index, group)));
+  for (const group of independentTextGroups(source, { relativeMoves: true })) {
+    const mapped = new Set(group.map(index => mapping.get(index)));
+    // A display optimizer may join source reset groups. A finer source group
+    // is usable only if complete display groups prove the same boundary.
+    if (mapped.has(undefined) || [...mapped].some(index => !relativeDisplayGroups.has(index)
+      || relativeDisplayGroups.get(index).some(peer => !mapped.has(peer)))) continue;
+    group.forEach(index => relativeSourceGroups.set(index, group));
+  }
+  return { mapping, groupByIndex, relativeSourceGroups, relativeDisplayGroups };
 }
 
-export function mappedTextSelection(binding, indexes) {
+export function mappedTextSelection(binding, indexes, relativeIndexes = []) {
   if (!binding) return null;
+  if (!Array.isArray(indexes) || !Array.isArray(relativeIndexes) || indexes.length > LIMITS.operationsPerPage
+    || relativeIndexes.length > indexes.length || new Set(relativeIndexes).size !== relativeIndexes.length) return null;
   const selected = new Set(indexes.map(index => binding.mapping.get(index)));
   if (selected.has(undefined) || selected.size !== indexes.length) return null;
+  const sourceSelection = new Set(indexes), relative = new Set(relativeIndexes.map(index => binding.mapping.get(index)));
+  if (relative.has(undefined) || relativeIndexes.some(index => !sourceSelection.has(index)
+    || !binding.relativeSourceGroups?.has(index)
+    || binding.relativeSourceGroups.get(index).some(peer => !sourceSelection.has(peer)
+      || !relative.has(binding.mapping.get(peer))))) return null;
   for (const group of new Set([...selected].map(index => binding.groupByIndex.get(index)))) {
-    if (!group || group.some(index => !selected.has(index))) return null;
+    if (!group) return null;
+    if (group.some(index => !selected.has(index))) {
+      for (const index of group.filter(index => selected.has(index))) {
+        const finer = binding.relativeDisplayGroups?.get(index);
+        if (!relative.has(index) || !finer || finer.some(peer => !selected.has(peer) || !relative.has(peer))) return null;
+      }
+    }
   }
   return selected;
 }

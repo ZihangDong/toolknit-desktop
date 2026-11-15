@@ -57,7 +57,7 @@ try {
     window.fixture = { calls: [], requests: [], notes: [], aiMode: 'good', scanMode: 'good', setLang };
     const fixture = window.fixture;
     fixture.candidates = [
-      { id: 'a', name: 'review-video.mp4', path: 'C:\\Users\\sample\\Downloads\\review-video.mp4', folder_hint: 'Users/[user]/Downloads', category: 'video', risk: 'low' },
+      { id: 'a', name: 'review-video.mp4', path: 'C:\\Users\\sample\\Downloads\\合同, 样本 (1)\\review-video.mp4', folder_hint: 'Users/[user]/Downloads', category: 'video', risk: 'low' },
       { id: 'b', name: 'project-backup.zip', path: 'C:\\Users\\sample\\Projects\\project-backup.zip', folder_hint: 'Users/[user]/Projects', category: 'archives', risk: 'high' },
       { id: 'c', name: 'training-model.bin', path: 'C:\\Models\\training-model.bin', folder_hint: 'Models', category: 'models', risk: 'medium' }
     ].map(item => ({ ...item, size_bytes: 123456789, modified_at: 1700000000000, local_reason: 'review' }));
@@ -110,6 +110,16 @@ try {
   await scanRoot();
   assert.equal(await page.locator('#largeFileCleanupTableBody input:checked').count(), 0);
   assert.equal(await page.locator('#largeFileCleanupTableBody input').count(), 3);
+  const candidatePath = await page.evaluate(() => fixture.candidates[0].path);
+  await page.locator('.cleanup-large-files-open-file').first().click();
+  await page.waitForFunction(() => fixture.calls.some(call => call.command === 'open_path'));
+  assert.equal(await page.evaluate(() => fixture.calls.filter(call => call.command === 'open_path').at(-1).args.path), candidatePath);
+  await page.locator('.cleanup-large-files-open-file').first().click({ button: 'right' });
+  await page.locator('.cleanup-large-files-context-menu.visible [data-action="open-folder"]').click();
+  await page.waitForFunction(() => fixture.calls.filter(call => call.command === 'open_path').length === 2);
+  assert.equal(await page.evaluate(() => fixture.calls.filter(call => call.command === 'open_path').at(-1).args.path), candidatePath,
+    'the context menu keeps spaces, Unicode and commas in the original file path');
+  assert.equal(await page.locator('.cleanup-large-files-context-menu.visible').count(), 0);
   await page.evaluate(() => { fixture.aiMode = 'partial'; });
   await page.locator('#largeFileCleanupAiBtn').click();
   await idle();

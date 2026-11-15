@@ -1,3 +1,4 @@
+import { writeUniqueBinaryFile } from '../../platform/binary-output.js';
 import JSZip from 'jszip';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import {
@@ -29,10 +30,10 @@ export function createPdfCropExporter({ isTauri, getOutputDir, getInvoke }) {
   async function writeOutput(bytes, directory, fileName, mimeType) {
     if (isTauri) {
       const invoke = await getInvoke();
-      return invoke('write_unique_file_bytes', {
+      return writeUniqueBinaryFile(invoke, {
         directory,
         fileName,
-        bytes: Array.from(bytes)
+        bytes
       });
     }
     downloadBlob(new Blob([bytes], { type: mimeType }), fileName);

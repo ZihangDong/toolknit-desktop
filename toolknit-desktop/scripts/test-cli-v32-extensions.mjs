@@ -86,6 +86,25 @@ try {
     assert.ok(Object.keys(zip.files).some(name => name.startsWith('word/media/')), 'Rotated text retains its visible image fallback');
     assert.ok(zip.file('[Content_Types].xml'));
   }
+  const formPdf = await PDFDocument.create(), formFont = await formPdf.embedFont(StandardFonts.HelveticaBold);
+  const formPage = formPdf.addPage([340, 300]);
+  for (const [row, label] of ['NAME', 'PHONE', 'EMAIL'].entries()) {
+    formPage.drawText(label, { x: 64 - formFont.widthOfTextAtSize(label, 8), y: 246 - row * 22, font: formFont, size: 8 });
+  }
+  for (const x of [70, 270]) formPage.drawLine({ start: { x, y: 194 }, end: { x, y: 260 }, thickness: .5 });
+  for (const y of [194, 216, 238, 260]) formPage.drawLine({ start: { x: 70, y }, end: { x: 270, y }, thickness: .5 });
+  await writeFile(output('blank-form.pdf'), await formPdf.save());
+  for (const layout of ['original', 'a4']) {
+    await call('pdf_to_word', { input_path: output('blank-form.pdf'), output_path: output(`form-${layout}.docx`), layout });
+    const zip = await JSZip.loadAsync(await readFile(output(`form-${layout}.docx`)));
+    const xml = await zip.file('word/document.xml').async('string');
+    assert.equal((xml.match(/<w:tbl>/gu) || []).length, layout === 'original' ? 1 : 0,
+      `${layout}: original-layout CLI restores real blank cells, A4 retains its existing flow ownership`);
+    if (layout === 'original') {
+      assert.equal((xml.match(/<w:tc>/gu) || []).length, 3);
+      assert(xml.includes('behindDoc="1"'));
+    }
+  }
   await denied(call('pdf_to_word', { input_path: source, output_path: output('original.docx') }), 'OUTPUT_EXISTS');
   await denied(call('pdf_crop', { input_path: source, output_path: source, overwrite: true, rect: { x: 0, y: 0, width: .5, height: 1 } }), 'OUTPUT_INVALID');
   const controller = new AbortController();

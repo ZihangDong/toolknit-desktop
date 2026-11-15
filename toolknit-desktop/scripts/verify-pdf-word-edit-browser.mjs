@@ -45,9 +45,13 @@ try {
   await page.waitForSelector('#pdfWordOverlay.visible');
   await page.waitForFunction(() => !document.querySelector('[data-tk-page-transition-veil]') || getComputedStyle(document.querySelector('[data-tk-page-transition-veil]')).visibility === 'hidden');
   await page.locator('#pdfWordFileInput').setInputFiles({ name: 'sample.pdf', mimeType: 'application/pdf', buffer: bytes });
-  await page.waitForFunction(() => !document.querySelector('#pdfWordExport').disabled);
-  await page.locator('#pdfWordPageInput').fill(String(pageNumber)); await page.locator('#pdfWordPageInput').press('Enter'); await page.locator('#pdfWordStructure').click();
-  await page.waitForFunction(() => window.__initialWordDocument && !document.querySelector('#pdfWordPick').disabled, null, { timeout: 120000 });
+  if (await page.locator('#pdfWordPagesOverlay.visible').count()) await page.locator('#pdfWordAllPages').click();
+  else await Promise.race([page.waitForSelector('#pdfWordPagesOverlay.visible').then(() => page.locator('#pdfWordAllPages').click()), page.waitForSelector('#pdfWordSuccessOverlay.visible')]);
+  await page.waitForSelector('#pdfWordSuccessOverlay.visible', { timeout: 180000 });
+  await page.locator('#pdfWordEditDocument').click();
+  await page.waitForSelector('#wordDocumentOverlay.visible');
+  await page.locator('#wordDocumentOverlay .pdf-editor-tile').nth(pageNumber - 1).click();
+  await page.waitForFunction(() => document.querySelector('#wordDocumentRegions')?.children.length > 0);
   const targetKey = await page.evaluate(({ pageNumber, match }) => {
     const flatten = blocks => blocks.flatMap(block => block.columns ? block.columns.flatMap(column => flatten(column.blocks)) : block.cells ? block.cells.flatMap(cell => flatten(cell.blocks)) : [block]);
     const source = window.__initialWordDocument.pages.find(page => page.number === pageNumber);
@@ -75,27 +79,26 @@ try {
     }, targetKey);
     assert(probe, 'the table background remains selectable in blank space');
     await page.mouse.move(probe.background.x, probe.background.y); await page.mouse.click(probe.background.x, probe.background.y);
-    assert(await page.locator('#pdfWordReplace').isVisible());
+    assert(await page.locator('#wordDocumentReplace').isVisible());
     await page.mouse.move(probe.text.x, probe.text.y, { steps: 5 });
     assert.equal(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.dataset.key, probe.text), targetKey,
       'hovering/selected table background must not intercept its editable text');
   }
   await page.locator('.pdf-word-region[data-key="' + targetKey + '"]').click();
-  const originalCanvas = await page.locator('#pdfWordCanvas').evaluate(canvas => canvas.toDataURL());
-  await page.locator('#pdfWordEdit').click();
-  assert.equal(await page.locator('#pdfWordFontSize').count(), 0);
-  const beforeText = await page.locator('#pdfWordEditText').inputValue();
+  const originalCanvas = await page.locator('#wordDocumentOverlay [data-wb-canvas]').evaluate(canvas => canvas.toDataURL());
+  await page.locator('#wordDocumentEdit').click();
+  assert.equal(await page.locator('#wordDocumentFontSize').count(), 0);
+  const beforeText = await page.locator('#wordDocumentEditText').inputValue();
   const replacement = beforeText + '123';
-  await page.locator('#pdfWordEditText').fill(replacement);
+  await page.locator('#wordDocumentEditText').fill(replacement);
   await page.screenshot({ path: path.join(output, 'edit-dialog.png') });
-  await page.locator('#pdfWordEditForm button[type="submit"]').click();
-  await page.waitForFunction(() => !document.querySelector('#pdfWordEditOverlay').classList.contains('visible') || document.querySelector('#pdfWordEditError').textContent);
-  assert.equal(await page.locator('#pdfWordEditError').innerText(), '');
-  await page.waitForFunction(() => document.querySelector('#pdfWordPreviewLabel').textContent === '内容编辑预览');
-  await page.waitForFunction(previous => document.querySelector('#pdfWordCanvas').toDataURL() !== previous, originalCanvas);
+  await page.locator('#wordDocumentEditForm button[type="submit"]').click();
+  await page.waitForFunction(() => !document.querySelector('#wordDocumentEditOverlay').classList.contains('visible') || document.querySelector('#wordDocumentEditError').textContent);
+  assert.equal(await page.locator('#wordDocumentEditError').innerText(), '');
+  await page.waitForFunction(previous => document.querySelector('#wordDocumentOverlay [data-wb-canvas]').toDataURL() !== previous, originalCanvas);
   await page.screenshot({ path: path.join(output, 'edited-page.png') });
   const download = page.waitForEvent('download', { timeout: 120000 });
-  await page.locator('#pdfWordExport').click(); await (await download).saveAs(path.join(output, 'edited.docx'));
+  await page.locator('#wordDocumentExport').click(); await (await download).saveAs(path.join(output, 'edited.docx'));
   const zip = await JSZip.loadAsync(await readFile(path.join(output, 'edited.docx')));
   const xml = await zip.file('word/document.xml').async('string');
   const nodes = (node, name) => [...(node.name === name ? [node] : []), ...(node.elements || []).flatMap(child => nodes(child, name))];

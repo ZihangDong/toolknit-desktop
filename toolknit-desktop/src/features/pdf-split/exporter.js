@@ -1,3 +1,4 @@
+import { writeUniqueBinaryFile } from '../../platform/binary-output.js';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { createPdfSplitExportJob } from './export-runtime.js';
 import { createModalSession, setModalInteractivity } from '../../app/modal-runtime.js';
@@ -63,10 +64,10 @@ export function createPdfSplitExporter({
     assertCurrent(owner, id);
     if (isTauri) {
       const { invoke } = await tauriCorePromise;
-      const outputPath = await invoke('write_unique_file_bytes', {
+      const outputPath = await writeUniqueBinaryFile(invoke, {
         directory,
         fileName,
-        bytes: Array.from(bytes)
+        bytes
       });
       assertCurrent(owner, id);
       return outputPath;

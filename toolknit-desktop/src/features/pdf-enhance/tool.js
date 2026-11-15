@@ -25,10 +25,6 @@ function sourceName(file) {
   return String(file?.name || file?.fileName || file?.path?.split(/[\\/]/).pop() || 'document.pdf');
 }
 
-function outputFolder(path) {
-  return String(path || '').replace(/[/\\][^/\\]+$/, '').replace(/\//g, '\\');
-}
-
 function errorMessage(error) {
   const messageKey = {
     'single-file-required': 'errorSingleFile',

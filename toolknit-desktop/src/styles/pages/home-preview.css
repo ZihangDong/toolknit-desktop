@@ -192,8 +192,10 @@
 }
 
 .hero-support-note {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   max-width: 560px;
   margin: 22px 0 0;
   color: rgba(245, 245, 243, 0.76);
@@ -208,9 +210,14 @@
 }
 
 .home-provider-links { display: flex; flex-wrap: wrap; gap: 18px; }
-.home-provider-links a { text-underline-offset: 4px; }
+.home-provider-links a,
+.home-provider-niuniu { display: inline-block; max-width: 100%; text-underline-offset: 4px; }
+.home-provider-links a:focus-visible,
+.home-provider-niuniu:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 2px; }
+.home-provider-niuniu { color: #f7c76d; }
 .home-provider-malian { color: #ef9a42; }
 .home-provider-doufu { color: #71baff; }
+html[data-theme="light"] .home-provider-niuniu { color: #964b05; }
 html[data-theme="light"] .home-provider-malian { color: #a84c00; }
 html[data-theme="light"] .home-provider-doufu { color: #005ec4; }
 

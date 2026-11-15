@@ -328,6 +328,11 @@
   background: rgba(255, 255, 255, 0.055);
 }
 
+#pdfEditorOverlay .pdf-editor-tile.is-current {
+  outline: 2px solid var(--ink);
+  outline-offset: -3px;
+}
+
 .pdf-editor-tile.is-dragging {
   opacity: 0.6;
   cursor: grabbing;

@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: LicenseRef-ToolKnit-PDF-Word-Source-View-1.0
+// SPDX-License-Identifier: MIT
 // Copyright 2026 Zihang Dong.
-// Source viewing only; other commercial/noncommercial use requires written authorization: info@toolknit.com
+// Licensed under the MIT License; see LICENSE and NOTICE.
 const graphicState = new Set(['dependency', 'transform', 'clip', 'eoClip', 'constructPath', 'setFillRGBColor', 'setStrokeRGBColor',
   'setFillColorN', 'setStrokeColorN', 'setLineWidth', 'setLineCap', 'setLineJoin', 'setMiterLimit', 'setDash',
   'setRenderingIntent', 'setFlatness', 'shadingFill', 'paintImageXObject', 'paintInlineImageXObject',

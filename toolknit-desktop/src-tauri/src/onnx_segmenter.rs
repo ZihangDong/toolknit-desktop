@@ -204,59 +204,6 @@ fn installed_matting_model_file(spec: &MattingModelSpec) -> Result<Option<PathBu
     }
 }
 
-fn get_onnxruntime_dll_path() -> Result<PathBuf, String> {
-    let exe = std::env::current_exe().map_err(|error| error.to_string())?;
-    let exe_dir = exe.parent().ok_or("Cannot find executable directory")?;
-    let bundled = exe_dir
-        .join("resources")
-        .join("onnxruntime")
-        .join("onnxruntime.dll");
-    if bundled.is_file() {
-        return Ok(bundled);
-    }
-    let development = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("resources")
-        .join("onnxruntime")
-        .join("onnxruntime.dll");
-    if development.is_file() {
-        return Ok(development);
-    }
-    Err("matting:onnxruntime-dll-missing".to_string())
-}
-
-#[cfg(target_os = "windows")]
-fn preload_onnx_libraries(dll: &Path) -> Result<(), String> {
-    use libloading::os::windows::{
-        Library, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR,
-    };
-
-    let flags = LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
-    let runtime = unsafe { Library::load_with_flags(dll, flags) }
-        .map_err(|error| format!("matting:onnxruntime-load-failed:{error}"))?;
-    let direct_ml = dll.parent().map(|directory| directory.join("DirectML.dll"));
-
-    // Keep the handles alive for the process. ORT and DirectML resolve their
-    // imports by module name after initialization, so an immediately dropped
-    // preload does not make the dependency available reliably.
-    static LIBRARIES: OnceLock<Mutex<Vec<libloading::Library>>> = OnceLock::new();
-    let libraries = LIBRARIES.get_or_init(|| Mutex::new(Vec::new()));
-    let mut loaded = libraries
-        .lock()
-        .map_err(|_| "matting:onnxruntime-loader-busy".to_string())?;
-    loaded.push(runtime.into());
-    if let Some(direct_ml) = direct_ml.filter(|path| path.is_file()) {
-        if let Ok(library) = unsafe { Library::load_with_flags(&direct_ml, flags) } {
-            loaded.push(library.into());
-        }
-    }
-    Ok(())
-}
-
-#[cfg(not(target_os = "windows"))]
-fn preload_onnx_libraries(_dll: &Path) -> Result<(), String> {
-    Ok(())
-}
-
 fn matting_runtime() -> &'static Mutex<MattingRuntime> {
     static RUNTIME: OnceLock<Mutex<MattingRuntime>> = OnceLock::new();
     RUNTIME.get_or_init(|| Mutex::new(MattingRuntime::default()))
@@ -273,18 +220,7 @@ fn lock_matting_runtime(runtime: &Mutex<MattingRuntime>) -> MutexGuard<'_, Matti
 }
 
 fn ort_dylib_ready() -> Result<(), String> {
-    static PREPARED: OnceLock<Mutex<bool>> = OnceLock::new();
-    let mut prepared = PREPARED
-        .get_or_init(|| Mutex::new(false))
-        .lock()
-        .map_err(|_| "matting:onnxruntime-loader-busy".to_string())?;
-    if !*prepared {
-        let dll = get_onnxruntime_dll_path()?;
-        preload_onnx_libraries(&dll)?;
-        std::env::set_var("ORT_DYLIB_PATH", &dll);
-        *prepared = true;
-    }
-    Ok(())
+    crate::platform::onnx_runtime::prepare().map_err(|error| format!("matting:{error}"))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -787,7 +723,9 @@ pub async fn download_matting_model(
 
     let partial = target.with_extension("onnx.part");
     let client = reqwest::Client::builder()
-        .user_agent("ToolKnit/3.2.0 matting-model-manager")
+        .user_agent("ToolKnit/3.3.0 matting-model-manager")
+        .https_only(true)
+        .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(std::time::Duration::from_secs(12))
         .build()
         .map_err(|error| format!("matting:download-init-failed:{error}"))?;
@@ -796,10 +734,7 @@ pub async fn download_matting_model(
         .trim()
         .to_ascii_lowercase();
     let candidates: Vec<&str> = match requested.as_str() {
-        "china" => vec!["china"],
-        "official" => vec!["official"],
-        "auto" | "auto-china" => vec!["china", "official"],
-        "auto-official" => vec!["official", "china"],
+        "china" | "official" | "auto" | "auto-china" | "auto-official" | "7caiyun" => vec!["7caiyun"],
         _ => return Err("matting:unknown-source".into()),
     };
     let mut last_error = String::from("matting:download-failed");
@@ -946,8 +881,7 @@ pub async fn download_matting_model(
 fn matting_model_source(source: Option<&str>) -> Result<String, String> {
     let source = source.unwrap_or("auto").trim().to_ascii_lowercase();
     let url = match source.as_str() {
-        "official" | "auto" => "https://huggingface.co/Xenova/modnet/resolve/main/onnx/model.onnx",
-        "china" => "https://hf-mirror.com/Xenova/modnet/resolve/main/onnx/model.onnx",
+        "official" | "china" | "auto" | "auto-china" | "auto-official" | "7caiyun" => dependency_download::MATTING_URL,
         _ => return Err("matting:unknown-source".to_string()),
     };
     Ok(url.to_string())
@@ -1230,6 +1164,14 @@ pub async fn export_segmented_image(
 #[cfg(test)]
 mod matting_tests {
     use super::*;
+
+    #[test]
+    fn legacy_matting_sources_use_only_7caiyun() {
+        for source in ["auto", "auto-china", "auto-official", "official", "china", "7caiyun"] {
+            assert_eq!(matting_model_source(Some(source)).unwrap(), dependency_download::MATTING_URL);
+        }
+        assert!(matting_model_source(Some("https://example.invalid")).is_err());
+    }
 
     #[test]
     fn gpu_success_does_not_run_cpu() {

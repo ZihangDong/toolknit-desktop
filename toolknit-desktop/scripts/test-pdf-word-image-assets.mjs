@@ -31,6 +31,16 @@ const encoded = await encodeImageAsset(photo, image, factory, () => {}, true);
 assert.equal(encoded.format, 'jpg'); assert(encoded.bytes.length < png.length * .8);
 assert.deepEqual([...encoded.bytes.slice(0, 3)], [255, 216, 255]);
 assert.deepEqual(image, original); assert(temporary.every(released => released.size === 2));
+const hypothesisImage={...image,sourceIds:['ocr-uncertain']};
+const hypothesis={id:'ocr-uncertain',text:'uncertain label',disposition:'visible-image',ocrUnverified:true};
+const hypothesisResult=await encodeImageAsset(photo,hypothesisImage,factory,()=>{},true,{sourceById:new Map([[hypothesis.id,hypothesis]])});
+assert.equal(hypothesisResult.format,'jpg','uncertain OCR accounting does not change photographic encoding or inflate the asset budget');
+assert.deepEqual(hypothesisResult.bytes,encoded.bytes,'only ownership metadata changed; visible pixels and encoding stay identical');
+for(const sources of [new Map(),new Map([[hypothesis.id,{...hypothesis,id:'mismatched'}]]),
+  new Map([[hypothesis.id,{...hypothesis,ocrUnverified:false}]]),new Map([[hypothesis.id,{...hypothesis,disposition:'editable'}]])]){
+  const guarded=await encodeImageAsset(photo,hypothesisImage,factory,()=>{},true,{sourceById:sources});
+  assert.equal(guarded.format,'png','missing, mismatched or proven text evidence keeps lossless protection');
+}
 const decoded = await loadImage(encoded.bytes), restored = createCanvas(decoded.width, decoded.height);
 restored.getContext('2d').drawImage(decoded, 0, 0);
 assert.equal(decoded.width, photo.width); assert.equal(decoded.height, photo.height);
@@ -71,6 +81,9 @@ const layout = inferDocument([scene], { preserveGeometry: true });
 const asset = { ...encoded, id: image.id, width: photo.width, height: photo.height };
 const output = await createWordBytes(layout, [asset], { preserveGeometry: true });
 const zip = await JSZip.loadAsync(output.bytes);
+const settings = await zip.file('word/settings.xml').async('string');
+assert.equal((settings.match(/<w:doNotAutoCompressPictures(?:\s[^>]*)?\/>/g) || []).length, 1,
+  'Word output explicitly protects embedded scan/formula images from automatic save-time resampling');
 const jpegPart = Object.keys(zip.files).find(name => /^word\/media\/.*\.jpg$/.test(name));
 assert(jpegPart); assert.deepEqual(await zip.file(jpegPart).async('uint8array'), encoded.bytes);
 assert((await zip.file('[Content_Types].xml').async('string')).includes('image/jpeg'));

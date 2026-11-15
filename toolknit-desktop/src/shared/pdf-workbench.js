@@ -6,9 +6,11 @@ import '../styles/components/pdf-workbench.css';
 import { createPreviewViewport } from './preview-viewport.js';
 
 // Document ownership and export actions belong to the feature. This view owns only its canvases and listeners.
-export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels, stageId, ids = {}, getRotation = () => 0, transformPreview = null, sortable = false, onReorder = () => {}, onChange = () => {}, refreshIcons = () => {} }) {
+export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels, stageId, ids = {}, getRotation = () => 0, transformPreview = null, sortable = false, layout = 'default', selection = true, onRendered = () => {}, onReorder = () => {}, onChange = () => {}, refreshIcons = () => {} }) {
   const scope = createLifecycleScope();
   root.classList.add('pdf-workbench', 'pdf-merge-v2', 'pdf-editor-v2');
+  root.classList.toggle('pdf-workbench-select-right', layout === 'select-right');
+  root.classList.toggle('pdf-workbench-view-only', !selection);
   root.setAttribute('data-tool-page-chrome', '');
   const shell = document.createElement('div');
   // Opt the workbench into the shared tool-page chrome. The extra class is a
@@ -29,7 +31,7 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
           </div>
         </div>
         <div class="pdf-editor-canvas-scroll" data-wb-scroll><div class="pdf-editor-canvas-stage" data-wb-stage>
-          <canvas class="pdf-editor-main-canvas" data-wb-canvas></canvas><span data-wb-error hidden></span>
+          <div class="pdf-workbench-surface" data-wb-surface><canvas class="pdf-editor-main-canvas" data-wb-canvas></canvas></div><span data-wb-error hidden></span>
         </div></div>
       </main>
       <aside class="pdf-editor-tool-panel"><div class="pdf-editor-filecard"><i data-lucide="file-text"></i>
@@ -49,6 +51,7 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
     if (actions) actionHost.append(actions);
   }
   shell.querySelector('[data-wb-actions]').replaceWith(actionHost);
+  if (layout === 'select-right') shell.querySelector('.pdf-editor-page-sidebar').append(actionHost);
   root.replaceChildren(shell);
   // Sibling workspaces are outside the lazy tool root. Prepare their final
   // navigation here, after replacing the template's Back button.
@@ -76,6 +79,7 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
     }, render: renderMain });
   scope.use(viewport.dispose);
   const thumbTasks = new Set();
+  const thumbnailVersions = new Map();
   let queue = [], activeThumbs = 0;
 
   function translate() {
@@ -153,6 +157,7 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
       canvas.getContext('2d').drawImage(temporary, 0, 0);
       renderedScale = scale;
       canvas.hidden = false;
+      onRendered({ canvas, entry, currentIndex });
     } catch (failure) {
       if (version === previewRevision && owner === generation && failure?.name !== 'RenderingCancelledException') {
         error.hidden = false; error.textContent = t('home.pdfEditor.thumbnailError');
@@ -184,18 +189,19 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
     scheduleMain();
   }
   async function renderThumb(index, tile, owner) {
+    const thumbnailVersion = thumbnailVersions.get(index) || 0;
     let task;
     const thumbnail = document.createElement('canvas');
     try {
       const page = await getPage(pages[index]);
-      if (owner !== generation) return;
+      if (owner !== generation || thumbnailVersion !== (thumbnailVersions.get(index) || 0)) return;
       const base = page.getViewport({ scale: 1 });
       const viewport = page.getViewport({ scale: Math.min(132 / base.width, 176 / base.height) });
       thumbnail.width = Math.ceil(viewport.width); thumbnail.height = Math.ceil(viewport.height);
       thumbnail.className = 'pdf-editor-tile-canvas';
       task = page.render({ canvasContext: thumbnail.getContext('2d'), viewport, background: '#ffffff' });
       thumbTasks.add(task); await task.promise;
-      if (owner !== generation) return;
+      if (owner !== generation || thumbnailVersion !== (thumbnailVersions.get(index) || 0)) return;
       const frame = tile.querySelector('.pdf-editor-tile-frame');
       frame.appendChild(thumbnail); frame.classList.add('is-ready');
       updateThumbRotation(index, thumbnail);
@@ -231,7 +237,7 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
   }
   function clear() {
     viewport.reset();
-    generation++; previewRevision++; queue = []; activeThumbs = 0;
+    generation++; previewRevision++; queue = []; activeThumbs = 0; thumbnailVersions.clear();
     observer?.disconnect(); observer = null; renderScope?.dispose(); renderScope = null;
     if (frame) cancelAnimationFrame(frame); frame = 0;
     try { mainTask?.cancel(); } catch {} mainTask = null;
@@ -311,6 +317,19 @@ export function createPdfWorkbench({ root, pageStrip, back, actions, tag, labels
   scope.use(onLangChange(translate));
   translate(); refreshIcons();
   return { setPages, clear, refresh: update, refreshPages, select, getPages: () => pages, currentIndex: () => currentIndex,
+    surface: find('[data-wb-surface]'), canvas,
+    invalidate(indices = [currentIndex]) {
+      // Refresh only edited thumbnails; keep other queued/decoded pages intact.
+      for (const index of indices) {
+        const tile = pageStrip.children[index]; if (!tile) continue;
+        thumbnailVersions.set(index, (thumbnailVersions.get(index) || 0) + 1);
+        queue = queue.filter(item => item.index !== index);
+        tile.querySelectorAll('canvas').forEach(node => { node.width = node.height = 0; node.remove(); });
+        tile.querySelector('.pdf-editor-tile-frame')?.classList.remove('is-ready');
+        queue.push({ index, tile });
+      }
+      pump(); scheduleMain();
+    },
     setLocked(value) { locked = value; update(); },
     dispose() { clear(); scope.dispose(); } };
 }

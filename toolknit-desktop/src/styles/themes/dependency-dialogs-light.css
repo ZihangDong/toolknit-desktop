@@ -1,5 +1,5 @@
 /* Stage-three surfaces opt in explicitly; tool and update dialogs stay untouched. */
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) {
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) {
   --ink: var(--tk-page-ink);
   --muted: var(--tk-page-muted);
   --line: var(--tk-page-line);
@@ -11,7 +11,7 @@ html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #
   backdrop-filter: none;
 }
 
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay).visible {
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay).visible {
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
@@ -29,7 +29,7 @@ html[data-theme="light"] #mattingModelOverlay:not(.visible) {
   pointer-events: none;
 }
 
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-panel,
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-panel,
 html[data-theme="light"] #dependencyGateOverlay .dependency-gate-dialog,
 html[data-theme="light"] #aiKeyRequiredOverlay .ffmpeg-overlay-content {
   box-sizing: border-box;
@@ -48,17 +48,17 @@ html[data-theme="light"] #aiKeyRequiredOverlay .ffmpeg-overlay-content {
   transform: none;
 }
 
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) :is(button, h2, h3, p, .transcription-model-meta, .transcription-model-name) {
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) :is(button, h2, h3, p, .transcription-model-meta, .transcription-model-name) {
   letter-spacing: 0;
   overflow-wrap: anywhere;
 }
 
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-header { gap: 20px; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-header > div { min-width: 0; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .tools-eyebrow { display: none; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-header h2 { margin: 4px 0 0; font-size: 26px; line-height: 1.3; color: var(--ink); }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-intro { margin: 16px 0 24px; color: var(--muted); font-size: 13px; line-height: 1.7; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .pdf-page-workspace-close {
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-header { gap: 20px; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-header > div { min-width: 0; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .tools-eyebrow { display: none; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-header h2 { margin: 4px 0 0; font-size: 26px; line-height: 1.3; color: var(--ink); }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-intro { margin: 16px 0 24px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .pdf-page-workspace-close {
   display: grid;
   place-items: center;
   flex: 0 0 40px;
@@ -69,9 +69,9 @@ html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #
   border: 1px solid transparent;
   border-radius: 999px;
 }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .pdf-page-workspace-close:hover { border-color: #111111; background: #dddfe2; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .pdf-page-workspace-close:hover { border-color: #111111; background: #dddfe2; }
 
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-source-row {
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-source-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
@@ -82,8 +82,8 @@ html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #
   font-size: 13px;
   letter-spacing: 0;
 }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .audio-convert-format-options { min-width: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .audio-convert-format-option {
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .audio-convert-format-options { min-width: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .audio-convert-format-option {
   min-width: 0;
   min-height: 38px;
   height: auto;
@@ -96,10 +96,10 @@ html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #
   line-height: 1.4;
   white-space: normal;
 }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .audio-convert-format-option:hover { background: var(--tk-home-card-hover); transform: none; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .audio-convert-format-option.active { background: #111111; color: #ffffff; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-list { display: grid; gap: 12px; margin-top: 20px; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-row {
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .audio-convert-format-option:hover { background: var(--tk-home-card-hover); transform: none; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .audio-convert-format-option.active { background: #111111; color: #ffffff; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-list { display: grid; gap: 12px; margin-top: 20px; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -111,12 +111,12 @@ html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #
   background: var(--tk-home-card-bg);
   transform: none;
 }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-row > div { min-width: 0; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-row:hover { background: var(--tk-home-card-hover); transform: none; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-name { color: var(--ink); font-size: 16px; line-height: 1.4; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-meta { color: var(--muted); font-size: 12px; line-height: 1.5; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-actions .settings-btn {
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-row > div { min-width: 0; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-row:hover { background: var(--tk-home-card-hover); transform: none; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-name { color: var(--ink); font-size: 16px; line-height: 1.4; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-meta { color: var(--muted); font-size: 12px; line-height: 1.5; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn {
   display: inline-flex;
   justify-content: center;
   align-items: center;
@@ -134,15 +134,15 @@ html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #
   white-space: normal;
   transition: background-color 160ms ease, transform 160ms ease;
 }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-actions .settings-btn:hover:not(:disabled) { color: #ffffff; background: #2a2a2a; transform: translateY(-1px); }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-actions .settings-btn:active:not(:disabled) { transform: none; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn:hover:not(:disabled) { color: #ffffff; background: #2a2a2a; transform: translateY(-1px); }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn:active:not(:disabled) { transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-actions .settings-btn { transition: none; }
-  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-actions .settings-btn:hover:not(:disabled) { transform: none; }
+  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn { transition: none; }
+  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn:hover:not(:disabled) { transform: none; }
 }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-current { padding: 8px 12px; border: 0; border-radius: 999px; color: #ffffff; background: #404247; font-size: 12px; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-progress { height: 5px; border-radius: 999px; background: #c7c9cd; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-progress > span { background: #111111; box-shadow: none; border-radius: inherit; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-current { padding: 8px 12px; border: 0; border-radius: 999px; color: #ffffff; background: #404247; font-size: 12px; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-progress { height: 5px; border-radius: 999px; background: #c7c9cd; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-progress > span { background: #111111; box-shadow: none; border-radius: inherit; }
 
 /* Gates share the same light surface, without changing the download state machine. */
 html[data-theme="light"] #dependencyGateOverlay .dependency-gate-dialog,
@@ -175,18 +175,18 @@ html[data-theme="light"] #dependencyGateOverlay .audio-convert-success-btn-secon
 html[data-theme="light"] #aiKeyRequiredOverlay .ffmpeg-overlay-cancel:hover,
 html[data-theme="light"] #dependencyGateOverlay .audio-convert-success-btn-secondary:hover { background: var(--tk-home-card-hover); color: var(--ink); }
 
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-actions .settings-btn:disabled,
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn:disabled,
 html[data-theme="light"] :is(#dependencyGateOverlay, #aiKeyRequiredOverlay) button:disabled { color: #65676b; background: #d5d6d9; opacity: 1; cursor: not-allowed; box-shadow: none; transform: none; }
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-actions .settings-btn:focus-visible,
-html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) button:focus-visible { outline: 2px solid #111111; outline-offset: 3px; }
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn:focus-visible,
+html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) button:focus-visible { outline: 2px solid #111111; outline-offset: 3px; }
 
 @media (max-width: 680px) {
-  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) { padding: 16px; }
-  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-panel,
+  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) { padding: 16px; }
+  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-panel,
   html[data-theme="light"] #dependencyGateOverlay .dependency-gate-dialog,
   html[data-theme="light"] #aiKeyRequiredOverlay .ffmpeg-overlay-content { padding: 24px; max-height: calc(100dvh - 32px); }
-  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-source-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .audio-convert-format-options { justify-content: flex-start; }
-  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay) .transcription-model-actions { justify-content: flex-start; }
+  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-source-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .audio-convert-format-options { justify-content: flex-start; }
+  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  html[data-theme="light"] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions { justify-content: flex-start; }
 }

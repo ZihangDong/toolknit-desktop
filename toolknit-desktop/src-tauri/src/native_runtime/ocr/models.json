@@ -1,0 +1,35 @@
+{
+  "version": "pp-ocrv5-mobile-onnx-20261106-r1",
+  "license": "Apache-2.0",
+  "derived": true,
+  "changes": "Paddle to ONNX opset17; removed unused initializers; blank/space CTC dictionary mapping. No retraining.",
+  "upstream": {
+    "det": "0d63e78e2b680928f6b1747d76a08db6e645efb7",
+    "rec": "682f20538d8c086cb2128e5cfac775e6c4904e85"
+  },
+  "tools": {
+    "paddlepaddle": "3.1.1",
+    "paddle2onnx": "2.1.0",
+    "onnx": "1.17.0",
+    "onnxruntime": "1.22.1"
+  },
+  "files": [
+    {
+      "name": "det.onnx",
+      "bytes": 4766440,
+      "sha256": "c8d9b07063420ce5365c74e42532de48238feeeedcdb7a330b195708bc38a93f",
+      "removedUnusedInitializers": 0
+    },
+    {
+      "name": "rec.onnx",
+      "bytes": 16529870,
+      "sha256": "bcb195e3463eb9e46ef419b8a01ea4729577de5fd63c64f0a762e43bd64256e7",
+      "removedUnusedInitializers": 0
+    },
+    {
+      "name": "dictionary.json",
+      "bytes": 110788,
+      "sha256": "d858428fbe0ada92b439a5f277b51bc1b318fd985d80946a3ce859d7f2446a92"
+    }
+  ]
+}

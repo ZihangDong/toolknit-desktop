@@ -272,6 +272,98 @@ pub(crate) fn write_unique_file_bytes(
     Err("Unable to reserve a unique output file name".to_string())
 }
 
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct BinaryOutputMetadata {
+    directory: String,
+    file_name: String,
+}
+
+fn decode_binary_output_metadata(
+    encoded: &str,
+    byte_count: usize,
+) -> Result<BinaryOutputMetadata, String> {
+    use base64::Engine;
+    if byte_count == 0 || byte_count > 512 * 1024 * 1024 {
+        return Err("Output file is empty or exceeds the 512MB limit".to_string());
+    }
+    if encoded.len() > 8000 {
+        return Err("Output path is too long".to_string());
+    }
+    let decoded = base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .map_err(|_| "Invalid output metadata".to_string())?;
+    serde_json::from_slice(&decoded).map_err(|_| "Invalid output metadata".to_string())
+}
+
+#[tauri::command]
+pub(crate) async fn write_unique_file_binary(
+    request: tauri::ipc::Request<'_>,
+) -> Result<String, String> {
+    let bytes = match request.body() {
+        tauri::ipc::InvokeBody::Raw(bytes) => bytes,
+        _ => return Err("Binary output requires a raw byte body".to_string()),
+    };
+    let encoded = request
+        .headers()
+        .get("x-toolknit-output")
+        .and_then(|value| value.to_str().ok())
+        .ok_or("Missing output metadata")?;
+    let metadata = decode_binary_output_metadata(encoded, bytes.len())?;
+    let owned_bytes = bytes.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        write_unique_file_bytes(metadata.directory, metadata.file_name, owned_bytes)
+    })
+    .await
+    .map_err(|_| "Cannot finish writing output file".to_string())?
+}
+
+#[cfg(test)]
+mod binary_output_tests {
+    use super::*;
+    use base64::Engine;
+
+    #[test]
+    fn binary_metadata_bounds_and_unicode() {
+        let encode = |value: &str| base64::engine::general_purpose::STANDARD.encode(value);
+        let valid = encode(r#"{"directory":"D:/测试目录","fileName":"结果.pdf"}"#);
+        let metadata = decode_binary_output_metadata(&valid, 42_398_531).unwrap();
+        assert_eq!(metadata.file_name, "结果.pdf");
+        assert_eq!(metadata.directory, "D:/测试目录");
+        assert!(decode_binary_output_metadata(&valid, 0).is_err());
+        assert!(decode_binary_output_metadata(&valid, 512 * 1024 * 1024 + 1).is_err());
+        assert!(decode_binary_output_metadata("!notbase64", 1).is_err());
+        assert!(decode_binary_output_metadata(&"A".repeat(8001), 1).is_err());
+        assert!(decode_binary_output_metadata(&encode(r#"{"directory":"D:/test"}"#), 1).is_err());
+    }
+
+    #[test]
+    fn binary_write_keeps_unique_names_and_rejects_path_escape() {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory =
+            std::env::temp_dir().join(format!("toolknit-binary-{}-{}", std::process::id(), nonce));
+        let directory_string = directory.to_string_lossy().to_string();
+        let bytes = vec![0, 1, 128, 255];
+        let first =
+            write_unique_file_bytes(directory_string.clone(), "结果.pdf".into(), bytes.clone())
+                .unwrap();
+        let second =
+            write_unique_file_bytes(directory_string.clone(), "结果.pdf".into(), vec![42]).unwrap();
+        assert_ne!(first, second);
+        assert_eq!(std::fs::read(first).unwrap(), bytes);
+        assert_eq!(std::fs::read(second).unwrap(), vec![42]);
+        for name in ["../escape.pdf", "..\\escape.pdf", "C:/escape.pdf", "bad\0.pdf"] {
+            assert!(
+                write_unique_file_bytes(directory_string.clone(), name.into(), vec![1]).is_err()
+            );
+        }
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+}
+
 #[derive(serde::Serialize)]
 pub(crate) struct PairedFileWriteResult {
     pub(crate) first_path: String,

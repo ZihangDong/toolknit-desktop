@@ -76,6 +76,7 @@ try {
   const tarball = path.join(snapshot, 'cli', pack.filename);
   assert.equal(pack.version, JSON.parse(await readFile(path.join(snapshot, 'cli/package.json'), 'utf8')).version);
   assert.ok(pack.files.some(file => file.path === 'lib/pdf-word-engine.mjs'));
+  assert.ok(pack.files.some(file => file.path === 'resources/office/word-to-pdf.py'), 'Word driver ships in the isolated npm package');
   assert.ok(!pack.files.some(file => /(?:SKILL\.md|V32_CLI_MCP_AUDIT|\.env$)/i.test(file.path)));
   assert.ok(!pack.files.filter(file => !file.path.startsWith('node_modules/')).some(file => /(?:scripts\/test-|\.map$)/i.test(file.path)), 'Private source maps and test scripts must not ship; upstream bundled package maps are public assets.');
   await mkdir(consumer);
@@ -85,6 +86,7 @@ try {
   assert.ok(!dependencyTree.problems?.length, 'Installed dependency tree must be complete.');
   const audit = JSON.parse(run(process.execPath, [npmCli, 'audit', '--omit=dev', '--json', '--registry=https://registry.npmjs.org'], consumer));
   assert.equal(audit.metadata.vulnerabilities.total, 0, 'Audit the actual consumer install, not only the source lockfile.');
+  run(process.execPath, [path.join(snapshot, 'scripts/test-office-archive-dependencies.mjs'), path.join(consumer, 'node_modules/@toolknit/cli')], consumer, true);
   const imported = run(process.execPath, ['--input-type=module', '--eval', `
     import { readdir } from 'node:fs/promises';
     import path from 'node:path';
@@ -107,7 +109,7 @@ try {
   for (const args of [['--version'], ['help', 'pdf', 'merge'], ['tools', 'coverage', '--json']]) {
     const result = await runNode(entry, args, consumer); assert.equal(result.code, 0, result.stderr); assert.equal(result.stderr.trim(), '');
     if (args[0] === '--version') assert.equal(result.stdout.trim(), pack.version);
-    if (args[0] === 'tools') assert.equal(JSON.parse(result.stdout).desktop_tools, 73);
+    if (args[0] === 'tools') assert.equal(JSON.parse(result.stdout).desktop_tools, 75);
   }
   const pdf = await PDFDocument.create(), font = await pdf.embedFont(StandardFonts.Helvetica);
   pdf.addPage([595, 842]).drawText('Installed CLI fixture', { font, x: 50, y: 700, size: 15 });

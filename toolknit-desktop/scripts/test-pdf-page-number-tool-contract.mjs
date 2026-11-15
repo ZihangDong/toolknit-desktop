@@ -69,7 +69,7 @@ assert.match(exporter, /URL\.createObjectURL/);
 assert.match(exporter, /URL\.revokeObjectURL/);
 assert.match(exporter, /assertOperation\(active\)/);
 assert.match(exporter, /shouldCancel:\s*\(\) => active\.cancelled \|\| !active\.isCurrent\(\)/);
-assert.match(exporter, /write_unique_file_bytes/);
+assert.match(exporter, /writeUniqueBinaryFile/);
 assert.match(view, /\.inert\s*=/);
 assert.match(view, /element\.closest\('\[inert\], \[aria-hidden="true"\]'\)/);
 assert.match(featureCss, /\.pdf-page-number-layout/);

@@ -42,6 +42,11 @@ html body :is(.shot-history-search,.shot-history-search input,input[readonly],te
 @media (prefers-reduced-motion: reduce) {
   html body :is(input:not([type]),input[type],textarea,.home-search-field,.clipboard-search,.shot-history-search,.image-stitch-number-field,.color-space-compare-hex-row,.color-space-compare-value-group,.ai-doc-style-number) { transition: none !important; }
 }
+/* Explicit opt-out for search fields that use a filled container instead. */
+html body :is(input,textarea)[data-tk-field-style="plain"] {
+  background-image:none !important;
+  transition:none !important;
+}
 @media (forced-colors: active) {
   html body :is(input,textarea):focus-visible { outline: 2px solid Highlight !important; outline-offset: -3px !important; }
 }

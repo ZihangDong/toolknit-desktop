@@ -49,6 +49,7 @@ const coreFiles = [
   'features/pdf-text-extract/core.js',
   'features/pdf-text-extract/table-grid.js',
   'core/pdf-scan.js',
+  'core/pdf-page-copy.js',
   'shared/scanned-pdf-writer.js',
   'text-format-core.js',
   'features/developer-toolbox/core.js',
@@ -202,6 +203,7 @@ for (const fileName of whisperLegalFiles) {
   if (!fs.existsSync(filePath)) throw new Error(`whisper legal notice is missing: ${filePath}`);
   copyFileAtomic(filePath, path.join(whisperDestination, fileName));
 }
+copyFileAtomic(path.join(root, 'LICENSES', 'Download-Whisper-MIT.txt'), path.join(root, 'cli', 'LICENSES', 'Download-Whisper-MIT.txt'));
 fs.mkdirSync(coreDestination, { recursive: true });
 for (const fileName of coreFiles) {
   const filePath = path.join(coreSource, fileName);
@@ -226,8 +228,9 @@ for (const fileName of fontFiles) {
   if (!fs.existsSync(filePath)) throw new Error(`CLI font resource is missing: ${filePath}`);
   copyFileAtomic(filePath, path.join(fontDestination, fileName));
 }
-for (const fileName of ['LICENSE', 'NOTICE', 'LICENSES/Apache-2.0.txt', 'LICENSES/ToolKnit-PDF-Word-Source-View-1.0.md']) {
+for (const fileName of ['LICENSE', 'NOTICE', 'LICENSES/Apache-2.0.txt', 'LICENSES/MIT.txt']) {
   copyFileAtomic(path.join(root, fileName), path.join(root, 'cli', fileName));
 }
+copyFileAtomic(path.join(root, 'src-tauri/resources/office/word-to-pdf.py'), path.join(root, 'cli/resources/office/word-to-pdf.py'));
 releaseStageLockOnce();
 console.log('Staged CLI runtime resources: qpdf, whisper binaries and legal notices, core modules, shared task contracts, guides, and fonts. FFmpeg is downloaded on demand by ToolKnit Desktop or resolved from PATH.');
