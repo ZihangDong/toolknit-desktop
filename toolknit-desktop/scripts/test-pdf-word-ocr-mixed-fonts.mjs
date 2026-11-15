@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {createCanvas} from '@napi-rs/canvas';
+import {fixtureFonts} from './lib/pdf-word-font-fixture.mjs';
 import {createOcrTypography} from '../src/features/pdf-to-word/adapters/ocr-typography.js';
 import {prepareOcrScene} from '../src/features/pdf-to-word/core/ocr-scene.js';
 
@@ -49,7 +50,7 @@ for(const color of ['#2E74B5','#000000']){
   assert.equal(residual,0,'the full original text is removed before mixed editable runs are painted');
   canvas.width=canvas.height=0;
 }
-for(const font of ['FangSong','SimSun','Microsoft YaHei'])for(const phrase of ['甲方（用人单位）：乙方（劳动者）：','Test（2026）：09']){
+for(const font of fixtureFonts(['FangSong','SimSun','Microsoft YaHei']))for(const phrase of ['甲方（用人单位）：乙方（劳动者）：','Test（2026）：09']){
  const c=createCanvas(1500,160),ctx=c.getContext('2d');
  ctx.fillStyle='white';ctx.fillRect(0,0,1500,160);ctx.fillStyle='black';ctx.font=`60px "${font}"`;ctx.fontKerning='none';
  const words=[];let x=20;

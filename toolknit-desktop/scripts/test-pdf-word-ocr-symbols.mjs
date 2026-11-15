@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createCanvas } from '@napi-rs/canvas';
+import { fixtureFonts } from './lib/pdf-word-font-fixture.mjs';
 import { createOcrTypography } from '../src/features/pdf-to-word/adapters/ocr-typography.js';
 import { prepareOcrScene } from '../src/features/pdf-to-word/core/ocr-scene.js';
 import { recoverOcrPermille } from '../src/features/pdf-to-word/core/ocr-symbols.js';
@@ -27,7 +28,7 @@ function sample(symbol, font, size = 60, confidence = .99, writingLine = false) 
     inkAt: (x, y) => pixels[(y * canvas.width + x) * 4] < 150 };
   return { canvas, context, options, original };
 }
-for (const font of ['SimSun', 'SimHei', 'Arial', 'Times New Roman']) {
+for (const font of fixtureFonts(['SimSun', 'SimHei', 'Arial', 'Times New Roman'])) {
   for (const size of [36, 60]) for (const symbol of ['%', '‰']) {
     const { canvas, options, original } = sample(symbol, font, size);
     const before = structuredClone(options.line), result = fit(options);
