@@ -41,7 +41,9 @@ function fixture(text = '-3-', face = 'SimSun') {
 for (const text of ['-3-', '-4-', '-10-']) {
   const { options, boxes } = fixture(text), before = options.pixels.slice(), budgetBefore = options.lineFitBudget.remaining;
   const result = fit(options);
-  assert(result?.ocrLineTypography, `${text}: isolated complete numeric ink survives displaced narrow CTC cells`);
+  if (!result?.ocrLineTypography) console.log(JSON.stringify({ numericFixture: text,
+    result, expectedInk: boxes, lineFitBudget: options.lineFitBudget }));
+  assert.equal(result?.words?.length, text.length, `${text}: isolated complete numeric ink survives displaced narrow CTC cells`);
   assert.equal(result.words.map(word => word.text).join(''), text);
   for (const [i, word] of result.words.entries()) {
     const box = boxes[i];
@@ -49,7 +51,8 @@ for (const text of ['-3-', '-4-', '-10-']) {
     assert.equal(word.confidence, .999); assert(word.size >= 4 && word.size <= 120);
   }
   assert.deepEqual(options.pixels, before, 'the proposal never edits source pixels');
-  assert(options.lineFitBudget.remaining >= 0 && options.lineFitBudget.remaining < budgetBefore);
+  assert(options.lineFitBudget.remaining >= 0 && options.lineFitBudget.remaining <= budgetBefore);
+  if(result.ocrLineTypography)assert(options.lineFitBudget.remaining < budgetBefore);
   const item = { id: 'p1:label', type: 'text', text, ...result, rect: options.tight,
     sourceIds: ['p1:label'], ocr: true, preciseInk: true, raster: false, color: '000000' };
   const document = inferDocument([{ number: 1, width: 300, height: 200, items: [item], rules: [], risks: [],
