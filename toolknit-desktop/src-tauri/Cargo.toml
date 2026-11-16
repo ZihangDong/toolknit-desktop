@@ -49,7 +49,7 @@ flate2 = "1"
 zstd = "0.13"
 getrandom = "0.2"
 zeroize = "1"
-rusqlite = { version = "0.41", features = ["bundled", "fallible_uint"] }
+rusqlite = { version = "0.42", features = ["bundled", "fallible_uint"] }
 notify = "8.2"
 zip = { version = "9.0.5", default-features = false, features = ["deflate"] }
 quick-xml = "0.41"
