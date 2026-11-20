@@ -155,3 +155,415 @@
     font-size: 24px;
   }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] :is(.bmi-calc-v2, .mortgage-calc-v2, .interest-calc-v2, .timestamp-calc-v2) {
+  --calc-light-surface: var(--tk-page-bg);
+  --calc-light-soft: var(--tk-inset);
+  --calc-light-hover: var(--tk-surface);
+  --calc-light-line: var(--tk-border);
+  --calc-light-line-strong: var(--tk-border);
+  --calc-light-ink: var(--tk-ink);
+  --calc-light-muted: var(--tk-muted);
+  --calc-light-quiet: var(--tk-muted);
+  background: var(--calc-light-surface);
+  color: var(--calc-light-ink);
+  color-scheme: var(--tk-color-scheme);
+}
+
+html:root[data-theme] :is(.bmi-calc-v2-workspace, .mortgage-calc-v2-workspace, .interest-calc-v2-workspace, .timestamp-calc-v2-workspace) {
+  background: var(--calc-light-surface);
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] :is(.bmi-calc-v2, .mortgage-calc-v2, .interest-calc-v2, .timestamp-calc-v2) .pdf-merge-v2-title {
+  font-size: 42px;
+  line-height: 1.08;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+html:root[data-theme] :is(.bmi-calc-panel-head, .mortgage-calc-panel-head, .ts-calc-panel-head) > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+html:root[data-theme] :is(.bmi-calc-panel-head, .mortgage-calc-panel-head, .ts-calc-panel-head) h2 {
+  letter-spacing: 0;
+}
+
+html:root[data-theme] :is(.bmi-calc-panel-head, .mortgage-calc-panel-head, .ts-calc-panel-head) p {
+  flex: 0 0 136px;
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-input-panel,
+  .bmi-calc-v2 .bmi-calc-result-panel,
+  .mortgage-calc-v2 .mortgage-calc-input-panel,
+  .mortgage-calc-v2 .mortgage-calc-result-panel,
+  .interest-calc-v2 .mortgage-calc-input-panel,
+  .interest-calc-v2 .mortgage-calc-result-panel,
+  .timestamp-calc-v2 .ts-calc-input-panel,
+  .timestamp-calc-v2 .ts-calc-result-panel
+) {
+  border-color: var(--calc-light-line);
+  background: var(--calc-light-surface);
+}
+
+html:root[data-theme] :is(.bmi-calc-panel-head, .mortgage-calc-panel-head, .ts-calc-panel-head) {
+  border-color: var(--calc-light-line);
+}
+
+html:root[data-theme] :is(.bmi-calc-panel-head, .mortgage-calc-panel-head, .ts-calc-panel-head) h2 {
+  color: var(--calc-light-ink);
+}
+
+html:root[data-theme] :is(.bmi-calc-panel-head, .mortgage-calc-panel-head, .ts-calc-panel-head) p {
+  color: var(--calc-light-muted);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-mode-tabs,
+  .timestamp-calc-v2 .ts-calc-mode-tabs,
+  .timestamp-calc-v2 .ts-calc-current-section
+) {
+  border-color: var(--calc-light-line);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-mode-tab,
+  .bmi-calc-v2 .bmi-calc-gender-tab,
+  .mortgage-calc-v2 .mortgage-calc-method-tab,
+  .interest-calc-v2 .mortgage-calc-method-tab,
+  .timestamp-calc-v2 .ts-calc-mode-tab,
+  .timestamp-calc-v2 .ts-calc-format-tab,
+  .timestamp-calc-v2 .ts-calc-copy-btn
+) {
+  border-color: var(--calc-light-line-strong);
+  background: var(--calc-light-soft);
+  color: var(--calc-light-ink);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-mode-tab,
+  .bmi-calc-v2 .bmi-calc-gender-tab,
+  .mortgage-calc-v2 .mortgage-calc-method-tab,
+  .interest-calc-v2 .mortgage-calc-method-tab,
+  .timestamp-calc-v2 .ts-calc-mode-tab,
+  .timestamp-calc-v2 .ts-calc-format-tab
+).active {
+  border-color: var(--calc-light-ink);
+  background: var(--calc-light-ink);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-mode-tab,
+  .bmi-calc-v2 .bmi-calc-gender-tab,
+  .mortgage-calc-v2 .mortgage-calc-method-tab,
+  .interest-calc-v2 .mortgage-calc-method-tab,
+  .timestamp-calc-v2 .ts-calc-mode-tab,
+  .timestamp-calc-v2 .ts-calc-format-tab
+):hover:not(.active),
+html:root[data-theme] .timestamp-calc-v2 .ts-calc-copy-btn:hover {
+  border-color: var(--calc-light-ink);
+  background: var(--calc-light-hover);
+  color: var(--calc-light-ink);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-mode-tab,
+  .bmi-calc-v2 .bmi-calc-gender-tab,
+  .mortgage-calc-v2 .mortgage-calc-method-tab,
+  .interest-calc-v2 .mortgage-calc-method-tab,
+  .timestamp-calc-v2 .ts-calc-mode-tab,
+  .timestamp-calc-v2 .ts-calc-format-tab,
+  .timestamp-calc-v2 .ts-calc-copy-btn,
+  .mortgage-calc-v2 .mortgage-calc-calc-btn,
+  .interest-calc-v2 .mortgage-calc-calc-btn
+):focus-visible {
+  outline: 2px solid var(--calc-light-ink);
+  outline-offset: 2px;
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-field label,
+  .mortgage-calc-v2 .mortgage-calc-field label,
+  .interest-calc-v2 .mortgage-calc-field label,
+  .timestamp-calc-v2 .ts-calc-field label,
+  .mortgage-calc-v2 .mortgage-calc-unit,
+  .interest-calc-v2 .mortgage-calc-unit,
+  .timestamp-calc-v2 .ts-calc-unit
+) {
+  color: var(--calc-light-muted);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-field input,
+  .mortgage-calc-v2 .mortgage-calc-input-row input,
+  .interest-calc-v2 .mortgage-calc-input-row input,
+  .timestamp-calc-v2 .ts-calc-field input
+) {
+  border-color: var(--calc-light-line-strong);
+  background: var(--calc-light-soft);
+  color: var(--calc-light-ink);
+  caret-color: var(--calc-light-ink);
+  color-scheme: var(--tk-color-scheme);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-field input,
+  .mortgage-calc-v2 .mortgage-calc-input-row input,
+  .interest-calc-v2 .mortgage-calc-input-row input,
+  .timestamp-calc-v2 .ts-calc-field input
+):focus {
+  border-color: var(--calc-light-ink);
+  background: var(--calc-light-surface);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-field input,
+  .mortgage-calc-v2 .mortgage-calc-input-row input,
+  .interest-calc-v2 .mortgage-calc-input-row input,
+  .timestamp-calc-v2 .ts-calc-field input
+)::placeholder {
+  color: var(--calc-light-quiet);
+}
+
+html:root[data-theme] :is(.mortgage-calc-v2, .interest-calc-v2) .mortgage-calc-calc-btn {
+  border-color: var(--calc-light-ink);
+  background: var(--calc-light-ink);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] :is(.mortgage-calc-v2, .interest-calc-v2) .mortgage-calc-calc-btn:hover:not(:disabled) {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: 0 7px 16px rgba(17, 17, 17, 0.14);
+}
+
+html:root[data-theme] :is(.mortgage-calc-v2, .interest-calc-v2) .mortgage-calc-calc-btn:disabled {
+  background: var(--tk-border);
+  color: var(--tk-muted);
+  box-shadow: none;
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-empty-icon-wrap,
+  .mortgage-calc-empty-icon-wrap,
+  .ts-calc-empty-icon-wrap
+) {
+  border-color: var(--calc-light-line-strong);
+  background: var(--calc-light-soft);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-empty-icon-wrap,
+  .mortgage-calc-empty-icon-wrap,
+  .ts-calc-empty-icon-wrap
+) svg {
+  color: var(--calc-light-ink);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-result-empty p,
+  .mortgage-calc-v2 .mortgage-calc-result-empty p,
+  .interest-calc-v2 .mortgage-calc-result-empty p,
+  .timestamp-calc-v2 .ts-calc-result-empty p
+) {
+  color: var(--calc-light-muted);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-card,
+  .mortgage-calc-v2 .mortgage-calc-card,
+  .interest-calc-v2 .mortgage-calc-card,
+  .timestamp-calc-v2 .ts-calc-result-card
+) {
+  border-color: var(--calc-light-line);
+  background: var(--calc-light-soft);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-card,
+  .mortgage-calc-v2 .mortgage-calc-card,
+  .interest-calc-v2 .mortgage-calc-card
+):hover {
+  border-color: var(--calc-light-line-strong);
+  background: var(--calc-light-hover);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-card-label,
+  .mortgage-calc-v2 .mortgage-calc-card-label,
+  .interest-calc-v2 .mortgage-calc-card-label,
+  .timestamp-calc-v2 .ts-calc-result-label
+) {
+  color: var(--calc-light-muted);
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-card-value,
+  .mortgage-calc-v2 .mortgage-calc-card-value,
+  .interest-calc-v2 .mortgage-calc-card-value,
+  .timestamp-calc-v2 .ts-calc-result-value
+) {
+  color: var(--calc-light-ink);
+  letter-spacing: 0;
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-card-tag,
+  .mortgage-calc-v2 .mortgage-calc-card-tag,
+  .interest-calc-v2 .mortgage-calc-card-tag
+) {
+  border-color: var(--calc-light-line-strong);
+  background: var(--calc-light-surface);
+  color: var(--calc-light-muted);
+}
+
+html:root[data-theme] .bmi-calc-v2 .bmi-calc-card-tag.tag-low {
+  border-color: #a9c8ff;
+  background: var(--tk-inset);
+  color: #205db6;
+}
+
+html:root[data-theme] .bmi-calc-v2 .bmi-calc-card-tag.tag-normal {
+  border-color: #a7ddbf;
+  background: var(--tk-inset);
+  color: #27794b;
+}
+
+html:root[data-theme] .bmi-calc-v2 .bmi-calc-card-tag.tag-high {
+  border-color: #ead098;
+  background: var(--tk-inset);
+  color: #8a641b;
+}
+
+html:root[data-theme] .bmi-calc-v2 .bmi-calc-card-tag.tag-veryhigh {
+  border-color: #efb0b0;
+  background: var(--tk-inset);
+  color: #a63232;
+}
+
+html:root[data-theme] .bmi-calc-v2 :is(.bmi-calc-bar-section, .bmi-calc-detail),
+html:root[data-theme] .timestamp-calc-v2 .ts-calc-detail {
+  border-color: var(--calc-light-line);
+  background: var(--calc-light-soft);
+}
+
+html:root[data-theme] .bmi-calc-v2 .bmi-calc-bar-title {
+  color: var(--calc-light-ink);
+}
+
+html:root[data-theme] .bmi-calc-v2 .bmi-calc-bar-track {
+  border-color: var(--calc-light-line-strong);
+  background: var(--calc-light-surface);
+}
+
+html:root[data-theme] .bmi-calc-v2 .bmi-calc-bar-marker {
+  border-color: var(--tk-inset);
+  background: var(--tk-accent);
+  box-shadow: 0 0 0 2px #171717, 0 5px 12px rgba(17, 17, 17, 0.2);
+}
+
+html:root[data-theme] .bmi-calc-v2 .bmi-calc-bar-labels,
+html:root[data-theme] :is(.bmi-calc-v2 .bmi-calc-detail-row, .timestamp-calc-v2 .ts-calc-detail-row) span:first-child {
+  color: var(--calc-light-muted);
+}
+
+html:root[data-theme] :is(.bmi-calc-v2 .bmi-calc-detail-row, .timestamp-calc-v2 .ts-calc-detail-row) {
+  border-color: var(--calc-light-line);
+}
+
+html:root[data-theme] :is(.bmi-calc-v2 .bmi-calc-detail-row, .timestamp-calc-v2 .ts-calc-detail-row) span:last-child {
+  color: var(--calc-light-ink);
+}
+
+html:root[data-theme] .timestamp-calc-v2 .ts-calc-current-row {
+  border-color: var(--calc-light-line);
+  background: var(--calc-light-soft);
+}
+
+html:root[data-theme] .timestamp-calc-v2 .ts-calc-current-value {
+  color: var(--calc-light-ink);
+}
+
+html:root[data-theme] :is(.mortgage-calc-v2, .interest-calc-v2) .mortgage-calc-schedule-title {
+  color: var(--calc-light-ink);
+}
+
+html:root[data-theme] :is(.mortgage-calc-v2, .interest-calc-v2) .mortgage-calc-schedule-table {
+  border-color: var(--calc-light-line);
+  background: var(--calc-light-surface);
+}
+
+html:root[data-theme] :is(.mortgage-calc-v2, .interest-calc-v2) .mortgage-calc-schedule-header {
+  background: var(--tk-inset);
+  color: var(--calc-light-muted);
+}
+
+html:root[data-theme] :is(.mortgage-calc-v2, .interest-calc-v2) .mortgage-calc-schedule-row {
+  border-color: var(--calc-light-line);
+  color: var(--calc-light-ink);
+}
+
+html:root[data-theme] :is(.mortgage-calc-v2, .interest-calc-v2) .mortgage-calc-schedule-row > span:first-child {
+  color: inherit;
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-form,
+  .bmi-calc-v2 .bmi-calc-result-content,
+  .mortgage-calc-v2 .mortgage-calc-form,
+  .mortgage-calc-v2 .mortgage-calc-result-content,
+  .mortgage-calc-v2 .mortgage-calc-schedule-body,
+  .interest-calc-v2 .mortgage-calc-form,
+  .interest-calc-v2 .mortgage-calc-result-content,
+  .interest-calc-v2 .mortgage-calc-schedule-body,
+  .timestamp-calc-v2 .ts-calc-form,
+  .timestamp-calc-v2 .ts-calc-result-content
+) {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] :is(
+  .bmi-calc-v2 .bmi-calc-form,
+  .bmi-calc-v2 .bmi-calc-result-content,
+  .mortgage-calc-v2 .mortgage-calc-form,
+  .mortgage-calc-v2 .mortgage-calc-result-content,
+  .mortgage-calc-v2 .mortgage-calc-schedule-body,
+  .interest-calc-v2 .mortgage-calc-form,
+  .interest-calc-v2 .mortgage-calc-result-content,
+  .interest-calc-v2 .mortgage-calc-schedule-body,
+  .timestamp-calc-v2 .ts-calc-form,
+  .timestamp-calc-v2 .ts-calc-result-content
+)::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] :is(.bmi-calc-v2, .mortgage-calc-v2, .interest-calc-v2, .timestamp-calc-v2) button {
+    transition: none;
+  }
+}
+
+@media (max-width: 1500px) {
+  html:root[data-theme] :is(.mortgage-calc-v2, .interest-calc-v2) .mortgage-calc-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html:root[data-theme] .mortgage-calc-v2:not(.interest-calc-v2) .mortgage-calc-card:first-child {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 640px) {
+  html:root[data-theme] :is(.bmi-calc-v2, .mortgage-calc-v2, .interest-calc-v2, .timestamp-calc-v2) .pdf-merge-v2-title {
+    font-size: 36px;
+    white-space: normal;
+  }
+}

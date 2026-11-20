@@ -1,0 +1,80 @@
+diff --git a/sw/qa/extras/ooxmlimport/data/hanging-punctuation.docx b/sw/qa/extras/ooxmlimport/data/hanging-punctuation.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..447055616e03679efb7cc3e33e68929290a90075
+GIT binary patch
+literal 1682
+zcmWIWW@Zs#U|`??V#Sz$Pbx*P09ij785o3tbhLARUP)?RNqk6UL27ZVUPW%s+KGGf
+z4mk+4#2?)y_Rv*CL~xmBMq`tB#N6xOG`}yu{Zu`FzNw*zpy#Y9<;M5Vc<i>TOL_E4
+zs^-Zt9;KhG4R0M7clym-q!p{h=sJICd(Su7>ZYej8<}P=3YfC9M>1`5-C{ofxK(dM
+z_upK4V}{c_-><(?Wp+z7TUMtBhO`&w?B9B3d0W)U+3oDpE0?h``%Ak$ecsf0d;Ut1
+z>p`Ull&pDPHF<04ZaF!xY0}sChW=&C))h~a`!i#j_ogFnlH_at1~Bci_?^u@xufXM
+zf9rQAzjGGs{_#vW03{F-tM#2bfu8>a#N0p}UzD0ttgi<md(T_*F)0eLJy<Qkw_$Ts
+zgv5ePH?LJNG96ad>*ta9`YkA8&9Os8&*s<EyUi)QYCG+Y)0$q}OS5J_S@^w*B||OY
+zQm&ThXOEbLOMXk7biVp*mF=OrdHfF1&DtAHZzicOKl;vMw~h9{Wbx;V4h9=;Z`t{O
+z#gAPQo7DPaKUFJof7?5c?X)B3kBY#(45%(Xq8HWJ4s_{rAeI5*^8BI{eTcJD@{>z*
+zfiVb*I;a<HxtI(ESRbrzkx5A3x?zIK)U(?ju{xD~YMw1`r2OKoukxCNM9cRFze|)J
+zJzKP@H7QGFUZwVu)Req*h9beuOIModEdIDP{q*BEjI&D1r3Lyv*EH=jUlLdyth0Jr
+zZ6trtojBhA8&`in`Ecnj_hX0b)fy&PPIWlE#a1Evr{}UnPXn%f|BUicJ>aq}Y1;x|
+zntR90z#s_o0J78H2JiKgF%)?BSw!1ByzzTqa<S!He#IqAm=?<DCzS2o-FI!?RNK=`
+zq5-afr%W7Xn(>+_22Pp&kncrBYsLQ#rG?r-%8}n{KA){ImdjL=ZrA$E*RoN_<n`C^
+zzw^{fI3`}<d@U-mzNbq1a`@yT8OI2Xg%^uCZ}oY*1s$pJS;-r`a7S!wOvdq}2_o+7
+zzE0i-fq4od*Q{)(UTl2N9#XjS<Q30%&LtsxD{J4*dc}C%dyeDI=obQei)s!SyZt({
+zSoEjj8=Kz^nQxc)&pdneR=(rn(t~%}f{Zq)Pu*~@Ph;=*1v}LGJk7V(&J(=zXxY>`
+z6K95OcG`aQZDDwgK~AjX^^^9T$6ubh=65~(Hn-pV{W0h3=bX>KW4ZVDkIavMvp#-)
+z^zi%BN3Xa4{yh8Xo5$<VpJra=b>m9*vX4d=pT2o}@@Boyl`etVuPTjJ|0?6Y@P7Zt
+z=3mdx@wsI${w7?x>1=PY@{^uDaz8>lr1hJsnr3!fROM|qH8S#)jp1){^ZVc-;g+Sx
+zc0laPqdflml9HjH+;=9Z2pQ@dy>Ywp)pPgPMfKt3zt~Zu^HVkNj3dBk)C5K;JUWY0
+zOG+~H(u+YUF?E7t9<w2b>w2M|424lEV<TqfY+4iKdWv&J`^kt+2M_t&xwlUx(6swq
+z!}(_Z-*Qr`)OKw<TYmD2ll+}EQO)0V&qXZA-KjLwY@<kk_tRI_rz2XGx20vA{8zfY
+z`a7%8&cplKEt(xdrg*nz@Vcvso|`R~H-X*!lltq4-lC7^?iW7tymgV@g3g!Btvyv7
+z7jHRSfAOg#doc$W-@8cPcun=cmLEILEpffHU)!teP_O!3sYjKwf{q-QeRuxa>Dza^
+z<I8`2wQP?M@MdHZVZdE>0{ssL4ZuLaT9Tq0fL`uEv@<X?FtP%TKq`gMHKJ#KgvRYa
+zjra-!bd%8YA;P2zCa6isxe{GFdb}gFyR$&GBd3A@Z&o&t5>_B|0=m?S6~qGoS=yq>
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/source/core/text/inftxt.cxx b/sw/source/core/text/inftxt.cxx
+index c510426178f59a4b8810157d718abff805edcfe4..59ad171b6f2a24a963ee7e8e96930127f07d8517 100644
+--- a/sw/source/core/text/inftxt.cxx
++++ b/sw/source/core/text/inftxt.cxx
+@@ -695,8 +695,10 @@ void SwTextPaintInfo::DrawText_( const OUString &rText, const SwLinePortion &rPo
+     const bool bTmpSmart = bSmartTag && OnWin() && !GetOpt().IsPagePreview() && SwSmartTagMgr::Get().IsSmartTagsEnabled();
+ 
+     OSL_ENSURE( GetParaPortion(), "No paragraph!");
++    const SwTwips nPaintWidth = rPor.IsHangingPortion()
++        ? static_cast<const SwHangingPortion&>(rPor).GetInnerWidth() : rPor.Width();
+     SwDrawTextInfo aDrawInf(m_pFrame->getRootFrame()->GetCurrShell(), *m_pOut, pSI, rText, nStart,
+-                            nLength, rPor.GetLayoutContext(), rPor.Width(), bBullet);
++                            nLength, rPor.GetLayoutContext(), nPaintWidth, bBullet);
+ 
+     aDrawInf.SetUnderFnt( m_pUnderFnt );
+ 
+@@ -787,11 +789,11 @@ void SwTextPaintInfo::DrawText_( const OUString &rText, const SwLinePortion &rPo
+         // aPos needs to be the TopLeft, because we cannot calculate the
+         // ClipRects otherwise
+         const Point aPoint( aFontPos.X(), aFontPos.Y() - rPor.GetAscent() );
+-        const Size aSize( rPor.Width(), rPor.Height() );
++        const Size aSize( nPaintWidth, rPor.Height() );
+         aDrawInf.SetPos( aPoint );
+         aDrawInf.SetSize( aSize );
+         aDrawInf.SetAscent( rPor.GetAscent() );
+-        aDrawInf.SetKern( bKern ? rPor.Width() : 0 );
++        aDrawInf.SetKern( bKern ? nPaintWidth : 0 );
+         aDrawInf.SetWrong( bTmpWrong ? m_pWrongList : nullptr );
+         aDrawInf.SetGrammarCheck( bTmpGrammarCheck ? m_pGrammarCheckList : nullptr );
+         aDrawInf.SetSmartTags( bTmpSmart ? m_pSmartTags : nullptr );
+diff --git a/sw/source/core/text/itrpaint.cxx b/sw/source/core/text/itrpaint.cxx
+index e26079d76c51ed276610e90450cb6fc797367701..d2ce9db2708e367ea43b59c055ef1c2edc8ac9e4 100644
+--- a/sw/source/core/text/itrpaint.cxx
++++ b/sw/source/core/text/itrpaint.cxx
+@@ -254,7 +254,8 @@ void SwTextPainter::DrawTextLine( const SwRect &rPaint, SwSaveClip &rClip,
+     SwTaggedPDFHelper::EndCurrentLink(*GetInfo().GetOut());
+ 
+     // Optimization!
+-    SwTwips nMaxRight = std::min<SwTwips>( rPaint.Right(), Right() );
++    const SwTwips nHangingWidth = m_pCurr->IsHanging() ? m_pCurr->GetHangingMargin() : 0;
++    SwTwips nMaxRight = std::min<SwTwips>(rPaint.Right(), Right() + nHangingWidth);
+     const SwTwips nTmpLeft = GetInfo().X();
+     //compatibility settings: allow tabstop text to exceed right margin
+     const auto& iDSA = GetInfo().GetTextFrame()->GetDoc().getIDocumentSettingAccess();

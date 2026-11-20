@@ -8,9 +8,9 @@
 .tk-file-result .audio-clip-success-btn { flex:1 1 120px; white-space:normal; overflow:visible; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
 .tk-file-result .audio-clip-success-btn svg { width:16px; height:16px; flex-shrink:0; }
 .tk-file-result [hidden] { display:none; }
-html[data-theme="light"] .tk-file-result .audio-clip-success-dialog { background:#fff; color:#171717; }
-html[data-theme="light"] .tk-file-result .audio-clip-success-dialog .audio-clip-success-meta { color:#686b72; }
-html[data-theme="light"] .tk-file-result .audio-convert-success-detail { background:#f5f6f7; }
+html:root[data-theme] .tk-file-result .audio-clip-success-dialog { background:var(--tk-page-bg); color:var(--tk-ink); }
+html:root[data-theme] .tk-file-result .audio-clip-success-dialog .audio-clip-success-meta { color:var(--tk-muted); }
+html:root[data-theme] .tk-file-result .audio-convert-success-detail { background:var(--tk-inset); }
 @media (prefers-reduced-motion:reduce) {
   .tk-file-result, .tk-file-result .audio-clip-success-dialog { transition:none; }
 }

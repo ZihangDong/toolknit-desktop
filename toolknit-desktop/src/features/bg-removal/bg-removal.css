@@ -942,3 +942,407 @@
     animation-duration: 1.8s;
   }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .bg-removal-overlay {
+  --bg-removal-ink: var(--tk-ink);
+  --bg-removal-heading: var(--tk-accent);
+  --bg-removal-muted: var(--tk-muted);
+  --bg-removal-quiet: var(--tk-muted);
+  --bg-removal-line: var(--tk-border);
+  --bg-removal-line-strong: var(--tk-border);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--bg-removal-ink);
+  background: var(--tk-page-bg) !important;
+}
+
+html:root[data-theme] .bg-removal-overlay::after {
+  background-image:
+    linear-gradient(rgba(var(--tk-rgb-ink), 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.022) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 1;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+html:root[data-theme] .bg-removal-overlay .bg-removal-bg {
+  display: none;
+}
+
+html:root[data-theme] .bg-removal-body {
+  background: transparent;
+}
+
+html:root[data-theme] .bg-removal-overlay :is(.bg-removal-panel, .bg-removal-stage) {
+  border-color: var(--bg-removal-line);
+  background: rgba(var(--tk-rgb-page), 0.96);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html:root[data-theme] .bg-removal-panel {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .bg-removal-overlay :is(.bg-removal-drawer-head, .bg-removal-title, .bg-removal-panel-head h2) {
+  color: var(--bg-removal-heading);
+}
+
+html:root[data-theme] .bg-removal-overlay :is(.bg-removal-kicker, .bg-removal-section-kicker) {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .bg-removal-overlay :is(.bg-removal-subtitle, .bg-removal-note, .bg-removal-file-empty, .bg-removal-status) {
+  color: var(--bg-removal-muted);
+}
+
+html:root[data-theme] .bg-removal-overlay :is(.bg-removal-note, .bg-removal-file-section, .bg-removal-control-section) {
+  border-color: var(--bg-removal-line);
+}
+
+html:root[data-theme] .bg-removal-note svg {
+  color: var(--bg-removal-ink);
+}
+
+html:root[data-theme] .bg-removal-file-badge {
+  border-color: var(--bg-removal-line-strong);
+  background: var(--tk-inset);
+  color: var(--bg-removal-heading);
+}
+
+html:root[data-theme] .bg-removal-file-details dt {
+  color: var(--bg-removal-quiet);
+}
+
+html:root[data-theme] .bg-removal-file-details dd {
+  color: var(--bg-removal-heading);
+}
+
+html:root[data-theme] .bg-removal-overlay :is(.bg-removal-field-label, .bg-removal-link-button) {
+  color: var(--bg-removal-heading);
+}
+
+html:root[data-theme] .bg-removal-link-button:hover {
+  color: var(--bg-removal-ink);
+}
+
+html:root[data-theme] .bg-removal-upload {
+  border-color: var(--bg-removal-line-strong);
+  background: var(--tk-inset);
+  color: var(--bg-removal-ink);
+}
+
+html:root[data-theme] .bg-removal-upload:hover:not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-surface);
+  color: var(--bg-removal-ink);
+}
+
+html:root[data-theme] .bg-removal-upload:disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-muted);
+  opacity: 1;
+}
+
+html:root[data-theme] .bg-removal-overlay .tool-custom-select-trigger {
+  min-height: 40px;
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--bg-removal-ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] .bg-removal-overlay .tool-custom-select-trigger:hover:not(:disabled),
+html:root[data-theme] .bg-removal-overlay .tool-custom-select.is-open .tool-custom-select-trigger {
+  border-color: var(--tk-accent);
+  background: var(--tk-inset);
+  color: var(--bg-removal-ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] .bg-removal-overlay .tool-custom-select-trigger svg {
+  color: var(--bg-removal-ink);
+}
+
+html:root[data-theme] .bg-removal-overlay .tool-custom-select-trigger:disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-muted);
+  opacity: 1;
+}
+
+html:root[data-theme] body:has(.bg-removal-overlay.visible) .tool-custom-select-menu {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  box-shadow: 0 12px 30px rgba(17, 17, 17, .12);
+}
+
+html:root[data-theme] body:has(.bg-removal-overlay.visible) .tool-custom-select-menu button {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] body:has(.bg-removal-overlay.visible) .tool-custom-select-menu button:hover,
+html:root[data-theme] body:has(.bg-removal-overlay.visible) .tool-custom-select-menu button:focus-visible,
+html:root[data-theme] body:has(.bg-removal-overlay.visible) .tool-custom-select-menu button.is-selected {
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .bg-removal-select {
+  border-color: var(--tk-border);
+  background-color: var(--tk-page-bg);
+  color: var(--bg-removal-ink);
+}
+
+html:root[data-theme] .bg-removal-select option {
+  background: var(--tk-page-bg);
+  color: var(--bg-removal-ink);
+}
+
+html:root[data-theme] .bg-removal-overlay .bg-removal-slider {
+  background: var(--tk-surface);
+  accent-color: var(--tk-accent);
+}
+
+html:root[data-theme] .bg-removal-overlay .bg-removal-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 1px solid var(--tk-border);
+  border-radius: 999px;
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] .bg-removal-overlay .bg-removal-slider::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -7px;
+  border: 2px solid var(--tk-accent);
+  background: var(--tk-page-bg);
+  box-shadow: 0 1px 3px rgba(17, 17, 17, .2);
+}
+
+html:root[data-theme] .bg-removal-overlay .bg-removal-slider::-moz-range-track {
+  height: 4px;
+  border: 1px solid var(--tk-border);
+  border-radius: 999px;
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] .bg-removal-overlay .bg-removal-slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--tk-accent);
+}
+
+html:root[data-theme] .bg-removal-overlay .bg-removal-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--tk-accent);
+  border-radius: 50%;
+  background: var(--tk-page-bg);
+  box-shadow: 0 1px 3px rgba(17, 17, 17, .2);
+}
+
+html:root[data-theme] .bg-removal-slider-value {
+  color: var(--bg-removal-heading);
+}
+
+html:root[data-theme] .bg-removal-status::before {
+  background: var(--tk-border);
+}
+
+html:root[data-theme] .bg-removal-status[data-state="working"]::before {
+  background: #bd8628;
+}
+
+html:root[data-theme] .bg-removal-status[data-state="done"]::before {
+  background: var(--tk-accent);
+}
+
+html:root[data-theme] .bg-removal-status[data-state="error"]::before {
+  background: #bd3b3b;
+}
+
+html:root[data-theme] .bg-removal-process,
+html:root[data-theme] .bg-removal-small-button.is-primary {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent) !important;
+  box-shadow: none;
+}
+
+html:root[data-theme] :is(.bg-removal-process, .bg-removal-small-button.is-primary):hover:not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent) !important;
+  box-shadow: none;
+}
+
+html:root[data-theme] :is(.bg-removal-process, .bg-removal-small-button.is-primary):disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-surface-hover);
+  color: var(--tk-muted) !important;
+  opacity: 1;
+}
+
+html:root[data-theme] :is(.bg-removal-process, .bg-removal-small-button.is-primary) > :is(span, svg) {
+  color: inherit !important;
+  stroke: currentColor;
+}
+
+html:root[data-theme] .bg-removal-screen {
+  border-color: var(--tk-border);
+  background:
+    conic-gradient(rgba(var(--tk-rgb-ink), 0.045) 0 25%, transparent 0 50%, rgba(var(--tk-rgb-ink), 0.045) 0 75%, transparent 0) 0 0 / 20px 20px,
+    var(--tk-inset);
+}
+
+html:root[data-theme] .bg-removal-overlay.drag-over .bg-removal-screen {
+  border-color: var(--tk-accent);
+  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, .2);
+}
+
+html:root[data-theme] .bg-removal-progress {
+  background: rgba(var(--tk-rgb-page), 0.9);
+  color: var(--bg-removal-muted);
+}
+
+html:root[data-theme] .bg-removal-progress strong {
+  color: var(--bg-removal-heading);
+}
+
+html:root[data-theme] .bg-removal-spinner {
+  border-color: rgba(var(--tk-rgb-ink), 0.14);
+  border-top-color: var(--tk-accent);
+}
+
+html:root[data-theme] :is(.bg-removal-toolbar, .bg-removal-zoombar) {
+  border-color: var(--tk-border);
+  background: rgba(var(--tk-rgb-page), 0.96);
+  box-shadow: 0 10px 24px rgba(17, 17, 17, .1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+html:root[data-theme] .bg-removal-tool-btn {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .bg-removal-tool-btn:hover:not(:disabled) {
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .bg-removal-tool-btn.is-active,
+html:root[data-theme] .bg-removal-tool-btn[aria-pressed="true"] {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .bg-removal-tool-divider {
+  background: var(--tk-surface-hover);
+}
+
+html:root[data-theme] .bg-removal-zoom-value {
+  color: var(--bg-removal-heading);
+}
+
+html:root[data-theme] .bg-removal-brush-pop {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  box-shadow: 0 12px 30px rgba(17, 17, 17, .12);
+}
+
+html:root[data-theme] .bg-removal-brush-pop > span:first-child {
+  color: var(--bg-removal-muted);
+}
+
+html:root[data-theme] .bg-removal-brush-cursor {
+  border-color: var(--tk-accent);
+  box-shadow: 0 0 0 1px #ffffff, inset 0 0 0 1px rgba(17, 17, 17, .22);
+}
+
+html:root[data-theme] .bg-removal-success-overlay {
+  background: rgba(var(--tk-rgb-ink), 0.18);
+}
+
+html:root[data-theme] .bg-removal-success-overlay .audio-clip-success-dialog {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  box-shadow: 0 18px 50px rgba(17, 17, 17, .14);
+}
+
+html:root[data-theme] .bg-removal-success-overlay :is(.audio-clip-success-title, .audio-convert-success-value) {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .bg-removal-success-overlay :is(.audio-clip-success-meta, .audio-convert-success-key) {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .bg-removal-success-overlay .audio-convert-success-detail {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .bg-removal-success-overlay .audio-clip-success-btn-secondary {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink) !important;
+}
+
+html:root[data-theme] .bg-removal-success-overlay .audio-clip-success-btn-secondary:hover {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-ink) !important;
+}
+
+html:root[data-theme] .bg-removal-success-overlay .audio-clip-success-btn-primary {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent) !important;
+}
+
+html:root[data-theme] .bg-removal-success-overlay .audio-clip-success-btn-primary:hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent) !important;
+}
+
+html:root[data-theme] .bg-removal-overlay :is(button, input, select):focus-visible {
+  outline: 2px solid var(--tk-accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 839px) {
+  html:root[data-theme] .bg-removal-params-button {
+    border-color: var(--tk-border);
+    background: var(--tk-inset);
+    color: var(--tk-ink);
+  }
+
+  html:root[data-theme] .bg-removal-params-button:hover {
+    border-color: var(--tk-accent);
+    background: var(--tk-page-bg);
+    color: var(--tk-ink);
+  }
+
+  html:root[data-theme] .bg-removal-panel {
+    box-shadow: 16px 0 40px rgba(17, 17, 17, .16);
+  }
+
+  html:root[data-theme] .bg-removal-drawer-scrim {
+    background: rgba(var(--tk-rgb-ink), 0.18);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .bg-removal-overlay :is(.bg-removal-overlay, .bg-removal-canvas-stack canvas) {
+    transition: none;
+  }
+}

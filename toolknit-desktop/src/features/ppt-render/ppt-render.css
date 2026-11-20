@@ -286,3 +286,45 @@
         }
         .ppt-render-v2 .ppt-render-v2-workspace { height: auto; }
       }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .ppt-render-v2 {
+  --ppt-render-panel: var(--tk-page-bg);
+  --ppt-render-border: var(--tk-border);
+  --ppt-render-ink: var(--tk-ink);
+  --ppt-render-muted: var(--tk-muted);
+}
+
+html:root[data-theme] .ppt-render-v2 :is(.ppt-render-v2-stats .ppt-compress-stat strong, .ppt-render-v2-summary strong) {
+  color: var(--ppt-render-ink);
+}
+
+html:root[data-theme] .ppt-render-v2 :is(.ppt-render-v2-stats .ppt-compress-stat span, .ppt-render-v2-stats .ppt-compress-stat em, .ppt-render-v2-note) {
+  color: var(--ppt-render-muted);
+}
+
+html:root[data-theme] .ppt-render-v2 :is(.ppt-render-v2-empty, .ppt-render-v2-summary, .ppt-render-v2-stats .ppt-compress-stat, .ppt-render-v2-note) {
+  border-color: var(--ppt-render-border);
+  background: var(--ppt-render-panel);
+}
+
+html:root[data-theme] .ppt-render-v2 .ppt-render-v2-file {
+  color: var(--ppt-render-muted);
+}
+
+html:root[data-theme] .ppt-render-v2 .ppt-render-v2-summary {
+  color: var(--ppt-render-muted);
+}
+
+html:root[data-theme] .ppt-render-v2 .ppt-render-v2-note {
+  border-left-color: var(--tk-accent);
+}
+
+html:root[data-theme] .ppt-render-v2 .ppt-render-v2-stats {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .ppt-render-v2 .ppt-render-v2-stats::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}

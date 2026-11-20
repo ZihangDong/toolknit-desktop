@@ -19,8 +19,8 @@ import { createAiDocumentRequestSession } from './request-session.js';
 import '../ai-workbench/ai-workbench-shared.css';
 import './ai-document.css';
 import './ai-document-editor.css';
-import '../../styles/components/ai-workbench-light.css';
-import './ai-document-light.css';
+import '../../styles/components/ai-workbench.css';
+
 
 const REQUEST_TIMEOUT_MS = AI_PROVIDER_LIMITS.maxTimeoutMs;
 

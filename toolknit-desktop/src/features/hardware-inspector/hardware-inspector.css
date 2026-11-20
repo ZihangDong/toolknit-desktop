@@ -920,3 +920,6 @@
           overflow-y: auto;
         }
       }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */

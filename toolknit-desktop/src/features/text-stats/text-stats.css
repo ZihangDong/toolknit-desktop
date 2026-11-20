@@ -592,3 +592,222 @@
       }
 
       /* ===== End Text Stats ===== */
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .text-stats-v2 {
+  --text-stats-light-surface: var(--tk-on-accent);
+  --text-stats-light-soft: var(--tk-on-accent);
+  --text-stats-light-hover: var(--tk-muted);
+  --text-stats-light-line: var(--tk-border);
+  --text-stats-light-line-strong: var(--tk-border);
+  --text-stats-light-ink: var(--tk-ink);
+  --text-stats-light-muted: var(--tk-muted);
+  --text-stats-light-quiet: var(--tk-muted);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--text-stats-light-ink);
+  background: var(--text-stats-light-surface);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-workspace {
+  background: var(--text-stats-light-surface);
+}
+
+html:root[data-theme] .text-stats-v2 :is(.text-stats-v2-editor, .text-stats-v2-results) {
+  border-color: var(--text-stats-light-line);
+  background: var(--text-stats-light-surface);
+  box-shadow: none;
+}
+
+html:root[data-theme] .text-stats-v2 :is(.text-stats-v2-editor-head h2, .text-stats-v2-result-head h2) {
+  color: var(--text-stats-light-ink);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-result-head p {
+  color: var(--text-stats-light-muted);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-source {
+  border-color: var(--text-stats-light-line);
+  background: var(--text-stats-light-soft);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-source > :is(svg, i) {
+  border-color: var(--text-stats-light-line-strong);
+  background: var(--text-stats-light-surface);
+  color: var(--text-stats-light-ink);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-source strong {
+  color: var(--text-stats-light-ink);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-source span {
+  color: var(--text-stats-light-muted);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-source-mark {
+  border-color: var(--text-stats-light-line);
+  background: var(--text-stats-light-surface);
+  color: var(--text-stats-light-muted);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-icon-btn:hover {
+  border-color: var(--text-stats-light-line-strong);
+  background: var(--text-stats-light-hover);
+  color: var(--text-stats-light-ink);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-drop-card {
+  border-color: var(--text-stats-light-line-strong);
+  background: var(--text-stats-light-soft);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-drop-card.is-dragging,
+html:root[data-theme] .text-stats-v2.drag-over .text-stats-v2-drop-card {
+  border-color: var(--text-stats-light-ink);
+  background: var(--text-stats-light-hover);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-drop-card span {
+  color: var(--text-stats-light-quiet);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-drop-card p {
+  color: var(--text-stats-light-muted);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-select-btn {
+  border-color: var(--text-stats-light-ink);
+  background: var(--text-stats-light-ink);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-select-btn :is(span, svg),
+html:root[data-theme] .text-stats-v2 .text-stats-v2-select-btn:hover {
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-select-btn:hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  box-shadow: 0 6px 14px rgba(17, 17, 17, 0.12);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-textarea {
+  border-color: var(--text-stats-light-line-strong);
+  background:
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.045) 1px, transparent 1px) 0 0 / 38px 100%,
+    var(--text-stats-light-surface);
+  color: var(--text-stats-light-ink);
+  caret-color: var(--text-stats-light-ink);
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-textarea::placeholder {
+  color: var(--text-stats-light-quiet);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-v2-textarea:focus {
+  border-color: var(--text-stats-light-ink);
+  background:
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.055) 1px, transparent 1px) 0 0 / 38px 100%,
+    var(--text-stats-light-surface);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] .text-stats-v2 :is(.text-stats-v2-textarea, .text-stats-v2-result-scroll)::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] .text-stats-v2 :is(.text-stats-v2-textarea, .text-stats-v2-result-scroll)::-webkit-scrollbar-thumb:hover {
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-actions .text-stats-btn {
+  border-color: var(--text-stats-light-line-strong);
+  background: var(--text-stats-light-surface);
+  color: var(--text-stats-light-ink);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-actions .text-stats-btn:hover {
+  border-color: var(--text-stats-light-ink);
+  background: var(--text-stats-light-hover);
+  color: var(--text-stats-light-ink);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-actions .text-stats-clear-btn:hover {
+  border-color: #c65a5a;
+  background: var(--tk-inset);
+  color: #a63232;
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-actions :is(.text-stats-copy-btn, .text-stats-export-btn) {
+  border-color: var(--text-stats-light-ink);
+  background: var(--text-stats-light-ink);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-actions :is(.text-stats-copy-btn, .text-stats-export-btn):hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: 0 6px 14px rgba(17, 17, 17, 0.12);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-actions .text-stats-btn:disabled {
+  border-color: var(--text-stats-light-line);
+  background: var(--tk-surface-hover);
+  color: var(--tk-muted);
+  box-shadow: none;
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-result-scroll {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-card {
+  border-color: var(--text-stats-light-line);
+  background: var(--text-stats-light-soft);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-card.is-primary {
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-card:hover {
+  border-color: var(--text-stats-light-line-strong);
+  background: var(--text-stats-light-hover);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-card-icon {
+  color: var(--text-stats-light-muted);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-card-value {
+  color: var(--text-stats-light-ink);
+}
+
+html:root[data-theme] .text-stats-v2 .text-stats-card-label {
+  color: var(--text-stats-light-muted);
+}
+
+html:root[data-theme] .text-stats-v2.is-reading-file .text-stats-v2-workspace {
+  opacity: 0.72;
+}
+
+html:root[data-theme] .text-stats-v2.is-reading-file::before {
+  inset: 68px 0 0;
+  z-index: 10;
+  display: block;
+  background: rgba(var(--tk-rgb-page), 0.72);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .text-stats-v2 :is(.text-stats-v2-select-btn, .text-stats-card) {
+    transition: none;
+  }
+}

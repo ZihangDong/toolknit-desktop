@@ -1,0 +1,78 @@
+diff --git a/sw/qa/extras/ooxmlimport/data/paragraph-overflow-punctuation.docx b/sw/qa/extras/ooxmlimport/data/paragraph-overflow-punctuation.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..386ca4adbde546c488f49ca204d437895156c4ad
+GIT binary patch
+literal 1898
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+index 58064c68432a29086a9a0c7b1511101bccd7ac07..1b61fcd53834e8af5f61760eb3f607018c891a85 100644
+--- a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
++++ b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+@@ -132,6 +132,20 @@ CPPUNIT_TEST_FIXTURE(Test, testNoPunctuationKerningImport)
+     }
+ }
+ 
++CPPUNIT_TEST_FIXTURE(Test, testOverflowPunctuationImport)
++{
++    createSwDoc("paragraph-overflow-punctuation.docx");
++    // Direct on/off, the empty on/off element, absent/default, inherited
++    // values, and direct formatting overriding an inherited value.
++    const bool aExpected[] = { false, true, true, true, false, true, false, true, false };
++    for (size_t i = 0; i < SAL_N_ELEMENTS(aExpected); ++i)
++        CPPUNIT_ASSERT_EQUAL_MESSAGE("paragraph " + std::to_string(i + 1), aExpected[i],
++            getProperty<bool>(getParagraph(static_cast<sal_Int32>(i + 1)), u"ParaIsHangingPunctuation"_ustr));
++
++    createSwDoc("character-spacing-absent.docx");
++    CPPUNIT_ASSERT(getProperty<bool>(getParagraph(1), u"ParaIsHangingPunctuation"_ustr));
++}
++
+ CPPUNIT_TEST_FIXTURE(Test, testImageHyperlink)
+ {
+     createSwDoc("image-hyperlink.docx");
+diff --git a/sw/source/writerfilter/dmapper/DomainMapper.cxx b/sw/source/writerfilter/dmapper/DomainMapper.cxx
+index 6fa92a6fdf27e859418214b6e82527d4469974b9..0906fe237f020ae915a1e8723f2378816f7fc620 100644
+--- a/sw/source/writerfilter/dmapper/DomainMapper.cxx
++++ b/sw/source/writerfilter/dmapper/DomainMapper.cxx
+@@ -2058,7 +2058,8 @@ void DomainMapper::sprmWithProps( Sprm& rSprm, const PropertyMapPtr& rContext )
+     }
+     break;  // sprmPFWidowControl
+     case NS_ooxml::LN_CT_PPrBase_overflowPunct:
+-        rContext->Insert(PROP_PARA_IS_HANGING_PUNCTUATION, uno::Any( nIntValue == 0 ));
++        // overflowPunct uses the positive on/off sense: true permits hanging.
++        rContext->Insert(PROP_PARA_IS_HANGING_PUNCTUATION, uno::Any(nIntValue != 0));
+         break;
+     case NS_ooxml::LN_CT_PPrBase_topLinePunct:
+         break;

@@ -337,6 +337,7 @@ pub(crate) async fn file_search(
         "context" if label == "main" => {
             let context = json!({"lang":if request["lang"]=="en" {"en"} else {"zh"},
                 "theme":if request["theme"]=="light" {"light"} else {"dark"},
+                "appearance":super::appearance::normalize(&request["appearance"], &request["theme"]),
                 "reducedMotion":request["reducedMotion"].as_bool().unwrap_or(false)});
             let changed = { let mut inner = lock(&state.inner);
                 if inner.context == context { false } else { inner.context = context; true } };

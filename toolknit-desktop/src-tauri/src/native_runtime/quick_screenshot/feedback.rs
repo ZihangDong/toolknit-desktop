@@ -62,7 +62,8 @@ pub(super) fn boot(app: &tauri::AppHandle) -> Result<serde_json::Value, String> 
     let pending = lock(&state.feedback_pending)
         .clone()
         .ok_or("screenshot:expired")?;
-    Ok(serde_json::json!({"context":{"lang":pending.lang,"theme":"light"},"feedback":pending}))
+    let context = lock(&state.inner).context.clone();
+    Ok(serde_json::json!({"context":context,"feedback":pending}))
 }
 pub(super) fn ready(
     app: &tauri::AppHandle,

@@ -1,5 +1,13 @@
 const entry = (desktop, names, scope = 'supported', note = '') => ({ desktop, scope, tools: names.map(name => `toolknit_${name}`), note });
 export const DESKTOP_COVERAGE = Object.freeze([
+  entry('batch-rename', [], 'desktop-only', 'Interactive filename preview and persistent last-batch undo use the desktop runtime.'),
+  entry('task-center', [], 'desktop-only', 'Task history, session retries and cancellation belong to the desktop session.'),
+  entry('tool-workflows', [], 'desktop-only', 'Saved PDF workflow presets and their task execution are desktop workbench features.'),
+  entry('quick-launcher', [], 'desktop-only', 'Global shortcuts, recent tools and interactive tool navigation require the desktop app.'),
+  entry('content-search', [], 'desktop-only', 'The personal persistent document content index is managed through explicit desktop controls.'),
+  entry('document-compare', [], 'desktop-only', 'Interactive extracted-text comparison and report export remain in the desktop workbench.'),
+  entry('subtitle-workbench', [], 'desktop-only', 'Subtitle editing, media preview and local drafts are desktop features; standalone transcription retains its existing CLI interface.'),
+  entry('folder-automation', [], 'desktop-only', 'Background folder rules, baseline tracking and processing history require the running desktop app.'),
   entry('word-to-pdf', ['word_to_pdf'], 'supported', 'DOC/DOCX, local LibreOffice Writer, single and batch output; interactive PDF preview remains on desktop.'),
   entry('file-search', [], 'desktop-only', 'Personal persistent filename index, optional NTFS acceleration, floating windows and Explorer selection use explicit desktop scope controls.'),
   entry('quick-screenshot', [], 'desktop-only', 'Interactive selection, annotations and pinned windows require a visible desktop session.'),

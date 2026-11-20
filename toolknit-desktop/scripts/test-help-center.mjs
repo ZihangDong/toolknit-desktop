@@ -19,11 +19,9 @@ globalThis.window = {};
 const { HELP_CONTENT, HELP_CONTENT_EN } = await import('../src/help-data.js');
 
 const root = new URL('..', import.meta.url);
-const themeIndex = await readFile(new URL('src/styles/themes/index.css', root), 'utf8');
-const helpLight = await readFile(new URL('src/styles/themes/help-light.css', root), 'utf8');
-assert.match(themeIndex, /@import url\('\.\/help-light\.css'\)/, 'Shared document theme is loaded by the theme entry.');
-assert.match(helpLight, /html\[data-theme="light"\] \.help-overlay/, 'Help and legal colors stay scoped to light document pages.');
-assert.doesNotMatch(helpLight, /!important|z-index\s*:/, 'Document theme must not compete with modal ownership.');
+const themeIndex = await readFile(new URL('src/styles/index.css', root), 'utf8');
+const helpLight = await readFile(new URL('src/styles/pages/help.css', root), 'utf8');
+assert.match(helpLight, /html:root\[data-theme\] \.help-overlay/, 'Help and legal colors stay scoped to light document pages.');
 assert.doesNotMatch(helpLight, /\.help-back-btn:hover/, 'Help navigation uses the shared hover owner.');
 const indexHtml = await readAppMarkup(import.meta.url);
 const zh = JSON.parse(await readFile(new URL('src/locales/zh.json', root), 'utf8'));
@@ -84,6 +82,10 @@ for (const key of helpNavI18n) {
 }
 
 const toolToHelp = new Map([
+  ['quick-launcher','quick-launcher'],['content-search','content-search'],['document-compare','document-compare'],['subtitle-workbench','subtitle-workbench'],['folder-automation','folder-automation'],
+  ['batch-rename', 'batch-rename'],
+  ['task-center', 'task-center'],
+  ['tool-workflows', 'tool-workflows'],
   ['word-to-pdf', 'word-to-pdf'],
   ['file-search', 'file-search'],
   ['pdf-merge', 'pdf-merge'],
@@ -162,7 +164,7 @@ const toolToHelp = new Map([
 
 toolToHelp.set('image-to-pdf', 'image-to-pdf');
 const desktopTools = unique(valuesForAttribute(indexHtml, 'data-tool'));
-assert.equal(desktopTools.length, 75, 'Current desktop catalog must contain exactly 75 unique tools.');
+assert.equal(desktopTools.length, 83, 'Current desktop catalog must contain exactly 83 unique tools.');
 for (const tool of desktopTools) {
   const section = toolToHelp.get(tool);
   assert.ok(section, `Desktop tool has no help mapping: ${tool}`);

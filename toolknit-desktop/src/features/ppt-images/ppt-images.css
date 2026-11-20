@@ -247,3 +247,88 @@
 @media (max-height: 760px) {
   .ppt-images-v2-empty { min-height: 210px; }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .ppt-images-v2 {
+  --ppt-images-panel: var(--tk-page-bg);
+  --ppt-images-surface: var(--tk-inset);
+  --ppt-images-border: var(--tk-border);
+  --ppt-images-ink: var(--tk-ink);
+  --ppt-images-muted: var(--tk-muted);
+  --ppt-images-quiet: var(--tk-muted);
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-v2-workspace {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-v2-workspace::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] .ppt-images-v2 :is(.ppt-images-v2-upload, .ppt-images-v2-empty, .ppt-images-summary) {
+  border-color: var(--ppt-images-border);
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-v2-upload p,
+html:root[data-theme] .ppt-images-v2 .ppt-images-v2-file {
+  color: var(--ppt-images-muted);
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-item {
+  border-color: var(--ppt-images-border);
+  color: var(--ppt-images-ink);
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-thumb {
+  border-color: var(--ppt-images-border);
+  background: var(--ppt-images-surface);
+  color: var(--ppt-images-muted);
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-thumb img {
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-info strong {
+  color: var(--ppt-images-ink);
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-info span {
+  color: var(--ppt-images-muted);
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-summary { color: var(--ppt-images-muted); }
+html:root[data-theme] .ppt-images-v2 .ppt-images-summary strong { color: var(--ppt-images-ink); }
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-badge {
+  border-color: var(--ppt-images-border);
+  background: var(--ppt-images-surface);
+  color: var(--ppt-images-muted);
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-item.is-duplicate .ppt-images-badge {
+  border-color: #ead9a6;
+  background: #fff8dd;
+  color: #8a6410;
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-item.is-locked {
+  opacity: 0.55;
+}
+
+html:root[data-theme] .ppt-images-v2 .ppt-images-selection {
+  --selection-fill: var(--tk-accent);
+  --selection-ink: var(--tk-on-accent);
+  --selection-border: var(--tk-border-strong);
+}
+
+html:root[data-theme] .ppt-images-preview .ppt-images-preview-dialog {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .ppt-images-preview-heading p { color: var(--tk-muted); }
+html:root[data-theme] .ppt-images-preview-media { border-color: var(--tk-border); background: var(--tk-inset); }

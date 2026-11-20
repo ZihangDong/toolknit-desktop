@@ -31,7 +31,6 @@ pub(crate) fn import_custom_background_blocking(
     source_path: String,
     job_id: Option<String>,
 ) -> Result<CustomBackgroundAsset, String> {
-    const MAX_BACKGROUND_BYTES: u64 = 250 * 1024 * 1024;
     let job_id = normalize_custom_background_job_id(job_id);
     let import_lock = CUSTOM_BACKGROUND_IMPORT_LOCK
         .get_or_init(|| std::sync::Mutex::new(()))
@@ -46,8 +45,8 @@ pub(crate) fn import_custom_background_blocking(
         .map_err(|error| format!("Cannot access background file: {}", error))?;
     let metadata = std::fs::metadata(&source)
         .map_err(|error| format!("Cannot read background file: {}", error))?;
-    if !metadata.is_file() || metadata.len() > MAX_BACKGROUND_BYTES {
-        return Err("Background must be a file no larger than 250MB".to_string());
+    if !metadata.is_file() {
+        return Err("Background must be a file".to_string());
     }
     let extension = source
         .extension()
@@ -56,6 +55,13 @@ pub(crate) fn import_custom_background_blocking(
         .to_ascii_lowercase();
     let media_type =
         custom_background_media_type(&extension).ok_or("Unsupported background format")?;
+    let max_background_mb = if media_type == "video" { 500_u64 } else { 250_u64 };
+    let max_background_bytes = max_background_mb * 1024 * 1024;
+    if metadata.len() > max_background_bytes {
+        return Err(format!(
+            "Background {media_type} must be no larger than {max_background_mb}MB"
+        ));
+    }
 
     emit_custom_background_import_progress(
         app,
@@ -131,12 +137,12 @@ pub(crate) fn import_custom_background_blocking(
         .map_err(|error| format!("Cannot read imported background: {}", error))?;
     if !target_metadata.is_file()
         || target_metadata.len() == 0
-        || target_metadata.len() > MAX_BACKGROUND_BYTES
+        || target_metadata.len() > max_background_bytes
     {
         let _ = std::fs::remove_file(&temporary);
-        return Err(
-            "Converted background must be a non-empty file no larger than 250MB".to_string(),
-        );
+        return Err(format!(
+            "Imported background {media_type} must be a non-empty file no larger than {max_background_mb}MB"
+        ));
     }
 
     if let Err(error) = std::fs::rename(&temporary, &target) {

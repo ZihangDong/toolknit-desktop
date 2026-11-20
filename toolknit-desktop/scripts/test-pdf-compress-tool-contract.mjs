@@ -80,7 +80,7 @@ assert.match(processor, /assertPdfCompressLevel/);
 assert.match(processor, /normalizePdfCompressTarget/);
 assert.match(processor, /targetSizeMb/);
 assert.match(processor, /targetReached/);
-assert.match(processor, /invoke\('cancel_convert'\)/);
+assert.match(processor, /invoke\('cancel_convert', \{ toolknitTaskTool: 'pdf-compress' \}\)/);
 assert.match(processor, /operation\.cancelPromise/);
 assert.match(await readFile(new URL('../src-tauri/src/native_runtime/pdf/compress.rs', import.meta.url), 'utf8'), /if status == "compressed"/);
 assert.match(processor, /rasterizePdfForCompression/);

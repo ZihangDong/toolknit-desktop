@@ -23,6 +23,8 @@ pub fn run() {
         })
         .manage(WindowCornerRadiusState::default())
         .manage(AutostartState::default())
+        .manage(workbench::FolderState::default())
+        .manage(workbench::LauncherState::default())
         .manage(quick_screenshot::ScreenshotState::default())
         .manage(file_search::FileSearchState::default())
         .manage(platform::auxiliary_windows::Registry::default())
@@ -32,6 +34,11 @@ pub fn run() {
         .manage(onnx_segmenter::MattingState::default())
         .manage(TeleprompterRecognitionState::default())
         .invoke_handler(tauri::generate_handler![
+            workbench::document_content_index,
+            workbench::folder_automation,
+            workbench::launcher_settings,
+            batch_rename::batch_rename_files,
+            batch_rename::undo_batch_rename,
             quick_screenshot::quick_screenshot,
             quick_screenshot::quick_screenshot_image,
             file_search::file_search,
@@ -322,6 +329,7 @@ pub fn run() {
 
             quick_screenshot::initialize(app.handle());
             file_search::initialize(app.handle());
+            workbench::bootstrap(app.handle());
             Ok(())
         })
         .build(context)
@@ -329,6 +337,7 @@ pub fn run() {
         .run(|app, event| {
             if matches!(event, tauri::RunEvent::Exit) {
                 file_search::shutdown(app);
+                workbench::shutdown(app);
                 local_translation::shutdown(app);
                 local_ocr::shutdown(app);
             }

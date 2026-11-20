@@ -24,6 +24,7 @@ applyWordResult(rows, {
   outputPath: 'C:\\结果.pdf',
   outputBytes: 100,
   pageCount: 2,
+  fontNotices: [{ code: 'missing-font', font: 'Missing', replacement: 'Noto Sans SC' }],
 });
 applyWordResult(rows, {
   inputPath: rows[1].path,
@@ -32,6 +33,7 @@ applyWordResult(rows, {
 });
 assert.equal(rows[0].status, 'success');
 assert.equal(rows[0].outputBytes, 100);
+assert.equal(rows[0].fontNotices[0].replacement, 'Noto Sans SC');
 applyWordResult(rows, {
   inputPath: rows[1].path,
   status: 'success',
@@ -48,6 +50,7 @@ applyWordResult(rows, {
   error: 'word-render:invalid-document',
 });
 assert.equal(rows[1].status, 'failed');
+assert.deepEqual(rows[1].fontNotices, [], 'retry results clear stale font warnings');
 assert.equal(wordErrorCode('private details at C:\\secret'), 'render-failed');
 assert.equal(wordErrorCode('word-render:timeout'), 'timeout');
 assert.ok(TOOL_DEFINITIONS.find((t) => t.name === 'toolknit_word_to_pdf'));

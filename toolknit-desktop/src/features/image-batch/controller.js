@@ -359,7 +359,7 @@ export function createImageBatchController({
     setProcessing(false);
     if (isTauri && invokeNative && wasProcessing) {
       void tauriCore
-        .then(({ invoke }) => invoke('cancel_convert'))
+        .then(({ invoke }) => invoke('cancel_convert', { toolknitTaskTool: mode === 'convert' ? 'image-convert' : 'image-compress' }))
         .catch(error => console.error('Cancel failed:', error));
     }
   }

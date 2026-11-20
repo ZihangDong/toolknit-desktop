@@ -78,7 +78,7 @@
 }
 #pdfMergeWorkbenchActions .pdf-editor-tool span { min-width: 0; overflow-wrap: anywhere; }
 #pdfMergeWorkbenchActions .pdf-merge-delete-button:not(:disabled) { color: #f3a8a8; }
-html[data-theme="light"] #pdfMergeWorkbenchActions .pdf-merge-delete-button:not(:disabled) { color: #a52d36; }
+html:root[data-theme] #pdfMergeWorkbenchActions .pdf-merge-delete-button:not(:disabled) { color: #a52d36; }
 @media (max-height: 760px) {
   #pdfMergeWorkbenchActions .pdf-merge-workbench-section,
   #pdfMergeWorkbenchActions .pdf-merge-workbench-export { padding-block: 14px; gap: 10px; }

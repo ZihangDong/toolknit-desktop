@@ -7,6 +7,7 @@
 /cli/.stage-cli-resources.lock
 /cli/*.tgz
 /src-tauri/resources/ffmpeg/
+/src-tauri/resources/office-kernel/
 /src-tauri/resources/whisper/Release/*.exe
 !/src-tauri/resources/whisper/Release/whisper-cli.exe
 /src-tauri/resources/whisper/Release/SDL2.dll

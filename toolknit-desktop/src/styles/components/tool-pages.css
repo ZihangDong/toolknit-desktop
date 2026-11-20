@@ -236,3 +236,500 @@
         50% { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0); }
       }
 
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) {
+  --ink: var(--tk-ink);
+  --muted: var(--tk-muted);
+  --quiet: var(--tk-muted);
+  --line: var(--tk-border);
+  --line-strong: var(--tk-border);
+  --white: var(--tk-accent);
+  --black: var(--tk-page-bg);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--ink);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .excel-to-pdf-overlay {
+  background: var(--tk-page-bg) !important;
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-bg, .excel-pdf-bg),
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light)::before {
+  display: none;
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light)::after {
+  background-image:
+    linear-gradient(rgba(var(--tk-rgb-ink), 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.022) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: none;
+  -webkit-mask-image: none;
+  opacity: 1;
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-body {
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-poster, .pdf-merge-v2-workspace) {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  box-shadow: none;
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-poster {
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-poster::before {
+  border-color: rgba(var(--tk-rgb-ink), 0.08);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-poster::after {
+  color: rgba(var(--tk-rgb-ink), 0.045);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-poster-kicker, .pdf-merge-v2-upload-eyebrow, .pdf-merge-v2-section-kicker, .pdf-merge-v2-poster-note span, .audio-convert-formats-title, .excel-pdf-setting legend) {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-title, .pdf-merge-v2-upload h2, .pdf-merge-v2-section-head h2, .audio-convert-formats-title, .excel-pdf-settings-head h2) {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-subtitle, .pdf-merge-v2-upload p, .pdf-merge-v2-section-head p, .pdf-merge-v2-actions > span, .pdf-merge-v2-poster-note strong, .pdf-merge-v2-step strong, .pdf-merge-info-item, .pdf-enhance-strength-hint) {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-poster-note {
+  border-top-color: var(--tk-border);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-step p {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-options-hint {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-step > span {
+  border-color: var(--tk-border);
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-step.is-active > span {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-upload, .pdf-merge-v2-options, .pdf-merge-v2-info, .excel-pdf-settings) {
+  border-color: var(--tk-border);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-cta, .pdf-merge-v2-process) {
+  border: 0;
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-cta, .pdf-merge-v2-process):hover:not(:disabled) {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-cta, .pdf-merge-v2-process):disabled {
+  background: var(--tk-surface-hover);
+  color: var(--tk-muted);
+  box-shadow: none;
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-options .audio-convert-format-options, .excel-pdf-segment) {
+  background: var(--tk-inset);
+  border-color: var(--tk-border);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.audio-convert-format-option, .excel-pdf-segment button) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.audio-convert-format-option:hover, .excel-pdf-segment button:hover):not(.active):not(.is-active) {
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.audio-convert-format-option.active, .excel-pdf-segment button.is-active) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-files, .excel-pdf-queue-surface) {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-files, .excel-pdf-queue-surface)::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-files, .excel-pdf-queue-surface):empty::before {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-files .audio-convert-file-item, .excel-pdf-file) {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.pdf-merge-v2-files .audio-convert-file-item:hover, .excel-pdf-file:hover) {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.audio-convert-file-index, .pdf-merge-file-grip, .excel-pdf-file-index) {
+  border-color: var(--tk-border);
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.audio-convert-file-name, .excel-pdf-file-copy strong) {
+  color: var(--tk-ink);
+}
+
+/* Match the compression template geometry across every PDF upload queue. */
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files {
+  gap: 10px;
+  padding: 12px;
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .audio-convert-file-item,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .audio-convert-file-item {
+  min-height: 52px;
+  padding: 12px 12px 12px 10px;
+  border: 1px solid var(--tk-border);
+  border-radius: 14px;
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .audio-convert-file-item:hover,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .audio-convert-file-item:hover {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+}
+
+/* The compression template has no visible drag-handle column. Rows remain draggable. */
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-file-grip {
+  display: none;
+}
+
+/* Use the compression template 3-column geometry: index, centered name, remove. */
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .audio-convert-file-item,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .audio-convert-file-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Media queues add optional size metadata before the final remove action. */
+html:root[data-theme] .pdf-merge-v2 :is([data-audio-convert-files], #videoConvertFiles) .audio-convert-file-item:has(> .audio-convert-file-size) {
+  grid-template-columns: 28px minmax(0, 1fr) max-content 30px;
+}
+
+html:root[data-theme] .pdf-merge-v2 :is([data-audio-convert-files], #videoConvertFiles) .audio-convert-file-size {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .pdf-merge-file-grip,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .pdf-merge-file-grip {
+  display: none !important;
+}
+
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .audio-convert-file-name,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .audio-convert-file-name {
+  width: 100%;
+  max-width: none;
+  text-align: center;
+  justify-self: center;
+}
+
+/* Keep the merge queue's index identical to the compression template. The
+   inner span is needed because the merge tool creates it explicitly. */
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .audio-convert-file-index,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .audio-convert-file-index {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  line-height: 1;
+  box-sizing: border-box;
+  justify-self: start;
+}
+
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .audio-convert-file-index > span,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .audio-convert-file-index > span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+  transform: none;
+}
+
+/* Override legacy ID-scoped queue rules so loaded file names stay visible. */
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .audio-convert-file-name,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .audio-convert-file-name {
+  color: var(--tk-ink);
+  opacity: 1;
+  visibility: visible;
+}
+
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .audio-convert-file-index,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .audio-convert-file-index {
+  color: var(--tk-muted);
+  opacity: 1;
+  visibility: visible;
+}
+
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .audio-convert-file-item.drag-target::before,
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .audio-convert-file-item.drag-target-before::before,
+html:root[data-theme] .pdf-merge-v2 #pdfMergeFiles .audio-convert-file-item.drag-target-after::before,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .audio-convert-file-item.drag-target::before,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .audio-convert-file-item.drag-target-before::before,
+html:root[data-theme] .pdf-merge-v2 .pdf-merge-v2-files .audio-convert-file-item.drag-target-after::before {
+  background: var(--tk-accent);
+  box-shadow: 0 0 8px rgba(17, 17, 17, 0.14);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.audio-convert-file-remove, .excel-pdf-icon-button) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(.audio-convert-file-remove:hover, .excel-pdf-icon-button:hover) {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-info-item {
+  align-items: center;
+  justify-content: center;
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-muted);
+  text-align: center;
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-info-item svg {
+  flex: 0 0 17px;
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(input, select, textarea) {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(input, select, textarea):focus {
+  border-color: var(--tk-accent);
+  background: var(--tk-page-bg);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] .excel-to-pdf-overlay .excel-pdf-empty {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .excel-to-pdf-overlay .excel-pdf-empty svg {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .excel-to-pdf-overlay .excel-pdf-empty strong {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .excel-to-pdf-overlay .excel-pdf-file-copy small {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .excel-to-pdf-overlay .excel-pdf-file-icon {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .excel-to-pdf-overlay .excel-pdf-queue-surface {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-option-label,
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-limit-note {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-segmented {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-segmented button {
+  border-right-color: var(--tk-border);
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-segmented button:hover:not(.active) {
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-segmented button.active {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-segmented button:focus-visible {
+  outline-color: var(--tk-accent);
+}
+
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-selection-button {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-selection-button:hover:not(:disabled),
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-selection-button:focus-visible:not(:disabled) {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-export-actions .pdf-to-image-export-button {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-export-actions .pdf-to-image-export-button:hover:not(:disabled),
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-export-actions .pdf-to-image-export-button:focus-visible:not(:disabled) {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-export-actions .pdf-to-image-export-button:disabled,
+html:root[data-theme] .pdf-to-image-v2 .pdf-to-image-selection-button:disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-surface-hover);
+  color: var(--tk-muted);
+  opacity: 1;
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-drop-zone {
+  background: rgba(var(--tk-rgb-page), 0.92);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) .pdf-merge-v2-drop-zone .drop-hint {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+  box-shadow: 0 10px 30px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] :is(#pdfMergeProcessMask, #pdfSplitProcessMask, #pdfToImageProcessMask, #pdfRotateProcessMask, #pdfEncryptProcessMask, #pdfDecryptProcessMask, #pdfEnhanceProcessMask) {
+  background: rgba(var(--tk-rgb-page), 0.96);
+}
+
+html:root[data-theme] :is(#pdfMergeProcessMask, #pdfSplitProcessMask, #pdfToImageProcessMask, #pdfRotateProcessMask, #pdfEncryptProcessMask, #pdfDecryptProcessMask, #pdfEnhanceProcessMask) .audio-convert-process-bar {
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] :is(#pdfMergeProcessMask, #pdfSplitProcessMask, #pdfToImageProcessMask, #pdfRotateProcessMask, #pdfEncryptProcessMask, #pdfDecryptProcessMask, #pdfEnhanceProcessMask) .audio-convert-process-bar-fill {
+  background: var(--tk-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] :is(#pdfMergeProcessMask, #pdfSplitProcessMask, #pdfToImageProcessMask, #pdfRotateProcessMask, #pdfEncryptProcessMask, #pdfDecryptProcessMask, #pdfEnhanceProcessMask) .audio-convert-process-text {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(#pdfMergeSuccessOverlay, #pdfSplitSuccessOverlay, #pdfToImageSuccessOverlay, #pdfRotateSuccessOverlay, #pdfEncryptSuccessOverlay, #pdfDecryptSuccessOverlay, #pdfEnhanceSuccessOverlay) {
+  background: rgba(var(--tk-rgb-ink), 0.18);
+}
+
+html:root[data-theme] :is(#pdfMergeSuccessOverlay, #pdfSplitSuccessOverlay, #pdfToImageSuccessOverlay, #pdfRotateSuccessOverlay, #pdfEncryptSuccessOverlay, #pdfDecryptSuccessOverlay, #pdfEnhanceSuccessOverlay) .audio-clip-success-dialog {
+  background: var(--tk-page-bg);
+  box-shadow: 0 18px 50px rgba(17, 17, 17, 0.14);
+}
+
+html:root[data-theme] :is(#pdfMergeSuccessOverlay, #pdfSplitSuccessOverlay, #pdfToImageSuccessOverlay, #pdfRotateSuccessOverlay, #pdfEncryptSuccessOverlay, #pdfDecryptSuccessOverlay, #pdfEnhanceSuccessOverlay) :is(.audio-clip-success-title, .audio-convert-success-title, .audio-convert-success-value) {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(#pdfMergeSuccessOverlay, #pdfSplitSuccessOverlay, #pdfToImageSuccessOverlay, #pdfRotateSuccessOverlay, #pdfEncryptSuccessOverlay, #pdfDecryptSuccessOverlay, #pdfEnhanceSuccessOverlay) :is(.audio-clip-success-meta, .audio-convert-success-meta, .audio-convert-success-key, .audio-convert-success-path) {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(#pdfMergeSuccessOverlay, #pdfSplitSuccessOverlay, #pdfToImageSuccessOverlay, #pdfRotateSuccessOverlay, #pdfEncryptSuccessOverlay, #pdfDecryptSuccessOverlay, #pdfEnhanceSuccessOverlay) .audio-convert-success-detail {
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] :is(#pdfMergeSuccessOverlay, #pdfSplitSuccessOverlay, #pdfToImageSuccessOverlay, #pdfRotateSuccessOverlay, #pdfEncryptSuccessOverlay, #pdfDecryptSuccessOverlay, #pdfEnhanceSuccessOverlay) .audio-clip-success-btn-secondary {
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(#pdfMergeSuccessOverlay, #pdfSplitSuccessOverlay, #pdfToImageSuccessOverlay, #pdfRotateSuccessOverlay, #pdfEncryptSuccessOverlay, #pdfDecryptSuccessOverlay, #pdfEnhanceSuccessOverlay) .audio-clip-success-btn-primary {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-light) :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--tk-accent);
+  outline-offset: 3px;
+}
+html:root[data-theme] :is(#pdfEncryptPasswordDialog, #pdfDecryptPasswordDialog) {
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+  box-shadow: 0 18px 50px rgba(17, 17, 17, 0.14);
+}
+
+html:root[data-theme] :is(#pdfEncryptPasswordDialog, #pdfDecryptPasswordDialog) :is(.pdf-encrypt-password-title, .pdf-encrypt-label, .pdf-encrypt-permissions-title, .pdf-encrypt-checkbox-item) {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(#pdfEncryptPasswordDialog, #pdfDecryptPasswordDialog) .pdf-encrypt-input {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(#pdfEncryptPasswordDialog, #pdfDecryptPasswordDialog) .pdf-encrypt-input:focus {
+  border-color: var(--tk-accent);
+  background: var(--tk-page-bg);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] :is(#pdfEncryptPasswordDialog, #pdfDecryptPasswordDialog) .pdf-encrypt-check-box {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] :is(#pdfEncryptPasswordDialog, #pdfDecryptPasswordDialog) input[type='checkbox']:checked + .pdf-encrypt-check-box {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+}

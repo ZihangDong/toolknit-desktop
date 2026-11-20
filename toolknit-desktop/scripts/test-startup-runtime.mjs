@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { loadConfigFromFile } from 'vite';
 import { createStartupRuntime } from '../src/app/startup-runtime.js';
 import { createFontSettingsRuntime } from '../src/app/font-settings-runtime.js';
 
@@ -105,18 +107,28 @@ assert.equal(fontsSettled, true);
 settings.dispose();
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-const bootstrap = html.match(/<script data-tk-theme-bootstrap>([\s\S]*?)<\/script>/)?.[1];
+const loaded = await loadConfigFromFile({ command: 'build', mode: 'production' },
+  fileURLToPath(new URL('../vite.config.js', import.meta.url)));
+const appearancePlugin = loaded.config.plugins.find(plugin => plugin.name === 'toolknit-theme-bootstrap');
+const transformed = appearancePlugin.transformIndexHtml.handler(html);
+const bootstrap = [...transformed.matchAll(/<script data-tk-(?:appearance|theme)-bootstrap>([\s\S]*?)<\/script>/g)]
+  .map(match => match[1]).join('\n');
+const bootstrapRoot = () => ({ dataset: {}, style: { setProperty() {} }, hasAttribute: () => false,
+  setAttribute(name, value) {
+    this.dataset[name.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = value;
+  } });
 for (const theme of ['light', 'dark']) {
-  const root = { dataset: {} };
+  const root = bootstrapRoot();
   let watchdog;
-  const windowRef = { location: { search: '' }, setTimeout: fn => { watchdog = fn; return 1; } };
+  const windowRef = { location: { search: '' }, setTimeout: fn => { watchdog = fn; return 1; },
+    localStorage: { getItem: key => key === 'toolknit.theme.v3' ? theme : null } };
   vm.runInNewContext(bootstrap, { window: windowRef, document: { documentElement: root },
-    localStorage: { getItem: () => theme }, URLSearchParams });
+    localStorage: windowRef.localStorage, URLSearchParams });
   assert.equal(root.dataset.theme, theme);
   assert.equal(root.dataset.tkStartup, 'loading');
   assert.equal(typeof watchdog, 'function', 'a failed main module still has a recovery path');
 }
-const picker = { dataset: {} };
+const picker = bootstrapRoot();
 vm.runInNewContext(bootstrap, { window: { location: { search: '?screen-picker=1' } },
   document: { documentElement: picker }, URLSearchParams });
 assert.equal(picker.dataset.tkStartup, undefined, 'screen capture must never display the home cover');

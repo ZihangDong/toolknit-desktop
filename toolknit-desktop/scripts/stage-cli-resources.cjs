@@ -231,6 +231,9 @@ for (const fileName of fontFiles) {
 for (const fileName of ['LICENSE', 'NOTICE', 'LICENSES/Apache-2.0.txt', 'LICENSES/MIT.txt']) {
   copyFileAtomic(path.join(root, fileName), path.join(root, 'cli', fileName));
 }
-copyFileAtomic(path.join(root, 'src-tauri/resources/office/word-to-pdf.py'), path.join(root, 'cli/resources/office/word-to-pdf.py'));
+for (const name of ['word-to-pdf.py', 'word_layout.py', 'word_font_metrics.py']) {
+  copyFileAtomic(path.join(root, 'src-tauri/resources/office', name), path.join(root, 'cli/resources/office', name));
+}
+copyFileAtomic(path.join(root, 'office-kernel/runtime.lock.json'), path.join(root, 'cli/resources/office/runtime.lock.json'));
 releaseStageLockOnce();
 console.log('Staged CLI runtime resources: qpdf, whisper binaries and legal notices, core modules, shared task contracts, guides, and fonts. FFmpeg is downloaded on demand by ToolKnit Desktop or resolved from PATH.');

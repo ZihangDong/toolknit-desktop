@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { PDFDocument } from 'pdf-lib';
 import { ToolKnitError, throwIfAborted } from './errors.mjs';
+import { validateBundledOffice } from './bundled-office-runtime.mjs';
 
 const CLI_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PROJECT_ROOT = path.resolve(CLI_ROOT, '..');
@@ -235,6 +236,11 @@ function libreOfficeCandidates() {
   const envPath = process.env.TOOLKNIT_LIBREOFFICE_PATH;
   if (envPath) candidates.push(normalizeCandidate(envPath, 'env:TOOLKNIT_LIBREOFFICE_PATH'));
   if (process.platform === 'win32') {
+    for (const root of [
+      path.join(PROJECT_ROOT, 'src-tauri', 'resources', 'office-kernel'),
+      ...[process.env.LOCALAPPDATA, process.env.ProgramFiles].filter(Boolean)
+        .map(base => path.join(base, 'toolknit-desktop', 'resources', 'office-kernel')),
+    ]) candidates.push(normalizeCandidate(path.join(root, 'runtime', 'program', 'soffice.com'), 'bundled'));
     const programFiles = [process.env.ProgramFiles, process.env['ProgramFiles(x86)']].filter(Boolean);
     for (const root of programFiles) {
       candidates.push(normalizeCandidate(path.join(root, 'LibreOffice', 'program', 'soffice.com'), 'windows-install'));
@@ -326,6 +332,15 @@ async function probeLibreOffice(candidate) {
       if (metadata.isDirectory()) return null;
     } catch {
       return null;
+    }
+  }
+  if (candidate.source === 'bundled') {
+    try {
+      const pin = JSON.parse(await readFile(path.join(CLI_ROOT, 'resources/office/runtime.lock.json'), 'utf8'));
+      await validateBundledOffice(path.resolve(path.dirname(candidate.command), '../..'), pin);
+    } catch {
+      return { available: false, command: null, source: 'bundled', version: null,
+        message: 'libreoffice-runtime:bundled-integrity' };
     }
   }
   let profileDirectory = null;

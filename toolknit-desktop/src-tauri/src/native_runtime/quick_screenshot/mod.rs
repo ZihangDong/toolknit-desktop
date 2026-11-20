@@ -906,7 +906,7 @@ pub(crate) async fn quick_screenshot(
             }
             // Provider metadata, theme and language only; credentials stay in protected storage.
             let first = lock(&state.inner).context.is_null();
-            let next = serde_json::json!({"theme":context["theme"],"lang":context["lang"],"provider":context["provider"],"vision":context["vision"]});
+            let next = serde_json::json!({"theme":context["theme"],"appearance":super::appearance::normalize(&context["appearance"], &context["theme"]),"lang":context["lang"],"provider":context["provider"],"vision":context["vision"]});
             if lock(&state.inner).context == next {
                 return Ok(serde_json::Value::Null);
             }

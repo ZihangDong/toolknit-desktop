@@ -556,7 +556,7 @@ pub(super) async fn download_ffmpeg_runtime(
         .to_ascii_lowercase();
     let candidates = ffmpeg_download_candidates(&requested)?;
     let client = reqwest::Client::builder()
-        .user_agent("ToolKnit/3.3.0 ffmpeg-runtime-manager")
+        .user_agent("ToolKnit/3.4.0 ffmpeg-runtime-manager")
         .https_only(true)
         .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(std::time::Duration::from_secs(12))
@@ -1010,7 +1010,7 @@ pub(super) async fn download_libreoffice_runtime(
         .to_ascii_lowercase();
     let candidates = libreoffice_download_candidates(&requested)?;
     let client = reqwest::Client::builder()
-        .user_agent("ToolKnit/3.3.0 libreoffice-runtime-manager")
+        .user_agent("ToolKnit/3.4.0 libreoffice-runtime-manager")
         .https_only(true)
         .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(std::time::Duration::from_secs(15))

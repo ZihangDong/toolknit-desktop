@@ -1,3 +1,4 @@
+import '../../styles/components/calculator-form.css';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { onLangChange, t } from '../../i18n.js';
 import { calculateInterest, formatInterestMoney } from './core.js';

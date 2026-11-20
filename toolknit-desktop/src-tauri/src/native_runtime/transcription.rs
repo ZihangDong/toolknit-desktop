@@ -525,7 +525,7 @@ pub(super) async fn download_transcription_model(
 
     let partial = target.with_extension("bin.part");
     let client = reqwest::Client::builder()
-        .user_agent("ToolKnit/3.3.0 offline-model-manager")
+        .user_agent("ToolKnit/3.4.0 offline-model-manager")
         .https_only(true)
         .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(std::time::Duration::from_secs(12))

@@ -350,3 +350,177 @@
   background-size: var(--tk-vertical-stripe-surface-size);
   background-color: var(--tk-vertical-stripe-surface-color);
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .image-crop-v2 {
+  --image-crop-ink: var(--tk-ink);
+  --image-crop-muted: var(--tk-muted);
+  --image-crop-line: var(--tk-border);
+  --image-crop-surface: var(--tk-inset);
+  --image-crop-surface-strong: var(--tk-page-bg);
+}
+
+html:root[data-theme] .image-crop-v2 .pdf-merge-v2-bg {
+  opacity: .08;
+  filter: grayscale(1) contrast(1.05) brightness(1.55);
+}
+html:root[data-theme] .image-crop-v2::after { opacity: .035; }
+html:root[data-theme] .image-crop-v2 :is(.image-crop-heading h1, .image-crop-section-head h2) { color: var(--image-crop-ink); }
+html:root[data-theme] .image-crop-v2 :is(.image-crop-heading p, .image-crop-stage-footer, .image-crop-field, .image-crop-toggle small, .image-crop-section-head span) { color: var(--image-crop-muted); }
+
+html:root[data-theme] .image-crop-v2 .image-crop-stage-shell {
+  border-color: var(--tk-border);
+  background-color: var(--tk-inset);
+  background-image:
+    linear-gradient(45deg, rgba(var(--tk-rgb-ink), 0.035) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(var(--tk-rgb-ink), 0.035) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(var(--tk-rgb-ink), 0.035) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(var(--tk-rgb-ink), 0.035) 75%);
+  box-shadow: 0 12px 28px rgba(17,17,17,.08), inset 0 1px 0 rgba(255,255,255,.8);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-secondary-button,
+html:root[data-theme] .image-crop-v2 .image-crop-spiral-direction,
+html:root[data-theme] .image-crop-v2 .image-crop-history button,
+html:root[data-theme] .image-crop-v2 .image-crop-icon-tools button {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+html:root[data-theme] .image-crop-v2 :is(.image-crop-secondary-button, .image-crop-spiral-direction, .image-crop-history button, .image-crop-icon-tools button):hover:not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-controls {
+  border-left-color: var(--tk-border);
+  background: rgba(var(--tk-rgb-page), 0.88);
+  scrollbar-color: var(--tk-muted) transparent;
+}
+html:root[data-theme] .image-crop-v2 .image-crop-control-section { border-bottom-color: var(--tk-border); }
+html:root[data-theme] .image-crop-v2 :is(.image-crop-ratio-grid button, .image-crop-format button) {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-muted);
+}
+html:root[data-theme] .image-crop-v2 :is(.image-crop-ratio-grid button:hover, .image-crop-ratio-grid button.active, .image-crop-format button:hover, .image-crop-format button.active) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+html:root[data-theme] .image-crop-v2 :is(.image-crop-custom-ratio input, .image-crop-field input[type="text"], .image-crop-field select) {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-field input::placeholder {
+  color: var(--image-crop-muted);
+}
+html:root[data-theme] .image-crop-v2 :is(.image-crop-custom-ratio input, .image-crop-field input[type="text"], .image-crop-field select):focus {
+  border-color: var(--tk-accent);
+  box-shadow: 0 0 0 3px rgba(17,17,17,.08);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-field select option { background: var(--tk-page-bg); color: var(--tk-ink); }
+html:root[data-theme] .image-crop-v2 .tool-custom-select-trigger {
+  min-height: 34px;
+  border-color: var(--tk-border);
+  border-radius: 7px;
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+html:root[data-theme] .image-crop-v2 .tool-custom-select-trigger:hover,
+html:root[data-theme] .image-crop-v2 .tool-custom-select.is-open .tool-custom-select-trigger {
+  border-color: var(--tk-accent);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+  box-shadow: none;
+}
+html:root[data-theme] .image-crop-v2 .tool-custom-select-trigger svg { color: var(--tk-ink); }
+html:root[data-theme] body:has(.image-crop-v2.visible) .tool-custom-select-menu {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  box-shadow: 0 10px 24px rgba(17,17,17,.12);
+}
+html:root[data-theme] body:has(.image-crop-v2.visible) .tool-custom-select-menu button {
+  color: var(--tk-ink);
+}
+html:root[data-theme] body:has(.image-crop-v2.visible) .tool-custom-select-menu button:hover,
+html:root[data-theme] body:has(.image-crop-v2.visible) .tool-custom-select-menu button[aria-selected="true"] {
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-quality input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  accent-color: var(--tk-accent);
+  cursor: pointer;
+}
+html:root[data-theme] .image-crop-v2 .image-crop-quality input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 1px solid var(--tk-border);
+  border-radius: 999px;
+  background: var(--tk-surface);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-quality input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -7px;
+  -webkit-appearance: none;
+  appearance: none;
+  border: 2px solid var(--tk-accent);
+  border-radius: 50%;
+  background: var(--tk-page-bg);
+  box-shadow: 0 1px 3px rgba(17,17,17,.2);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-quality input[type="range"]::-moz-range-track {
+  height: 4px;
+  border: 1px solid var(--tk-border);
+  border-radius: 999px;
+  background: var(--tk-surface);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-quality input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--tk-accent);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-quality input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--tk-accent);
+  border-radius: 50%;
+  background: var(--tk-page-bg);
+  box-shadow: 0 1px 3px rgba(17,17,17,.2);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-toggle strong { color: var(--tk-ink); }
+html:root[data-theme] .image-crop-v2 .image-crop-toggle i { border-color: var(--tk-border); background: var(--tk-surface); }
+html:root[data-theme] .image-crop-v2 .image-crop-toggle i::after { background: var(--tk-border-strong); }
+html:root[data-theme] .image-crop-v2 .image-crop-toggle input:checked + i { border-color: var(--tk-accent); background: var(--tk-accent); }
+html:root[data-theme] .image-crop-v2 .image-crop-toggle input:checked + i::after { background: var(--tk-page-bg); }
+html:root[data-theme] .image-crop-v2 .image-crop-export-button {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+html:root[data-theme] .image-crop-v2 .image-crop-export-button:hover:not(:disabled) { background: var(--tk-accent); }
+html:root[data-theme] .image-crop-v2 .image-crop-export-button:disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-muted);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-snap-indicator {
+  border-color: var(--tk-border);
+  background: rgba(var(--tk-rgb-page), 0.94);
+  color: var(--tk-ink);
+  box-shadow: 0 5px 18px rgba(17,17,17,.08);
+}
+html:root[data-theme] .image-crop-v2 .image-crop-processing { background: rgba(var(--tk-rgb-page), 0.78); color: var(--tk-ink); }
+html:root[data-theme] .image-crop-v2 .image-crop-spinner { border-color: rgba(var(--tk-rgb-ink), 0.16); border-top-color: var(--tk-accent); }
+html:root[data-theme] .image-crop-v2 .image-crop-stage-footer span:first-child { color: var(--tk-ink); }

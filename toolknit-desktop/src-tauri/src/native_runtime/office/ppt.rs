@@ -561,6 +561,7 @@ pub(crate) fn libreoffice_candidates() -> Vec<(std::path::PathBuf, &'static str)
                 .map(|path| (path, "env:TOOLKNIT_LIBREOFFICE_PATH")),
         );
     }
+    candidates.extend(super::bundled::candidates());
     if let Ok(managed) = libreoffice_runtime_path() {
         candidates.push((managed, "managed"));
     }
@@ -688,6 +689,12 @@ pub(crate) fn resolve_libreoffice_runtime() -> LibreOfficeRuntimeInfo {
     for (candidate, source) in libreoffice_candidates() {
         if !candidate.is_file() {
             continue;
+        }
+        if source == "bundled" {
+            if let Err(message) = super::bundled::validate(&candidate) {
+                return LibreOfficeRuntimeInfo { available: false, command: None,
+                    source: Some("bundled".into()), version: None, message: Some(message) };
+            }
         }
         if source == "managed"
             && candidate

@@ -293,7 +293,7 @@ export function createAudioConvertController({
         processingAudio = false;
         if (isTauri && wasProcessing) {
           tauriCore
-            .then(({ invoke }) => invoke('cancel_convert'))
+            .then(({ invoke }) => invoke('cancel_convert', { toolknitTaskTool: 'audio-convert' }))
             .catch((error) => console.error('Cancel failed:', error));
         }
       }

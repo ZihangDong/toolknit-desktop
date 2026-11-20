@@ -8,7 +8,7 @@ import {
 } from './core.js';
 import '../../styles/components/calculator-form.css';
 import './password-generator.css';
-import './password-generator-light.css';
+
 
 const COPY_FEEDBACK_MS = 1500;
 

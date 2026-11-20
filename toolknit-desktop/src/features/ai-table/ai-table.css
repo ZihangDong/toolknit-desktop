@@ -821,3 +821,321 @@
   }
 }
 /* ===== End AI Table Tool ===== */
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] :is(.ai-table-v2, #aiTableMask, #aiTableSuccessOverlay) {
+  --ai-table-surface: var(--tk-page-bg);
+  --ai-table-soft: var(--tk-inset);
+  --ai-table-hover: var(--tk-surface);
+  --ai-table-line: var(--line, var(--tk-border));
+  --ai-table-line-strong: var(--line-strong, var(--tk-border));
+  --ai-table-ink: var(--ink, var(--tk-ink));
+  --ai-table-muted: var(--muted, var(--tk-muted));
+  --ai-table-scrollbar: var(--tk-muted);
+}
+
+/* These dialogs are mounted outside the tool shell's palette. */
+html:root[data-theme] :is(#aiTableMask, #aiTableSuccessOverlay) {
+  --ai-table-ink: var(--tk-ink);
+  --ai-table-muted: var(--tk-muted);
+}
+
+html:root[data-theme] .ai-table-v2 :is(.ai-table-v2-chat-card, .ai-table-v2-preview-card) {
+  border-color: var(--ai-table-line);
+  background: var(--ai-table-surface);
+  box-shadow: none;
+}
+
+html:root[data-theme] .ai-table-v2 :is(
+  .ai-table-v2-card-head p,
+  .ai-table-v2-feature-grid span,
+  .ai-table-v2-input-helper,
+  .ai-table-v2-input-helper span:last-child,
+  .ai-doc-chip-title,
+  .ai-doc-canvas-empty > p,
+  .ai-table-preview-stats,
+  .ai-table-edit-guide-text
+) {
+  color: var(--ai-table-muted);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-v2-card-head h2 {
+  color: var(--ai-table-ink);
+  font-size: 26px;
+  letter-spacing: 0;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+html:root[data-theme] .ai-table-v2 .pdf-merge-v2-title {
+  font-size: 52px;
+  letter-spacing: 0;
+  word-break: keep-all;
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-undo-btn {
+  border-color: var(--ai-table-line-strong);
+  background: var(--ai-table-soft);
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-undo-btn:hover {
+  border-color: var(--ai-table-line-strong);
+  background: var(--ai-table-hover);
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-undo-btn:disabled {
+  border-color: var(--ai-table-line);
+  background: var(--ai-table-hover);
+  color: var(--ai-table-muted);
+  transform: none;
+  box-shadow: none;
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-v2-feature-grid > div {
+  border-color: var(--ai-table-line);
+  background: var(--ai-table-soft);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-v2-feature-grid strong {
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-doc-chat-messages {
+  scrollbar-color: var(--ai-table-scrollbar) transparent;
+}
+
+html:root[data-theme] .ai-table-v2 .ai-doc-chat-messages::-webkit-scrollbar-thumb {
+  background: var(--ai-table-scrollbar);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-v2-empty-mark {
+  border-color: var(--ai-table-line-strong);
+  background: var(--ai-table-surface);
+  color: var(--ai-table-ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-empty-guide-item {
+  border-color: var(--ai-table-line);
+  background: var(--ai-table-surface);
+  color: var(--ai-table-muted);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-empty-guide-item svg {
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-preview-scroll {
+  scrollbar-color: var(--ai-table-scrollbar) transparent;
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-preview-scroll::-webkit-scrollbar-thumb,
+html:root[data-theme] .ai-table-v2 .ai-table-wrap::-webkit-scrollbar-thumb {
+  background: var(--ai-table-scrollbar);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-edit-guide {
+  border-color: var(--ai-table-line);
+  background: var(--ai-table-soft);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-edit-guide-title {
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-guide-link {
+  border-color: var(--ai-table-line-strong);
+  background: var(--ai-table-surface);
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-guide-link:hover {
+  border-color: var(--ai-table-line-strong);
+  background: var(--ai-table-hover);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-title {
+  color: var(--ai-table-ink);
+  font-size: 26px;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-title[contenteditable="true"] {
+  background: var(--ai-table-hover);
+  box-shadow: 0 0 0 2px var(--ai-table-ink);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-wrap {
+  border-color: var(--ai-table-line-strong);
+  background: var(--ai-table-surface);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-grid {
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-grid thead th {
+  background: var(--ai-table-soft);
+  border-bottom: 1px solid var(--ai-table-line-strong);
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-grid thead th,
+html:root[data-theme] .ai-table-v2 .ai-table-grid thead th span {
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-grid thead th:hover {
+  background: var(--ai-table-hover);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-col-delete {
+  border-color: var(--ai-table-line-strong);
+  background: var(--ai-table-surface);
+  color: var(--ai-table-muted);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-col-delete:hover {
+  border-color: #e6b8b8;
+  background: var(--tk-inset);
+  color: #a32626;
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-grid tbody td {
+  color: var(--ai-table-ink);
+  border-bottom-color: var(--ai-table-line);
+  background: var(--ai-table-surface);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-grid tbody tr:nth-child(even) td {
+  background: #fafafa;
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-grid tbody tr:hover td {
+  background: var(--ai-table-soft);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-grid tbody td:hover {
+  outline-color: var(--ai-table-line-strong);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-grid tbody tr td[contenteditable="true"] {
+  background: #eef0f2;
+  outline: 2px solid var(--ai-table-ink);
+  outline-offset: -2px;
+  caret-color: var(--ai-table-ink);
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] .ai-table-v2 [contenteditable="true"]::selection {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-del-btn {
+  border-color: var(--ai-table-line-strong);
+  background: var(--ai-table-soft);
+  color: var(--ai-table-muted);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-del-btn:hover {
+  border-color: #e6b8b8;
+  background: var(--tk-inset);
+  color: #a32626;
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-add-btn {
+  border-color: var(--ai-table-line-strong);
+  background: var(--ai-table-soft);
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-add-btn:hover {
+  border-color: var(--ai-table-ink);
+  background: var(--ai-table-ink);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-chart-wrap {
+  border-color: var(--ai-table-line);
+  background: var(--ai-table-soft);
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-chart-title {
+  color: var(--ai-table-ink);
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .ai-table-v2 .ai-table-chart-holder {
+  border: 1px solid var(--ai-table-line);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] #aiTableMask {
+  background: rgba(var(--tk-rgb-page), 0.96);
+}
+
+html:root[data-theme] #aiTableMask .audio-convert-process-text {
+  color: var(--ai-table-muted);
+}
+
+html:root[data-theme] #aiTableSuccessOverlay {
+  background: rgba(var(--tk-rgb-ink), 0.18);
+}
+
+html:root[data-theme] #aiTableSuccessOverlay .audio-clip-success-dialog {
+  background: var(--tk-page-bg);
+  box-shadow: 0 18px 50px rgba(17, 17, 17, 0.14);
+}
+
+html:root[data-theme] #aiTableSuccessOverlay :is(.audio-clip-success-title, .audio-convert-success-value) {
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] #aiTableSuccessOverlay :is(.audio-clip-success-meta, .audio-convert-success-key, .audio-convert-success-path) {
+  color: var(--ai-table-muted);
+}
+
+html:root[data-theme] #aiTableSuccessOverlay .audio-convert-success-detail {
+  background: var(--ai-table-soft);
+}
+
+html:root[data-theme] #aiTableSuccessOverlay .audio-convert-success-value {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+html:root[data-theme] #aiTableSuccessOverlay .audio-clip-success-btn-secondary {
+  background: var(--tk-inset);
+  color: var(--ai-table-ink);
+}
+
+html:root[data-theme] #aiTableSuccessOverlay .audio-clip-success-btn-primary {
+  background: var(--ai-table-ink);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .ai-table-v2 button:focus-visible {
+  outline: 2px solid var(--ai-table-ink);
+  outline-offset: 3px;
+}
+
+@media (max-width: 1280px) {
+  html:root[data-theme] .ai-table-v2 .pdf-merge-v2-title {
+    font-size: 44px;
+  }
+}
+
+@media (max-width: 760px) {
+  html:root[data-theme] .ai-table-v2 .pdf-merge-v2-title {
+    font-size: 36px;
+  }
+
+  html:root[data-theme] .ai-table-v2 .ai-table-v2-card-head h2 {
+    font-size: 23px;
+  }
+}

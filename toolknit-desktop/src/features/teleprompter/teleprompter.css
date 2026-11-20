@@ -1071,3 +1071,439 @@
   background-size: var(--tk-vertical-stripe-surface-size);
   background-color: var(--tk-vertical-stripe-surface-color);
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .teleprompter-overlay {
+  --tele-light-surface: var(--tk-page-bg);
+  --tele-light-soft: var(--tk-inset);
+  --tele-light-hover: var(--tk-surface);
+  --tele-light-line: var(--tk-border);
+  --tele-light-line-strong: var(--tk-border);
+  --tele-light-ink: var(--tk-ink);
+  --tele-light-muted: var(--tk-muted);
+  --tele-light-quiet: var(--tk-muted);
+  --tk-vertical-stripe-surface-image: linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.025) 1px, transparent 1px);
+  --tk-vertical-stripe-surface-color: var(--tk-inset);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--tele-light-ink);
+  background: var(--tele-light-surface) !important;
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-bg {
+  background: var(--tele-light-surface);
+  opacity: 0;
+}
+
+html:root[data-theme] .teleprompter-overlay::after {
+  background: transparent;
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-body {
+  background: var(--tele-light-surface);
+}
+
+html:root[data-theme] .teleprompter-overlay :is(.teleprompter-poster, .teleprompter-editor, .teleprompter-stage, .teleprompter-controls) {
+  border-color: var(--tele-light-line);
+  background: var(--tele-light-surface);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-poster {
+  background: var(--tele-light-soft);
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .teleprompter-overlay :is(.teleprompter-kicker, .teleprompter-section-kicker, .teleprompter-drop-label) {
+  color: var(--tele-light-muted);
+}
+
+html:root[data-theme] .teleprompter-overlay :is(.teleprompter-poster h1, .teleprompter-panel-head h2, .teleprompter-engine-head strong, .teleprompter-switch-copy strong, .teleprompter-step strong) {
+  color: var(--tele-light-ink);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-poster-subtitle {
+  color: var(--tele-light-muted);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-local-note {
+  border-left-color: var(--tele-light-ink);
+  background: rgba(var(--tk-rgb-page), 0.72);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-local-note span {
+  color: var(--tele-light-muted);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-local-note strong {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-engine-card {
+  border-color: var(--tele-light-line);
+  background: var(--tele-light-surface);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-engine-status {
+  color: var(--tele-light-muted);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-engine-status::before {
+  background: var(--tk-border-strong);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-engine-status[data-state="listening"]::before {
+  background: var(--tele-light-ink);
+  box-shadow: 0 0 0 4px rgba(23, 23, 23, .1);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-engine-status[data-state="error"]::before {
+  background: #c83b3b;
+}
+
+html:root[data-theme] .teleprompter-overlay :is(.teleprompter-engine-card label > span, .teleprompter-engine-help, .teleprompter-switch-copy span) {
+  color: var(--tele-light-muted);
+}
+
+html:root[data-theme] .teleprompter-overlay .tool-custom-select-trigger {
+  min-height: 38px;
+  border-color: var(--tele-light-line-strong);
+  color: var(--tele-light-ink);
+  background: var(--tele-light-surface);
+  box-shadow: none;
+}
+
+html:root[data-theme] .teleprompter-overlay .tool-custom-select-trigger:hover:not(:disabled),
+html:root[data-theme] .teleprompter-overlay .tool-custom-select.is-open .tool-custom-select-trigger {
+  border-color: var(--tele-light-ink);
+  color: var(--tele-light-ink);
+  background: var(--tele-light-hover);
+}
+
+html:root[data-theme] .teleprompter-overlay .tool-custom-select-trigger svg {
+  color: var(--tele-light-ink);
+}
+
+html:root[data-theme] .teleprompter-overlay .tool-custom-select-trigger:focus-visible {
+  outline: 2px solid var(--tele-light-ink);
+  outline-offset: 2px;
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-switch {
+  border-color: var(--tele-light-line-strong);
+  background: var(--tk-surface-hover);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-switch::after {
+  background: var(--tk-page-bg);
+  box-shadow: 0 1px 3px rgba(17, 17, 17, .2);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-switch[aria-pressed="true"] {
+  border-color: var(--tele-light-ink);
+  background: var(--tele-light-ink);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-switch[aria-pressed="true"]::after {
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-switch:focus-visible {
+  outline: 2px solid var(--tele-light-ink);
+  outline-offset: 3px;
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-step > span {
+  border-color: var(--tele-light-line-strong);
+  color: var(--tele-light-muted);
+  background: var(--tele-light-surface);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-step p {
+  color: var(--tele-light-muted);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-small-button {
+  border-color: var(--tele-light-line-strong);
+  color: var(--tele-light-ink);
+  background: var(--tele-light-soft);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-small-button:hover {
+  border-color: var(--tk-border);
+  color: var(--tele-light-ink);
+  background: var(--tele-light-hover);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-editor-actions [data-tele-action="upload"] {
+  border-color: var(--tele-light-ink);
+  color: var(--tk-on-accent);
+  background: var(--tele-light-ink);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-editor-actions [data-tele-action="upload"]:hover {
+  border-color: var(--tk-accent);
+  color: var(--tk-on-accent);
+  background: var(--tk-accent);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-editor-actions [data-tele-action="clear"] {
+  border-color: var(--tele-light-line-strong);
+  color: var(--tele-light-ink);
+  background: var(--tele-light-soft);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-drop-card {
+  border-color: var(--tele-light-line-strong);
+  background: var(--tele-light-soft);
+}
+
+html:root[data-theme] .teleprompter-overlay.drag-over .teleprompter-drop-card {
+  border-color: var(--tele-light-ink);
+  background: var(--tele-light-hover);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-drop-card p {
+  color: var(--tele-light-muted);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-input {
+  border-color: var(--tele-light-line-strong);
+  color: var(--tele-light-ink);
+  caret-color: var(--tele-light-ink);
+  background-color: var(--tk-vertical-stripe-surface-color);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-input:focus {
+  border-color: var(--tele-light-ink);
+  box-shadow: 0 0 0 3px rgba(23, 23, 23, .08);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-input::placeholder {
+  color: var(--tele-light-quiet);
+}
+
+html:root[data-theme] .teleprompter-overlay :is(.teleprompter-script-meta, .teleprompter-current-copy, .teleprompter-stage-status) {
+  color: var(--tele-light-muted);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-script-meta strong {
+  color: var(--tele-light-ink);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-stage-status::before {
+  background: var(--tk-border-strong);
+}
+
+html:root[data-theme] .teleprompter-overlay.is-running:not(.is-paused) .teleprompter-stage-status::before {
+  background: var(--tele-light-ink);
+}
+html:root[data-theme] .teleprompter-overlay .teleprompter-screen {
+  border-color: #2b2b2e;
+  background: #030304;
+  box-shadow: inset 0 0 80px rgba(255, 255, 255, .018);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-progress-row {
+  color: var(--tele-light-muted);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-progress-track {
+  background: var(--tk-surface-hover);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-progress-track span {
+  background: var(--tele-light-ink);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-controls {
+  background: var(--tele-light-soft);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-control-button {
+  border-color: var(--tele-light-line-strong);
+  color: var(--tk-muted);
+  background: var(--tele-light-surface);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-control-button:hover:not(:disabled) {
+  border-color: var(--tk-border);
+  color: var(--tele-light-ink);
+  background: var(--tele-light-hover);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-control-button:disabled {
+  color: var(--tele-light-quiet);
+  background: var(--tk-inset);
+  opacity: .55;
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-control-button.is-active {
+  border-color: var(--tele-light-ink);
+  color: var(--tk-on-accent);
+  background: var(--tele-light-ink);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-play-button,
+html:root[data-theme] .teleprompter-overlay .teleprompter-play-button:hover:not(:disabled),
+html:root[data-theme] .teleprompter-overlay .teleprompter-play-button:focus-visible {
+  border-color: var(--tele-light-ink);
+  color: var(--tk-on-accent) !important;
+  background: var(--tele-light-ink);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-play-button:hover:not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-control-icon {
+  color: var(--tele-light-muted);
+}
+
+html:root[data-theme] .teleprompter-overlay .teleprompter-control-separator {
+  background: var(--tele-light-line-strong);
+}
+
+html:root[data-theme] .teleprompter-overlay:not(.is-focus) .wave-slider:hover {
+  background: var(--tele-light-hover);
+}
+
+html:root[data-theme] .teleprompter-overlay:not(.is-focus) .wave-slider:focus-visible {
+  background: var(--tele-light-hover);
+  box-shadow: inset 0 0 0 1px var(--tele-light-line-strong);
+}
+
+html:root[data-theme] .teleprompter-overlay:not(.is-focus) .wave-slider-bar {
+  background: #c8cbd0;
+}
+
+html:root[data-theme] .teleprompter-overlay:not(.is-focus) .wave-slider-bar.is-lit,
+html:root[data-theme] .teleprompter-overlay:not(.is-focus) .wave-slider.is-dragging .wave-slider-bar.is-lit {
+  background: var(--tele-light-ink);
+}
+
+html:root[data-theme] .teleprompter-overlay:not(.is-focus) .wave-slider-badge {
+  border-color: var(--tele-light-ink);
+  color: #ffffff;
+  background: var(--tele-light-ink);
+}
+
+html:root[data-theme] .teleprompter-overlay.is-loading-document .teleprompter-editor::after {
+  background: rgba(var(--tk-rgb-page), 0.78);
+}
+
+html:root[data-theme] body:has(.teleprompter-overlay.visible) .tool-custom-select-menu {
+  border-color: var(--tele-light-line-strong, var(--tk-border));
+  color-scheme: var(--tk-color-scheme);
+  background: var(--tk-page-bg);
+  box-shadow: 0 12px 30px rgba(17, 17, 17, .12);
+}
+
+html:root[data-theme] body:has(.teleprompter-overlay.visible) .tool-custom-select-menu button {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] body:has(.teleprompter-overlay.visible) .tool-custom-select-menu button:hover,
+html:root[data-theme] body:has(.teleprompter-overlay.visible) .tool-custom-select-menu button:focus-visible,
+html:root[data-theme] body:has(.teleprompter-overlay.visible) .tool-custom-select-menu button.is-selected,
+html:root[data-theme] body:has(.teleprompter-overlay.visible) .tool-custom-select-menu button[aria-selected="true"] {
+  color: var(--tk-ink);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .teleprompter-overlay :is(button, textarea):focus-visible {
+  outline: 2px solid var(--tele-light-ink);
+  outline-offset: 3px;
+}
+html:root[data-theme] .teleprompter-overlay.is-focus {
+  color-scheme: dark;
+  color: #ffffff;
+  background: #030304 !important;
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .teleprompter-body,
+html:root[data-theme] .teleprompter-overlay.is-focus .teleprompter-stage {
+  border-color: transparent;
+  background: #030304;
+  box-shadow: none;
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .teleprompter-controls {
+  border-color: transparent;
+  background: rgba(6, 6, 7, .96);
+  box-shadow: none;
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .teleprompter-control-button {
+  border-color: rgba(255, 255, 255, .17);
+  color: rgba(255, 255, 255, .84);
+  background: rgba(255, 255, 255, .065);
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .teleprompter-control-button:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, .56);
+  color: #ffffff;
+  background: rgba(255, 255, 255, .14);
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .teleprompter-control-button.is-active {
+  border-color: #ffffff;
+  color: #080809;
+  background: #ffffff;
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .teleprompter-play-button,
+html:root[data-theme] .teleprompter-overlay.is-focus .teleprompter-play-button:hover:not(:disabled),
+html:root[data-theme] .teleprompter-overlay.is-focus .teleprompter-play-button:focus-visible {
+  border-color: transparent;
+  color: #ffffff !important;
+  background: transparent;
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .teleprompter-play-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .09);
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus :is(.teleprompter-control-icon, .teleprompter-progress-row) {
+  color: rgba(255, 255, 255, .6);
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .teleprompter-control-separator {
+  background: rgba(255, 255, 255, .12);
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .wave-slider:hover {
+  background: rgba(255, 255, 255, .04);
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .wave-slider:focus-visible {
+  background: rgba(255, 255, 255, .05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .3);
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .wave-slider-bar {
+  background: rgba(255, 255, 255, .2);
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .wave-slider-bar.is-lit,
+html:root[data-theme] .teleprompter-overlay.is-focus .wave-slider.is-dragging .wave-slider-bar.is-lit {
+  background: #ffffff;
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus .wave-slider-badge {
+  border-color: rgba(255, 255, 255, .16);
+  color: rgba(255, 255, 255, .95);
+  background: rgba(17, 17, 19, .94);
+}
+
+html:root[data-theme] .teleprompter-overlay.is-focus :is(button, textarea):focus-visible {
+  outline-color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .teleprompter-overlay :is(.teleprompter-small-button, .teleprompter-control-button, .teleprompter-switch) {
+    transition: none;
+  }
+}

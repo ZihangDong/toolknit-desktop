@@ -1,0 +1,264 @@
+diff --git a/sw/qa/extras/ooxmlimport/data/table-exact-grid-no-snap.docx b/sw/qa/extras/ooxmlimport/data/table-exact-grid-no-snap.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..c655dc9d34335837942fe8a46cfdd46ba3194edd
+GIT binary patch
+literal 1838
+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
+HRuB&W>%QBN
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/data/table-exact-grid-snap.docx b/sw/qa/extras/ooxmlimport/data/table-exact-grid-snap.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..10d79b414ad67ff17207e8a895374bcb01442f79
+GIT binary patch
+literal 1837
+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
+K=+djKARYkgit2^{
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/data/table-ignored-grid-no-snap.docx b/sw/qa/extras/ooxmlimport/data/table-ignored-grid-no-snap.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..09aa0e7a1f4cb695c1da4f3e0a64bee080cd6aaa
+GIT binary patch
+literal 1819
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/data/table-ignored-grid-snap.docx b/sw/qa/extras/ooxmlimport/data/table-ignored-grid-snap.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..0f3043a7354d8fcb6d8160a66d06d35755daa516
+GIT binary patch
+literal 1818
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+index 6863824a5d78b5084538b6bfc81059006665cb30..b100438a33c8c15469dee28b2bcf67d0dd0b1dbe 100644
+--- a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
++++ b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+@@ -214,6 +214,22 @@ CPPUNIT_TEST_FIXTURE(Test, testWordAutoSpacingImport)
+ #endif
+ }
+ 
++CPPUNIT_TEST_FIXTURE(Test, testTableIgnoredGridParagraphSpacing)
++{
++    for (const char* pFile : { "table-ignored-grid-snap.docx", "table-ignored-grid-no-snap.docx" })
++    {
++        createSwDoc(pFile);
++        uno::Reference<lang::XMultiServiceFactory> xFactory(mxComponent, uno::UNO_QUERY_THROW);
++        uno::Reference<beans::XPropertySet> xSettings(
++            xFactory->createInstance(u"com.sun.star.document.Settings"_ustr), uno::UNO_QUERY_THROW);
++        CPPUNIT_ASSERT(!getProperty<bool>(xSettings, u"AdjustTableLineHeightsToGridHeight"_ustr));
++        xmlDocUniquePtr pDump = parseLayoutDump();
++        assertXPath(pDump, "/root/page[1]/body/tab/row[1]/cell/txt/SwParaPortion/SwLineLayout[1]", "height", u"400");
++        assertXPath(pDump, "/root/page[1]/body/tab/row[2]/cell/txt/infos/bounds", "height", u"500");
++        assertXPath(pDump, "/root/page[1]/body/tab/row[3]/cell/txt/SwParaPortion/SwLineLayout[1]", "length", u"16");
++    }
++}
++
+ CPPUNIT_TEST_FIXTURE(Test, testImageHyperlink)
+ {
+     createSwDoc("image-hyperlink.docx");
+diff --git a/sw/source/core/text/guess.cxx b/sw/source/core/text/guess.cxx
+index 2042005a3065dbd457973430745f6f4153881331..a9d4e83aea1d4dc94e608db3438492e64996872a 100644
+--- a/sw/source/core/text/guess.cxx
++++ b/sw/source/core/text/guess.cxx
+@@ -787,7 +787,9 @@ bool SwTextGuess::Guess( const SwTextPortion& rPor, SwTextFormatInfo &rInf,
+             *rInf.GetTextFrame()->GetDoc().getIDocumentSettingAccess().getForbiddenCharacters(aLang, true));
+ 
+         const bool bAllowHanging = rInf.IsHanging() && ! rInf.IsMulti() &&
+-                                      ! rInf.GetTextFrame()->IsInTab() &&
++                                      (!rInf.GetTextFrame()->IsInTab()
++                                       || rInf.GetTextFrame()->GetDoc().getIDocumentSettingAccess().get(
++                                           DocumentSettingId::MS_WORD_COMP_GRID_METRICS)) &&
+                                       ! rPor.InFieldGrp();
+ 
+         LineBreakUserOptions aUserOpt(
+diff --git a/sw/source/core/text/itrform2.cxx b/sw/source/core/text/itrform2.cxx
+index b45f759eaeba01eb72c7516d1056e9b7add1deed..23855b3f91e7cdc82a8ea1e4def4e2b9e861a219 100644
+--- a/sw/source/core/text/itrform2.cxx
++++ b/sw/source/core/text/itrform2.cxx
+@@ -2269,17 +2269,11 @@ void SwTextFormatter::CalcRealHeight( bool bNewLine )
+     m_pCurr->SetClipping( false );
+ 
+     SwTextGridItem const*const pGrid(GetGridItem(m_pFrame->FindPageFrame()));
+-    if ( pGrid && GetInfo().SnapToGrid() )
++    const bool bIgnoreTableGrid = m_pFrame->IsInTab()
++        && !m_pFrame->GetDoc().getIDocumentSettingAccess().get(
++            DocumentSettingId::ADJUST_TABLE_LINE_HEIGHTS_TO_GRID_HEIGHT);
++    if (pGrid && GetInfo().SnapToGrid() && !bIgnoreTableGrid)
+     {
+-        // tdf#88752 tdf#167583: Grid base height is conditionally ignored for tables
+-        if (m_pFrame->IsInTab()
+-            && !m_pFrame->GetDoc().getIDocumentSettingAccess().get(
+-                DocumentSettingId::ADJUST_TABLE_LINE_HEIGHTS_TO_GRID_HEIGHT))
+-        {
+-            m_pCurr->SetRealHeight(nLineHeight);
+-            return;
+-        }
+-
+         const sal_uInt16 nGridWidth = pGrid->GetBaseHeight();
+         const sal_uInt16 nRubyHeight = pGrid->GetRubyHeight();
+         const bool bRubyTop = ! pGrid->GetRubyTextBelow();
+@@ -2321,11 +2315,16 @@ void SwTextFormatter::CalcRealHeight( bool bNewLine )
+             }
+         }
+ 
+-        const SwTwips nAsc = m_pCurr->GetAscent() +
++        SwTwips nAsc = m_pCurr->GetAscent() +
+                       ( bRubyTop ?
+                        ( nLineHeight - m_pCurr->Height() + nRubyHeight ) / 2 :
+                        ( nLineHeight - m_pCurr->Height() - nRubyHeight ) / 2 );
+ 
++        if (m_pFrame->IsInTab() && !nRubyHeight && pSpace
++            && pSpace->GetLineSpaceRule() == SvxLineSpaceRule::Fix
++            && m_pFrame->GetDoc().getIDocumentSettingAccess().get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS))
++            nAsc = (4 * nLineHeight) / 5;
++
+         m_pCurr->Height( nLineHeight, false );
+         m_pCurr->SetAscent( nAsc );
+         m_pInf->GetParaPortion()->SetFixLineHeight();
+diff --git a/sw/source/core/text/itrtxt.cxx b/sw/source/core/text/itrtxt.cxx
+index 645fff7d722753f28e98286765372ea1e9c74416..7a2b7028044e602520fab743ed6830480e40b1fa 100644
+--- a/sw/source/core/text/itrtxt.cxx
++++ b/sw/source/core/text/itrtxt.cxx
+@@ -243,7 +243,14 @@ SwTwips SwTextCursor::AdjustBaseLine( const SwLineLayout& rLine,
+ 
+     SwTextGridItem const*const pGrid(GetGridItem(m_pFrame->FindPageFrame()));
+ 
+-    if ( pGrid && GetInfo().SnapToGrid() && pGrid->IsSquaredMode() )
++    const bool bIgnoreTableGrid = m_pFrame->IsInTab()
++        && !m_pFrame->GetDoc().getIDocumentSettingAccess().get(
++            DocumentSettingId::ADJUST_TABLE_LINE_HEIGHTS_TO_GRID_HEIGHT);
++    const SvxLineSpacingItem* pLineSpacing = GetLineInfo().GetLineSpacing();
++    const bool bFixedTableLine = m_pFrame->IsInTab() && pGrid && !pGrid->GetRubyHeight()
++        && pLineSpacing && pLineSpacing->GetLineSpaceRule() == SvxLineSpaceRule::Fix
++        && m_pFrame->GetDoc().getIDocumentSettingAccess().get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS);
++    if (pGrid && GetInfo().SnapToGrid() && pGrid->IsSquaredMode() && !bIgnoreTableGrid && !bFixedTableLine)
+     {
+         const sal_uInt16 nRubyHeight = pGrid->GetRubyHeight();
+         const bool bRubyTop = ! pGrid->GetRubyTextBelow();

@@ -1336,3 +1336,159 @@ html[data-screen-picker] body > *:not(#screenPickerOverlay) {
     transition: none;
   }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* Reuse the shared shell's ink, muted text and borders; never recolor sampled pixels. */
+html:root[data-theme] .color-extractor-v2 {
+  --extract-surface: var(--tk-page-bg);
+  --extract-soft: var(--tk-inset);
+  --extract-hover: var(--tk-surface);
+}
+
+html:root[data-theme] .color-extractor-v2 .pdf-merge-v2-title {
+  font-size: 38px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+html:root[data-theme] .color-extractor-v2 :is(
+  .color-extractor-v2-panel,
+  .color-extractor-v2-palette-panel
+) {
+  border-color: var(--line);
+  background: var(--extract-surface);
+}
+
+html:root[data-theme] .color-extractor-v2 :is(
+  .color-extractor-v2-mode,
+  .color-extractor-replace-btn,
+  .color-extractor-screen-intro,
+  .color-extractor-screen-result,
+  .color-extractor-v2-detail,
+  .color-extractor-palette-card
+) {
+  border-color: var(--line-strong);
+  background: var(--extract-soft);
+  color: var(--ink);
+}
+
+html:root[data-theme] .color-extractor-v2 :is(
+  .color-extractor-v2-detail-code,
+  .color-extractor-screen-result button
+) {
+  border-color: var(--line-strong);
+  background: var(--extract-surface);
+  color: var(--ink);
+}
+
+html:root[data-theme] .color-extractor-v2 :is(
+  .color-extractor-v2-mode:not(.is-active),
+  .color-extractor-replace-btn,
+  .color-extractor-v2-detail-code,
+  .color-extractor-screen-result button,
+  .color-extractor-palette-card
+):hover {
+  border-color: var(--ink);
+  background: var(--extract-hover);
+  color: var(--ink);
+}
+
+html:root[data-theme] .color-extractor-v2 :is(
+  .color-extractor-v2-mode.is-active,
+  .color-extractor-screen-start
+) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .color-extractor-v2 .color-extractor-v2-mode small {
+  color: var(--muted);
+  opacity: 1;
+}
+
+html:root[data-theme] .color-extractor-v2 .color-extractor-v2-mode.is-active small {
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .color-extractor-v2 .color-extractor-screen-start:hover:not(:disabled) {
+  box-shadow: 0 8px 20px rgba(17, 17, 17, 0.12);
+}
+
+html:root[data-theme] .color-extractor-v2 :is(
+  .pdf-merge-v2-step p,
+  .color-extractor-v2-status,
+  .color-extractor-v2-result-caption,
+  .color-extractor-image-preview-copy span,
+  .color-extractor-screen-intro p,
+  .color-extractor-screen-result div span,
+  .color-extractor-v2-detail-code small,
+  .color-extractor-v2-detail-hint,
+  .color-extractor-palette-copy small,
+  .color-extractor-palette-share
+) {
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .color-extractor-v2 :is(
+  .color-extractor-image-preview-copy strong,
+  .color-extractor-screen-intro > svg,
+  .color-extractor-screen-intro strong,
+  .color-extractor-screen-result strong,
+  .color-extractor-v2-detail-code strong,
+  .color-extractor-palette-copy strong
+) {
+  color: var(--ink);
+}
+
+html:root[data-theme] .color-extractor-v2 .tk-empty-hero {
+  border-color: var(--line-strong);
+  background: var(--extract-soft);
+}
+
+html:root[data-theme] .color-extractor-v2 .color-extractor-upload:hover,
+html:root[data-theme] .color-extractor-v2 .color-extractor-upload.dragover {
+  border-color: var(--ink);
+  background: var(--extract-hover);
+}
+
+html:root[data-theme] .color-extractor-v2 .color-extractor-image-preview img {
+  border-color: var(--line-strong);
+  background: var(--extract-soft);
+}
+
+html:root[data-theme] .color-extractor-v2 .color-extractor-v2-detail-swatch {
+  background-color: var(--extract-hover);
+}
+
+/* Inline background colors remain authoritative for every real swatch. */
+html:root[data-theme] .color-extractor-v2 :is(
+  .color-extractor-v2-detail-swatch,
+  .color-extractor-palette-swatch,
+  .color-extractor-screen-swatch
+) {
+  border-color: var(--line-strong);
+}
+
+html:root[data-theme] .color-extractor-v2 .color-extractor-palette-card.is-selected {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+html:root[data-theme] .color-extractor-v2 :is(
+  .color-extractor-v2-workspace,
+  .color-extractor-v2-palette-grid
+) {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .color-extractor-v2 :is(
+  .color-extractor-v2-workspace,
+  .color-extractor-v2-palette-grid
+)::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}

@@ -112,18 +112,18 @@
 .pdf-text-extract-v2 .pdf-text-extract-actions button:disabled { color: var(--pdf-text-muted); background: var(--pdf-text-surface-raised); border: 1px solid var(--pdf-text-line); opacity: 1; cursor: not-allowed; transform: none; box-shadow: none; }
 .pdf-text-extract-v2 .pdf-merge-v2-process.is-cancel { color: #f2a0a0; background: rgba(237, 119, 119, .1); }
 
-html[data-theme="light"] .pdf-text-extract-v2 {
-  --pdf-text-ink: #171717;
-  --pdf-text-muted: #65686f;
-  --pdf-text-quiet: #757880;
-  --pdf-text-line: #e1e2e5;
-  --pdf-text-surface: #ffffff;
-  --pdf-text-surface-raised: #f5f6f7;
-  --pdf-text-action-bg: #171717;
-  --pdf-text-action-ink: #ffffff;
+html:root[data-theme] .pdf-text-extract-v2 {
+  --pdf-text-ink: var(--tk-ink);
+  --pdf-text-muted: var(--tk-muted);
+  --pdf-text-quiet: var(--tk-muted);
+  --pdf-text-line: var(--tk-border);
+  --pdf-text-surface: var(--tk-on-accent);
+  --pdf-text-surface-raised: var(--tk-on-accent);
+  --pdf-text-action-bg: var(--tk-ink);
+  --pdf-text-action-ink: var(--tk-on-accent);
 }
-html[data-theme="light"] .pdf-text-extract-v2 .pdf-text-extract-warning { color: #795b1f; background: #fff9e9; }
-html[data-theme="light"] .pdf-text-extract-v2 .pdf-merge-v2-process.is-cancel { color: #963d3d; background: #fff5f5; }
+html:root[data-theme] .pdf-text-extract-v2 .pdf-text-extract-warning { color: var(--tk-warning); background: var(--tk-inset); }
+html:root[data-theme] .pdf-text-extract-v2 .pdf-merge-v2-process.is-cancel { color: var(--tk-danger); background: var(--tk-inset); }
 
 @media (max-width: 1100px) {
   .pdf-text-extract-v2 .pdf-text-extract-v2-workspace { padding: 24px; }

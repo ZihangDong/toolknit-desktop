@@ -24,8 +24,8 @@ const [
   read('../src/markdown-editor-ui.js'),
   read('../src/markdown-editor-core.js'),
   read('../src/features/markdown-editor/markdown-editor.css'),
-  read('../src/styles/themes/markdown-editor-light.css'),
-  read('../src/styles/themes/index.css'),
+  read('../src/features/markdown-editor/markdown-editor.css'),
+  read('../src/styles/index.css'),
   readGlobalStyles(import.meta.url),
   read('../src/tool-page-v2-final.css')
 ]);
@@ -72,12 +72,11 @@ const previewBackgrounds = [...featureStyles.matchAll(/^\.md-preview-pane[ \t]*\
   .map(match => /\bbackground:\s*([^;]+);/.exec(match[1])?.[1]).filter(Boolean);
 assert.ok(previewBackgrounds.length > 0);
 assert.ok(previewBackgrounds.every(color => color === '#fff'), 'preview backgrounds must stay opaque white');
-assert.match(themeIndex, /@import url\('\.\/markdown-editor-light\.css'\);/, 'the daytime theme index must load Markdown styles');
 assert.match(themeStyles, /\.md-tool-shell > \.tool-page-v2-bg[\s\S]*display: none !important/, 'the daytime theme must suppress the dark background runtime');
-assert.match(themeStyles, /html\[data-theme="light"\] \.md-tool-shell \.md-outline-panel/, 'the daytime theme must cover the document rail');
-assert.match(themeStyles, /html\[data-theme="light"\] \.md-tool-shell \.md-toolbar/, 'the daytime theme must cover the editor toolbar');
-assert.match(themeStyles, /html\[data-theme="light"\] \.md-tool-shell \.md-codemirror \.cm-editor/, 'the daytime theme must cover CodeMirror');
-assert.match(themeStyles, /html\[data-theme="light"\] \.md-tool-shell \.md-help-page/, 'the daytime theme must cover the syntax reference');
+assert.match(themeStyles, /html:root\[data-theme\] \.md-tool-shell \.md-outline-panel/, 'the daytime theme must cover the document rail');
+assert.match(themeStyles, /html:root\[data-theme\] \.md-tool-shell \.md-toolbar/, 'the daytime theme must cover the editor toolbar');
+assert.match(themeStyles, /html:root\[data-theme\] \.md-tool-shell \.md-codemirror \.cm-editor/, 'the daytime theme must cover CodeMirror');
+assert.match(themeStyles, /html:root\[data-theme\] \.md-tool-shell \.md-help-page/, 'the daytime theme must cover the syntax reference');
 assert.match(
   featureStyles,
   /\.md-editor-view\[data-view="preview"\] \.md-input-pane,[\s\S]*\.md-editor-view\[data-view="editor"\] \.md-preview-pane[\s\S]*display: none !important/,

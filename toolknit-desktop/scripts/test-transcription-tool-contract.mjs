@@ -9,8 +9,8 @@ const [controller, template, tool, featureStyles, lightStyles, themeIndex, lazy,
   readFile(new URL('../src/features/transcription/template.html', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/transcription/tool.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/transcription/transcription.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/styles/themes/transcription-light.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/styles/themes/index.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/styles/pages/transcription.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/styles/index.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/lazy-tools.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/main.js', import.meta.url), 'utf8'),
   readAppMarkup(import.meta.url)
@@ -49,8 +49,7 @@ assert.match(featureStyles, /transcription-v2-preview/, 'transcription styles mu
 assert.match(featureStyles, /transcription-v2-view\[hidden\][\s\S]*display:\s*none\s*!important/, 'inactive transcription views must not occupy workspace space');
 assert.match(featureStyles, /transcription-v2-result-view[\s\S]*grid-template-rows:\s*auto auto minmax\(0, 1fr\)/, 'the result view must dedicate its flexible track to subtitle preview');
 assert.match(featureStyles, /transcription-v2-preview\.is-empty[\s\S]*min-height:\s*0/, 'empty preview must be allowed to shrink in short windows');
-assert.match(themeIndex, /@import url\('\.\/transcription-light\.css'\)/, 'transcription light theme must load from the shared theme entry');
-assert.match(lightStyles, /html\[data-theme="light"\] \.transcription-v2 \.transcription-v2-preview/, 'transcription preview must define a light surface');
+assert.match(lightStyles, /html:root\[data-theme\] \.transcription-v2 \.transcription-v2-preview/, 'transcription preview must define a light surface');
 assert.match(lightStyles, /#transcriptionProcessMask/, 'transcription progress mask must support light mode');
 assert.match(lightStyles, /#transcriptionSuccessOverlay/, 'transcription success dialog must support light mode');
 assert.match(index, /id="transcriptionOverlay"/, 'transcription overlay DOM contract must remain present');

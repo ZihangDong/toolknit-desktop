@@ -27,7 +27,7 @@ const [main, html, lazyTools, entry, largeFiles, cDrive, largeFileStyles, cDrive
   read('src/features/cleanup-tools/c-drive-controller.js'),
   read('src/features/cleanup-tools/large-file.css'),
   read('src/features/cleanup-tools/c-drive.css'),
-  read('src/features/cleanup-tools/cleanup-tools-light.css'),
+  read('src/features/cleanup-tools/cleanup-tools.css'),
   readGlobalStyles(import.meta.url)
 ]);
 
@@ -103,8 +103,8 @@ const applyFunction = largeFiles.slice(largeFiles.indexOf('function largeFileCle
 assert.doesNotMatch(applyFunction, /largeFileCleanupSelectedPaths\s*=/);
 assert.match(largeFiles, /requestAi\(prompt, abort\.signal/);
 assert.match(largeFiles, /cancel_large_file_scan/);
-assert.match(entry, /cleanup-tools-light\.css/);
-assert.match(cDriveLightStyles, /html\[data-theme="light"\] #cDriveCleanupOverlay/);
+assert.match(entry, /cleanup-tools\.css/);
+assert.match(cDriveLightStyles, /html:root\[data-theme\] #cDriveCleanupOverlay/);
 assert.match(cDriveLightStyles, /\.c-drive-cleanup-option\[aria-checked="true"\]/);
 assert.match(cDriveLightStyles, /#cDriveCleanupAdminMask/);
 assert.match(cDriveLightStyles, /#cDriveCleanupConfirmMask/);

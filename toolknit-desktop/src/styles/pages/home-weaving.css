@@ -1,0 +1,203 @@
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+.home-weaving {
+  display: none;
+}
+
+.app.is-v2-home .home-weaving {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+  gap: 12px;
+  height: 440px;
+  min-width: 0;
+  color: var(--weaving-ink);
+  --weaving-ink: var(--tk-on-accent);
+  --weaving-muted: var(--tk-muted);
+  --weaving-web: var(--tk-border);
+  --weaving-thread: var(--tk-border);
+  --weaving-leg: var(--tk-border);
+  --weaving-body: #292f35;
+  --weaving-head: #20262c;
+  --weaving-body-edge: #9aa6b1;
+  --weaving-body-highlight: #798691;
+  --weaving-eye: #c8d0d7;
+  --weaving-type-shadow: drop-shadow(0 2px 5px rgb(0 0 0 / 24%));
+  --weaving-button: var(--tk-page-bg);
+  --weaving-button-ink: var(--tk-ink);
+  --weaving-button-hover: var(--tk-surface);
+  --weaving-play-state: paused;
+}
+
+html:root[data-theme] .app.is-v2-home .home-weaving {
+  --weaving-ink: var(--tk-ink);
+  --weaving-muted: var(--tk-muted);
+  --weaving-web: var(--tk-border-strong);
+  --weaving-thread: #4b5864;
+  --weaving-leg: var(--tk-border-strong);
+  --weaving-body: #292f35;
+  --weaving-head: #20262c;
+  --weaving-body-edge: #20262c;
+  --weaving-body-highlight: #69747e;
+  --weaving-eye: #dce1e5;
+  --weaving-type-shadow: none;
+  --weaving-button: var(--tk-accent);
+  --weaving-button-ink: var(--tk-on-accent);
+  --weaving-button-hover: var(--tk-accent);
+}
+
+.app.is-v2-home .home-weaving.is-playing {
+  --weaving-play-state: running;
+}
+
+/* The screen picker belongs to a separate native window; its main-window
+   placeholder is always marked visible but hidden by its own host rule. */
+body:has(:is([id$="Overlay"], [id$="Workspace"], [id$="Dialog"]).visible:not(#screenPickerOverlay)) .app.is-v2-home .home-weaving {
+  --weaving-play-state: paused;
+}
+
+.home-weaving-art {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  pointer-events: none;
+}
+
+.home-weaving-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.home-weaving-wordmark {
+  font-family: var(--tk-font-display-en), sans-serif;
+  font-size: 76px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.home-weaving-address {
+  font-family: var(--tk-font-display-en), sans-serif;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.home-weaving-type {
+  filter: var(--weaving-type-shadow);
+}
+
+.home-weaving-capture-threads > path:last-child {
+  opacity: .6;
+}
+
+.home-weaving-thread {
+  stroke-dasharray: 1;
+  animation: homeWeavingThread 24s ease-in-out infinite;
+  animation-play-state: var(--weaving-play-state, paused);
+}
+
+.home-weaving-thread:nth-child(2) { animation-delay: -8s; }
+.home-weaving-thread:nth-child(3) { animation-delay: -16s; }
+
+.home-weaving-spider {
+  animation: homeWeavingSpider 6s ease-in-out infinite;
+  animation-play-state: var(--weaving-play-state, paused);
+}
+
+.home-weaving-legs {
+  transform-box: fill-box;
+  transform-origin: 100% 50%;
+  animation: homeWeavingLegs 6s ease-in-out infinite;
+  animation-play-state: var(--weaving-play-state, paused);
+}
+
+.home-weaving-legs-right {
+  transform-origin: 0 50%;
+  animation-direction: reverse;
+}
+
+.app.is-v2-home .home-weaving-link {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--weaving-button);
+  color: var(--weaving-button-ink);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background 180ms ease, box-shadow 180ms ease;
+  -webkit-app-region: no-drag;
+}
+
+/* Center the glyphs using their own font metrics, not the Latin fallback's
+   line box. This also works in WebView2 versions without text-box-trim. */
+.app.is-v2-home .home-weaving-link > span:not(.tk-nav-morph) {
+  display: block;
+  line-height: 1;
+  text-align: center;
+}
+
+.app.is-v2-home .home-weaving-link > span:not(.tk-nav-morph):lang(zh) {
+  font-family: var(--tk-font-ui-cn), var(--tk-font-ui-en), "Segoe UI Symbol", sans-serif;
+}
+
+.app.is-v2-home .home-weaving-link svg {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  color: inherit;
+}
+
+.app.is-v2-home .home-weaving-link:hover {
+  background: var(--weaving-button-hover);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
+}
+
+.app.is-v2-home .home-weaving-link:focus-visible {
+  outline: 2px solid var(--weaving-ink);
+  outline-offset: 4px;
+}
+
+@keyframes homeWeavingThread {
+  0% { stroke-dashoffset: 1; opacity: 0; }
+  12% { opacity: .8; }
+  65%, 82% { stroke-dashoffset: 0; opacity: .8; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+@keyframes homeWeavingSpider {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes homeWeavingLegs {
+  0%, 50%, 100% { transform: rotate(0); }
+  25% { transform: rotate(.8deg); }
+  75% { transform: rotate(-.8deg); }
+}
+
+.home-weaving.is-static :is(.home-weaving-thread, .home-weaving-spider, .home-weaving-legs) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-weaving :is(.home-weaving-thread, .home-weaving-spider, .home-weaving-legs) { animation: none; }
+  .app.is-v2-home .home-weaving-link { transition: none; }
+}
+
+@media (max-width: 1120px) {
+  .app.is-v2-home .home-weaving {
+    height: 400px;
+  }
+}

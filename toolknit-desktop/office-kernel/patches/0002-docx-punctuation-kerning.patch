@@ -1,0 +1,194 @@
+diff --git a/sw/qa/extras/ooxmlimport/data/punctuation-kerning-default.rtf b/sw/qa/extras/ooxmlimport/data/punctuation-kerning-default.rtf
+new file mode 100644
+index 0000000000000000000000000000000000000000..1c906fdc469f4ed0d2aa4988c6da62196f369aea
+--- /dev/null
++++ b/sw/qa/extras/ooxmlimport/data/punctuation-kerning-default.rtf
+@@ -0,0 +1 @@
++{\rtf1\ansi Plain punctuation (test).}
+\ No newline at end of file
+diff --git a/sw/qa/extras/ooxmlimport/data/punctuation-kerning-disabled.docx b/sw/qa/extras/ooxmlimport/data/punctuation-kerning-disabled.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..c1eeac1f2f832360a7b55819cfec36e4f0aa8ee0
+GIT binary patch
+literal 1530
+zcmWIWW@Zs#U|`??V#SyYYYvv5K$Za$1A{P-j&{z^D@n~Oi4UnPNG*=ltH{k+JMpyN
+zVFMAD`lFw=dC5d5v`i{Fn9QkjiaqA0d1vVUC$Fb{d%yE#b|Y6##4Y3Ww3O|q=awgR
+z&&=VOyJw}erooGh90}{68>?2nTe^VhU_&>f^-lLmr}xFa6`qt}7NEX7=u&gg67??*
+zr9Ki7l1bkJe#~&6>aaf1rS!H*x!3UkgDI=dNN&oXU(nF2{iyQz_2aUVvYsC+OwPs5
+zZJ9FXYCuHz?Sy?>LzcJAI@#Q=Hap`W+sbujXHK1GRe#qjuNK|>NVcew^}OC!$<2Xk
+zuX@ur{j+^`>YN2n*yGmumxKDGI)5D9yIQ}CU0SUEt%6Rg<*)y;&!2o|DgE*BA9nys
+zNX`Ch{%S2Sgftl$7`TCSd{JsnvA!ON>^*PIcgTQ;?ZIl7dzn#eEdiJHI96(Fv2PGE
+zUz;K4b!hQ+b!KK)o}O*>_0wK|%S<a<E})*y8sf^?v!*0#Q`CW__PO5<Bsr}vD4WKj
+zBeF2}mGRjbpS)z$<s;2<L=2Wa;h*DfIq6`8g}<3Un>f$17`C&vr?j&k-QINP<A=-x
+zw^HT`30Q?Pz83fYe<M#q&C^{yzb)ri;Un#dsXVhLHMDbgtuEhvLg&M>XRF0$i=+B#
+zr_tWR)j;3K0evL{q|5V*QuHBSOUX|z%>^a}P#S=G^B@=4o8g)}cjw8uq}<h0dZYE3
+z(Q9_@(Y3n1BHzD#Q?mH*z>xF5_`hAXx|=JKl*IQmt<rE@V1CfbUTeqK>30QLHhv2`
+ze{gY=DCezZ`yQ>abk8W7=wfE0Ib+6SPcI{3y;)rX7oVRNxU|T!KXXdp?A>yK?@oVG
+zxV)V)I=Cdv@l_7%qIl(h$?b^+Z08T!h<*9<xK$<P++K~@R=p><>}D%PE6k3{t1`_;
+z^`sj=tKl)A=e_~4Ak34<-gE79%sXTt;JQAk(qCqmL+F$iQCmmLhHQQT&3PMhmN&*8
+z604dxukrQ|h8RX^v7CDu|1##)?X{aV?{Cv**~G)sT~A6bP`dkY-^1JQ*B@0+xAVBN
+zNxh|Q{(;Y>(fw1^OeGE+n8Z+PYW7E<X>H4gR}5~ynsgF&y*(i*dFj=+B$efBm09np
+z?|*sJJ#t;kMA=Vk{wUU-x}3J7=R#iJr5kcHWCL0q+d?)c70!BGvhV)7!d=IH3O)aC
+z@ptJGv7f4!Z8PWBWFFmJ^qT?I)9bCDs?P*^b}zE0i&INVGV{`lL2>HZw-K0X1)S?u
+zcg<a9pde!U_Sm6A4Dtd?-J>;khV0B{uJ@lIp?mxMyS8$ktm9|AmAH>DV{LtMdB=s6
+zhd+17=`Dzm>D5zl;+9X5__a>LZK70CDC3c35i?xF7MuQ-T>MyVt;f~sr809vW~#>q
+z$z7jgV{|=>=hu~O>9Tj7J~#*M%72nt9CZGUK``&iq%v_Gk9z_o_h0@m`p+8R&B!Fe
+zfV+$WdI$`bG=eBBB^J5?=vfz{oq=IVqZTmPBV}ZCjp(@pp^*VtUgFCu=q8~jL4-+9
+mVJ0CbNObM!k%`cLiy7(=<fsksW@Q5@VFf}bpcfahfOr5xjy|UV
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/data/punctuation-kerning-empty.docx b/sw/qa/extras/ooxmlimport/data/punctuation-kerning-empty.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..ea9889f360dbc5baa03d08a0a5fb79734cfc3a3b
+GIT binary patch
+literal 1521
+zcmWIWW@Zs#U|`??V#SyYYYvv5K$Za$1A{P-j&{z^D@n~Oi4UnPNG*=ltH{k+JMpyN
+zVFMAD`lFw=dC5d5v`i{Fn9QkjiaqA0d1vVUC$Fb{d%yE#b|Y6##4Y3Ww3O|q=awgR
+z&&=VOyJw}erooGh90}{68>?2nTe^VhU_&>f^-lLmr}xFa6`qt}7NEX7=u&gg67??*
+zr9Ki7l1bkJe#~&6>aaf1rS!H*x!3UkgDI=dNN&oXU(nF2{iyQz_2aUVvYsC+OwPs5
+zZJ9FXYCuHz?Sy?>LzcJAI@#Q=Hap`W+sbujXHK1GRe#qjuNK|>NVcew^}OC!$<2Xk
+zuX@ur{j+^`>YN2n*yGmumxKDGI)5D9yIQ}CU0SUEt%6Rg<*)y;&!2o|DgE*BA9nys
+zNX`Ch{%S2Sgftl$7`TCSd{JsnvA!ON>^*PIcgTQ;?ZIl7dzn#eEdiJHI96(Fv2PGE
+zUz;K4b!hQ+b!KK)o}O*>_0wK|%S<a<E})*y8sf^?v!*0#Q`CW__PO5<Bsr}vD4WKj
+zBeF2}mGRjbpS)z$<s;2<L=2Wa;h*DfIq6`8g}<3Un>f$17`C&vr?j&k-QINP<A=-x
+zw^HT`30Q?Pz83fYe<M#q&C^{yzb)ri;Un#dsXVhLHMDbgtuEhvLg&M>XRF0$i=+B#
+zr_tWR)j;3K0evL{q|5V*QuHBSOUX|z%>^a}P#S=G^B@=4o8g)}cjw8uq}<h0dZYE3
+z(Q9_@(Y3n1BHzD#Q?mH*z>xF5_`hAXx|=JKl*IQmt<rE@V1CfbUTeqK>30QLHhv2`
+ze{gY=DCezZ`yQ>abk8W7=wfE0Ib+6SPcI{3y;)rX7oVRNxU|T!KXXdp?A>yK?@oVG
+zxV)V)I=Cdv@l_7%qIl(h$?b^+Z08T!h<*9<xK$<P++K~@R=p><>}D%PE6k3{t1`_;
+z^`sj=tKl)A=e_~4Ak34<-gE79%sXTt;JQAk(qCqmL+F$iQCmmLhHQQT&3PMhmN&*8
+z604dxukrQ|h8RX^v7CDu|1##)?X{aV?{Cv**~G)sT~A6bP`dkY-^1JQ*B@0+xAVBN
+zNxh|Q{(;Y>(fw1^OeGE+n8Z+PYW7E<X>H4gR}5~ynsgF&y*(i*dFj=+B$efBm09np
+z?|*sJJ#t;kMA=Vk{wUU-x}3J7=R#iJr5kcHWCL0q+d?)c70!BGvhV)7!d=IH3O)aC
+z@ptJGv7f4!Z8PWBWFFmJ^qT?I)4>gv+a>@#y8+qL#i=DFnR)5Opg48y+XzavF7>LP
+z{9+{pR?XV9af87Dc9)fz+NNcqyG8!ZGccU@?%mz3&&y}s?cU^fNbXxGZ=Z#i{l^Cn
+z3-`bAdvJy6d!m>czkHBI`P*w6GpA12#gve1#=rRHC50>*P1dz3ihB2gi@3s4<O(L=
+z(T`MGIW23}$AIhZK8Z;`6eIJr-J_eQ8i${Xak{bfhy3e(0p5&EA`G~TCZIpSU`Zp0
+z!ctJ78-Si;A=()jmNaSsQ#(@rMc0U)DG(YNfW;)fEP`$lddfqX^b}?iaymrUjvj{y
+c?YEer4ndC50B=?{kP=oPbOL&DCJTrM03akgMgRZ+
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/data/punctuation-kerning-enabled.docx b/sw/qa/extras/ooxmlimport/data/punctuation-kerning-enabled.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..f00bc40445beb2fbc6b916ba0294631348f5a93d
+GIT binary patch
+literal 1531
+zcmWIWW@Zs#U|`??V#SyYYYvv5K$Za$1A{P-j&{z^D@n~Oi4UnPNG*=ltH{k+JMpyN
+zVFMAD`lFw=dC5d5v`i{Fn9QkjiaqA0d1vVUC$Fb{d%yE#b|Y6##4Y3Ww3O|q=awgR
+z&&=VOyJw}erooGh90}{68>?2nTe^VhU_&>f^-lLmr}xFa6`qt}7NEX7=u&gg67??*
+zr9Ki7l1bkJe#~&6>aaf1rS!H*x!3UkgDI=dNN&oXU(nF2{iyQz_2aUVvYsC+OwPs5
+zZJ9FXYCuHz?Sy?>LzcJAI@#Q=Hap`W+sbujXHK1GRe#qjuNK|>NVcew^}OC!$<2Xk
+zuX@ur{j+^`>YN2n*yGmumxKDGI)5D9yIQ}CU0SUEt%6Rg<*)y;&!2o|DgE*BA9nys
+zNX`Ch{%S2Sgftl$7`TCSd{JsnvA!ON>^*PIcgTQ;?ZIl7dzn#eEdiJHI96(Fv2PGE
+zUz;K4b!hQ+b!KK)o}O*>_0wK|%S<a<E})*y8sf^?v!*0#Q`CW__PO5<Bsr}vD4WKj
+zBeF2}mGRjbpS)z$<s;2<L=2Wa;h*DfIq6`8g}<3Un>f$17`C&vr?j&k-QINP<A=-x
+zw^HT`30Q?Pz83fYe<M#q&C^{yzb)ri;Un#dsXVhLHMDbgtuEhvLg&M>XRF0$i=+B#
+zr_tWR)j;3K0evL{q|5V*QuHBSOUX|z%>^a}P#S=G^B@=4o8g)}cjw8uq}<h0dZYE3
+z(Q9_@(Y3n1BHzD#Q?mH*z>xF5_`hAXx|=JKl*IQmt<rE@V1CfbUTeqK>30QLHhv2`
+ze{gY=DCezZ`yQ>abk8W7=wfE0Ib+6SPcI{3y;)rX7oVRNxU|T!KXXdp?A>yK?@oVG
+zxV)V)I=Cdv@l_7%qIl(h$?b^+Z08T!h<*9<xK$<P++K~@R=p><>}D%PE6k3{t1`_;
+z^`sj=tKl)A=e_~4Ak34<-gE79%sXTt;JQAk(qCqmL+F$iQCmmLhHQQT&3PMhmN&*8
+z604dxukrQ|h8RX^v7CDu|1##)?X{aV?{Cv**~G)sT~A6bP`dkY-^1JQ*B@0+xAVBN
+zNxh|Q{(;Y>(fw1^OeGE+n8Z+PYW7E<X>H4gR}5~ynsgF&y*(i*dFj=+B$efBm09np
+z?|*sJJ#t;kMA=Vk{wUU-x}3J7=R#iJr5kcHWCL0q+d?)c70!BGvhV)7!d=IH3O)aC
+z@ptJGv7f4!Z8PWBWFFmJ^qT?I(`(=Q+s*=db|12*i&INVGV{`lL2>HZw-=ad1)Aek
+zcg<a9pdezJnw*%}z}|7`b^nw*p*y!UZddo|nfCVlyLIm+uJn0|sc|1)#@hO%G9qKs
+zhpKyg;sKLndG!nyw(@hu{9Y$<a89;I2<wCyNr~qwO{2Q!8(L*nxURZ)LUUJ4>a3E7
+zCTluvyRKyM{JOF&UG}ci2WKIBvrm=9JLm08UL+NC^o?GGM63YI-SS`dck3AgycwB9
+z7;qO-Kp%m@l131PrN}}z06p(Qv@<X)Y19Iyd!(F<t`R+ZAT%-n3ru{O1>Gd{G>9<i
+nDa<6~6p5}KJvI^AZ!tq1f*iL2-mGjOC9FW`1oYx!77z~rU7tY%
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+index e32b69215339488c78c23940320249b5c2debd80..58064c68432a29086a9a0c7b1511101bccd7ac07 100644
+--- a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
++++ b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+@@ -105,6 +105,33 @@ CPPUNIT_TEST_FIXTURE(Test, testCharacterSpacingControlImport)
+     }
+ }
+ 
++CPPUNIT_TEST_FIXTURE(Test, testNoPunctuationKerningImport)
++{
++    struct Case
++    {
++        const char* pFile;
++        bool bExpected;
++    };
++    // Run both values, the empty on/off element, and the OOXML default in
++    // sequence so a disabled setting cannot leak into the following document.
++    const Case aCases[] = {
++        { "punctuation-kerning-enabled.docx", true },
++        { "punctuation-kerning-disabled.docx", false },
++        { "punctuation-kerning-empty.docx", false },
++        { "punctuation-kerning-default.rtf", false },
++        { "character-spacing-absent.docx", true },
++    };
++    for (const auto& rCase : aCases)
++    {
++        createSwDoc(rCase.pFile);
++        uno::Reference<lang::XMultiServiceFactory> xFactory(mxComponent, uno::UNO_QUERY_THROW);
++        uno::Reference<beans::XPropertySet> xSettings(
++            xFactory->createInstance(u"com.sun.star.document.Settings"_ustr), uno::UNO_QUERY_THROW);
++        CPPUNIT_ASSERT_EQUAL_MESSAGE(rCase.pFile, rCase.bExpected,
++                                    getProperty<bool>(xSettings, u"IsKernAsianPunctuation"_ustr));
++    }
++}
++
+ CPPUNIT_TEST_FIXTURE(Test, testImageHyperlink)
+ {
+     createSwDoc("image-hyperlink.docx");
+diff --git a/sw/source/writerfilter/dmapper/SettingsTable.cxx b/sw/source/writerfilter/dmapper/SettingsTable.cxx
+index 659b2c3aa8c8c82a45414c8a095edd00e1ffe012..021cf3bea6257a963a104facc69861cfb7c400a7 100644
+--- a/sw/source/writerfilter/dmapper/SettingsTable.cxx
++++ b/sw/source/writerfilter/dmapper/SettingsTable.cxx
+@@ -109,6 +109,11 @@ SettingsTable::SettingsTable(const DomainMapper& rDomainMapper)
+ , m_pThemeFontLangProps(3)
+ , m_pCurrentCompatSetting(3)
+ {
++    // OOXML 17.15.1.57: absent noPunctuationKerning permits punctuation
++    // kerning when enabled on a run. Keep other import formats unchanged.
++    if (rDomainMapper.IsOOXMLImport())
++        m_oKernAsianPunctuation = true;
++
+     if (rDomainMapper.IsRTFImport())
+     {
+         // HTML paragraph auto-spacing is opt-in for RTF, opt-out for OOXML.
+@@ -239,7 +244,8 @@ void SettingsTable::lcl_sprm(Sprm& rSprm)
+     m_bEvenAndOddHeaders = nIntValue;
+     break;
+     case NS_ooxml::LN_CT_Settings_noPunctuationKerning: //  92526;
+-    break;
++        m_oKernAsianPunctuation = nIntValue == 0;
++        break;
+     case NS_ooxml::LN_CT_Settings_characterSpacingControl: //  92527;
+         if (sStringValue == "doNotCompress")
+             m_oCharacterCompressionType = text::CharacterCompressionType::NONE;
+@@ -635,6 +641,10 @@ void SettingsTable::ApplyProperties(rtl::Reference<SwXTextDocument> const& xDoc)
+         xDocumentSettings->setPropertyValue(u"CharacterCompressionType"_ustr,
+                                            uno::Any(*m_oCharacterCompressionType));
+ 
++    if (m_oKernAsianPunctuation)
++        xDocumentSettings->setPropertyValue(u"IsKernAsianPunctuation"_ustr,
++                                           uno::Any(*m_oKernAsianPunctuation));
++
+     // Shared between DOCX and RTF, unconditional flags.
+     xDocumentSettings->setPropertyValue(u"TableRowKeep"_ustr, uno::Any(true));
+     xDocumentSettings->setPropertyValue(u"AddVerticalFrameOffsets"_ustr, uno::Any(true));
+diff --git a/sw/source/writerfilter/dmapper/SettingsTable.hxx b/sw/source/writerfilter/dmapper/SettingsTable.hxx
+index d738d3ce86176094340f281da5e68d7a60ea9f0d..4386d57c7a81a0f75a62ec4a11cbdbc0db2fd25e 100644
+--- a/sw/source/writerfilter/dmapper/SettingsTable.hxx
++++ b/sw/source/writerfilter/dmapper/SettingsTable.hxx
+@@ -135,6 +135,7 @@ private:
+     bool m_bEvenAndOddHeaders;
+     bool m_bUsePrinterMetrics;
+     std::optional<sal_Int16> m_oCharacterCompressionType;
++    std::optional<bool> m_oKernAsianPunctuation;
+     bool embedTrueTypeFonts;
+     bool embedSystemFonts;
+     bool m_bDoNotUseHTMLParagraphAutoSpacing;

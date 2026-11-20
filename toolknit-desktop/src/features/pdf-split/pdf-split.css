@@ -1,7 +1,7 @@
 #pdfSplitProcessCancel { display: inline-flex; align-items: center; justify-content: center; gap: 8px; line-height: 1.25; }
 #pdfSplitProcessCancel svg { width: 16px; height: 16px; }
-html[data-theme="light"] #pdfSplitProcessCancel { color: #171717; background: #f5f6f7; border-color: #d7d9dd; }
-html[data-theme="light"] #pdfSplitProcessCancel:hover { background: #e9eaec; border-color: #bfc2c7; }
+html:root[data-theme] #pdfSplitProcessCancel { color: var(--tk-ink); background: var(--tk-inset); border-color: var(--tk-border); }
+html:root[data-theme] #pdfSplitProcessCancel:hover { background: var(--tk-surface); border-color: var(--tk-border); }
 
 #pdfSplitWorkspace .pdf-split-selection { display: grid; gap: 14px; min-width: 0; padding-top: 4px; }
 #pdfSplitWorkspace .pdf-split-selection-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
@@ -54,17 +54,17 @@ html[data-theme="light"] #pdfSplitProcessCancel:hover { background: #e9eaec; bor
 #pdfSplitRangeDialog .pdf-merge-selection-btn-primary { background: #f5f5f5; border-color: #f5f5f5; color: #171717; }
 #pdfSplitRangeDialog .pdf-merge-selection-btn-primary:hover { background: #dedee1; border-color: #dedee1; color: #171717; }
 #pdfSplitRangeDialog .pdf-merge-selection-btn > svg { width: 16px; height: 16px; color: inherit; stroke: currentColor; }
-html[data-theme="light"] #pdfSplitWorkspace .pdf-split-selection-heading { color: #171717; }
-html[data-theme="light"] #pdfSplitWorkspace .pdf-split-selection-count { background: #f0f1f3; color: #171717; }
-html[data-theme="light"] #pdfSplitWorkspace :is(.pdf-split-selection-summary, .pdf-split-selection-note) { color: #60636a; }
-html[data-theme="light"] #pdfSplitWorkspace .pdf-split-range-trigger,
-html[data-theme="light"] #pdfSplitRangeDialog .pdf-merge-selection-btn-primary { background: #171717; color: #fff; border-color: #171717; }
-html[data-theme="light"] #pdfSplitWorkspace .pdf-split-range-trigger:hover:not(:disabled),
-html[data-theme="light"] #pdfSplitRangeDialog .pdf-merge-selection-btn-primary:hover { background: #303030; color: #fff; border-color: #303030; }
-html[data-theme="light"] #pdfSplitRangeDialog { --ink: #171717; --muted: #60636a; --line: #e1e2e5; --line-strong: #cfd1d5; background: rgba(17, 17, 17, .22); color-scheme: light; }
-html[data-theme="light"] #pdfSplitRangeDialog .pdf-editor-edit-modal-input { background-color: #f5f6f7; color: #171717; }
-html[data-theme="light"] #pdfSplitRangeDialog .pdf-editor-edit-modal-input::placeholder { color: #737780; }
-html[data-theme="light"] #pdfSplitRangeDialog .pdf-split-range-error { color: #a52b24; }
+html:root[data-theme] #pdfSplitWorkspace .pdf-split-selection-heading { color: var(--tk-ink); }
+html:root[data-theme] #pdfSplitWorkspace .pdf-split-selection-count { background: var(--tk-inset); color: var(--tk-ink); }
+html:root[data-theme] #pdfSplitWorkspace :is(.pdf-split-selection-summary, .pdf-split-selection-note) { color: var(--tk-muted); }
+html:root[data-theme] #pdfSplitWorkspace .pdf-split-range-trigger,
+html:root[data-theme] #pdfSplitRangeDialog .pdf-merge-selection-btn-primary { background: var(--tk-accent); color: var(--tk-on-accent); border-color: var(--tk-accent); }
+html:root[data-theme] #pdfSplitWorkspace .pdf-split-range-trigger:hover:not(:disabled),
+html:root[data-theme] #pdfSplitRangeDialog .pdf-merge-selection-btn-primary:hover { background: var(--tk-accent); color: var(--tk-on-accent); border-color: var(--tk-accent); }
+html:root[data-theme] #pdfSplitRangeDialog { --ink: var(--tk-ink); --muted: var(--tk-muted); --line: var(--tk-border); --line-strong: var(--tk-border); background: rgba(var(--tk-rgb-ink), 0.22); color-scheme: var(--tk-color-scheme); }
+html:root[data-theme] #pdfSplitRangeDialog .pdf-editor-edit-modal-input { background-color: var(--tk-inset); color: var(--tk-ink); }
+html:root[data-theme] #pdfSplitRangeDialog .pdf-editor-edit-modal-input::placeholder { color: var(--tk-muted); }
+html:root[data-theme] #pdfSplitRangeDialog .pdf-split-range-error { color: var(--tk-danger); }
 @media (prefers-reduced-motion: reduce) {
   #pdfSplitRangeDialog { transition: none; }
 }

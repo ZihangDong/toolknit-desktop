@@ -15,9 +15,9 @@ const [html, main, specs, tool, workspace, interaction, thumbnailQueue, document
   readFile(new URL('../src/features/pdf-crop/view.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/pdf-crop/core.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/pdf-crop/pdf-crop.css', import.meta.url), 'utf8'),
-  Promise.all(['pdf-crop-light.css', 'pdf-workbench-light.css'].map(name =>
-    readFile(new URL(`../src/styles/themes/${name}`, import.meta.url), 'utf8'))).then(parts => parts.join('\n')),
-  readFile(new URL('../src/styles/themes/index.css', import.meta.url), 'utf8')
+  Promise.all(['features/pdf-crop/pdf-crop.css', 'styles/components/pdf-workbench.css'].map(name =>
+    readFile(new URL(`../src/${name}`, import.meta.url), 'utf8'))).then(parts => parts.join('\n')),
+  readFile(new URL('../src/styles/index.css', import.meta.url), 'utf8')
 ]);
 
 for (const id of [
@@ -91,8 +91,7 @@ assert.match(featureCss, /flex:\s*0 0 132px/);
 assert.match(featureCss, /flex-basis:\s*110px/);
 assert.match(featureCss, /\.pdf-crop-export-actions/);
 assert.match(featureCss, /@media \(max-height: 520px\)[\s\S]*?grid-template-rows: 48px minmax\(64px, 1fr\) 36px 86px/);
-assert.match(themeIndex, /@import url\('\.\/pdf-crop-light\.css'\)/);
-assert.match(themeCss, /html\[data-theme="light"\] \.pdf-crop-v2/);
+assert.match(themeCss, /html:root\[data-theme\] \.pdf-crop-v2/);
 assert.match(themeCss, /\.pdf-crop-selection/);
 assert.match(themeCss, /#pdfCropProcessMask/);
 assert.match(themeCss, /#pdfCropSuccessOverlay/);

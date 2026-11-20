@@ -254,7 +254,7 @@ check(!imageBatchControllerSource.includes('.innerHTML ='), 'Image batch runtime
 check(imageBatchControllerSource.includes('name.textContent ='), 'Image batch filenames must use safe text nodes');
 check(imageBatchControllerSource.includes('owner.use(unlisten)'), 'Image batch native drag listeners must be lifecycle-owned');
 check(imageBatchControllerSource.includes('isCurrentOperation(operation)'), 'Image batch results must reject stale operations');
-check(imageBatchControllerSource.includes("invoke('cancel_convert')"), 'Image batch cancellation must retain the native command boundary');
+check(imageBatchControllerSource.includes("invoke('cancel_convert', { toolknitTaskTool:"), 'Image batch cancellation must retain the native command boundary and task ownership');
 check(!imageBatchControllerSource.includes("from '@tauri-apps/api/core'"), 'Image batch tools must use the platform Tauri core boundary');
 check(!imageBatchControllerSource.includes("from '@tauri-apps/api/event'"), 'Image batch tools must use the platform Tauri event boundary');
 check(imageBatchToolSource.includes('imageBatchPageTemplate(mode)'), 'Image batch tools must materialize only their trusted static templates');

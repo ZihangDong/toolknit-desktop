@@ -1009,3 +1009,219 @@
           transition: none;
         }
       }
+
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* Video conversion uses the same accessible custom select as other tool pages. */
+html:root[data-theme] .video-convert-v2 .video-convert-format-select + .tool-custom-select .tool-custom-select-trigger {
+  min-height: 40px;
+  border-color: var(--tk-border);
+  border-radius: 7px;
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] .video-convert-v2 .video-convert-format-select + .tool-custom-select .tool-custom-select-trigger:hover:not(:disabled),
+html:root[data-theme] .video-convert-v2 .video-convert-format-select + .tool-custom-select.is-open .tool-custom-select-trigger {
+  border-color: var(--tk-accent);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .video-convert-v2 .video-convert-format-select + .tool-custom-select .tool-custom-select-trigger:focus-visible {
+  outline: 2px solid var(--tk-accent);
+  outline-offset: 3px;
+}
+
+html:root[data-theme] .video-convert-v2 .video-convert-format-select + .tool-custom-select .tool-custom-select-trigger svg {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] body:has(.video-convert-v2.visible) .tool-custom-select-menu {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.12);
+}
+
+html:root[data-theme] body:has(.video-convert-v2.visible) .tool-custom-select-menu button {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] body:has(.video-convert-v2.visible) .tool-custom-select-menu button:hover,
+html:root[data-theme] body:has(.video-convert-v2.visible) .tool-custom-select-menu button:focus-visible,
+html:root[data-theme] body:has(.video-convert-v2.visible) .tool-custom-select-menu button.is-selected {
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .video-convert-v2 .video-convert-format-select + .tool-custom-select .tool-custom-select-label {
+  color: var(--tk-ink);
+}
+
+/* Video capture/GIF workspace: shared light empty state and inspector surfaces. */
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-media-v2-empty {
+  --tk-empty-hero-ink: var(--tk-ink);
+  --tk-empty-hero-muted: var(--tk-muted);
+  --tk-empty-hero-quiet: var(--tk-muted);
+  --tk-empty-hero-button-bg: var(--tk-accent);
+  --tk-empty-hero-button-ink: var(--tk-on-accent);
+  --tk-empty-hero-icon-bg: var(--tk-accent);
+  --tk-empty-hero-icon-ink: var(--tk-on-accent);
+  --tk-empty-hero-icon-line: var(--tk-accent);
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-media-v2-empty .tk-empty-hero-action {
+  border-color: var(--tk-empty-hero-button-bg);
+  background: var(--tk-empty-hero-button-bg);
+  color: var(--tk-empty-hero-button-ink);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-media-v2-empty .tk-empty-hero-description {
+  color: var(--tk-empty-hero-muted);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-media-v2-control-card {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-expand-toggle {
+  border-color: rgba(var(--tk-rgb-page), 0.5);
+  background: rgba(var(--tk-rgb-ink), 0.72);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-expand-toggle:hover {
+  border-color: var(--tk-inset);
+  background: var(--tk-accent);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-media-v2-control-head h2 {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .video-gif-v2 .video-gif-v2-control-card {
+  --gif-track: var(--tk-border);
+  --gif-selection: var(--tk-accent);
+  --gif-thumb: var(--tk-accent);
+  --gif-thumb-outline: var(--tk-inset);
+  --gif-focus: var(--tk-accent);
+  --gif-control-bg: var(--tk-inset);
+  --gif-control-hover: var(--tk-surface);
+  --gif-control-line: var(--tk-border);
+  --gif-control-ink: var(--tk-ink);
+  --gif-control-muted: var(--tk-muted);
+  --gif-control-active-bg: var(--tk-accent);
+  --gif-control-active-ink: var(--tk-on-accent);
+}
+
+html:root[data-theme] .video-gif-v2 .video-gif-v2-control-card .video-gif-timeline-input,
+html:root[data-theme] .video-gif-v2 .video-gif-v2-control-card .video-gif-timeline-input:focus {
+  background: transparent;
+  box-shadow: none;
+}
+
+html:root[data-theme] .video-gif-v2 .video-gif-v2-control-card .audio-convert-format-option {
+  border-color: var(--gif-control-line);
+  background: var(--gif-control-bg);
+  color: var(--gif-control-ink);
+}
+
+html:root[data-theme] .video-gif-v2 .video-gif-v2-control-card .audio-convert-format-option:hover:not(.active) {
+  border-color: var(--gif-control-ink);
+  background: var(--gif-control-hover);
+  color: var(--gif-control-ink);
+}
+
+html:root[data-theme] .video-gif-v2 .video-gif-v2-control-card .audio-convert-format-option.active {
+  border-color: var(--gif-control-active-bg);
+  background: var(--gif-control-active-bg);
+  color: var(--gif-control-active-ink);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-timeline-meta,
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-format-block {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-source-stats > div {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-source-stats span {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-source-stats strong {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-timeline-meta output {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-duration-separator {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-control-card .video-frame-timeline {
+  accent-color: var(--tk-accent);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-quick-seek button {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-quick-seek button:hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-nudge-row > button {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-nudge-row > button:hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-timestamp-field input {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-timestamp-field em {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-control-card .audio-convert-format-option {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-control-card .audio-convert-format-option:hover {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(.video-frame-v2, .video-gif-v2) .video-frame-control-card .audio-convert-format-option.active {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}

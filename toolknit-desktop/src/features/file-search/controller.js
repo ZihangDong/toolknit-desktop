@@ -1,4 +1,5 @@
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
+import { getAppliedThemeConfig } from '../../app/theme-palette.js';
 import { setModalInteractivity } from '../../app/modal-runtime.js';
 import { moveFocusOutOfHiddenRegion } from '../../shared/tool-page-shell.js';
 import { createFileSearchRuntime } from '../../platform/file-search-runtime.js';
@@ -14,7 +15,7 @@ export function createFileSearchController({ overlay, isTauri = false, fileSearc
   let latestState=null, windowGeneration=-1, statusAgain=false;
   const visible = () => session && !session.disposed;
   const text = (node, value) => { if (node.textContent !== value) node.textContent = value; };
-  const context = () => runtime.call('context', { lang: getLang(), theme: doc.documentElement.dataset.theme || 'dark', reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches });
+  const context = () => runtime.call('context', { lang: getLang(), theme: doc.documentElement.dataset.theme || 'light', appearance: getAppliedThemeConfig(doc.documentElement), reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches });
   function message(error) { if (!visible()) return; const target = q(!ready ? 'SetupStatus' : capsuleMode ? 'CapsuleStatus' : 'Status'); target.hidden = false; target.textContent = errorText(error, tr); }
   function controls() {
     const pending = busy || nativeBusy || modeBusy;
@@ -141,7 +142,7 @@ export function createFileSearchController({ overlay, isTauri = false, fileSearc
         void readStatus();
       });
       if (owner !== session) { unlisten(); return; } session.use(unlisten);
-      const observer = new MutationObserver(() => void context().catch(message)); observer.observe(doc.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); session.use(() => observer.disconnect());
+      const observer = new MutationObserver(() => void context().catch(message)); observer.observe(doc.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-theme-config'] }); session.use(() => observer.disconnect());
       q(!ready ? 'Enable' : capsuleMode ? 'UseWindow' : 'Query').focus({ preventScroll: true });
     } catch (error) { if (owner === session) message(error); }
   }

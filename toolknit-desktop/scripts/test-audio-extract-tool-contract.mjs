@@ -50,13 +50,12 @@ assert.match(audioExtractTemplate(), /data-audio-extract-action="choose"/);
 assert.match(audioExtractTemplate(), /data-audio-extract-success-path/);
 
 const [themeIndex, sharedTheme, theme] = await Promise.all([
-  read('src/styles/themes/index.css'),
-  read('src/styles/themes/pdf-tools-light.css'),
-  read('src/styles/themes/audio-extract-light.css')
+  read('src/styles/index.css'),
+  read('src/styles/components/tool-pages.css'),
+  read('src/features/audio-extract/audio-extract.css')
 ]);
 assert.match(template, /tool-page-v2-shell tool-page-v2-light/);
 assert.match(sharedTheme, /:is\(\.pdf-merge-v2, \.excel-to-pdf-overlay, \.tool-page-v2-light\)/);
-assert.match(themeIndex, /@import url\('\.\/audio-extract-light\.css'\)/);
 assert.doesNotMatch(theme, /\.pdf-merge-v2-back|\.pdf-merge-v2-topbar/, 'navigation stays in the shared theme');
 for (const selector of ['.audio-extract-info-main', '.audio-extract-info-meta', '.audio-clip-file-remove',
   '.audio-convert-format-option:not(.active)', '.audio-extract-track-select option',

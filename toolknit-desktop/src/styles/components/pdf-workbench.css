@@ -94,19 +94,391 @@
   color: inherit;
   stroke: currentColor;
 }
-html[data-theme="light"] .pdf-workbench .pdf-editor-tile.is-current { outline-color: #171717; }
-html[data-theme="light"] .pdf-workbench.pdf-editor-v2 [data-export-primary].pdf-editor-tool:not(:disabled) {
-  color: #ffffff;
-  background: #171717;
-  border-color: #171717;
+html:root[data-theme] .pdf-workbench .pdf-editor-tile.is-current { outline-color: var(--tk-accent); }
+html:root[data-theme] .pdf-workbench.pdf-editor-v2 [data-export-primary].pdf-editor-tool:not(:disabled) {
+  color: var(--tk-on-accent);
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
 }
-html[data-theme="light"] .pdf-workbench.pdf-editor-v2 [data-export-primary].pdf-editor-tool:is(:hover, :focus-visible, :active):not(:disabled) {
-  color: #ffffff;
-  background: #303030;
-  border-color: #303030;
+html:root[data-theme] .pdf-workbench.pdf-editor-v2 [data-export-primary].pdf-editor-tool:is(:hover, :focus-visible, :active):not(:disabled) {
+  color: var(--tk-on-accent);
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
 }
 @media (max-width: 980px) {
   .pdf-workbench .pdf-workbench-body { overflow-y: auto; grid-template-rows: minmax(190px, 250px) minmax(520px, 1fr) auto; }
   .pdf-workbench .pdf-editor-page-strip { overflow-y: auto; }
   .pdf-workbench .pdf-editor-tool-panel { min-height: 410px; }
+}
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-margin-toolbar .tool-custom-select-label,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-field .tool-custom-select-label {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-margin-toolbar .tool-custom-select-trigger svg,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-field .tool-custom-select-trigger svg {
+  width: 15px;
+  height: 15px;
+  color: var(--tk-ink);
+  stroke-width: 2.6;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-margin-toolbar .tool-custom-select-trigger:focus-visible,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-field .tool-custom-select-trigger:focus-visible {
+  outline: 2px solid var(--tk-accent);
+  outline-offset: 2px;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-margin-toolbar .tool-custom-select-trigger:hover:not(:disabled),
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-margin-toolbar .tool-custom-select.is-open .tool-custom-select-trigger,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-field .tool-custom-select-trigger:hover:not(:disabled),
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-field .tool-custom-select.is-open .tool-custom-select-trigger {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+  box-shadow: none;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-margin-toolbar .tool-custom-select-trigger,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-field .tool-custom-select-trigger {
+  min-height: 34px;
+  padding-inline: 12px 14px;
+  border: 1px solid var(--tk-border);
+  border-radius: 10px;
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+/* Shared light surfaces for PDF Crop, PDF Page Number and PDF Editor. Feature geometry and PDF content colors remain owned by each tool. */
+html:root[data-theme] .pdf-crop-v2,
+html:root[data-theme] .pdf-page-number-v2,
+html:root[data-theme] .pdf-editor-v2 {
+  --pc-panel: var(--tk-page-bg);
+  --pc-panel-strong: var(--tk-inset);
+  --pc-line: var(--tk-border);
+  --pc-line-strong: var(--tk-border);
+  --pc-text: var(--tk-ink);
+  --pc-muted: var(--tk-muted);
+  --pc-faint: var(--tk-muted);
+  --pc-surface: var(--tk-inset);
+  --pc-surface-hover: var(--tk-surface);
+  --pc-accent: var(--tk-accent);
+  --pc-accent-ink: var(--tk-on-accent);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--pc-text);
+  background: var(--tk-page-bg);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-merge-v2-bg,
+html:root[data-theme] .pdf-crop-v2::before,
+html:root[data-theme] .pdf-page-number-v2 .pdf-merge-v2-bg,
+html:root[data-theme] .pdf-page-number-v2::before,
+html:root[data-theme] .pdf-editor-v2 .pdf-merge-v2-bg,
+html:root[data-theme] .pdf-editor-v2::before {
+  display: none;
+}
+html:root[data-theme] .pdf-crop-v2::after,
+html:root[data-theme] .pdf-page-number-v2::after,
+html:root[data-theme] .pdf-editor-v2::after {
+  background-image:
+    linear-gradient(rgba(var(--tk-rgb-ink), 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.022) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: none;
+  -webkit-mask-image: none;
+  opacity: 1;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-layout,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-layout,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-v2-body {
+  background: transparent;
+}
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-workspace, .pdf-crop-settings),
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-preview, .pdf-page-number-settings),
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-sidebar, .pdf-editor-preview, .pdf-editor-tool-panel) {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-workspace,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-preview,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-preview {
+  background: var(--tk-page-bg);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-settings,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-settings,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tool-panel {
+  background: var(--tk-page-bg);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-preview-toolbar,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-preview-toolbar,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-preview-toolbar {
+  border-bottom-color: var(--tk-border);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-preview-title h1,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-preview-title h1 {
+  color: var(--tk-ink);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-page-nav > span,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-preview-nav > span {
+  color: var(--tk-muted);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-zoom > span,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-zoom > span {
+  color: var(--tk-muted);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-canvas-scroll,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-canvas-scroll,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-canvas-scroll {
+  background: var(--tk-inset);
+  scrollbar-color: var(--tk-muted) transparent;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-canvas-stage,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-canvas-stage,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-canvas-stage {
+  background: var(--tk-inset);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-empty,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-empty,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-empty {
+  color: var(--tk-ink);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-empty-icon,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-empty-icon,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-empty-icon {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-empty p,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-empty p,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-empty p {
+  color: var(--tk-muted);
+}
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-primary, .pdf-crop-export-primary),
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-primary, .pdf-page-number-export),
+html:root[data-theme] .pdf-editor-v2 :is(#pdfEditorCta, #pdfEditorExport, #pdfEditorEditSave) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-primary, .pdf-crop-export-primary):hover:not(:disabled),
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-primary, .pdf-page-number-export):hover:not(:disabled),
+html:root[data-theme] .pdf-editor-v2 :is(#pdfEditorCta, #pdfEditorExport, #pdfEditorEditSave):hover:not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+  transform: none;
+}
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-primary, .pdf-crop-export):disabled,
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-primary, .pdf-page-number-export):disabled,
+html:root[data-theme] .pdf-editor-v2 :is(#pdfEditorCta, #pdfEditorExport, #pdfEditorEditSave):disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-surface-hover);
+  color: var(--tk-muted);
+  opacity: 1;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-canvas-wrap,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-canvas-wrap,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-main-canvas {
+  border-radius: 4px;
+  box-shadow: 0 10px 28px rgba(17, 17, 17, 0.08), 0 0 0 1px #d7d9dd;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-current-bar,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-preview-footer {
+  border-top-color: var(--tk-border);
+  border-bottom-color: var(--tk-border);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-current-bar > span,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-preview-footer > span {
+  color: var(--tk-muted);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-settings-scroll,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-settings-scroll,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tool-panel-scroll {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-setting-section,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-setting-section {
+  border-bottom-color: var(--tk-border);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-section-title > span,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-section-title > span {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-section-title strong,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-section-title strong {
+  color: var(--tk-ink);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-section-title small,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-section-title small {
+  color: var(--tk-muted);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-output-modes input:focus-visible + span,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-output-modes input:focus-visible + span {
+  outline-color: var(--tk-accent);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-export-bar,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-export-bar {
+  border-top-color: var(--tk-border);
+  background: var(--tk-inset);
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-export-bar > span,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-export-bar > span {
+  color: var(--tk-muted);
+}
+html:root[data-theme] .pdf-crop-v2 :is(button, input, select):focus-visible,
+html:root[data-theme] .pdf-page-number-v2 :is(button, input, select):focus-visible,
+html:root[data-theme] .pdf-editor-v2 :is(button, input, select):focus-visible {
+  outline: 2px solid var(--tk-accent);
+  outline-offset: 3px;
+}
+html:root[data-theme] body:has(.pdf-crop-v2.visible) .tool-custom-select-menu,
+html:root[data-theme] body:has(.pdf-page-number-v2.visible) .tool-custom-select-menu,
+html:root[data-theme] body:has(.pdf-editor-v2.visible) .tool-custom-select-menu {
+  border: 1px solid rgba(var(--tk-rgb-ink), 0.1);
+  border-radius: 12px;
+  padding: 7px;
+  gap: 5px;
+  color: var(--tk-ink);
+  background: var(--tk-page-bg);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+}
+html:root[data-theme] body:has(.pdf-crop-v2.visible) .tool-custom-select-menu button,
+html:root[data-theme] body:has(.pdf-page-number-v2.visible) .tool-custom-select-menu button,
+html:root[data-theme] body:has(.pdf-editor-v2.visible) .tool-custom-select-menu button {
+  color: var(--tk-ink);
+  background: transparent;
+}
+html:root[data-theme] body:has(.pdf-crop-v2.visible) .tool-custom-select-menu button:hover,
+html:root[data-theme] body:has(.pdf-crop-v2.visible) .tool-custom-select-menu button:focus-visible,
+html:root[data-theme] body:has(.pdf-page-number-v2.visible) .tool-custom-select-menu button:hover,
+html:root[data-theme] body:has(.pdf-page-number-v2.visible) .tool-custom-select-menu button:focus-visible,
+html:root[data-theme] body:has(.pdf-editor-v2.visible) .tool-custom-select-menu button:hover,
+html:root[data-theme] body:has(.pdf-editor-v2.visible) .tool-custom-select-menu button:focus-visible {
+  color: var(--tk-ink);
+  background: var(--tk-surface);
+}
+html:root[data-theme] body:has(.pdf-crop-v2.visible) .tool-custom-select-menu button.is-selected,
+html:root[data-theme] body:has(.pdf-page-number-v2.visible) .tool-custom-select-menu button.is-selected,
+html:root[data-theme] body:has(.pdf-editor-v2.visible) .tool-custom-select-menu button.is-selected {
+  color: var(--tk-ink);
+  background: var(--tk-surface);
+}
+html:root[data-theme] #pdfCropProcessMask,
+html:root[data-theme] #pdfPageNumberProcessMask,
+html:root[data-theme] #pdfEditorProcessMask {
+  background: rgba(var(--tk-rgb-page), 0.96);
+  color: var(--tk-ink);
+}
+html:root[data-theme] #pdfCropProcessMask .pdf-crop-process-copy,
+html:root[data-theme] #pdfPageNumberProcessMask .pdf-page-number-process-copy,
+html:root[data-theme] #pdfEditorProcessMask .pdf-editor-process-status {
+  color: var(--tk-ink);
+}
+html:root[data-theme] #pdfCropProcessMask .audio-convert-process-bar,
+html:root[data-theme] #pdfPageNumberProcessMask .audio-convert-process-bar,
+html:root[data-theme] #pdfEditorProcessMask .audio-convert-process-bar {
+  background: var(--tk-surface);
+}
+html:root[data-theme] #pdfCropProcessMask .audio-convert-process-bar-fill,
+html:root[data-theme] #pdfPageNumberProcessMask .audio-convert-process-bar-fill,
+html:root[data-theme] #pdfEditorProcessMask .audio-convert-process-bar-fill {
+  background: var(--tk-accent);
+  box-shadow: none;
+}
+html:root[data-theme] #pdfCropProcessMask .audio-convert-cancel-btn,
+html:root[data-theme] #pdfPageNumberProcessMask .audio-convert-cancel-btn,
+html:root[data-theme] #pdfEditorProcessMask .audio-convert-cancel-btn {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+html:root[data-theme] #pdfCropProcessMask .audio-convert-cancel-btn:hover,
+html:root[data-theme] #pdfPageNumberProcessMask .audio-convert-cancel-btn:hover,
+html:root[data-theme] #pdfEditorProcessMask .audio-convert-cancel-btn:hover {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+html:root[data-theme] #pdfCropSuccessOverlay,
+html:root[data-theme] #pdfPageNumberSuccessOverlay,
+html:root[data-theme] #pdfEditorSuccessOverlay {
+  background: rgba(var(--tk-rgb-ink), 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+html:root[data-theme] #pdfCropSuccessOverlay .audio-clip-success-dialog,
+html:root[data-theme] #pdfPageNumberSuccessOverlay .audio-clip-success-dialog,
+html:root[data-theme] #pdfEditorSuccessOverlay .audio-clip-success-dialog {
+  background: var(--tk-page-bg);
+  box-shadow: 0 18px 50px rgba(17, 17, 17, 0.14);
+}
+html:root[data-theme] #pdfCropSuccessOverlay .audio-clip-success-title,
+html:root[data-theme] #pdfPageNumberSuccessOverlay .audio-clip-success-title,
+html:root[data-theme] #pdfEditorSuccessOverlay .audio-clip-success-title {
+  color: var(--tk-ink);
+}
+html:root[data-theme] #pdfCropSuccessOverlay :is(.audio-clip-success-meta, .audio-convert-success-key, .audio-convert-success-value),
+html:root[data-theme] #pdfPageNumberSuccessOverlay :is(.audio-clip-success-meta, .audio-convert-success-key, .audio-convert-success-value),
+html:root[data-theme] #pdfEditorSuccessOverlay :is(.audio-clip-success-meta, .audio-convert-success-key, .audio-convert-success-value) {
+  color: var(--tk-muted);
+}
+html:root[data-theme] #pdfCropSuccessOverlay .audio-convert-success-detail,
+html:root[data-theme] #pdfPageNumberSuccessOverlay .audio-convert-success-detail,
+html:root[data-theme] #pdfEditorSuccessOverlay .audio-convert-success-detail {
+  background: var(--tk-inset);
+}
+html:root[data-theme] #pdfCropSuccessOverlay .audio-clip-success-btn-secondary,
+html:root[data-theme] #pdfPageNumberSuccessOverlay .audio-clip-success-btn-secondary,
+html:root[data-theme] #pdfEditorSuccessOverlay .audio-clip-success-btn-secondary {
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+html:root[data-theme] #pdfCropSuccessOverlay .audio-clip-success-btn-secondary:hover,
+html:root[data-theme] #pdfPageNumberSuccessOverlay .audio-clip-success-btn-secondary:hover,
+html:root[data-theme] #pdfEditorSuccessOverlay .audio-clip-success-btn-secondary:hover {
+  background: var(--tk-surface);
+}
+html:root[data-theme] #pdfCropSuccessOverlay .audio-clip-success-btn-primary,
+html:root[data-theme] #pdfPageNumberSuccessOverlay .audio-clip-success-btn-primary,
+html:root[data-theme] #pdfEditorSuccessOverlay .audio-clip-success-btn-primary {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+html:root[data-theme] #pdfCropSuccessOverlay .audio-clip-success-btn-primary:hover,
+html:root[data-theme] #pdfPageNumberSuccessOverlay .audio-clip-success-btn-primary:hover,
+html:root[data-theme] #pdfEditorSuccessOverlay .audio-clip-success-btn-primary:hover {
+  background: var(--tk-accent);
+  box-shadow: none;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-layout :is(button, input:not([type="radio"]), select):disabled,
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-output-modes input:disabled + span,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-layout :is(button, input:not([type="radio"], [type="range"], [type="color"]), select):disabled,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-output-modes input:disabled + span,
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-v2-body :is(button, input:not([type="radio"], [type="range"], [type="color"]), select):disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-surface-hover);
+  color: var(--tk-muted);
+  opacity: 1;
+  box-shadow: none;
+  transform: none;
+  cursor: not-allowed;
+}
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-layout button:disabled :is(b, small, span, svg),
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-output-modes input:disabled + span :is(b, small, svg),
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-layout button:disabled :is(b, small, span, svg),
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-output-modes input:disabled + span :is(b, small, svg),
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-v2-body button:disabled :is(b, small, span, svg) {
+  color: inherit;
 }

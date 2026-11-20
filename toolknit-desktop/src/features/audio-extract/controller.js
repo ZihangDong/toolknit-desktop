@@ -171,7 +171,7 @@ export function createAudioExtractController({
 
   function resetState() {
     if (activeOperation?.processing && isTauri) {
-      void tauriCore.then(({ invoke }) => invoke('cancel_convert')).catch(() => {});
+      void tauriCore.then(({ invoke }) => invoke('cancel_convert', { toolknitTaskTool: 'audio-extract' })).catch(() => {});
     }
     activeOperation = null;
     state = createEmptyState();

@@ -461,3 +461,416 @@ body.v2-home-active .global-window-controls {
   }
 }
 
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* Only the home shell opts in; lazy tool overlays retain their own palette. */
+html:root[data-theme] .app.is-v2-home {
+  --ink: var(--tk-page-ink);
+  --muted: var(--tk-page-muted);
+  --quiet: var(--tk-muted);
+  --line: var(--tk-border);
+  --line-strong: var(--tk-border);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--tk-page-ink);
+}
+
+html:root[data-theme] .app.is-v2-home .home-v2-topbar:not(.tk-tool-nav) {
+  background: var(--tk-page-bg);
+  color: var(--tk-page-ink);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.home-v2-custom-background-host, .home-v2-shader-overlay) {
+  display: none;
+}
+
+html:root[data-theme] .app.is-v2-home :is(.home-v2-brand-name, .hero-title-brand, .hero-title-sub, .section-heading h2, .tool-finder-title) {
+  color: var(--tk-page-ink);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.eyebrow, .hero-desc, .hero-support-note, .hero-support-note strong, .hero-meta, .hero-meta span, .section-index, .section-heading p, .tool-finder-subtitle, .footer-note, .tool-load-more-summary, .tool-feedback-prompt) {
+  color: var(--tk-page-muted);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.home-v2-nav-link, .home-v2-icon-button, .home-v2-window-button):not(.tk-nav-button) {
+  color: var(--tk-page-ink);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.home-v2-nav-link, .home-v2-icon-button, .home-v2-window-button):not(.tk-nav-button):hover {
+  color: var(--tk-page-ink);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.primary-action, .home-v2-support-top, .tool-load-more-button, .tool-feedback-link):not(.tk-nav-button) {
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.primary-action, .home-v2-support-top, .tool-load-more-button, .tool-feedback-link):not(.tk-nav-button):hover {
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.secondary-action, .manage-favorites, .back-to-top) {
+  background: var(--tk-page-bg);
+  border-color: var(--tk-page-line);
+  color: var(--tk-page-ink);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.secondary-action, .manage-favorites, .back-to-top):hover,
+html:root[data-theme] .app.is-v2-home .manage-favorites.is-active {
+  background: var(--tk-inset);
+  border-color: var(--tk-border);
+  color: var(--tk-page-ink);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.home-search-field, .tool-result-empty, .fav-empty-guide, .placeholder-box) {
+  background: var(--tk-page-bg);
+  border-color: var(--tk-page-line);
+  box-shadow: none;
+  color: var(--tk-page-muted);
+}
+
+html:root[data-theme] .app.is-v2-home .home-search-field :is(input, svg, button) {
+  color: var(--tk-page-ink);
+}
+
+html:root[data-theme] .app.is-v2-home .home-search-field input::placeholder {
+  color: var(--tk-muted);
+}
+
+/* The rounded field, not its clipped inner input, owns the focus treatment. */
+html:root[data-theme] .app.is-v2-home .home-search-field {
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+html:root[data-theme] .app.is-v2-home .home-search-field:focus-within {
+  border-color: var(--tk-border-strong);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+}
+
+html:root[data-theme] .app.is-v2-home .home-search-field input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+html:root[data-theme] .app.is-v2-home .home-search-field .home-search-clear:hover {
+  color: var(--tk-ink);
+  background: rgba(var(--tk-rgb-ink), 0.06);
+}
+
+html:root[data-theme] .app.is-v2-home .home-search-field::after { display: none; }
+
+html:root[data-theme] .app.is-v2-home .category-chip {
+  background: var(--tk-page-bg);
+  border-color: transparent;
+  color: var(--tk-ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] .app.is-v2-home .category-chip::before { display: none; }
+
+html:root[data-theme] .app.is-v2-home .category-chip:hover {
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .app.is-v2-home .category-chip.is-active {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .app.is-v2-home .category-chip :is(span, svg) { color: inherit; }
+
+html:root[data-theme] .app.is-v2-home :is(.tool-result-card, .favorite-item) {
+  --ink: var(--tk-home-card-ink);
+  --muted: var(--tk-home-card-muted);
+  --quiet: var(--tk-muted);
+  --line: var(--tk-border);
+  --line-strong: var(--tk-border);
+  color-scheme: var(--tk-color-scheme);
+  background: var(--tk-home-card-bg);
+  border: 0;
+  color: var(--tk-home-card-ink);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transform: none;
+  transition: background-color 150ms ease;
+}
+
+html:root[data-theme] .app.is-v2-home .tool-result-release-heading {
+  border-bottom-color: var(--tk-border);
+  color: var(--tk-page-ink);
+}
+
+html:root[data-theme] .app.is-v2-home .tool-result-release-heading h3 {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.tool-result-release-subtitle, .tool-result-release-count) {
+  color: var(--tk-page-muted);
+}
+
+html:root[data-theme] .app.is-v2-home .tool-result-release-rule {
+  background: linear-gradient(90deg, var(--tk-border), transparent);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.tool-result-card, .favorite-item, .github-strip)::before,
+html:root[data-theme] .app.is-v2-home :is(.tool-result-card, .favorite-item, .github-strip)::after {
+  display: none;
+}
+
+html:root[data-theme] .app.is-v2-home :is(.tool-result-card, .favorite-item):hover {
+  background: var(--tk-home-card-hover);
+  border: 0;
+  box-shadow: none;
+  transform: none;
+}
+
+html:root[data-theme] .app.is-v2-home :is(.tool-result-name, .favorite-name) {
+  color: var(--tk-home-card-ink);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.tool-result-desc, .favorite-desc, .favorite-meta) {
+  color: var(--tk-home-card-muted);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.tool-result-icon, .favorite-icon) {
+  color: var(--tk-home-icon-ink);
+  background: var(--tk-home-icon-bg);
+  border: 0;
+  box-shadow: none;
+}
+
+html:root[data-theme] .app.is-v2-home .card-water-layer { display: none; }
+
+html:root[data-theme] .app.is-v2-home .favorite-remove-btn {
+  border: 0;
+  box-shadow: none;
+}
+
+html:root[data-theme] .app.is-v2-home :is(.tool-result-tag, .favorite-category) {
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+  border: 0;
+  box-shadow: none;
+}
+
+html:root[data-theme] .app.is-v2-home .github-strip {
+  color-scheme: var(--tk-color-scheme);
+  color: var(--tk-page-ink);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  grid-template-columns: minmax(0, 1fr) 224px;
+  align-items: center;
+  gap: 12px 64px;
+  width: 100%;
+  margin: 40px 0 0;
+  padding: 24px 0 40px;
+  overflow: visible;
+  text-align: left;
+  letter-spacing: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html:root[data-theme] .app.is-v2-home :is(.github-manifesto, .github-intro, .github-intro > div:not(.github-mark), .github-actions) {
+  display: contents;
+}
+
+html:root[data-theme] .app.is-v2-home :is(.github-mark, .github-kicker, .github-section-index, .github-repo, .github-stat-note, .footer-note) { display: none; }
+
+html:root[data-theme] .app.is-v2-home .github-intro strong {
+  display: block;
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.4;
+}
+
+html:root[data-theme] .app.is-v2-home .github-intro p {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  max-width: min(100%, 820px);
+  font-family: var(--tk-font-ui);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.75;
+  text-wrap: pretty;
+}
+
+html:root[data-theme] .app.is-v2-home .github-principles {
+  grid-column: 1;
+  grid-row: 3;
+  min-width: 0;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px 24px;
+  margin-top: 4px;
+  font-family: var(--tk-font-ui);
+  font-size: 12px;
+  font-weight: 400;
+  text-align: left;
+}
+
+html:root[data-theme] .app.is-v2-home .github-principles > span::after { display: none; }
+
+html:root[data-theme] .app.is-v2-home :is(.github-principles span, .github-open span) {
+  font-family: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html:root[data-theme] .app.is-v2-home :is(.github-intro strong, .github-stat strong) {
+  color: var(--tk-page-ink);
+}
+
+html:root[data-theme] .app.is-v2-home :is(.github-section-index, .github-kicker, .github-intro p, .github-principles, .github-repo, .github-stat-label, .github-stat-note) {
+  color: var(--tk-page-muted);
+}
+
+html:root[data-theme] .app.is-v2-home .github-stat {
+  display: flex;
+  flex-direction: row;
+  grid-column: 1;
+  grid-row: 4;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+html:root[data-theme] .app.is-v2-home .github-stat-value { gap: 6px; }
+html:root[data-theme] .app.is-v2-home .github-stat strong {
+  font-family: var(--tk-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+html:root[data-theme] .app.is-v2-home .github-stat-label {
+  margin: 0;
+  font-family: var(--tk-font-ui);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .app.is-v2-home .github-stat-icon-star {
+  width: 14px;
+  height: 14px;
+  color: var(--tk-home-icon-ink);
+  fill: none;
+  stroke: currentColor;
+  animation: none;
+}
+
+html:root[data-theme] .app.is-v2-home .github-open {
+  grid-column: 2;
+  grid-row: 1 / 5;
+  align-self: center;
+  justify-content: center;
+  justify-self: end;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-family: var(--tk-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: normal;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--tk-on-accent);
+  background: var(--tk-accent);
+  border: 0;
+  transform: none;
+}
+
+html:root[data-theme] .app.is-v2-home .github-open span { min-width: 0; }
+html:root[data-theme] .app.is-v2-home .github-open svg { flex-shrink: 0; }
+
+html:root[data-theme] .app.is-v2-home .github-open:focus-visible {
+  outline: 2px solid var(--tk-border-strong);
+  outline-offset: 4px;
+}
+
+html:root[data-theme] .app.is-v2-home .github-open:hover {
+  color: var(--tk-on-accent);
+  background: var(--tk-accent);
+  transform: none;
+}
+
+html:root[data-theme] .app.is-v2-home .main-content {
+  background-color: var(--tk-page-bg);
+  background-image:
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.025) 1px, transparent 1px),
+    linear-gradient(rgba(var(--tk-rgb-ink), 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  scrollbar-color: var(--tk-muted) transparent;
+}
+html:root[data-theme] .app.is-v2-home .main-content::-webkit-scrollbar-thumb { background: var(--tk-muted); }
+
+html:root[data-theme] .app.is-v2-home :is(button, input):focus-visible {
+  outline: 2px solid var(--tk-border-strong);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .app.is-v2-home :is(.tool-result-card, .favorite-item, .home-search-field) { transition: none; }
+}
+
+@media (max-width: 780px) {
+  html:root[data-theme] .app.is-v2-home .github-strip {
+    gap: 12px 24px;
+    margin-top: 28px;
+    padding-block: 16px 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  html:root[data-theme] .app.is-v2-home .github-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  html:root[data-theme] .app.is-v2-home :is(.github-intro strong, .github-intro p, .github-principles) {
+    grid-column: 1 / -1;
+  }
+  html:root[data-theme] .app.is-v2-home .github-open {
+    grid-column: 2;
+    grid-row: 4;
+  }
+  html:root[data-theme] .app.is-v2-home .github-stat {
+    grid-column: 1;
+    grid-row: 4;
+  }
+}
+
+@media (max-width: 480px) {
+  html:root[data-theme] .app.is-v2-home .github-strip {
+    column-gap: 16px;
+    padding-bottom: 64px;
+  }
+  html:root[data-theme] .app.is-v2-home .github-principles {
+    gap: 8px 16px;
+  }
+  html:root[data-theme] .app.is-v2-home .github-stat {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}

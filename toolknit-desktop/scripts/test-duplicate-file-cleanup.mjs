@@ -53,7 +53,8 @@ assert.match(TOOL_MARKUP, /id="duplicateChoose"/);
 assert.match(TOOL_MARKUP, /id="duplicateAllDrives"/);
 const css = await readFile('src/features/duplicate-file-cleanup/duplicate-file-cleanup.css', 'utf8');
 assert.match(css, /input\[type="checkbox"\][^{]*\{[^}]*border-radius:\s*50%/s);
-assert.match(css, /data-theme="dark"[^}]*input\[type="checkbox"\]/);
+assert.match(css, /input\[type="checkbox"\][^{]*\{[^}]*border:\s*2px solid var\(--tk-accent\)/s,
+  'selection controls must use the active appearance accent');
 assert.match(css, /duplicate-members[^}]*background:\s*var\(--dup-expanded-surface\)/s);
 assert.match(css, /duplicate-group\s*\{\s*border:\s*0/s);
 assert.match(css, /duplicate-group\s*\+\s*\.duplicate-group[^}]*border-top:\s*1px/s);

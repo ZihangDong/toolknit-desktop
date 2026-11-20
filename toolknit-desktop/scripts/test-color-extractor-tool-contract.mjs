@@ -17,7 +17,7 @@ assert.match(LAZY_TOOL_SPECS['color-extractor'].load.toString(), /color-extracto
 assert.match(tool, /bindToolPageChrome/);
 assert.match(tool, /createColorExtractorController/);
 assert.match(tool, /color-extractor\.css/);
-assert.match(tool, /import '\.\/color-extractor-light\.css'/);
+assert.match(tool, /import '\.\/color-extractor\.css'/);
 assert.match(tool, /import '\.\.\/\.\.\/styles\/components\/tool-empty-hero\.css'/);
 assert.match(controller, /createLifecycleScope\(/);
 assert.match(controller, /from ['"]\.\.\/\.\.\/platform\/tauri-runtime\.js['"]/);

@@ -922,3 +922,144 @@
   transform: translateY(-50%);
   cursor: ew-resize;
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* The shell owns the palette; document content keeps its own print colors. */
+html:root[data-theme] .ai-doc-v2 {
+  --ai-doc-surface: var(--tk-page-bg);
+  --ai-doc-soft: var(--tk-inset);
+  --ai-doc-hover: var(--tk-surface);
+  --ai-doc-scrollbar: var(--tk-muted);
+}
+
+html:root[data-theme] .ai-doc-v2 :is(.ai-doc-v2-chat-card, .ai-doc-v2-preview-card) {
+  border-color: var(--line);
+  background: var(--ai-doc-surface);
+}
+
+html:root[data-theme] .ai-doc-v2 .ai-doc-v2-capability-grid > div {
+  border-color: var(--line);
+  background: var(--ai-doc-surface);
+}
+
+html:root[data-theme] .ai-doc-v2 :is(
+  .ai-doc-v2-capability-grid span,
+  .ai-doc-v2-card-head p,
+  .pdf-merge-v2-step p,
+  .ai-doc-chip-title,
+  .ai-doc-v2-input-helper,
+  .ai-doc-v2-input-helper span:last-child,
+  .ai-doc-canvas-empty p,
+  .ai-doc-thumb-num
+) {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-doc-v2 .ai-doc-v2-card-head h2 {
+  font-size: 26px;
+  letter-spacing: 0;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+html:root[data-theme] .ai-doc-v2 .pdf-merge-v2-title {
+  font-size: 52px;
+  letter-spacing: 0;
+  word-break: keep-all;
+}
+
+html:root[data-theme] .ai-doc-v2 .ai-doc-v2-preview-head p {
+  border-color: var(--line);
+  background: var(--ai-doc-soft);
+}
+
+html:root[data-theme] .ai-doc-v2 .ai-doc-v2-empty-mark {
+  border-color: var(--line-strong);
+  background: var(--ai-doc-surface);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] .ai-doc-v2 .ai-doc-v2-empty-guide div {
+  border-color: var(--line);
+  background: var(--ai-doc-surface);
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-doc-v2 .ai-doc-v2-empty-guide svg {
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-doc-v2 .ai-doc-thumb {
+  border-color: var(--line-strong);
+  box-shadow: 0 8px 24px rgba(17, 17, 17, 0.14);
+}
+
+html:root[data-theme] .ai-doc-v2 .ai-doc-thumb:hover {
+  box-shadow: 0 12px 30px rgba(17, 17, 17, 0.2);
+}
+
+html:root[data-theme] .ai-doc-v2 .ai-doc-thumb-overlay-text {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+/* The swatch's inline color is the document color, including white ink. */
+
+html:root[data-theme] #aiDocMask {
+  background: rgba(var(--tk-rgb-page), 0.96);
+}
+
+html:root[data-theme] #aiDocMask .audio-convert-process-text {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] #aiDocSuccessOverlay {
+  background: rgba(var(--tk-rgb-ink), 0.18);
+}
+
+html:root[data-theme] #aiDocSuccessOverlay .audio-clip-success-dialog {
+  background: var(--tk-page-bg);
+  box-shadow: 0 18px 50px rgba(17, 17, 17, 0.14);
+}
+
+html:root[data-theme] #aiDocSuccessOverlay :is(.audio-clip-success-title, .audio-convert-success-value) {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] #aiDocSuccessOverlay .audio-convert-success-key {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] #aiDocSuccessOverlay .audio-convert-success-detail {
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] #aiDocSuccessOverlay .audio-convert-success-value {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+html:root[data-theme] #aiDocSuccessOverlay .audio-clip-success-btn-secondary {
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] #aiDocSuccessOverlay .audio-clip-success-btn-primary {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+@media (max-width: 1280px) {
+  html:root[data-theme] .ai-doc-v2 .pdf-merge-v2-title {
+    font-size: 44px;
+  }
+}
+
+@media (max-width: 760px) {
+  html:root[data-theme] .ai-doc-v2 .pdf-merge-v2-title {
+    font-size: 36px;
+  }
+}

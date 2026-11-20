@@ -344,3 +344,438 @@
   background-size: var(--tk-vertical-stripe-surface-size);
   background-color: var(--tk-vertical-stripe-surface-color);
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .color-replace-shell {
+  --color-replace-ink: var(--tk-ink);
+  --color-replace-heading: var(--tk-accent);
+  --color-replace-muted: var(--tk-muted);
+  --color-replace-quiet: var(--tk-muted);
+  --color-replace-line: var(--tk-border);
+  --color-replace-line-strong: var(--tk-border);
+  --ink: var(--color-replace-ink);
+  --muted: var(--color-replace-muted);
+  --line: var(--color-replace-line);
+  --line-strong: var(--color-replace-line-strong);
+  --tk-nav-bg: rgba(var(--tk-rgb-page), 0.97);
+  --tk-nav-button-bg: var(--tk-page-bg);
+  --tk-nav-hover-bg: var(--tk-inset);
+  --tk-nav-support-bg: var(--tk-accent);
+  --tk-nav-support-ink: var(--tk-on-accent);
+  --tk-vertical-stripe-surface-image: linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.025) 1px, transparent 1px);
+  --tk-vertical-stripe-surface-color: var(--tk-inset);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--color-replace-ink);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .color-replace-shell > .tool-page-v2-bg {
+  display: none;
+}
+
+html:root[data-theme] .color-replace-shell::after {
+  background-image:
+    linear-gradient(rgba(var(--tk-rgb-ink), 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.022) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 1;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-main {
+  background: transparent;
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-replace-rail, .color-replace-stage-section, .color-replace-controls) {
+  border-color: var(--color-replace-line);
+  border-radius: 8px;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-rail {
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-replace-stage-section, .color-replace-controls) {
+  background: rgba(var(--tk-rgb-page), 0.97);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-rail {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .color-replace-shell .tool-page-v2-rail-kicker,
+html:root[data-theme] .color-replace-shell .tool-page-v2-rail-note span {
+  color: var(--color-replace-quiet);
+}
+
+html:root[data-theme] .color-replace-shell .tool-page-v2-rail h1 {
+  margin-top: 15px;
+  color: var(--color-replace-heading);
+  font-size: 36px;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .color-replace-shell .tool-page-v2-rail > p {
+  color: var(--color-replace-muted);
+  font-size: 13px;
+}
+
+html:root[data-theme] .color-replace-shell .tool-page-v2-rail-note {
+  border-top-color: var(--color-replace-line);
+}
+
+html:root[data-theme] .color-replace-shell .tool-page-v2-rail-note strong {
+  color: var(--color-replace-muted);
+}
+
+html:root[data-theme] .color-replace-shell .tool-page-v2-steps > div {
+  color: var(--color-replace-quiet);
+}
+
+html:root[data-theme] .color-replace-shell .tool-page-v2-steps b {
+  border-color: var(--color-replace-line-strong);
+  color: var(--color-replace-muted);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .color-replace-shell .tool-page-v2-steps > .is-active b {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .color-replace-shell .tool-page-v2-steps strong {
+  color: var(--color-replace-heading);
+}
+
+html:root[data-theme] .color-replace-shell .tool-page-v2-steps small {
+  color: var(--color-replace-quiet);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-head span,
+html:root[data-theme] .color-replace-shell .color-replace-section-head span {
+  color: var(--color-replace-quiet);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-head strong,
+html:root[data-theme] .color-replace-shell .color-replace-section-head strong {
+  color: var(--color-replace-heading);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-actions button {
+  border-color: var(--tk-border);
+  border-radius: 7px;
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-actions button:hover:not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-actions [data-cr-compare],
+html:root[data-theme] .color-replace-shell .color-replace-stage-actions [data-cr-pick] {
+  color: var(--tk-ink) !important;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-actions :is([data-cr-compare], [data-cr-pick]) > :is(span, svg) {
+  color: inherit !important;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-actions [data-cr-export] {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent) !important;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-actions [data-cr-export] > :is(span, svg) {
+  color: inherit !important;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-actions [data-cr-export]:hover:not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent) !important;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-actions button:disabled,
+html:root[data-theme] .color-replace-shell .color-replace-stage-actions [data-cr-export]:disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-muted) !important;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-actions button:disabled > :is(span, svg) {
+  color: inherit !important;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage {
+  border-color: var(--tk-border);
+  border-radius: 8px;
+  background-color: var(--tk-vertical-stripe-surface-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-empty.tk-empty-hero {
+  display: flex;
+  padding: 32px;
+  background: rgba(var(--tk-rgb-page), 0.72);
+  color: var(--color-replace-ink);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-empty.tk-empty-hero:hover {
+  background: rgba(var(--tk-rgb-page), 0.9);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-empty .tk-empty-hero-icon {
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-empty .tk-empty-hero-icon svg {
+  width: 30px;
+  height: 30px;
+  color: inherit;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-empty .tk-empty-hero-kicker {
+  color: var(--color-replace-quiet);
+  font-size: 11px;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-empty strong {
+  color: var(--color-replace-heading);
+  font-size: 25px;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-empty .tk-empty-hero-description {
+  color: var(--color-replace-muted);
+  font-size: 13px;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-empty em {
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-empty em span {
+  color: inherit;
+  font-size: 13px;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-busy {
+  border-color: var(--tk-border);
+  background: rgba(var(--tk-rgb-page), 0.95);
+  color: var(--color-replace-heading);
+  box-shadow: 0 8px 22px rgba(17, 17, 17, .1);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-busy span {
+  border-color: rgba(var(--tk-rgb-ink), 0.16);
+  border-top-color: var(--tk-accent);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-footer {
+  color: var(--color-replace-muted);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-footer svg {
+  color: inherit;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-stage-footer output {
+  color: var(--color-replace-heading);
+  font-weight: 800;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-controls {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-controls > section {
+  border-bottom-color: var(--color-replace-line);
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-pair > button, .color-pair > label) {
+  border-color: var(--tk-border);
+  border-radius: 7px;
+  background: var(--tk-inset);
+  color: var(--color-replace-heading);
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-pair > button, .color-pair > label):hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .color-replace-shell .color-pair > button.is-active {
+  border-color: var(--tk-accent);
+  background: var(--tk-inset);
+  box-shadow: inset 0 0 0 1px #171717;
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-pair > button, .color-pair > label) > svg,
+html:root[data-theme] .color-replace-shell .color-pair-arrow,
+html:root[data-theme] .color-replace-shell .color-pair-arrow svg {
+  color: var(--color-replace-ink);
+}
+
+html:root[data-theme] .color-replace-shell .color-pair small {
+  color: var(--color-replace-quiet);
+}
+
+html:root[data-theme] .color-replace-shell .color-pair b {
+  color: var(--color-replace-heading);
+}
+
+html:root[data-theme] .color-replace-shell .color-swatch {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--tk-inset);
+  box-shadow: 0 0 0 1px #9da1a8;
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-hint,
+html:root[data-theme] .color-replace-shell .color-replace-range small,
+html:root[data-theme] .color-replace-shell .color-replace-toggle small {
+  color: var(--color-replace-muted);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-range > span,
+html:root[data-theme] .color-replace-shell .color-replace-quality span,
+html:root[data-theme] .color-replace-shell .color-replace-toggle b {
+  color: var(--color-replace-heading);
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-replace-range, .color-replace-quality) output {
+  color: var(--color-replace-heading);
+  font-weight: 800;
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-replace-range input, .color-replace-quality input, .color-replace-stage-footer input[type="range"]) {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  accent-color: var(--tk-accent);
+  cursor: pointer;
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-replace-range input, .color-replace-quality input, .color-replace-stage-footer input[type="range"])::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 1px solid var(--tk-border);
+  border-radius: 999px;
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-replace-range input, .color-replace-quality input, .color-replace-stage-footer input[type="range"])::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -7px;
+  -webkit-appearance: none;
+  appearance: none;
+  border: 2px solid var(--tk-accent);
+  border-radius: 50%;
+  background: var(--tk-page-bg);
+  box-shadow: 0 1px 3px rgba(17, 17, 17, .2);
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-replace-range input, .color-replace-quality input, .color-replace-stage-footer input[type="range"])::-moz-range-track {
+  height: 4px;
+  border: 1px solid var(--tk-border);
+  border-radius: 999px;
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-replace-range input, .color-replace-quality input, .color-replace-stage-footer input[type="range"])::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--tk-accent);
+}
+
+html:root[data-theme] .color-replace-shell :is(.color-replace-range input, .color-replace-quality input, .color-replace-stage-footer input[type="range"])::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--tk-accent);
+  border-radius: 50%;
+  background: var(--tk-page-bg);
+  box-shadow: 0 1px 3px rgba(17, 17, 17, .2);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-toggle > i {
+  border: 1px solid var(--tk-border);
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-toggle > i::after {
+  width: 11px;
+  height: 11px;
+  background: var(--tk-border-strong);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-toggle input:checked + i {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-toggle input:checked + i::after {
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-warning {
+  border-left-color: #a56a18;
+  background: #fff5df;
+  color: var(--tk-warning);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-format button,
+html:root[data-theme] .color-replace-shell .color-replace-history button {
+  border-color: var(--tk-border);
+  border-radius: 7px;
+  background: var(--tk-inset);
+  color: var(--color-replace-muted);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-format button:hover,
+html:root[data-theme] .color-replace-shell .color-replace-format button.is-active,
+html:root[data-theme] .color-replace-shell .color-replace-history button:hover:not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .color-replace-shell .color-replace-history button:disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-muted);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+html:root[data-theme] .color-replace-shell :is(button, input):focus-visible {
+  outline: 2px solid var(--tk-accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  html:root[data-theme] .color-replace-shell :is(.color-replace-rail, .color-replace-stage-section, .color-replace-controls) {
+    border-radius: 8px;
+  }
+
+  html:root[data-theme] .color-replace-shell .color-replace-empty strong {
+    font-size: 21px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .color-replace-shell :is(button, .color-replace-toggle > i::after) {
+    transition: none;
+  }
+}

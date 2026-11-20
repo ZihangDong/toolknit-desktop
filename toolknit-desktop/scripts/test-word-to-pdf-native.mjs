@@ -38,6 +38,9 @@ await mkdir(root, { recursive: true });
 const renderer = await resolveLibreOfficeRuntime();
 assert.ok(renderer.available, 'Real LibreOffice required');
 await run(path.join(path.dirname(renderer.command), process.platform === 'win32' ? 'python.exe' : 'python3'), ['scripts/test-word-to-pdf-profile.py'], { windowsHide: true, timeout: 30000 });
+for (const suite of ['test-word-to-pdf-layout.py', 'test-word-to-pdf-fonts.py']) {
+  await run(path.join(path.dirname(renderer.command), process.platform === 'win32' ? 'python.exe' : 'python3'), [`scripts/${suite}`], { windowsHide: true, timeout: 30000 });
+}
 const source = path.join(root, '中文 文档.docx'),
   corrupt = path.join(root, '坏文件.docx'),
   empty = path.join(root, '空文件.docx');
@@ -232,6 +235,11 @@ const transport = new StdioClientTransport({
   command: process.execPath,
   args: [path.resolve('cli/toolknit.mjs'), 'mcp', 'serve'],
   stderr: 'pipe',
+  // The SDK deliberately inherits only a minimal environment. Exercise MCP
+  // with the same explicitly selected kernel as the direct conversion test.
+  env: process.env.TOOLKNIT_LIBREOFFICE_PATH
+    ? { TOOLKNIT_LIBREOFFICE_PATH: process.env.TOOLKNIT_LIBREOFFICE_PATH }
+    : undefined,
 });
 const client = new Client({ name: 'word-pdf-real-qa', version: '1.0.0' });
 try {

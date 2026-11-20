@@ -1,5 +1,6 @@
 import { createFileSearchRuntime } from '../platform/file-search-runtime.js';
 import { createLifecycleScope } from './tool-lifecycle.js';
+import { getAppliedThemeConfig } from './theme-palette.js';
 
 export function createFileSearchContextRuntime({ isTauri, getLang, onLangChange, onNavigate, notify = () => {}, translate,
   runtime = createFileSearchRuntime({ isTauri }), root = globalThis.document, windowRef = globalThis.window } = {}) {
@@ -22,10 +23,10 @@ export function createFileSearchContextRuntime({ isTauri, getLang, onLangChange,
   };
   const sync = () => {
     if (disposed) return;
-    pending = { lang: getLang(), theme: root.documentElement.dataset.theme, reducedMotion: motion.matches };
+    pending = { lang: getLang(), theme: root.documentElement.dataset.theme, appearance: getAppliedThemeConfig(root.documentElement), reducedMotion: motion.matches };
     void flush();
   };
-  const observer = new windowRef.MutationObserver(sync); observer.observe(root.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  const observer = new windowRef.MutationObserver(sync); observer.observe(root.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-theme-config'] });
   scope.use(() => observer.disconnect()); scope.use(onLangChange(sync));
   scope.event(motion, 'change', sync);
   void runtime.onPanelEvent('file-search-navigate', () => {

@@ -2,11 +2,31 @@ use super::*;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-const WORD_DRIVER: &str = include_str!("../../../resources/office/word-to-pdf.py");
+const WORD_SCRIPTS: &[(&str, &str)] = &[
+    (
+        "word-to-pdf.py",
+        include_str!("../../../resources/office/word-to-pdf.py"),
+    ),
+    (
+        "word_layout.py",
+        include_str!("../../../resources/office/word_layout.py"),
+    ),
+    (
+        "word_font_metrics.py",
+        include_str!("../../../resources/office/word_font_metrics.py"),
+    ),
+];
 const WORD_MAX_BYTES: u64 = 50 * 1024 * 1024;
 const WORD_MAX_OUTPUT_BYTES: u64 = 150 * 1024 * 1024;
 static WORD_JOB: Mutex<Option<String>> = Mutex::new(None);
 static WORD_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub(crate) struct WordFontNotice {
+    code: String,
+    font: String,
+    replacement: String,
+}
 
 #[derive(Clone, Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,6 +38,7 @@ pub(crate) struct WordFileResult {
     page_count: usize,
     status: String,
     error: Option<String>,
+    font_notices: Vec<WordFontNotice>,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -117,6 +138,8 @@ struct WordBatchStatusItem {
     index: usize,
     status: String,
     code: Option<String>,
+    #[serde(default, rename = "fontNotices")]
+    font_notices: Vec<WordFontNotice>,
 }
 
 #[derive(Debug, serde::Deserialize, Default)]
@@ -128,7 +151,7 @@ fn run_word_renderer_batch(
     runtime: &LibreOfficeRuntimeInfo,
     manifest: &Path,
     work: &Path,
-    mut on_done: impl FnMut(usize, Result<(), String>),
+    mut on_done: impl FnMut(usize, Result<Vec<WordFontNotice>, String>),
 ) -> Result<(), String> {
     let soffice = runtime
         .command
@@ -142,7 +165,9 @@ fn run_word_renderer_batch(
         return Err("word-render:python-missing".into());
     }
     let script = work.join("word-to-pdf.py");
-    std::fs::write(&script, WORD_DRIVER).map_err(|_| "word-render:output-path")?;
+    for (name, source) in WORD_SCRIPTS {
+        std::fs::write(work.join(name), source).map_err(|_| "word-render:output-path")?;
+    }
     let status_path = work.join("status.json");
     let mut command = std::process::Command::new(&python);
     command
@@ -155,6 +180,7 @@ fn run_word_renderer_batch(
         .current_dir(python.parent().unwrap())
         .env("SAL_USE_VCLPLUGIN", "svp")
         .env("SAL_DISABLE_PRINTERLIST", "1")
+        .env("PYTHONDONTWRITEBYTECODE", "1")
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
@@ -187,7 +213,7 @@ fn run_word_renderer_batch(
                         continue;
                     }
                     if item.status == "success" {
-                        on_done(item.index, Ok(()));
+                        on_done(item.index, Ok(item.font_notices));
                     } else {
                         on_done(
                             item.index,
@@ -253,6 +279,7 @@ fn convert_word_batch(
             page_count: 0,
             status: "pending".into(),
             error: None,
+            font_notices: Vec::new(),
         };
         if CANCEL_FLAG.load(Ordering::SeqCst) {
             row.status = "cancelled".into();
@@ -316,7 +343,8 @@ fn convert_word_batch(
             }
             let row = &mut files[index];
             match result {
-                Ok(()) => {
+                Ok(notices) => {
+                    row.font_notices = notices;
                     let pdf = outputs_dir.join(format!("{}.pdf", index));
                     let metadata = std::fs::metadata(&pdf).ok();
                     let bytes = if metadata

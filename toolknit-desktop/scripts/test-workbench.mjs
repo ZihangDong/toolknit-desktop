@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import {compareDocuments,exportComparison} from '../src/features/workbench/diff-core.js';
+import {parseSubtitles,parseSubtitleTime,subtitleTime,subtitleIssues,exportSubtitles,shiftSubtitles,splitSubtitle} from '../src/features/workbench/subtitle-core.js';
+import {rankLauncherTools,toolsForFilename} from '../src/features/workbench/launcher-core.js';
+import {searchTextRecords,highlightedParts} from '../src/features/workbench/search-core.js';
+
+const difference=compareDocuments('第一行\n保留\n删除行\n尾部','第一行\n保留\n新增行\n尾部');
+assert.equal(difference.added,1);assert.equal(difference.removed,1);
+assert.equal(difference.edits.filter(row=>row.kind!=='add').map(row=>row.left).join('\n'),'第一行\n保留\n删除行\n尾部');
+assert.equal(difference.edits.filter(row=>row.kind!=='delete').map(row=>row.right).join('\n'),'第一行\n保留\n新增行\n尾部');
+assert.match(exportComparison(difference),/\+ 新增行/);
+assert.equal(compareDocuments('a  b','a b',{ignoreSpace:true}).added,0);
+assert.equal(compareDocuments('','').edits.length,0);assert.equal(compareDocuments('','first').added,1);
+const large=compareDocuments('a\nb\nc','x\ny\nz',{maxCells:2});assert(large.coarse);assert.equal(large.removed,3);assert.equal(large.added,3);
+assert.throws(()=>compareDocuments('x\n'.repeat(10001),'a'),/10000/);
+for(let seed=1;seed<80;seed++){
+  const a=Array.from({length:seed%12+1},(_,i)=>String((i*seed)%7)).join('\n'),b=Array.from({length:seed%9+1},(_,i)=>String((i+seed)%5)).join('\n');
+  const result=compareDocuments(a,b);
+  assert.equal(result.edits.filter(row=>row.kind!=='add').map(row=>row.left).join('\n'),a);
+  assert.equal(result.edits.filter(row=>row.kind!=='delete').map(row=>row.right).join('\n'),b);
+}
+const srt='1\r\n00:00:01,250 --> 00:00:03,500\r\n第一句\r\n第二行\r\n\r\n2\r\n00:00:04,000 --> 00:00:05,000\r\nNext';
+const cues=parseSubtitles(srt);assert.equal(cues.length,2);assert.equal(cues[0].start,1250);assert.equal(cues[0].text,'第一句\n第二行');
+const vtt=exportSubtitles(cues,'vtt');assert.match(vtt,/WEBVTT/);assert.equal(parseSubtitles(vtt)[1].end,5000);
+assert.equal(parseSubtitleTime('01:02.345'),62345);assert.equal(subtitleTime(3723456),'01:02:03,456');
+assert.throws(()=>parseSubtitleTime('00:99:00,000'));
+assert.throws(()=>parseSubtitles('1\n00:00:02,000 --> 00:00:01,000\nBad'));
+assert.throws(()=>parseSubtitles('1\n00:00:02,000 --> 00:00:03,000\n'));
+assert.equal(shiftSubtitles(cues,250)[0].start,1500);assert.throws(()=>shiftSubtitles(cues,-2000));
+assert.throws(()=>shiftSubtitles([{...cues[0],start:null}],250));assert.throws(()=>exportSubtitles([{...cues[0],text:'a\n\nb'}]));
+assert.equal(splitSubtitle(cues[0],2000)[0].end,2000);assert.throws(()=>splitSubtitle(cues[0],4000));
+assert.equal(subtitleIssues([{...cues[0]},{...cues[1],start:3000}])[1],'overlap');
+const positioned=parseSubtitles('WEBVTT\n\nNOTE metadata\nignore\n\ncue-1\n00:01.000 --> 00:02.000 align:start position:10%\nHello');
+assert.equal(positioned[0].settings,'align:start position:10%');assert.match(exportSubtitles(positioned,'vtt'),/align:start position:10%/);
+assert.deepEqual(toolsForFilename('"C:\\docs\\test.srt"'),['subtitle-workbench']);
+const tools=[{id:'content-search',name:'文档内容搜索',description:'PDF DOCX'},{id:'document-compare',name:'文档对比',description:'逐行对比'},{id:'subtitle-workbench',name:'字幕工作台',description:'SRT VTT'}];
+assert.equal(rankLauncherTools(tools,'文档对比')[0].id,'document-compare');assert.equal(rankLauncherTools(tools,'clip.vtt')[0].id,'subtitle-workbench');assert.equal(rankLauncherTools(tools,'',['subtitle-workbench'])[0].id,'subtitle-workbench');
+const records=[{name:'合同.txt',text:'中英文 contract 100% 本地内容',path:'a'},{name:'other.txt',text:'other',path:'b'}];
+assert.equal(searchTextRecords(records,'CONTRACT').length,1);assert.equal(searchTextRecords(records,'本地')[0].path,'a');assert.equal(searchTextRecords(records,'%').length,0);
+assert.deepEqual(highlightedParts('<script>合同</script>','合同').filter(part=>part.match).map(part=>part.text),['合同']);
+console.log('Workbench core: bounded/reconstructable diff, SRT/VTT round trips, timings, offsets, splitting, launcher ranking and literal content search passed.');

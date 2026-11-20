@@ -1,0 +1,284 @@
+diff --git a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+index 0649c65cfefb1f35d39c86ef277f2f8746a31afb..d07d281d9eef092846781a8e6866736816b550db 100644
+--- a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
++++ b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+@@ -17,6 +17,8 @@
+ #endif
+ 
+ #include <swmodeltestbase.hxx>
++#include <comphelper/propertyvalue.hxx>
++#include <com/sun/star/util/XRefreshable.hpp>
+ #include "../../../source/core/txtnode/justify.hxx"
+ 
+ #include <com/sun/star/beans/XPropertySet.hpp>
+@@ -29,6 +31,7 @@
+ #include <com/sun/star/lang/XMultiServiceFactory.hpp>
+ #include <com/sun/star/text/CharacterCompressionType.hpp>
+ #include <com/sun/star/style/BreakType.hpp>
++#include <com/sun/star/style/LineSpacing.hpp>
+ #include <com/sun/star/style/DropCapFormat.hpp>
+ #include <com/sun/star/style/XStyleFamiliesSupplier.hpp>
+ #include <com/sun/star/text/HoriOrientation.hpp>
+@@ -371,6 +374,59 @@ CPPUNIT_TEST_FIXTURE(Test, testWordHangingHalfEmInside)
+ #endif
+ }
+ 
++CPPUNIT_TEST_FIXTURE(Test, testWordAutoGridBaseline)
++{
++#if defined(_WIN32)
++    CPPUNIT_ASSERT(Application::GetDefaultDevice()->IsFontAvailable(u"SimSun"_ustr));
++    auto measure = [&](bool bWord, bool bOriginalAuto, float fPoints, bool bProportional)
++    {
++        createSwDoc();
++        uno::Reference<text::XTextDocument>(mxComponent, uno::UNO_QUERY_THROW)
++            ->getText()->setString(u"中文Example1"_ustr);
++        uno::Reference<beans::XPropertySet> xParagraph(getParagraph(1), uno::UNO_QUERY_THROW);
++        xParagraph->setPropertyValue(u"CharFontName"_ustr, uno::Any(u"SimSun"_ustr));
++        xParagraph->setPropertyValue(u"CharFontNameAsian"_ustr, uno::Any(u"SimSun"_ustr));
++        xParagraph->setPropertyValue(u"CharHeight"_ustr, uno::Any(fPoints));
++        xParagraph->setPropertyValue(u"CharHeightAsian"_ustr, uno::Any(fPoints));
++        xParagraph->setPropertyValue(u"SnapToGrid"_ustr, uno::Any(true));
++        style::LineSpacing aSpacing;
++        aSpacing.Mode = 3;
++        aSpacing.Height = bProportional ? 550 : 1101;
++        xParagraph->setPropertyValue(u"ParaLineSpacing"_ustr, uno::Any(aSpacing));
++        if (bOriginalAuto)
++            xParagraph->setPropertyValue(u"ParaInteropGrabBag"_ustr, uno::Any(
++                uno::Sequence<beans::PropertyValue>{comphelper::makePropertyValue(u"originalAutoLineSpacing"_ustr, true)}));
++        uno::Reference<beans::XPropertySet> xPage(getStyles(u"PageStyles"_ustr)->getByName(u"Standard"_ustr), uno::UNO_QUERY_THROW);
++        xPage->setPropertyValue(u"GridMode"_ustr, uno::Any(sal_Int16(1)));
++        xPage->setPropertyValue(u"GridBaseHeight"_ustr, uno::Any(sal_Int32(550)));
++        xPage->setPropertyValue(u"GridRubyHeight"_ustr, uno::Any(sal_Int32(0)));
++        xPage->setPropertyValue(u"StandardPageMode"_ustr, uno::Any(true));
++        uno::Reference<lang::XMultiServiceFactory> xFactory(mxComponent, uno::UNO_QUERY_THROW);
++        uno::Reference<beans::XPropertySet> xSettings(
++            xFactory->createInstance(u"com.sun.star.document.Settings"_ustr), uno::UNO_QUERY_THROW);
++        xSettings->setPropertyValue(u"MsWordCompGridMetrics"_ustr, uno::Any(bWord));
++        uno::Reference<util::XRefreshable>(mxComponent, uno::UNO_QUERY_THROW)->refresh();
++        xmlDocUniquePtr pDump = parseLayoutDump();
++        const OString aPath = "/root/page[1]/body/txt[1]/SwParaPortion/SwLineLayout[1]";
++        return std::pair{getXPath(pDump, aPath, "height").toInt32(),
++                         getXPath(pDump, aPath, "ascent").toInt32()};
++    };
++    for (bool bProportional : {false, true})
++    {
++        const float fPoints = bProportional ? 10.5f : 16.0f;
++        const auto aReference = measure(false, false, fPoints, bProportional);
++        const auto aAutomatic = measure(true, true, fPoints, bProportional);
++        CPPUNIT_ASSERT_EQUAL(aReference.first, aAutomatic.first);
++        CPPUNIT_ASSERT_DOUBLES_EQUAL(aReference.second, aAutomatic.second, 1);
++        if (!bProportional)
++        {
++            const auto aFixed = measure(true, false, fPoints, false);
++            CPPUNIT_ASSERT(aFixed.second > aAutomatic.second + 20);
++        }
++    }
++#endif
++}
++
+ CPPUNIT_TEST_FIXTURE(Test, testImageHyperlink)
+ {
+     createSwDoc("image-hyperlink.docx");
+diff --git a/sw/source/core/text/itrform2.cxx b/sw/source/core/text/itrform2.cxx
+index ee1ab60a124f1c9fdcbcb9020ca492247d974646..221cd0593249190ee8f38f5066650ef4c03c8df5 100644
+--- a/sw/source/core/text/itrform2.cxx
++++ b/sw/source/core/text/itrform2.cxx
+@@ -59,6 +59,10 @@
+ #include <IDocumentMarkAccess.hxx>
+ #include <comphelper/processfactory.hxx>
+ #include <vcl/pdfextoutdevdata.hxx>
++#include <vcl/fontcapabilities.hxx>
++#include <vcl/metric.hxx>
++#include <vcl/outdev.hxx>
++#include <svl/grabbagitem.hxx>
+ #include <comphelper/string.hxx>
+ #include <docsh.hxx>
+ #include <unocrsrhelper.hxx>
+@@ -905,6 +909,7 @@ void SwTextFormatter::CalcAscent( SwTextFormatInfo &rInf, SwLinePortion *pPor )
+         const SwLinePortion* pLast = rInf.GetLast();
+         pPor->Height( pLast->Height() );
+         pPor->SetAscent( pLast->GetAscent() );
++        pPor->SetGridFontMetrics(pLast->GetGridFontAscent(), pLast->GetGridFontHeight());
+     }
+     else if (pPor->GetWhichPor() == PortionType::Bookmark
+             && rInf.GetIdx() == TextFrameIndex(rInf.GetText().getLength()))
+@@ -918,6 +923,7 @@ void SwTextFormatter::CalcAscent( SwTextFormatInfo &rInf, SwLinePortion *pPor )
+         assert(pLast);
+         pPor->Height( pLast->Height(), false );
+         pPor->SetAscent( pLast->GetAscent() );
++        pPor->SetGridFontMetrics(pLast->GetGridFontAscent(), pLast->GetGridFontHeight());
+     }
+     else
+     {
+@@ -973,6 +979,7 @@ void SwTextFormatter::CalcAscent( SwTextFormatInfo &rInf, SwLinePortion *pPor )
+         {
+             pPor->Height( pLast->Height() );
+             pPor->SetAscent( pLast->GetAscent() );
++            pPor->SetGridFontMetrics(pLast->GetGridFontAscent(), pLast->GetGridFontHeight());
+         }
+     }
+ 
+@@ -984,6 +991,34 @@ void SwTextFormatter::CalcAscent( SwTextFormatInfo &rInf, SwLinePortion *pPor )
+             rInf.GetFont()->GetTopBorderSpace() +
+             rInf.GetFont()->GetBottomBorderSpace() );
+     }
++    if (bCalc)
++    {
++        pPor->SetGridFontMetrics(0, 0);
++        const auto* pGrid = GetGridItem(m_pFrame->FindPageFrame());
++        if (!pPor->InFieldGrp() && !rInf.IsMulti() && rInf.SnapToGrid()
++            && m_pFrame->IsInDocBody() && !m_pFrame->IsInTab() && !m_pFrame->IsVertical()
++            && pGrid && !pGrid->GetRubyHeight()
++            && m_pFrame->GetDoc().getIDocumentSettingAccess().get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS))
++        {
++            auto& rOut = *rInf.GetOut();
++            vcl::FontCapabilities aCaps;
++            if (rOut.GetFontCapabilities(aCaps) && aCaps.oCodePageRange
++                && (aCaps.oCodePageRange->test(vcl::CodePageCoverage::CP932)
++                    || aCaps.oCodePageRange->test(vcl::CodePageCoverage::CP936)
++                    || aCaps.oCodePageRange->test(vcl::CodePageCoverage::CP949)
++                    || aCaps.oCodePageRange->test(vcl::CodePageCoverage::CP950)))
++            {
++                const FontMetric aMetric(rOut.GetFontMetric());
++                const SwTwips nAscent = aMetric.GetAscent();
++                const SwTwips nHeight = nAscent + aMetric.GetDescent();
++                // Keep the expanded layout cell, but retain the font metrics
++                // before Word's non-grid CJK expansion for grid baselines.
++                pPor->SetGridFontMetrics(
++                    std::max<SwTwips>(0, pPor->GetAscent() - (nAscent * 127 / 100 - nAscent)),
++                    std::max<SwTwips>(1, pPor->Height() - (nHeight * 127 / 100 - nHeight)));
++            }
++        }
++    }
+ }
+ 
+ namespace {
+@@ -2353,6 +2388,35 @@ void SwTextFormatter::CalcRealHeight( bool bNewLine )
+                        ( nLineHeight - m_pCurr->Height() + nRubyHeight ) / 2 :
+                        ( nLineHeight - m_pCurr->Height() - nRubyHeight ) / 2 );
+ 
++        const auto& rBag = m_pFrame->GetTextNodeForParaProps()->GetAttr(RES_PARATR_GRABBAG).GetGrabBag();
++        const auto it = rBag.find(u"originalAutoLineSpacing"_ustr);
++        bool bOriginalAuto = false;
++        if (it != rBag.end())
++            it->second >>= bOriginalAuto;
++        if (m_pFrame->IsInDocBody() && !m_pFrame->IsInTab() && !nRubyHeight && !m_pFrame->IsVertical()
++            && m_pFrame->GetDoc().getIDocumentSettingAccess().get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS)
++            && (bOriginalAuto || !pSpace || (pSpace->GetLineSpaceRule() == SvxLineSpaceRule::Auto
++                && (pSpace->GetInterLineSpaceRule() != SvxInterLineSpaceRule::Prop
++                    || pSpace->GetPropLineSpace() <= 100))))
++        {
++            SwTwips nRawAscent = 0, nRawDescent = 0, nRawHeight = 0;
++            for (auto* p = m_pCurr->GetFirstPortion(); p; p = p->GetNextPortion())
++            {
++                if (p->IsKernPortion() || p->IsPostItsPortion() || p->IsHolePortion())
++                    continue;
++                const SwTwips nHeight = p->GetGridFontHeight();
++                if (!nHeight)
++                    continue;
++                const SwTwips nAscent = p->GetGridFontAscent();
++                nRawAscent = std::max(nRawAscent, nAscent);
++                nRawDescent = std::max(nRawDescent, nHeight - nAscent);
++                nRawHeight = std::max(nRawHeight, nHeight);
++            }
++            nRawHeight = std::max(nRawHeight, nRawAscent + nRawDescent);
++            if (nRawHeight)
++                nAsc = nRawAscent + (nLineHeight - nRawHeight) / 2;
++        }
++
+         if (m_pFrame->IsInTab() && !nRubyHeight
+             && m_pFrame->GetDoc().getIDocumentSettingAccess().get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS))
+             nAsc = (4 * nLineHeight) / 5;
+diff --git a/sw/source/core/text/porlin.cxx b/sw/source/core/text/porlin.cxx
+index f02fc0bae0f07999a93069c15aaa8625ae8dd54a..b73fec607946223e3c711729aff4ece8ec44f120 100644
+--- a/sw/source/core/text/porlin.cxx
++++ b/sw/source/core/text/porlin.cxx
+@@ -340,6 +340,15 @@ void SwLinePortion::dumpAsXmlAttributes(xmlTextWriterPtr pWriter, std::u16string
+     (void)xmlTextWriterWriteAttribute(
+         pWriter, BAD_CAST("height"),
+         BAD_CAST(OString::number(Height()).getStr()));
++    (void)xmlTextWriterWriteAttribute(pWriter, BAD_CAST("ascent"),
++        BAD_CAST(OString::number(GetAscent()).getStr()));
++    if (m_nGridFontHeight)
++    {
++        (void)xmlTextWriterWriteAttribute(pWriter, BAD_CAST("grid-font-ascent"),
++            BAD_CAST(OString::number(m_nGridFontAscent).getStr()));
++        (void)xmlTextWriterWriteAttribute(pWriter, BAD_CAST("grid-font-height"),
++            BAD_CAST(OString::number(m_nGridFontHeight).getStr()));
++    }
+     (void)xmlTextWriterWriteAttribute(
+         pWriter, BAD_CAST("length"),
+         BAD_CAST(OString::number(static_cast<sal_Int32>(mnLineLength)).getStr()));
+diff --git a/sw/source/core/text/porlin.hxx b/sw/source/core/text/porlin.hxx
+index f488798fab643308b5f3ab41f5418c34514b108f..6e40d89e0ade4a4ebc147c39d7a2cbc2240f1ec8 100644
+--- a/sw/source/core/text/porlin.hxx
++++ b/sw/source/core/text/porlin.hxx
+@@ -54,6 +54,8 @@ private:
+     SwTwips m_nExtraSpaceSize = 0;     // extra space over normal space width
+     bool m_bModifiedWidth = false;     // applied custom letter spacing and scale width
+     TextFrameIndex m_nLetterCount = TextFrameIndex(0); // letter count for multi-portion lines
++    sal_uInt16 m_nGridFontAscent = 0;
++    sal_uInt16 m_nGridFontHeight = 0;
+ 
+     std::optional<SwLinePortionLayoutContext> m_nLayoutContext;
+ 
+@@ -88,6 +90,10 @@ public:
+     void SetLetterCount(TextFrameIndex const nLetterCount) { m_nLetterCount = nLetterCount; }
+     SwTwips GetHangingBaseline() const { return mnHangingBaseline; }
+     void SetHangingBaseline( const SwTwips nNewBaseline ) { mnHangingBaseline = nNewBaseline; }
++    void SetGridFontMetrics(sal_uInt16 nAscent, sal_uInt16 nHeight)
++    { m_nGridFontAscent = nAscent; m_nGridFontHeight = nHeight; }
++    SwTwips GetGridFontAscent() const { return m_nGridFontHeight ? m_nGridFontAscent : GetAscent(); }
++    SwTwips GetGridFontHeight() const { return m_nGridFontHeight ? m_nGridFontHeight : Height(); }
+     const std::optional<SwLinePortionLayoutContext> & GetLayoutContext() const { return m_nLayoutContext; }
+     void SetLayoutContext(std::optional<SwLinePortionLayoutContext> nNew)
+     {
+@@ -205,6 +211,8 @@ inline SwLinePortion &SwLinePortion::operator=(const SwLinePortion &rPortion)
+     m_nExtraSpaceSize = rPortion.m_nExtraSpaceSize;
+     m_bModifiedWidth = rPortion.m_bModifiedWidth;
+     m_nLetterCount = rPortion.m_nLetterCount;
++    m_nGridFontAscent = rPortion.m_nGridFontAscent;
++    m_nGridFontHeight = rPortion.m_nGridFontHeight;
+     m_nLayoutContext = rPortion.m_nLayoutContext;
+     return *this;
+ }
+@@ -224,6 +232,8 @@ inline SwLinePortion::SwLinePortion(const SwLinePortion &rPortion) :
+     m_nExtraSpaceSize(rPortion.m_nExtraSpaceSize),
+     m_bModifiedWidth(rPortion.m_bModifiedWidth),
+     m_nLetterCount(rPortion.m_nLetterCount),
++    m_nGridFontAscent(rPortion.m_nGridFontAscent),
++    m_nGridFontHeight(rPortion.m_nGridFontHeight),
+     m_nLayoutContext(rPortion.m_nLayoutContext)
+ {
+ }
+diff --git a/sw/source/uibase/uno/SwXDocumentSettings.cxx b/sw/source/uibase/uno/SwXDocumentSettings.cxx
+index 192c142a81b9fae7c393fe950e87cde4aa07ff0a..6e93b7f2db33f0ba5b83d87e53627f8b492646d0 100644
+--- a/sw/source/uibase/uno/SwXDocumentSettings.cxx
++++ b/sw/source/uibase/uno/SwXDocumentSettings.cxx
+@@ -172,6 +172,7 @@ enum SwDocumentSettingsPropertyHandles
+     HANDLE_BALANCE_SPACES_AND_IDEOGRAPHIC_SPACES,
+     HANDLE_FORCE_TOP_ALIGNMENT_IN_CELL_WITH_FLOATING_ANCHOR,
+     HANDLE_ADJUST_TABLE_LINE_HEIGHTS_TO_GRID_HEIGHT,
++    HANDLE_SUPPORTS_WORD_AUTO_GRID_BASELINE,
+ };
+ 
+ }
+@@ -290,6 +291,8 @@ static rtl::Reference<MasterPropertySetInfo> lcl_createSettingsInfo()
+         { u"BalanceSpacesAndIdeographicSpaces"_ustr, HANDLE_BALANCE_SPACES_AND_IDEOGRAPHIC_SPACES, cppu::UnoType<bool>::get(), 0 },
+         { u"ForceTopAlignmentInCellWithFloatingAnchor"_ustr, HANDLE_FORCE_TOP_ALIGNMENT_IN_CELL_WITH_FLOATING_ANCHOR, cppu::UnoType<bool>::get(), 0 },
+         { u"AdjustTableLineHeightsToGridHeight"_ustr, HANDLE_ADJUST_TABLE_LINE_HEIGHTS_TO_GRID_HEIGHT, cppu::UnoType<bool>::get(), 0 },
++        { u"SupportsWordAutoGridBaseline"_ustr, HANDLE_SUPPORTS_WORD_AUTO_GRID_BASELINE,
++          cppu::UnoType<bool>::get(), PropertyAttribute::READONLY },
+ 
+ /*
+  * As OS said, we don't have a view when we need to set this, so I have to
+@@ -1872,6 +1875,9 @@ void SwXDocumentSettings::_getSingleValue( const comphelper::PropertyInfo & rInf
+                 DocumentSettingId::MS_WORD_COMP_GRID_METRICS);
+         }
+         break;
++        case HANDLE_SUPPORTS_WORD_AUTO_GRID_BASELINE:
++            rValue <<= true;
++            break;
+         case HANDLE_NO_CLIPPING_WITH_WRAP_POLYGON:
+         {
+             rValue <<= mpDoc->getIDocumentSettingAccess().get(

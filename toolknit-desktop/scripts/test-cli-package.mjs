@@ -59,6 +59,9 @@ const packOutput = execFileSync(process.execPath, [npmCli, 'pack', '--dry-run', 
 const pack = JSON.parse(packOutput)[0];
 const packedFiles = new Set(pack.files.map(file => file.path));
 assert.ok(packedFiles.has('resources/office/word-to-pdf.py'), 'Word UNO driver is included in npm packages');
+for (const name of ['word_layout.py', 'word_font_metrics.py']) {
+  assert.ok(packedFiles.has(`resources/office/${name}`), `Word driver dependency ${name} ships in npm packages`);
+}
 for (const required of ['README.md', 'LICENSE', 'NOTICE', 'LICENSES/MIT.txt', 'LICENSES/Download-Whisper-MIT.txt', 'package.json', 'npm-shrinkwrap.json', 'toolknit.mjs']) {
   assert.equal(packedFiles.has(required), true, `published CLI package must include ${required}`);
 }

@@ -36,3 +36,192 @@
 .cleanup-drive-root-overlay .ffmpeg-overlay-bg { background: rgba(0, 0, 0, 0.96); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 .cleanup-drive-root-tips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 440px; }
 .cleanup-drive-root-tips span { display: inline-flex; align-items: center; min-height: 28px; padding: 0 11px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.68); font-size: 12px; font-weight: 650; }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) {
+  --ink: var(--tk-page-ink);
+  --muted: var(--tk-page-muted);
+  --line: var(--tk-page-line);
+  color: var(--ink);
+  color-scheme: var(--tk-color-scheme);
+  padding: 24px;
+  background: rgba(var(--tk-rgb-ink), 0.22);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay).visible {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+html:root[data-theme] #mattingModelOverlay {
+  transition: none;
+  background: rgba(var(--tk-rgb-ink), 0.22);
+}
+html:root[data-theme] #mattingModelOverlay:not(.visible) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-panel,
+html:root[data-theme] #dependencyGateOverlay .dependency-gate-dialog,
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-content {
+  box-sizing: border-box;
+  width: min(780px, 100%);
+  max-height: min(720px, calc(100dvh - 48px));
+  min-height: 0;
+  overflow-y: auto;
+  padding: 32px;
+  border: 0;
+  border-radius: 32px;
+  color: var(--ink);
+  background: var(--tk-page-bg);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.14);
+  scrollbar-color: var(--tk-muted) transparent;
+  scrollbar-width: thin;
+  transform: none;
+}
+
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) :is(button, h2, h3, p, .transcription-model-meta, .transcription-model-name) {
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-header { gap: 20px; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-header > div { min-width: 0; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .tools-eyebrow { display: none; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-header h2 { margin: 4px 0 0; font-size: 26px; line-height: 1.3; color: var(--ink); }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-intro { margin: 16px 0 24px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .pdf-page-workspace-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  color: var(--ink);
+  background: var(--tk-home-card-bg);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .pdf-page-workspace-close:hover { border-color: var(--tk-accent); background: var(--tk-surface-hover); }
+
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-source-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-color: var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .audio-convert-format-options { min-width: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .audio-convert-format-option {
+  min-width: 0;
+  min-height: 38px;
+  height: auto;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--tk-home-card-bg);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.4;
+  white-space: normal;
+}
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .audio-convert-format-option:hover { background: var(--tk-home-card-hover); transform: none; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .audio-convert-format-option.active { background: var(--tk-accent); color: var(--tk-on-accent); }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-list { display: grid; gap: 12px; margin-top: 20px; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-width: 0;
+  gap: 16px;
+  padding: 20px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--tk-home-card-bg);
+  transform: none;
+}
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-row > div { min-width: 0; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-row:hover { background: var(--tk-home-card-hover); transform: none; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-name { color: var(--ink); font-size: 16px; line-height: 1.4; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-meta { color: var(--muted); font-size: 12px; line-height: 1.5; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 36px;
+  height: auto;
+  max-width: 100%;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--tk-on-accent);
+  background: var(--tk-accent);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn:hover:not(:disabled) { color: var(--tk-on-accent); background: var(--tk-accent); transform: translateY(-1px); }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn:active:not(:disabled) { transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn { transition: none; }
+  html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn:hover:not(:disabled) { transform: none; }
+}
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-current { padding: 8px 12px; border: 0; border-radius: 999px; color: var(--tk-on-accent); background: var(--tk-border-strong); font-size: 12px; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-progress { height: 5px; border-radius: 999px; background: var(--tk-border); }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-progress > span { background: var(--tk-accent); box-shadow: none; border-radius: inherit; }
+
+/* Gates share the same light surface, without changing the download state machine. */
+html:root[data-theme] #dependencyGateOverlay .dependency-gate-dialog,
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-content { width: min(480px, 100%); max-width: 480px; flex-shrink: 1; }
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-bg,
+html:root[data-theme] #aiKeyRequiredOverlay .tk-mascot-lg { display: none; }
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-content { gap: 20px; }
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-title { margin: 0; font-size: 24px; color: var(--ink); }
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-desc { margin: 0; font-size: 14px; color: var(--muted); }
+html:root[data-theme] #dependencyGateOverlay .audio-convert-success-title { color: var(--ink); font-size: 24px; }
+html:root[data-theme] #dependencyGateOverlay .audio-convert-success-meta { color: var(--muted); }
+html:root[data-theme] #dependencyGateOverlay .dependency-gate-list { padding: 16px 0; background: transparent; border-radius: 0; }
+html:root[data-theme] #dependencyGateOverlay .audio-convert-success-key { flex: 1 1 50%; color: var(--muted); white-space: normal; overflow: visible; }
+html:root[data-theme] #dependencyGateOverlay .audio-convert-success-value { color: var(--ink); white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+html:root[data-theme] #dependencyGateOverlay .audio-convert-success-value[data-state="ready"] { color: var(--tk-success); }
+html:root[data-theme] #dependencyGateOverlay .dependency-gate-progress { color: var(--muted); }
+html:root[data-theme] #dependencyGateOverlay .dependency-gate-progress-track { background: var(--tk-home-card-bg); }
+html:root[data-theme] #dependencyGateOverlay .dependency-gate-progress-track > span { background: var(--tk-accent); }
+html:root[data-theme] #dependencyGateOverlay .dependency-gate-error { padding: 12px 16px; border-radius: 20px; color: var(--tk-danger); background: var(--tk-inset); }
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-actions,
+html:root[data-theme] #dependencyGateOverlay .audio-convert-success-actions { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; }
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-btn,
+html:root[data-theme] #dependencyGateOverlay .audio-convert-success-btn { flex: 1 1 140px; min-width: 0; min-height: 44px; padding: 12px 20px; border: 0; border-radius: 999px; font-size: 14px; line-height: 1.4; white-space: normal; box-shadow: none; transform: none; }
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-confirm,
+html:root[data-theme] #dependencyGateOverlay .audio-convert-success-btn-primary { background: var(--tk-accent); color: var(--tk-on-accent); }
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-confirm:hover,
+html:root[data-theme] #dependencyGateOverlay .audio-convert-success-btn-primary:hover { background: var(--tk-accent); color: var(--tk-on-accent); }
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-cancel,
+html:root[data-theme] #dependencyGateOverlay .audio-convert-success-btn-secondary { background: var(--tk-home-card-bg); color: var(--ink); }
+html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-cancel:hover,
+html:root[data-theme] #dependencyGateOverlay .audio-convert-success-btn-secondary:hover { background: var(--tk-home-card-hover); color: var(--ink); }
+
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn:disabled,
+html:root[data-theme] :is(#dependencyGateOverlay, #aiKeyRequiredOverlay) button:disabled { color: var(--tk-muted); background: var(--tk-border); opacity: 1; cursor: not-allowed; box-shadow: none; transform: none; }
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions .settings-btn:focus-visible,
+html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) button:focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 3px; }
+
+@media (max-width: 680px) {
+  html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay, #dependencyGateOverlay, #aiKeyRequiredOverlay) { padding: 16px; }
+  html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-panel,
+  html:root[data-theme] #dependencyGateOverlay .dependency-gate-dialog,
+  html:root[data-theme] #aiKeyRequiredOverlay .ffmpeg-overlay-content { padding: 24px; max-height: calc(100dvh - 32px); }
+  html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-source-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .audio-convert-format-options { justify-content: flex-start; }
+  html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  html:root[data-theme] :is(#transcriptionModelOverlay, #mattingModelOverlay, #ffmpegRuntimeOverlay, #libreOfficeRuntimeOverlay, #localTranslationOverlay, #localOcrOverlay) .transcription-model-actions { justify-content: flex-start; }
+}

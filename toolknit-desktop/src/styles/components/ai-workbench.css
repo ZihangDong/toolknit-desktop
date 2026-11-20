@@ -1,0 +1,110 @@
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* Shared chat controls for the document and table workbenches. */
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) {
+  --ai-workbench-surface: var(--tk-page-bg);
+  --ai-workbench-soft: var(--tk-inset);
+  --ai-workbench-hover: var(--tk-surface);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-chat-avatar {
+  border-color: var(--line-strong);
+  background: var(--ai-workbench-surface);
+  color: var(--ink);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-chat-bubble {
+  border-color: var(--line);
+  background: var(--ai-workbench-soft);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-chat-msg-user .ai-doc-chat-bubble {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-chat-bubble.ai-doc-gen-link {
+  border-color: var(--line-strong);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-chat-bubble.ai-doc-gen-link:hover {
+  background: var(--ai-workbench-hover);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-prompt-chip {
+  border-color: var(--line-strong);
+  background: var(--ai-workbench-surface);
+  color: var(--ink);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-prompt-chip:hover {
+  border-color: var(--line-strong);
+  background: var(--ai-workbench-hover);
+  color: var(--ink);
+  box-shadow: 0 4px 12px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-chat-input {
+  border-color: var(--line-strong);
+  background: var(--ai-workbench-surface);
+  color: var(--ink);
+  caret-color: var(--ink);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-chat-input::placeholder {
+  color: var(--muted);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-chat-input:focus {
+  border-color: var(--ink);
+  background: var(--ai-workbench-surface);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) :is(.ai-doc-chat-send, .ai-doc-pill-btn) {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) :is(.ai-doc-chat-send, .ai-doc-pill-btn):hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--tk-on-accent);
+  box-shadow: 0 5px 14px rgba(17, 17, 17, 0.12);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-secondary-btn {
+  border-color: var(--line-strong);
+  background: var(--ai-workbench-soft);
+  color: var(--ink);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-secondary-btn:hover {
+  border-color: var(--line-strong);
+  background: var(--ai-workbench-hover);
+  color: var(--ink);
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) :is(.ai-doc-chat-send, .ai-doc-pill-btn) :is(span, svg),
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-secondary-btn:hover :is(span, svg) {
+  color: inherit;
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) :is(.ai-doc-chat-send, .ai-doc-pill-btn):disabled {
+  border-color: var(--line);
+  background: var(--ai-workbench-hover);
+  color: var(--muted);
+  opacity: 1;
+  box-shadow: none;
+}
+
+html:root[data-theme] :is(.ai-doc-v2, .ai-table-v2) .ai-doc-canvas-empty {
+  border-color: var(--line-strong);
+  background: var(--ai-workbench-soft);
+}

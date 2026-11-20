@@ -60,3 +60,71 @@
   .crypto-shell .crypto-nav-group { display: block; grid-column: 1 / -1; }
   .crypto-shell .crypto-session-log { grid-template-columns: minmax(0, 1fr); }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .crypto-shell {
+  --crypto-icon-border: var(--tk-border);
+  --crypto-icon-hover-border: var(--tk-accent);
+}
+
+html:root[data-theme] .crypto-shell :is(.crypto-config-row > label, .crypto-field, .crypto-key-grid label, .crypto-io > span, .crypto-sidebar-head strong, .crypto-file-picker strong, .crypto-session-log > div strong) {
+  color: var(--dev-ink);
+}
+
+html:root[data-theme] .crypto-shell :is(.crypto-workspace-head, .crypto-session-log, .crypto-session-log li) {
+  border-color: var(--dev-line);
+}
+
+html:root[data-theme] .crypto-shell :is(.crypto-status, .crypto-status svg, .crypto-file-picker small, .crypto-file-progress small, .crypto-session-log li, .crypto-session-log time, .crypto-session-log > div > span) {
+  color: var(--dev-muted);
+}
+
+html:root[data-theme] .crypto-shell :is(.crypto-operation, .crypto-mode-tabs, .crypto-hash-checks label, .crypto-session-log) {
+  background: var(--dev-soft);
+  border-color: var(--dev-line);
+  color: var(--dev-ink);
+}
+
+html:root[data-theme] .crypto-shell .crypto-hash-checks label:has(input:checked) {
+  border-color: var(--tk-accent);
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] .crypto-shell .crypto-hash-checks input {
+  accent-color: var(--tk-accent);
+}
+
+html:root[data-theme] .crypto-shell .crypto-file-picker > svg {
+  color: var(--dev-ink);
+}
+
+html:root[data-theme] .crypto-shell .crypto-file-progress > span {
+  background: var(--tk-surface-hover);
+}
+
+html:root[data-theme] .crypto-shell :is(.crypto-file-progress i, .crypto-session-log li i) {
+  background: var(--tk-accent);
+}
+
+html:root[data-theme] .crypto-shell .crypto-session-log li i.is-error {
+  background: #b32b2b;
+}
+
+html:root[data-theme] .crypto-shell .crypto-legacy-warning {
+  background: #fff7e6;
+  border-color: #e6cf9e;
+  color: var(--tk-warning);
+}
+
+html:root[data-theme] .crypto-shell .crypto-legacy-warning p {
+  color: var(--tk-warning);
+}
+
+html:root[data-theme] .crypto-shell .crypto-sidebar nav em {
+  color: #77500b;
+}
+
+html:root[data-theme] .crypto-shell .crypto-sidebar nav .is-active em {
+  color: #f5dba4;
+}

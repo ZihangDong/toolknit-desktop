@@ -49,6 +49,10 @@ const controller = createWordPdfController({
       emit('converting');
       if (mode === 'cancel') await until(() => cancelled); else await delay(90);
       Object.assign(file, cancelled ? { status: 'cancelled', error: 'word-render:cancelled' } : mode === 'partial' && index === 1 ? { status: 'failed', error: 'word-render:invalid-document' } : { status: 'success', outputPath: inputPath + '.pdf', outputBytes: pdfBytes.byteLength, pageCount: 2 });
+      file.fontNotices = file.status === 'success' && inputPath === paths[0] ? [
+        { code: 'missing-font', font: 'Missing <Font> 中文', replacement: 'Noto Sans SC' },
+        { code: 'embedding-restricted', font: 'Restricted Font', replacement: '' },
+      ] : [];
       files.push(file); emit('done');
     }
     return { jobId: args.jobId, files, cancelled };
@@ -86,6 +90,7 @@ document.getElementById('qa-run').onclick = async () => {
     assert(!calls.some(call => call.command === 'convert_word_to_pdf'), 'cancel during preparation never launches native conversion');
     checkDelay = 0; mode = 'partial'; q('Convert').click(); await until(() => !controller.busy);
     assert(!q('Retry').hidden && !q('Success').classList.contains('visible'), 'partial success retains retryable queue');
+    assert(q('Files').textContent.includes('Noto Sans SC') && !q('Files').querySelector('font'), 'queue shows escaped font replacement notices');
     assert(events.size === 0, 'progress listener released after partial batch');
     mode = 'success'; q('Retry').click(); await until(() => !controller.busy);
     assert(calls.filter(call => call.command === 'convert_word_to_pdf').at(-1).args.inputPaths.join() === paths[1], 'retry converts only failed file');
@@ -97,6 +102,10 @@ document.getElementById('qa-run').onclick = async () => {
     for (const lang of ['en', 'zh']) {
       setLangWithoutFade(lang); applyTranslations(); await delay(30);
       assert(q('SuccessEditor').textContent.includes(lang === 'en' ? 'PDF Editor' : 'PDF 编辑器'), `result actions translated (${lang})`);
+      assert(q('SuccessFonts').hidden, 'switching to a clean result clears font notices');
+      q('ResultSelect').value = paths[0]; q('ResultSelect').dispatchEvent(new Event('change'));
+      assert(q('SuccessFonts').textContent.includes('Noto Sans SC') && q('SuccessFonts').textContent.includes(lang === 'en' ? 'embedding restricted' : '限制嵌入'), `font replacement and restriction notices translated (${lang})`);
+      q('ResultSelect').value = paths[1]; q('ResultSelect').dispatchEvent(new Event('change'));
     }
     q('SuccessEditor').click(); await until(() => !controller.busy);
     await until(() => document.querySelector('#pdfEditorCanvasScroll canvas'));

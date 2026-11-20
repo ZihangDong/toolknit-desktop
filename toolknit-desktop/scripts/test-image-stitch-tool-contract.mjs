@@ -15,8 +15,8 @@ const [main, html, lazyTools, tool, controller, template, featureStyles, appStyl
   read('src/features/image-stitch/template.js'),
   read('src/features/image-stitch/image-stitch.css'),
   readGlobalStyles(import.meta.url),
-  read('src/styles/themes/index.css'),
-  read('src/styles/themes/image-stitch-light.css')
+  read('src/styles/index.css'),
+  read('src/features/image-stitch/image-stitch.css')
 ]);
 
 assert.equal(LAZY_TOOL_SPECS['image-stitch']?.overlayId, 'imageStitchOverlay');
@@ -42,7 +42,7 @@ assert.equal((template.match(/class="image-stitch-number-field"/g) || []).length
 assert.match(featureStyles, /\.image-stitch-command-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)\s*;/);
 assert.match(featureStyles, /\.image-stitch-number-field\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/);
 assert.doesNotMatch(featureStyles, /\.image-stitch-number-setting em/);
-assert.match(lightTheme, /\.image-stitch-v2 \.image-stitch-settings \.audio-convert-format-option\s*\{[^}]*background:\s*#f7f8f9/);
+assert.match(lightTheme, /\.image-stitch-v2 \.image-stitch-settings \.audio-convert-format-option\s*\{[^}]*background:\s*var\(--tk-inset\)/);
 assert.match(template, /id="imageStitchSuccessOverlay"/);
 assert.match(featureStyles, /\.image-stitch-v2/);
 assert.match(controller, /bindPointerSortableFileList/);
@@ -55,14 +55,13 @@ assert.match(featureStyles, /#imageStitchQualityWrap\[hidden\]\s*\{\s*display: n
 for (const side of [2, 3, 4, 5]) assert.match(template, new RegExp(`data-mode="grid-${side}"`));
 assert.doesNotMatch(appStyles, /\.image-stitch-v2\s+\.image-stitch-body/);
 assert.match(featureStyles, /\.feature-tool-overlay\.image-stitch-overlay\s*\{[^}]*background:\s*#0a0a0f\s*!important/);
-assert.match(themeIndex, /@import url\('\.\/image-stitch-light\.css'\)/);
-assert.match(lightTheme, /html\[data-theme="light"\] \.image-stitch-v2\s*\{/);
-assert.match(lightTheme, /\.feature-tool-overlay\.image-stitch-overlay\s*\{\s*background:\s*#ffffff\s*!important/);
+assert.match(lightTheme, /html:root\[data-theme\] \.image-stitch-v2\s*\{/);
+assert.match(lightTheme, /\.feature-tool-overlay\.image-stitch-overlay\s*\{\s*background:\s*var\(--tk-page-bg\)\s*!important/);
 assert.match(lightTheme, /:is\(\.image-stitch-control-card, \.image-stitch-preview-panel, \.image-stitch-settings\)[\s\S]*?border-radius:\s*8px/);
-assert.match(lightTheme, /\.image-stitch-row\s*\{[\s\S]*?background:\s*#ffffff/);
-assert.match(lightTheme, /\.audio-convert-format-option\.active\s*\{[\s\S]*?background:\s*#171717[\s\S]*?color:\s*#ffffff/);
-assert.match(lightTheme, /\.image-stitch-processing\s*\{\s*background:\s*rgba\(255, 255, 255, \.96\)/);
-assert.match(lightTheme, /#imageStitchSuccessOverlay \.audio-convert-success-dialog\s*\{[\s\S]*?background:\s*#ffffff/);
+assert.match(lightTheme, /\.image-stitch-row\s*\{[\s\S]*?background:\s*var\(--tk-page-bg\)/);
+assert.match(lightTheme, /\.audio-convert-format-option\.active\s*\{[\s\S]*?background:\s*var\(--tk-accent\)[\s\S]*?color:\s*var\(--tk-on-accent\)/);
+assert.match(lightTheme, /\.image-stitch-processing\s*\{\s*background:\s*rgba\(var\(--tk-rgb-page\), 0\.96\)/);
+assert.match(lightTheme, /#imageStitchSuccessOverlay \.audio-convert-success-dialog\s*\{[\s\S]*?background:\s*var\(--tk-page-bg\)/);
 
 const ids = [...imageStitchPageTemplate().matchAll(/id="([^\"]+)"/g)].map(match => match[1]);
 assert.equal(new Set(ids).size, ids.length, 'image stitch template contains duplicate IDs');

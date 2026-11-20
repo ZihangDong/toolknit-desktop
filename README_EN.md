@@ -2,13 +2,13 @@
 
 <img src="assets/readme/v3.1/01-hero.webp" alt="ToolKnit Desktop: a boy and his head-perched spider make everyday desktop work simpler" width="100%" />
 
-# ToolKnit Desktop 3.3
+# ToolKnit Desktop 3.4
 
-> V3.3 released November 15, 2026. Windows Desktop and npm CLI / MCP 3.3.0 are available. Author-owned source uses the MIT License.
+> V3.4 is in development and has not been released. Source version: 3.4.0. The current stable release remains V3.3, published November 15, 2026, including Desktop and npm CLI / MCP 3.3.0. Author-owned source uses the MIT License.
 
 **One toolbox for the little tasks scattered across your desktop.**
 
-75 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
+83 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
 
 [MIT source license and attribution](#source-license)
 
@@ -19,6 +19,14 @@
 </p>
 
 </div>
+
+## In development: local files and automation
+
+Eight desktop tools: batch rename, Task Center, PDF workflows, a global quick launcher, local document content search, text comparison, an SRT/VTT subtitle workbench, and folder automation. The source catalog contains 83 desktop tools; the stable download remains V3.3.
+
+Use `Ctrl+Shift+Space` globally or `Ctrl+K` inside the app. Indexes and subtitle drafts stay local; folder rules preserve original files.
+
+Usage guides (Chinese): [file workbench](docs/PRODUCTIVITY.zh-CN.md) · [documents and automation](docs/WORKBENCH.zh-CN.md). No installer release or new CLI/MCP capabilities are included.
 
 ## About the project and me
 
@@ -42,6 +50,15 @@ Set an output folder and favorite your tools. Install models only when needed.
 Enable **one-click recording mode** for startup, clipboard monitoring and floating history. Press `Alt + Q` to capture.
 The home page groups **New features** by **V3.3 and V3.2**, newest first.
 See [Get started](#08--get-started) for installation requirements and instructions.
+
+### V3.4 development updates
+
+- Added a global quick launcher (`Ctrl+Shift+Space`, or `Ctrl+K` inside the app), local document content search, text comparison, an SRT/VTT subtitle workbench, and folder automation that preserves original files. [Usage guide (Chinese)](docs/WORKBENCH.zh-CN.md).
+- Added batch rename, Task Center, and reusable workflows. Rename supports live previews, sequences, dates, regular expressions, conflict checks, and undo for the most recent batch. Workflows combine images into a PDF or merge PDFs, optionally add page numbers, and save parameter presets. [Usage guide (Chinese)](docs/PRODUCTIVITY.zh-CN.md).
+- Task Center covers these new tools, Word to PDF, image conversion/compression, and batch audio/video conversion, with progress, cancellation, current-session retry, and local history. Supported native batch conversions run in sequence.
+- Light and dark modes share one layout, with eight palettes, custom theme colors, preview, save, cancel, and reset.
+- Image and video wallpaper works independently of appearance; screenshot and file-search windows follow the selected palette.
+- Settings gains a responsive sidebar with a hidden scrollbar, one row of circular color choices, and a clearer order for appearance, storage, daily behavior, and AI/runtime settings.
 
 ### V3.3 highlights
 
@@ -262,7 +279,7 @@ V3.3 exposes **78 CLI / MCP capabilities**, adding Word to PDF. npm 3.3.0 is als
 | File inspection | Read-only scanning, dependency checks and structured JSON results |
 
 Progress, cancellation and explicit errors are supported. Originals and existing outputs stay protected. Unicode paths, long paths and model downloads are improved.
-Windows, clipboard monitoring and system cleanup remain desktop interactions. **The catalog has 78 interfaces and 75 desktop tools; these do not map one-to-one.**
+Windows, clipboard monitoring and system cleanup remain desktop interactions. **The catalog has 78 interfaces and 83 desktop tools; these do not map one-to-one.**
 
 Use **`@toolknit/cli` 3.3.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for the 78 capabilities. Requires Node.js **22.13+**.
 
@@ -347,7 +364,7 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 ## Complete tool catalog
 
 <details>
-<summary><strong>Expand 75 desktop tools / 12 categories</strong></summary>
+<summary><strong>Expand 83 desktop tools / 12 categories</strong></summary>
 
 | Category | Count | Tools |
 | --- | ---: | --- |
@@ -356,10 +373,10 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 | Image | 7 | Crop, smart color replacement, background removal, format conversion, compress, stitch, icon generator |
 | Audio | 4 | Format conversion, BPM measurement, trim, extract audio |
 | Video | 3 | Format conversion, full-resolution frame, GIF clipping |
-| Text | 5 | Markdown editor, media transcription, teleprompter, text statistics, text formatting |
+| Text | 6 | Markdown editor, media transcription, teleprompter, text statistics, text formatting, subtitle workbench |
 | Calculator | 5 | Body fat, timestamp, mortgage, interest, password generator |
 | Creative | 4 | Palette extraction, color-space comparison, quick screenshot, typing test |
-| Cleanup | 4 | Quick file search, AI large-file cleanup, C drive cleanup, duplicate files |
+| Cleanup | 11 | Quick file search, AI large-file cleanup, C drive cleanup, duplicate files, batch rename, Task Center, PDF workflows, global quick launcher, document content search, text comparison, folder automation |
 | AI | 5 | PDF to Markdown, text polishing, translation, document generation, spreadsheet generation |
 | Hardware | 8 | System overview, CPU / memory, GPU / displays, motherboard / firmware, storage / health, network / devices, power / sensors, clipboard history |
 | Developer | 6 | JSON formatting, Base64, URL encoding / decoding, UUID, JWT viewer, Hash & Crypto |

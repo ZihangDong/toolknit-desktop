@@ -24,7 +24,7 @@ const server = await createServer({
     configureServer(server) {
       server.middlewares.use('/__excel-qa', (_request, response) => {
         response.setHeader('Content-Type', 'text/html');
-        response.end('<!doctype html><html><head><link rel="stylesheet" href="/src/styles.css"><link rel="stylesheet" href="/src/tool-nav-unified.css"><link rel="stylesheet" href="/src/styles/themes/index.css"></head><body></body></html>');
+        response.end('<!doctype html><html><head><link rel="stylesheet" href="/src/styles.css"><link rel="stylesheet" href="/src/tool-nav-unified.css"></head><body></body></html>');
       });
     }
   }]

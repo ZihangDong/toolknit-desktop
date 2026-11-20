@@ -8,6 +8,7 @@ pub(super) mod ppt {
 }
 pub(super) use ppt::*;
 mod probe;
+mod bundled;
 pub(super) use probe::*;
 pub(super) mod excel {
     use super::*;
