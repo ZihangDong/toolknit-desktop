@@ -84,6 +84,10 @@ for (const key of helpNavI18n) {
 }
 
 const toolToHelp = new Map([
+  ['quick-launcher','quick-launcher'],['content-search','content-search'],['document-compare','document-compare'],['subtitle-workbench','subtitle-workbench'],['folder-automation','folder-automation'],
+  ['batch-rename', 'batch-rename'],
+  ['task-center', 'task-center'],
+  ['tool-workflows', 'tool-workflows'],
   ['word-to-pdf', 'word-to-pdf'],
   ['file-search', 'file-search'],
   ['pdf-merge', 'pdf-merge'],
@@ -162,7 +166,7 @@ const toolToHelp = new Map([
 
 toolToHelp.set('image-to-pdf', 'image-to-pdf');
 const desktopTools = unique(valuesForAttribute(indexHtml, 'data-tool'));
-assert.equal(desktopTools.length, 75, 'Current desktop catalog must contain exactly 75 unique tools.');
+assert.equal(desktopTools.length, 83, 'Current desktop catalog must contain exactly 83 unique tools.');
 for (const tool of desktopTools) {
   const section = toolToHelp.get(tool);
   assert.ok(section, `Desktop tool has no help mapping: ${tool}`);

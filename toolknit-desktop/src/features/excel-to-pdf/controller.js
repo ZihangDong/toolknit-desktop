@@ -394,7 +394,7 @@ export function createExcelToPdfController({
     if (disposed) return;
     if (nativeStarted && !cancelling) {
       cancelling = true;
-      void invoke('cancel_convert').catch(() => {});
+      void invoke('cancel_convert', { toolknitTaskTool: 'excel-to-pdf' }).catch(() => {});
     }
     close({ force: true });
     disposed = true;
@@ -434,7 +434,7 @@ export function createExcelToPdfController({
     else if (action === 'cancel' && processing && !cancelling) {
       cancelling = true;
       setProgress(Number.parseFloat(progressBar.style.width) || 0, copy('cancelling'));
-      if (nativeStarted) void invoke('cancel_convert').catch(() => {});
+      if (nativeStarted) void invoke('cancel_convert', { toolknitTaskTool: 'excel-to-pdf' }).catch(() => {});
     } else if (action === 'success-ok') {
       hideSuccess({ restoreFocus: true });
     } else if (action === 'open-output' && lastOutputDir) {

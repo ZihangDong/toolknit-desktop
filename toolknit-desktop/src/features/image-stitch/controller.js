@@ -108,7 +108,7 @@ export function createImageStitchController({
       imageStitchProgressUnlisten = null;
     }
     if (imageStitchBusy && isTauri && activeJobId) {
-      tauriCore.then(({ invoke }) => invoke('cancel_convert')).catch(() => {});
+      tauriCore.then(({ invoke }) => invoke('cancel_convert', { toolknitTaskTool: 'image-stitch' })).catch(() => {});
     }
     if (imageStitchPdfLoadingTask) {
       try {
@@ -629,7 +629,7 @@ export function createImageStitchController({
       return;
     }
     imageStitchCancelRequested = true;
-    tauriCore.then(({ invoke }) => invoke('cancel_convert')).catch(() => {});
+    tauriCore.then(({ invoke }) => invoke('cancel_convert', { toolknitTaskTool: 'image-stitch' })).catch(() => {});
   });
   listen(byId('imageStitchSuccessOk'), 'click', () => byId('imageStitchSuccessOverlay')?.classList.remove('visible'));
   listen(byId('imageStitchOpenFolder'), 'click', () => { if (lastImageStitchOutputPath) openOutputFolder(lastImageStitchOutputPath).catch(() => {}); byId('imageStitchSuccessOverlay')?.classList.remove('visible'); });

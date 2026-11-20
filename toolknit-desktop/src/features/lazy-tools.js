@@ -1,4 +1,12 @@
 export const LAZY_TOOL_SPECS = Object.freeze({
+  'quick-launcher': Object.freeze({ overlayId: 'quickLauncherOverlay', load: () => import('./workbench/launcher-tool.js'), init: 'initQuickLauncherTool' }),
+  'content-search': Object.freeze({ instanceKey: 'document-workbench', overlayId: 'documentWorkbenchOverlay', markup: () => import('./workbench/template.js'), load: () => import('./workbench/tool.js'), init: 'initDocumentWorkbenchTool' }),
+  'document-compare': Object.freeze({ instanceKey: 'document-workbench', overlayId: 'documentWorkbenchOverlay', markup: () => import('./workbench/template.js'), load: () => import('./workbench/tool.js'), init: 'initDocumentWorkbenchTool' }),
+  'subtitle-workbench': Object.freeze({ instanceKey: 'document-workbench', overlayId: 'documentWorkbenchOverlay', markup: () => import('./workbench/template.js'), load: () => import('./workbench/tool.js'), init: 'initDocumentWorkbenchTool' }),
+  'folder-automation': Object.freeze({ instanceKey: 'document-workbench', overlayId: 'documentWorkbenchOverlay', markup: () => import('./workbench/template.js'), load: () => import('./workbench/tool.js'), init: 'initDocumentWorkbenchTool' }),
+  'batch-rename': Object.freeze({ instanceKey: 'productivity', overlayId: 'productivityOverlay', markup: () => import('./productivity/template.js'), load: () => import('./productivity/tool.js'), init: 'initProductivityTool' }),
+  'task-center': Object.freeze({ instanceKey: 'productivity', overlayId: 'productivityOverlay', markup: () => import('./productivity/template.js'), load: () => import('./productivity/tool.js'), init: 'initProductivityTool' }),
+  'tool-workflows': Object.freeze({ instanceKey: 'productivity', overlayId: 'productivityOverlay', markup: () => import('./productivity/template.js'), load: () => import('./productivity/tool.js'), init: 'initProductivityTool' }),
   'file-search': Object.freeze({
     overlayId: 'fileSearchOverlay',
     markup: () => import('./file-search/template.js'),

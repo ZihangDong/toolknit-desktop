@@ -8,7 +8,7 @@
 
 **One toolbox for the little tasks scattered across your desktop.**
 
-75 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
+83 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
 
 [MIT source license and attribution](#source-license)
 
@@ -19,6 +19,14 @@
 </p>
 
 </div>
+
+## In development: local files and automation
+
+Eight desktop tools: batch rename, Task Center, PDF workflows, a global quick launcher, local document content search, text comparison, an SRT/VTT subtitle workbench, and folder automation. The source catalog contains 83 desktop tools; the stable download remains V3.3.
+
+Use `Ctrl+Shift+Space` globally or `Ctrl+K` inside the app. Indexes and subtitle drafts stay local; folder rules preserve original files.
+
+Usage guides (Chinese): [file workbench](docs/PRODUCTIVITY.zh-CN.md) · [documents and automation](docs/WORKBENCH.zh-CN.md). No installer release or new CLI/MCP capabilities are included.
 
 ## About the project and me
 
@@ -262,7 +270,7 @@ V3.3 exposes **78 CLI / MCP capabilities**, adding Word to PDF. npm 3.3.0 is als
 | File inspection | Read-only scanning, dependency checks and structured JSON results |
 
 Progress, cancellation and explicit errors are supported. Originals and existing outputs stay protected. Unicode paths, long paths and model downloads are improved.
-Windows, clipboard monitoring and system cleanup remain desktop interactions. **The catalog has 78 interfaces and 75 desktop tools; these do not map one-to-one.**
+Windows, clipboard monitoring and system cleanup remain desktop interactions. **The catalog has 78 interfaces and 83 desktop tools; these do not map one-to-one.**
 
 Use **`@toolknit/cli` 3.3.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for the 78 capabilities. Requires Node.js **22.13+**.
 
@@ -347,7 +355,7 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 ## Complete tool catalog
 
 <details>
-<summary><strong>Expand 75 desktop tools / 12 categories</strong></summary>
+<summary><strong>Expand 83 desktop tools / 12 categories</strong></summary>
 
 | Category | Count | Tools |
 | --- | ---: | --- |
@@ -356,10 +364,10 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 | Image | 7 | Crop, smart color replacement, background removal, format conversion, compress, stitch, icon generator |
 | Audio | 4 | Format conversion, BPM measurement, trim, extract audio |
 | Video | 3 | Format conversion, full-resolution frame, GIF clipping |
-| Text | 5 | Markdown editor, media transcription, teleprompter, text statistics, text formatting |
+| Text | 6 | Markdown editor, media transcription, teleprompter, text statistics, text formatting, subtitle workbench |
 | Calculator | 5 | Body fat, timestamp, mortgage, interest, password generator |
 | Creative | 4 | Palette extraction, color-space comparison, quick screenshot, typing test |
-| Cleanup | 4 | Quick file search, AI large-file cleanup, C drive cleanup, duplicate files |
+| Cleanup | 11 | Quick file search, AI large-file cleanup, C drive cleanup, duplicate files, batch rename, Task Center, PDF workflows, global quick launcher, document content search, text comparison, folder automation |
 | AI | 5 | PDF to Markdown, text polishing, translation, document generation, spreadsheet generation |
 | Hardware | 8 | System overview, CPU / memory, GPU / displays, motherboard / firmware, storage / health, network / devices, power / sensors, clipboard history |
 | Developer | 6 | JSON formatting, Base64, URL encoding / decoding, UUID, JWT viewer, Hash & Crypto |

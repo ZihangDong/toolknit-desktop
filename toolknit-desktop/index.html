@@ -1269,6 +1269,9 @@
                   <div class="audio-list-info"><div class="audio-list-title" data-i18n="home.toolNames.markdownEditor">Markdown 文档编辑器</div><div class="audio-list-desc" data-i18n="home.toolNames.markdownEditorDesc">实时预览、文档目录、Mermaid 与数学公式</div></div>
                   <div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.textCategoryTag">文本工具</span><span class="tool-badge badge-new" data-i18n="home.toolNames.badgeNew">新</span></div><div class="audio-list-meta" data-i18n="home.toolNames.markdownEditorMeta">GFM / 草稿恢复 / MD·HTML 导出</div></div>
                 </div>
+                <div class="audio-list-item" data-tool="subtitle-workbench" role="button" tabindex="0" data-i18n-aria-label="workbench.subtitles">
+                  <div class="audio-list-icon"><i data-lucide="captions"></i></div><div class="audio-list-info"><div class="audio-list-title" data-i18n="workbench.subtitles">字幕工作台</div><div class="audio-list-desc" data-i18n="workbench.subtitleDesc">导入字幕、本地转写、编辑时间轴和文字，导出 SRT / VTT。</div></div><div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.textCategoryTag">文本工具</span></div></div>
+                </div>
                 <div class="audio-list-item" data-tool="transcription" role="button" tabindex="0" data-i18n-aria-label="home.toolNames.transcription">
                   <div class="audio-list-icon"><i data-lucide="captions"></i></div>
                   <div class="audio-list-info">
@@ -1505,6 +1508,33 @@
                 <button class="audio-clear-btn tools-clear-btn" data-i18n="home.clearSearch" style="display:none;">清除搜索结果</button>
               </div>
               <div class="audio-list">
+                <div class="audio-list-item" data-tool="quick-launcher" role="button" tabindex="0" data-i18n-aria-label="workbench.launcher">
+                  <div class="audio-list-icon"><i data-lucide="command"></i></div><div class="audio-list-info"><div class="audio-list-title" data-i18n="workbench.launcher">全局快捷启动器</div><div class="audio-list-desc" data-i18n="workbench.launcherDesc">系统快捷键呼出工具搜索，按文件类型推荐工具。</div></div><div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.cleanupCategoryTag">清理工具</span></div></div>
+                </div>
+                <div class="audio-list-item" data-tool="content-search" role="button" tabindex="0" data-i18n-aria-label="workbench.search">
+                  <div class="audio-list-icon"><i data-lucide="file-search"></i></div><div class="audio-list-info"><div class="audio-list-title" data-i18n="workbench.search">文档内容搜索</div><div class="audio-list-desc" data-i18n="workbench.searchDesc">在选定文件夹中搜索 PDF、DOCX 和文本的文字内容。</div></div><div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.cleanupCategoryTag">清理工具</span></div></div>
+                </div>
+                <div class="audio-list-item" data-tool="document-compare" role="button" tabindex="0" data-i18n-aria-label="workbench.compare">
+                  <div class="audio-list-icon"><i data-lucide="git-compare"></i></div><div class="audio-list-info"><div class="audio-list-title" data-i18n="workbench.compare">文档对比</div><div class="audio-list-desc" data-i18n="workbench.compareDesc">对比文档文字，逐行查看新增、删除并导出差异报告。</div></div><div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.cleanupCategoryTag">清理工具</span></div></div>
+                </div>
+                <div class="audio-list-item" data-tool="folder-automation" role="button" tabindex="0" data-i18n-aria-label="workbench.folders">
+                  <div class="audio-list-icon"><i data-lucide="folder-cog"></i></div><div class="audio-list-info"><div class="audio-list-title" data-i18n="workbench.folders">文件夹自动处理</div><div class="audio-list-desc" data-i18n="workbench.folderDesc">监控新文件，自动转换图片、压缩或按扩展名复制归档。</div></div><div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.cleanupCategoryTag">清理工具</span></div></div>
+                </div>
+                <div class="audio-list-item" data-tool="batch-rename" role="button" tabindex="0" data-i18n-aria-label="productivity.rename">
+                  <div class="audio-list-icon"><i data-lucide="file-pen-line"></i></div>
+                  <div class="audio-list-info"><div class="audio-list-title" data-i18n="productivity.rename">批量重命名</div><div class="audio-list-desc" data-i18n="productivity.renameCard">按模板、序号和日期修改文件名，实时预览并支持撤销。</div></div>
+                  <div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.cleanupCategoryTag">清理工具</span></div><div class="audio-list-meta" data-i18n="productivity.renameMeta">规则预览 / 冲突检查 / 撤销</div></div>
+                </div>
+                <div class="audio-list-item" data-tool="task-center" role="button" tabindex="0" data-i18n-aria-label="productivity.tasks">
+                  <div class="audio-list-icon"><i data-lucide="list-checks"></i></div>
+                  <div class="audio-list-info"><div class="audio-list-title" data-i18n="productivity.tasks">任务中心</div><div class="audio-list-desc" data-i18n="productivity.taskCard">集中查看已接入任务的进度、失败记录与输出位置。</div></div>
+                  <div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.cleanupCategoryTag">清理工具</span></div><div class="audio-list-meta" data-i18n="productivity.taskMeta">处理进度 / 会话重试 / 本机历史</div></div>
+                </div>
+                <div class="audio-list-item" data-tool="tool-workflows" role="button" tabindex="0" data-i18n-aria-label="productivity.workflows">
+                  <div class="audio-list-icon"><i data-lucide="workflow"></i></div>
+                  <div class="audio-list-info"><div class="audio-list-title" data-i18n="productivity.workflows">工具串联</div><div class="audio-list-desc" data-i18n="productivity.flowCard">把图片或多份 PDF 接成处理流程，保存参数预设。</div></div>
+                  <div class="audio-list-right"><div class="audio-list-tags"><span class="audio-tag" data-i18n="home.toolNames.cleanupCategoryTag">清理工具</span></div><div class="audio-list-meta" data-i18n="productivity.flowMeta">合并 / 图片转 PDF / 连续页码</div></div>
+                </div>
                 <div class="audio-list-item" data-tool="file-search" role="button" tabindex="0" data-i18n-aria-label="fileSearch.title">
                   <div class="audio-list-icon"><i data-lucide="folder-search"></i></div>
                   <div class="audio-list-info"><div class="audio-list-title" data-i18n="fileSearch.title">文件快速搜索</div><div class="audio-list-desc" data-i18n="fileSearch.description">输入名字、筛选后缀，快速找到文件所在位置。</div></div>

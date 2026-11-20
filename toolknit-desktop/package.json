@@ -8,6 +8,13 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "test:workbench": "node scripts/test-workbench.mjs",
+    "test:workbench-browser": "node scripts/test-workbench-browser.mjs",
+    "test:workbench-native": "cargo test --manifest-path src-tauri/Cargo.toml native_runtime::workbench:: --lib",
+    "test:workbench-native-acceptance": "cargo test --manifest-path src-tauri/Cargo.toml native_runtime::workbench::native_tests::native_shortcut_registration_and_folder_worker --lib -- --ignored --nocapture --test-threads=1",
+    "test:productivity": "node scripts/test-productivity.mjs",
+    "test:productivity-browser": "node scripts/test-productivity-browser.mjs",
+    "test:batch-rename-native": "cargo test --manifest-path src-tauri/Cargo.toml batch_rename:: --lib",
     "dev": "vite",
     "dev:debug": "vite --mode tauri-debug",
     "prebuild": "node scripts/check-dependency-lock.mjs",

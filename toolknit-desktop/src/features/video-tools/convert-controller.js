@@ -192,7 +192,7 @@ export function createVideoConvertController({
     if (completionTimer !== null) { clearTimeout(completionTimer); completionTimer = null; }
     setProgress(0, t('home.videoConvert.processing'), false);
     if (isTauri && wasProcessing) {
-      void tauriCorePromise.then(({ invoke }) => invoke('cancel_convert')).catch(error => console.error('[Video Convert] cancel failed:', error));
+      void tauriCorePromise.then(({ invoke }) => invoke('cancel_convert', { toolknitTaskTool: 'video-convert' })).catch(error => console.error('[Video Convert] cancel failed:', error));
     }
   }
 

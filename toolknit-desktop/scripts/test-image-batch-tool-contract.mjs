@@ -53,7 +53,7 @@ assert.match(controller, /getImageCompressionOutcome\(result, files.length\)/);
 assert.match(controller, /openFolder.disabled = count === 0/);
 assert.match(controller, /icon.dataset.resultState = count > 0 && failed === 0 \? 'success' : 'info'/);
 assert.match(featureStyles, /#imageCompressSuccessOverlay .*\[data-result-state="info"\]/);
-assert.match(controller, /invoke\('cancel_convert'\)/);
+assert.match(controller, /invoke\('cancel_convert', \{ toolknitTaskTool: mode === 'convert' \? 'image-convert' : 'image-compress' \}\)/);
 assert.match(controller, /from ['"]\.\.\/\.\.\/platform\/tauri-runtime\.js['"]/);
 assert.doesNotMatch(controller, /from ['"]@tauri-apps\/api\/(?:core|event)['"]/);
 

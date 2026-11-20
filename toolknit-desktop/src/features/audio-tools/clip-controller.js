@@ -218,7 +218,7 @@ export function createAudioClipController({
     if (audioClipExportBtn) { audioClipExportBtn.disabled = false; audioClipExportBtn.style.opacity = ''; }
     audioClipProcessMask?.classList.remove('visible');
     if (audioClipProcessBarFill) audioClipProcessBarFill.style.width = '0%';
-    if (wasExporting && isTauri) tauriCore.then(({ invoke }) => invoke('cancel_convert')).catch(() => {});
+    if (wasExporting && isTauri) tauriCore.then(({ invoke }) => invoke('cancel_convert', { toolknitTaskTool: 'audio-clip' })).catch(() => {});
   }
 
   function resetState() {
