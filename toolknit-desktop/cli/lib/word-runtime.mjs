@@ -23,6 +23,7 @@ export function runWordDriver(
   throwIfAborted(signal);
   return new Promise((resolve, reject) => {
     const child = spawn(python, args, {
+      env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' },
       shell: false,
       windowsHide: true,
       detached: process.platform !== 'win32',
@@ -69,7 +70,8 @@ export function runWordDriver(
       signal?.removeEventListener('abort', abort);
     };
     child.stdout.on('data', (chunk) => {
-      text += chunk.toString('utf8').slice(0, 4096 - text.length);
+      // Per-font notices from a 20-file batch can exceed a short status line.
+      text += chunk.toString('utf8').slice(0, Math.max(0, 8 * 1024 * 1024 - text.length));
     });
     child.once('error', () => {
       cleanup();
@@ -155,7 +157,7 @@ async function convertOne(
       path.dirname(renderer.command),
       process.platform === 'win32' ? 'python.exe' : 'python3',
     );
-    await runWordDriver(
+    const driverStatus = await runWordDriver(
       python,
       [
         driver,
@@ -186,6 +188,7 @@ async function convertOne(
       bytes: result.size,
       page_count: info.page_count,
       status: 'success',
+      font_notices: driverStatus.fontNotices || [],
     };
   } finally {
     await rm(directory, {
@@ -317,6 +320,7 @@ async function convertBatch(inputs, batchDir, options, renderer) {
             bytes: pdf.size,
             page_count: info.page_count,
             status: 'success',
+            font_notices: status.fontNotices || [],
           });
           continue;
         } catch {
@@ -339,6 +343,22 @@ async function convertBatch(inputs, batchDir, options, renderer) {
   } finally {
     await rm(workDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 120 });
   }
+}
+
+function fontWarnings(files) {
+  return [
+    'Missing fonts are replaced with available open-source families where possible. Commercial font licenses or embedding restrictions may affect PDF generation; verify your license and check the output layout.',
+    ...files.flatMap(file => (file.font_notices || []).map(notice => {
+      const prefix = `${path.basename(file.input_path)}: `;
+      if (notice.code === 'font-check-unavailable' || notice.code === 'font-check-incomplete')
+        return prefix + 'Font checks were unavailable or incomplete. Verify fonts in the generated PDF.';
+      if (notice.code === 'font-replacement-failed') return prefix + `Could not replace "${notice.font}". Install a suitable open-source font or change the source document.`;
+      const reason = notice.code === 'embedding-restricted' ? 'embedding restricted' : 'missing';
+      return prefix + (notice.replacement
+        ? `"${notice.font}" (${reason}) was replaced with open-source font "${notice.replacement}". Check pagination and line breaks.`
+        : `"${notice.font}" (${reason}) has no suitable available open-source replacement. Install one or change the source document; PDF text or layout may differ.`);
+    })),
+  ];
 }
 
 export async function word_to_pdf(args, options = {}) {
@@ -392,7 +412,7 @@ export async function word_to_pdf(args, options = {}) {
           files,
           outputs,
           output_dir: batchDir,
-          warnings: [
+          warnings: [...fontWarnings(files),
             'Uses one isolated LibreOffice Writer session for batch conversion. Missing fonts and complex layouts may differ. Macros and external updates are disabled; fields are not explicitly refreshed.',
           ],
         };
@@ -449,7 +469,7 @@ export async function word_to_pdf(args, options = {}) {
               output_path: outputs[0].output_path,
               page_count: outputs[0].page_count,
             }),
-        warnings: [
+        warnings: [...fontWarnings(files),
           'Uses LibreOffice Writer. Missing fonts and complex layouts may differ. Macros and external updates are disabled; fields are not explicitly refreshed.',
         ],
       };

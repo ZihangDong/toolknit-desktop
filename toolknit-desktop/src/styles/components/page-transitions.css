@@ -5,7 +5,7 @@
   visibility: hidden;
   pointer-events: none;
   opacity: 0;
-  background: #000;
+  background: var(--tk-page-bg);
   transition: opacity 250ms ease;
 }
 
@@ -36,7 +36,7 @@ html.tk-theme-switching *:not([data-tk-page-transition-veil])::after {
 @media (prefers-reduced-motion: reduce) {
   /* Normal page navigation skips the veil in JS. Theme changes deliberately
      keep the veil so a WebView that inherits Windows' reduced-motion setting
-     still has a stable black cover while colors are swapped. */
+     still has a stable palette cover while colors are swapped. */
   html:not(.tk-theme-switching) .tk-page-transition-veil {
     transition: none;
   }

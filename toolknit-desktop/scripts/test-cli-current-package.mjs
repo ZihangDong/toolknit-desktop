@@ -77,6 +77,9 @@ try {
   assert.equal(pack.version, JSON.parse(await readFile(path.join(snapshot, 'cli/package.json'), 'utf8')).version);
   assert.ok(pack.files.some(file => file.path === 'lib/pdf-word-engine.mjs'));
   assert.ok(pack.files.some(file => file.path === 'resources/office/word-to-pdf.py'), 'Word driver ships in the isolated npm package');
+  for (const name of ['word_layout.py', 'word_font_metrics.py']) {
+    assert.ok(pack.files.some(file => file.path === `resources/office/${name}`), `Word driver dependency ${name} ships in the isolated npm package`);
+  }
   assert.ok(!pack.files.some(file => /(?:SKILL\.md|V32_CLI_MCP_AUDIT|\.env$)/i.test(file.path)));
   assert.ok(!pack.files.filter(file => !file.path.startsWith('node_modules/')).some(file => /(?:scripts\/test-|\.map$)/i.test(file.path)), 'Private source maps and test scripts must not ship; upstream bundled package maps are public assets.');
   await mkdir(consumer);

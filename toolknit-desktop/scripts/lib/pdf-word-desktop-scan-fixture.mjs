@@ -1,7 +1,7 @@
 /** Real desktop converter/editor, with an explicitly injected OCR test boundary. */
 export function desktopScanFixtureMarkup() {
   return `<!doctype html><html><head><meta charset="utf-8">
-  <link rel="stylesheet" href="/src/styles/index.css"><link rel="stylesheet" href="/src/styles/themes/index.css">
+  <link rel="stylesheet" href="/src/styles/index.css">
   </head><body><script type="module">
   import markup from '/src/features/pdf-to-word/template.js';
   import '/src/features/pdf-to-word/pdf-to-word.css';

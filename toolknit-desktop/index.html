@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ToolKnit Desktop</title>
     <link rel="icon" type="image/png" href="/logo.png" />
+    <!-- toolknit-appearance-bootstrap -->
     <script data-tk-theme-bootstrap>
       if (new URLSearchParams(window.location.search).get('screen-picker') !== '1') {
-        let theme = 'light';
-        try { if (localStorage.getItem('toolknit.theme.v3') === 'dark') theme = 'dark'; } catch {}
-        document.documentElement.dataset.theme = theme;
         document.documentElement.dataset.tkStartup = 'loading';
         // Keep a failed entry module from leaving an uncloseable loading screen.
         window.__toolknitStartupWatchdog = window.setTimeout(() => {
@@ -33,12 +31,11 @@
         display: grid;
         place-items: center;
         margin: 0;
-        background: #fff;
-        color: #111;
+        background: var(--tk-page-bg, #fff);
+        color: var(--tk-ink, #111);
         opacity: 1;
         transition: opacity 350ms ease;
       }
-      html[data-theme="dark"] #appStartupMask { background: #000; color: #eee; }
       html[data-tk-startup="revealing"] #appStartupMask { opacity: 0; }
       .tk-startup-spinner {
         box-sizing: border-box;
@@ -68,8 +65,6 @@
     <link rel="stylesheet" href="./src/tool-waveform-slider.css">
     <link rel="stylesheet" href="./src/bg-removal.css">
     <link rel="stylesheet" href="./src/tool-nav-unified.css">
-    <link rel="stylesheet" href="./src/styles/themes/index.css">
-    <link rel="stylesheet" href="./src/styles/themes/image-crop-light.css">
     <script>
       if (new URLSearchParams(window.location.search).get('screen-picker') === '1') {
         document.documentElement.dataset.screenPicker = '1';
@@ -77,7 +72,6 @@
     </script>
     <style>
       /* Resolve the saved theme before the first paint, including slow startup. */
-      html[data-theme="light"] { --tk-window-bg: #ffffff; }
       /* Tauri's native window may be transparent for rounded corners. Keep a
          real dark document surface during first paint so WebView2 never shows
          an empty transparent frame if startup work is still settling. */
@@ -411,7 +405,7 @@
         <button class="home-v2-brand" type="button" data-home-return aria-label="ToolKnit 首页">
           <img src="/logo.png" alt="" />
           <span class="home-v2-brand-name">ToolKnit</span>
-          <span class="home-v2-brand-version">3.3</span>
+          <span class="home-v2-brand-version">3.4</span>
         </button>
         <div class="home-v2-top-actions">
           <button class="home-v2-nav-link" type="button" data-home-link="website">
@@ -505,7 +499,7 @@
               <i data-lucide="settings"></i>
             </div>
           </div>
-          <div class="version-text" id="sidebarVersion">v3.3.0</div>
+          <div class="version-text" id="sidebarVersion">v3.4.0</div>
         </div>
       </div>
       <div class="divider"></div>
@@ -675,7 +669,7 @@
               </section>
 
               <footer class="footer-note">
-                <span>TOOLKNIT DESKTOP 3.3.0 / UI CONCEPT 01</span>
+                <span>TOOLKNIT DESKTOP 3.4.0 / UI CONCEPT 01</span>
                 <span>FILES STAY ON YOUR DEVICE</span>
               </footer>
             </div>
@@ -1872,7 +1866,7 @@
     <section id="releaseAnnouncement" class="release-announcement-overlay" role="dialog" aria-modal="true" aria-labelledby="releaseNoticeTitle" aria-describedby="releaseNoticeIntro" aria-hidden="true" inert data-i18n-aria-label="home.releaseNotice.title" aria-label="ToolKnit 版本更新与许可说明">
       <article class="release-announcement-panel">
         <header class="release-announcement-header">
-          <p class="release-announcement-eyebrow" data-i18n="home.releaseNotice.eyebrow">TOOLKNIT DESKTOP · V3.2 + V3.3</p>
+          <p class="release-announcement-eyebrow" data-i18n="home.releaseNotice.eyebrow">TOOLKNIT DESKTOP · V3.4</p>
           <h1 id="releaseNoticeTitle" data-i18n="home.releaseNotice.title">常用工具，网页与桌面都能快速打开</h1>
           <p id="releaseNoticeIntro" class="release-announcement-intro" data-i18n="home.releaseNotice.intro">我们持续改进本地文件工作流，也保留随时可用的网页版。</p>
         </header>
@@ -1890,7 +1884,7 @@
             </section>
           </div>
           <section class="release-announcement-updates" data-i18n-aria-label="home.releaseNotice.updatesAria" aria-label="版本更新">
-            <article><h2 data-i18n="home.releaseNotice.v32Title">V3.2 · PDF 工作流与稳定性</h2><p data-i18n="home.releaseNotice.v32Body">完善 PDF 编辑、多选拆分、图像转 PDF 与扫描件输出；改进记录悬浮窗、深浅主题和安装升级，补齐 CLI/MCP 自动化能力。</p></article>
+            <article><h2 data-i18n="home.releaseNotice.v34Title">V3.4 · 统一布局与自由配色</h2><p data-i18n="home.releaseNotice.v34Body">深浅主题共用一套布局，新增八套配色和自选主题色，支持预览、保存与恢复默认。壁纸可独立启用，截图与搜索窗口同步配色；设置左侧隐藏滚动条，圆形色点单行排列，设置项重新排序。</p></article>
             <article><h2 data-i18n="home.releaseNotice.v33Title">V3.3 · 转换、搜索与本地识别</h2><p data-i18n="home.releaseNotice.v33Body">新增 Word 转 PDF、文件快速搜索与桌面胶囊；截图支持本地提字和翻译，PDF 转 Word 改进扫描件、表格与文字编辑，并优化大文件预览和导出。</p></article>
           </section>
           <section class="release-announcement-license">

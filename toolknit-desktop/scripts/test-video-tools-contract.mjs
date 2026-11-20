@@ -39,12 +39,12 @@ assert.doesNotMatch(appStyles, /\.video-(?:convert|frame|gif)-v2|\.video-media-v
 assert.match(featureStyles, /\.video-frame-body/);
 assert.match(featureStyles, /\.video-convert-v2/);
 assert.match(featureStyles, /\.video-media-v2-body/);
-const lightStyles = await read('src/styles/themes/pdf-tools-light.css');
+const lightStyles = await read('src/styles/components/tool-pages.css');
 const videoTemplate = await read('src/features/video-tools/template.html');
 const videoTool = await read('src/features/video-tools/tool.js');
-const videoTheme = await read('src/styles/themes/video-tools-light.css');
-assert.match(lightStyles, /html\[data-theme="light"\] \.pdf-merge-v2 :is\(\[data-audio-convert-files\], #videoConvertFiles\) \.audio-convert-file-item:has\(> \.audio-convert-file-size\)\s*\{\s*grid-template-columns: 28px minmax\(0, 1fr\) max-content 30px;/);
-assert.match(lightStyles, /:is\(\[data-audio-convert-files\], #videoConvertFiles\) \.audio-convert-file-size\s*\{\s*color: #65686f;/);
+const videoTheme = await read('src/features/video-tools/video-tools.css');
+assert.match(lightStyles, /html:root\[data-theme\] \.pdf-merge-v2 :is\(\[data-audio-convert-files\], #videoConvertFiles\) \.audio-convert-file-item:has\(> \.audio-convert-file-size\)\s*\{\s*grid-template-columns: 28px minmax\(0, 1fr\) max-content 30px;/);
+assert.match(lightStyles, /:is\(\[data-audio-convert-files\], #videoConvertFiles\) \.audio-convert-file-size\s*\{\s*color: var\(--tk-muted\);/);
 assert.match(videoTemplate, /<select class="video-convert-format-select" id="videoConvertFormatOptions"/);
 assert.doesNotMatch(videoTemplate, /id="videoConvertFormatOptions">\s*<button/);
 assert.match(videoTool, /enhanceToolSelects/);
@@ -73,7 +73,7 @@ assert.doesNotMatch(videoTemplate, /video-gif-range-marker|video-gif-playhead|vi
 assert.match(featureStyles, /video-gif-timeline-input::-webkit-slider-thumb/);
 assert.match(featureStyles, /video-gif-timeline-input::-moz-range-thumb/);
 assert.match(featureStyles, /video-gif-v2-control-card \.audio-convert-format-option/);
-assert.match(videoTheme, /html\[data-theme="light"\] \.video-gif-v2 \.video-gif-v2-control-card/);
+assert.match(videoTheme, /html:root\[data-theme\] \.video-gif-v2 \.video-gif-v2-control-card/);
 for (const id of ['videoGifSelectStart', 'videoGifSelectEnd', 'videoGifPrev', 'videoGifNext', 'videoGifFrameRate', 'videoGifResolution', 'videoGifQuality', 'videoGifEstimate', 'videoGifExport']) {
   assert.match(videoTemplate, new RegExp(`id="${id}"`));
   assert.match(gif, new RegExp(id));

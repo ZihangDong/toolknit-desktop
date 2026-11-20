@@ -1,0 +1,86 @@
+diff --git a/sw/qa/extras/ooxmlimport/data/word-page-break-spacing.docx b/sw/qa/extras/ooxmlimport/data/word-page-break-spacing.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..a2140e072270d975e48fb0667cbcf603aab38b6e
+GIT binary patch
+literal 1710
+zcmWIWW@Zs#U|`??V#Sz$Pbx*P09ij785o3tbhLARUP)?RNqk6UL27ZVUPW%s+KGGf
+z4mk+4#2?)y_Rv*CL~xmBMq`tB#N6xOG`}yu{Zu`FzNw*zpy#Y9<;M5Vc<i>TOL_E4
+zs^-Zt9;KhG4R0M7clym-q!p{h=sJICd(Su7>ZYej8<}P=3YfC9M>1`5-C{ofxK(dM
+z_upK4V}{c_-><(?Wp+z7TUMtBhO`&w?B9B3d0W)U+3oDpE0?h``%Ak$ecsf0d;Ut1
+z>p`Ull&pDPHF<04ZaF!xY0}sChW=&C))h~a`!i#j_ogFnlH_at1~Bci_?^u@xufXM
+zf9rQAzjGGs{_#vW03{F-tM#2bfu8>a#N0p}UzD0ttgi<md(T_*F)0eLJy<Qkw_$Ts
+zgv5ePH?LJNG96ad>*ta9`YkA8&9Os8&*s<EyUi)QYCG+Y)0$q}OS5J_S@^w*B||OY
+zQm&ThXOEbLOMXk7biVp*mF=OrdHfF1&DtAHZzicOKl;vMw~h9{Wbx;V4h9=;Z`t{O
+z#gAPQo7DPaKUFJof7?5c?X)B3kBY#(45%(Xq8HWJ4s_{rAeI5*^8BI{eTcJD@{>z*
+zfiVb*I;a<HxtI(ESRbrzkx5A3x?zIK)U(?ju{xD~YMw1`r2OKoukxCNM9cRFze|)J
+zJzKP@H7QGFUZwVu)Req*h9beuOIModEdIDP{q*BEjI&D1r3Lyv*EH=jUlLdyth0Jr
+zZ6trtojBhA8&`in`Ecnj_hX0b)fy&PPIWlE#a1Evr{}UnPXn%f|BUicJ@CmWP<$US
+z%{^ylU=W0P0NLqpLl64hF%a1MU3*c?w~#sO1lB5T;?UYUecP&tx&yC$gv4(r-xS{T
+z;p<jmYY*MMilUr)8`IT3r~R3?)^fi^R_L9^&qBVNe-;Ggav3m1XZ}hv4*LG@^0TDx
+z?`l>>i!5eycJ(mWH*Z#v!Y0$?IGzPN?H#$*j#!n<3O0y6uU4|QRO7(!hUKES!>&qR
+zj+s>?uE2le-tnvF=FivDo19bltEWw7Rnn^WJF-r#(uwG)Jp7iou5{C1?WCO?qD{XU
+z7BbFI4nAwmH2s^`tOs^$!yZ?K9AtFY(^%*s+$dTyrD)EZ_C4>HeEyQlb~3cS^N#zO
+znR9b&Pki$Ht^d%$&g@C+6yHi^(;tu6eU6%D<thCs$oz9z@WDL2y-$31POq|`Rr91h
+zrlxw9_wu4Gzt7#(-I4Upk}ZQ%|L<SVolk9JEFWwSH!kP?Q~YuQNBvu`0~fV4pVW&z
+z_U%$Q%533d#FBPr(vL}t{_m5?@Bb8;-}KPLYTdjgcbgY{QTknbgp2w8ny43&X^TD?
+z=E^^4nts9T>G8LJjx%-!tbcYW(nu)#q*TN9)f}>q7AyVrxH;o>3*($CORJ?b@)kZ`
+z994Oice73S&Btf%{bfUqY!07J=0m_p)(1v7JhF>ZOG+~H(u+aqG<AYw9+M%D>-wf5
+z1}E*Qt}Hpb)@X%3VmX#F!=qEya$eiLeR2X)DrMXD&;R>2mS1<3+O92Ex29w*e1CUE
+zRP%S<;}Hwi?sPNCP0(C0?bOloX~m+)Zp>P!`uqFYwAb7!MeVWt7EKIUQ<7P?wE3%v
+zo?9(fr}$pBXl2ri^DZldGm?txo^{OkiVr+-W43|t0`HPN)!Q0bRPU)vm3Udcyl*~#
+zv2o_4FGb#-8h0u#Y*n1su9&zd_OaZvdv<C1bvIv57nl9V7~svwB*K8ZTm||b3>ttz
+zfVGrGHvqj%f@o)8XkcUo8i7<op=(4h8W0+{12y6+D9}wp&!Y&FDwv=qA?H|h?dY+N
+c(4NWy)sCD70=!w-KuTDF&<W_$Fjf!`0F%(Aod5s;
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+index 3de5e0aa6a7700dcd86ba813faeda24d7062990d..ed4342bcd60afbf6b649c14960c2268db0feb223 100644
+--- a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
++++ b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+@@ -284,6 +284,22 @@ CPPUNIT_TEST_FIXTURE(Test, testWordOpeningQuoteLineFit)
+ #endif
+ }
+ 
++CPPUNIT_TEST_FIXTURE(Test, testWordPageBreakBeforeSpacing)
++{
++    createSwDoc("word-page-break-spacing.docx");
++    CPPUNIT_ASSERT_EQUAL(4, getPages());
++    xmlDocUniquePtr pDump = parseLayoutDump();
++    // Explicit pageBreakBefore retains 400 twips. Natural pagination with the
++    // same before spacing still collapses it; zero spacing stays zero.
++    const sal_Int32 aUpper[] = { 0, 400, 0, 0 };
++    for (size_t i = 0; i < SAL_N_ELEMENTS(aUpper); ++i)
++    {
++        const OString aPath = "/root/page[" + OString::number(i + 1)
++            + "]/body/txt[1]/infos/prtBounds";
++        CPPUNIT_ASSERT_EQUAL(aUpper[i], getXPath(pDump, aPath, "top").toInt32());
++    }
++}
++
+ CPPUNIT_TEST_FIXTURE(Test, testImageHyperlink)
+ {
+     createSwDoc("image-hyperlink.docx");
+diff --git a/sw/source/core/layout/calcmove.cxx b/sw/source/core/layout/calcmove.cxx
+index e7d8d4949b7985225ebd5531d5f14fee6cfec2fa..6cfbfc519e4028dde203b215d9737a6b1f585b1b 100644
+--- a/sw/source/core/layout/calcmove.cxx
++++ b/sw/source/core/layout/calcmove.cxx
+@@ -1143,7 +1143,16 @@ bool SwFrame::IsCollapseUpper() const
+         return false;
+     }
+ 
+-    // Avoid the ignore after applying a new page style (but do it after page breaks).
++    // An explicit paragraph page break retains its before spacing. Only a
++    // paragraph moved by automatic pagination collapses at the page start.
++    // A follow still belongs to the same paragraph, so it must not repeat the
++    // before spacing when the paragraph itself spans multiple pages.
++    if (!pTextFrame->IsFollow() && pTextFrame->IsPageBreak(true))
++    {
++        return false;
++    }
++
++    // Avoid the ignore after applying a new page style.
+     const SwTextNode* pTextNode = pTextFrame->GetTextNodeForParaProps();
+     if (pTextNode)
+     {

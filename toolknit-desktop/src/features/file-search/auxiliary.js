@@ -2,6 +2,8 @@ import { createIcons, Search, ChevronDown, ChevronsLeft, X, ListFilter, ArrowDow
 import { t, getLang, setLangWithoutFade } from '../../i18n.js';
 import { createFileSearchRuntime } from '../../platform/file-search-runtime.js';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
+import { applyTheme } from '../../app/theme-palette.js';
+import '../../styles/tokens.css';
 import './floating.css';
 import '../../styles/components/input-focus.css';
 import { createResults, resultsMarkup } from './results.js';
@@ -84,6 +86,7 @@ function recoverMotion(owner, attempt = 0) {
 }
 function update(state) {
   if (disposed || !state || Number(state.generation) < generation) return;
+  applyTheme(document.documentElement, state.context?.appearance || { mode: state.context?.theme });
   if (state.context?.lang) setLangWithoutFade(state.context.lang);
   const reduced = state.context?.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (document.documentElement.dataset.reducedMotion !== String(reduced)) document.documentElement.dataset.reducedMotion = String(reduced);

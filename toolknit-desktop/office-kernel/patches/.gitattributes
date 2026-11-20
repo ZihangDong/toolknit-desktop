@@ -1,0 +1,2 @@
+# Preserve checksum-pinned patch bytes, including blank context lines.
+*.patch -text -whitespace

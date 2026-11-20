@@ -35,11 +35,12 @@ export function createWordPdfController({
   }
   function clearResult() {
     successTarget = null;
-    for (const id of ['SuccessName', 'SuccessMeta', 'SuccessPath', 'ResultStatus']) {
+    for (const id of ['SuccessName', 'SuccessMeta', 'SuccessPath', 'ResultStatus', 'SuccessFonts']) {
       q(id).textContent = '';
       q(id).removeAttribute('title');
     }
     q('ResultSelect').replaceChildren();
+    q('SuccessFonts').hidden = true;
   }
   function reset() {
     if (operation || transferring) return;
@@ -54,6 +55,20 @@ export function createWordPdfController({
     const el = doc.createElement('i');
     el.dataset.lucide = name;
     return el;
+  }
+  function fontNoticeText(notice) {
+    if (['font-check-unavailable', 'font-check-incomplete'].includes(notice.code)) return tr('fonts.checkUnavailable');
+    if (notice.code === 'font-replacement-failed') return tr('fonts.replacementFailed', { font: notice.font });
+    const reason = tr(notice.code === 'embedding-restricted' ? 'fonts.restricted' : 'fonts.missing');
+    return tr(notice.replacement ? 'fonts.replaced' : 'fonts.unresolved', { font: notice.font, replacement: notice.replacement, reason });
+  }
+  function renderFontNotices(target, row) {
+    target.replaceChildren(...(row?.fontNotices || []).map(notice => {
+      const text = doc.createElement('p');
+      text.textContent = fontNoticeText(notice);
+      return text;
+    }));
+    target.hidden = !target.children.length;
   }
   function render() {
     const focused = doc.activeElement;
@@ -79,6 +94,10 @@ export function createWordPdfController({
       detail.textContent = row.error ? errorText(row.error) : tr(`states.${row.status}`);
       if (row.status === 'success') detail.textContent += ` · ${formatFileSize(row.outputBytes)}`;
       info.append(title, detail);
+      const notices = doc.createElement('div');
+      notices.className = 'word-pdf-font-notices';
+      renderFontNotices(notices, row);
+      info.append(notices);
       item.append(icon('file-type-2'), info);
       if (row.outputPath) {
         const result = doc.createElement('button');
@@ -118,6 +137,7 @@ export function createWordPdfController({
     q('SuccessPath').textContent = displayFilesystemPath(successTarget.outputPath);
     q('SuccessPath').title = q('SuccessPath').textContent;
     q('ResultStatus').textContent = '';
+    renderFontNotices(q('SuccessFonts'), successTarget);
   }
   function showResult(row) {
     if (!row?.outputPath || operation || !visible()) return;

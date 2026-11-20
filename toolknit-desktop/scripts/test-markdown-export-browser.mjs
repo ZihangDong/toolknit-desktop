@@ -12,7 +12,7 @@ const server = await createServer({ configFile:false, logLevel:'error',
   plugins:[{name:'markdown-test-shell',configureServer(server) {
     server.middlewares.use('/md-test', (_req,res)=> {
       res.setHeader('Content-Type','text/html');
-      res.end('<!doctype html><html data-theme="light"><head><link rel="stylesheet" href="/src/styles/index.css"><link rel="stylesheet" href="/src/tool-page-v2-final.css"><link rel="stylesheet" href="/src/tool-nav-unified.css"><link rel="stylesheet" href="/src/styles/themes/index.css"></head><body><div class="feature-tool-overlay markdown-editor-overlay" id="markdownEditorOverlay" aria-hidden="true"></div></body></html>');
+      res.end('<!doctype html><html data-theme="light"><head><link rel="stylesheet" href="/src/styles/index.css"><link rel="stylesheet" href="/src/tool-page-v2-final.css"><link rel="stylesheet" href="/src/tool-nav-unified.css"></head><body><div class="feature-tool-overlay markdown-editor-overlay" id="markdownEditorOverlay" aria-hidden="true"></div></body></html>');
     });
   }}] });
 let browser;

@@ -33,7 +33,8 @@ try {
       document.body.insertAdjacentHTML('beforeend', markup);
       applyTranslations();
       const dialog = document.querySelector('#updateDialog');
-      const button = dialog.querySelector('button');
+      const button = dialog.querySelector('[data-update-download]');
+      const closeButton = dialog.querySelector('[data-update-close]');
       const origin = document.querySelector('#origin');
       const urls = [];
       let mode = 'false';
@@ -55,13 +56,24 @@ try {
       mode = 'throw'; button.click(); await settle();
       check(dialog.querySelector('[data-error="true"]') && !button.disabled && dialog.open, 'Thrown opener visibly fails and allows retry');
       mode = 'true'; button.click(); await settle();
-      check(dialog.querySelector('.update-dialog-status').textContent === t('updateDialog.opened') && dialog.open, 'Successful retry stays locked');
+      check(dialog.querySelector('.update-dialog-status').textContent === t('updateDialog.opened') && dialog.open, 'Successful retry keeps the prompt visible');
       setLangWithoutFade('en');
       check(dialog.querySelector('h2').textContent === t('updateDialog.title'), 'Open modal title follows language');
       check(dialog.querySelector('.update-dialog-status').textContent === t('updateDialog.opened'), 'Open modal status follows language');
+      check(closeButton.getAttribute('aria-label') === t('common.close'), 'Close label follows language');
+      closeButton.click();
+      check(!dialog.open && !document.body.classList.contains('update-dialog-open') && dialog.inert, 'Close releases the modal and page lock');
+      check(document.activeElement === origin, 'Close restores focus for continued use');
+      check(controller.open({ version: '4.0.0', currentVersion: '3.1.0' }), 'Manual check can reopen a dismissed update');
       check(!controller.open({ version: '3.9.0', currentVersion: '3.1.0' }), 'Older result cannot downgrade modal');
       mode = 'pending'; button.click(); button.click();
       check(urls.length === 4 && button.disabled, 'Repeated clicks share opening');
+      closeButton.click();
+      check(!dialog.open && document.activeElement === origin, 'Close remains usable while the download page is opening');
+      finish(true); await settle();
+      check(!dialog.open && document.activeElement === origin, 'Late download response cannot reopen or steal focus');
+      controller.open({ version: '4.0.0', currentVersion: '3.1.0' });
+      mode = 'pending'; button.click();
       controller.dispose(); controller.dispose();
       finish(true); await settle();
       check(!dialog.open && !document.body.classList.contains('update-dialog-open'), 'Dispose removes modal lock');
@@ -71,11 +83,11 @@ try {
       check(dialog.querySelector('.update-dialog-status').textContent === prior, 'Disposed callback cannot render');
       check(!controller.open({ version: '5.0.0', currentVersion: '3.1.0' }), 'Disposed controller cannot reopen');
       button.click(); await settle();
-      check(urls.length === 4, 'Dispose removes download listener');
+      check(urls.length === 5, 'Dispose removes download listener');
       return urls;
     })]).finally(() => clearTimeout(timer));
-    assert.deepEqual(result, Array(4).fill('https://toolknit.com/exe.html'));
-    console.log('Update controller passed: opener false/error/retry, repeated click, live language, stale version, late response, disposal and focus recovery.');
+    assert.deepEqual(result, Array(5).fill('https://toolknit.com/exe.html'));
+    console.log('Update controller passed: close/reopen, pending download dismissal, opener false/error/retry, repeated click, live language, stale version, late response, disposal and focus recovery.');
     await page.close();
   } finally { await dev.close(); }
 } finally {

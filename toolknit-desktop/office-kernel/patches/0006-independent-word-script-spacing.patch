@@ -1,0 +1,547 @@
+diff --git a/cui/source/tabpages/paragrph.cxx b/cui/source/tabpages/paragrph.cxx
+index 3ed39ff47ac6b9c93b431403ff25cb26b31c76c0..508ad139d673e7baaa3ad93b273c224045715e1b 100644
+--- a/cui/source/tabpages/paragrph.cxx
++++ b/cui/source/tabpages/paragrph.cxx
+@@ -3065,7 +3065,7 @@ bool SvxAsianTabPage::FillItemSet( SfxItemSet* rSet )
+     SfxItemPool* pPool = rSet->GetPool();
+     if (m_xScriptSpaceCB->get_sensitive() && m_xScriptSpaceCB->get_state_changed_from_saved())
+     {
+-        std::unique_ptr<SfxBoolItem> pNewItem(static_cast<SfxBoolItem*>(rSet->Get(
++        std::unique_ptr<SvxScriptSpaceItem> pNewItem(static_cast<SvxScriptSpaceItem*>(rSet->Get(
+             pPool->GetWhichIDFromSlotID(SID_ATTR_PARA_SCRIPTSPACE)).Clone()));
+         pNewItem->SetValue(m_xScriptSpaceCB->get_active());
+         rSet->Put(std::move(pNewItem));
+@@ -3097,7 +3097,13 @@ static void lcl_SetBox(const SfxItemSet& rSet, sal_uInt16 nSlotId, weld::CheckBu
+     if( eState == SfxItemState::UNKNOWN || eState == SfxItemState::DISABLED )
+         rBox.set_sensitive(false);
+     else if(eState >= SfxItemState::DEFAULT)
+-        rBox.set_active(static_cast<const SfxBoolItem&>(rSet.Get(_nWhich)).GetValue());
++    {
++        css::uno::Any aValue;
++        bool bEnabled = false;
++        rSet.Get(_nWhich).QueryValue(aValue);
++        aValue >>= bEnabled;
++        rBox.set_active(bEnabled);
++    }
+     else
+         rBox.set_state(TRISTATE_INDET);
+     rBox.save_state();
+diff --git a/editeng/source/items/paraitem.cxx b/editeng/source/items/paraitem.cxx
+index 7be60eb875288f2852f7ce6b196aebd60ce14163..07050fc559e19ee5d8415d66b8e02cff9281964d 100644
+--- a/editeng/source/items/paraitem.cxx
++++ b/editeng/source/items/paraitem.cxx
+@@ -1374,7 +1374,7 @@ bool SvxPageModelItem::GetPresentation
+ 
+ 
+ SvxScriptSpaceItem::SvxScriptSpaceItem( bool bOn, const sal_uInt16 nId )
+-    : SfxBoolItem( nId, bOn )
++    : SfxUInt16Item( nId, bOn ? 3 : 0 )
+ {
+ }
+ 
+@@ -1383,6 +1383,37 @@ SvxScriptSpaceItem* SvxScriptSpaceItem::Clone( SfxItemPool * ) const
+     return new SvxScriptSpaceItem( *this );
+ }
+ 
++bool SvxScriptSpaceItem::QueryValue(uno::Any& rValue, sal_uInt8 nMemberId) const
++{
++    switch (nMemberId & ~CONVERT_TWIPS)
++    {
++        case 0: rValue <<= GetValue(); break;
++        case 1: rValue <<= IsLetterSpace(); break;
++        case 2: rValue <<= IsDigitSpace(); break;
++        default: return false;
++    }
++    return true;
++}
++
++bool SvxScriptSpaceItem::PutValue(const uno::Any& rValue, sal_uInt8 nMemberId)
++{
++    bool bEnabled = false;
++    if (!(rValue >>= bEnabled))
++        return false;
++    const sal_uInt8 nMember = nMemberId & ~CONVERT_TWIPS;
++    if (!nMember)
++        SetValue(bEnabled);
++    else if (nMember == 1 || nMember == 2)
++    {
++        const sal_uInt16 nMask = nMember;
++        const sal_uInt16 nCurrent = SfxUInt16Item::GetValue();
++        SfxUInt16Item::SetValue(bEnabled ? nCurrent | nMask : nCurrent & ~nMask);
++    }
++    else
++        return false;
++    return true;
++}
++
+ bool SvxScriptSpaceItem::GetPresentation(
+         SfxItemPresentation /*ePres*/,
+         MapUnit /*eCoreMetric*/, MapUnit /*ePresMetric*/,
+diff --git a/include/editeng/scriptspaceitem.hxx b/include/editeng/scriptspaceitem.hxx
+index 6f6e9a8d3827d80004c8058a4f833b38b4b823f5..4b4ff3a0dd3d6742836fa510bad08f0287dffe2f 100644
+--- a/include/editeng/scriptspaceitem.hxx
++++ b/include/editeng/scriptspaceitem.hxx
+@@ -19,7 +19,7 @@
+ #ifndef INCLUDED_EDITENG_SCRIPTSPACEITEM_HXX
+ #define INCLUDED_EDITENG_SCRIPTSPACEITEM_HXX
+ 
+-#include <svl/eitem.hxx>
++#include <svl/intitem.hxx>
+ #include <editeng/editengdllapi.h>
+ 
+ // class SvxScriptSpaceItem ----------------------------------------------
+@@ -30,13 +30,20 @@
+     used for the user interface.
+ */
+ 
+-class EDITENG_DLLPUBLIC SvxScriptSpaceItem final : public SfxBoolItem
++class EDITENG_DLLPUBLIC SvxScriptSpaceItem final : public SfxUInt16Item
+ {
+ public:
+     DECLARE_ITEM_TYPE_FUNCTION(SvxScriptSpaceItem)
+     SvxScriptSpaceItem( bool bOn /*= false*/,
+                         const sal_uInt16 nId  );
+ 
++    bool GetValue() const { return SfxUInt16Item::GetValue() != 0; }
++    void SetValue(bool bOn) { SfxUInt16Item::SetValue(bOn ? 3 : 0); }
++    bool IsLetterSpace() const { return (SfxUInt16Item::GetValue() & 1) != 0; }
++    bool IsDigitSpace() const { return (SfxUInt16Item::GetValue() & 2) != 0; }
++    virtual bool QueryValue(css::uno::Any& rValue, sal_uInt8 nMemberId = 0) const override;
++    virtual bool PutValue(const css::uno::Any& rValue, sal_uInt8 nMemberId) override;
++
+     virtual SvxScriptSpaceItem* Clone( SfxItemPool *pPool = nullptr ) const override;
+ 
+     virtual bool GetPresentation( SfxItemPresentation ePres,
+diff --git a/offapi/com/sun/star/style/ParagraphPropertiesAsian.idl b/offapi/com/sun/star/style/ParagraphPropertiesAsian.idl
+index 53b003a002bbe16ff47db545367aa21c7ce81364..7de3f44185eb6d7788f6d05788fe22a41b7df1e4 100644
+--- a/offapi/com/sun/star/style/ParagraphPropertiesAsian.idl
++++ b/offapi/com/sun/star/style/ParagraphPropertiesAsian.idl
+@@ -33,11 +33,22 @@ published service ParagraphPropertiesAsian
+         /** determines if a distance between Asian text, western text or complex text is set.
+          */
+         [property] boolean ParaIsCharacterDistance;
++
+         /** determines if the rules for forbidden characters at the start or end
+             of text lines are considered.
+          */
+         [property] boolean ParaIsForbiddenRules;
+ 
++        /** Controls automatic space between East Asian and Latin letters.
++            @since LibreOffice 26.2
++         */
++        [optional, property] boolean ParaAutoSpaceDE;
++
++        /** Controls automatic space between East Asian text and digits.
++            @since LibreOffice 26.2
++         */
++        [optional, property] boolean ParaAutoSpaceDN;
++
+ };
+ 
+ 
+diff --git a/sw/qa/extras/ooxmlimport/data/word-auto-spacing-inheritance.docx b/sw/qa/extras/ooxmlimport/data/word-auto-spacing-inheritance.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..e010f29de301e826809b346acfb9f070db9efdf0
+GIT binary patch
+literal 1946
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/data/word-auto-spacing.docx b/sw/qa/extras/ooxmlimport/data/word-auto-spacing.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..80e6e888b17a2365c6a68e5f2ccddcafacb92d8e
+GIT binary patch
+literal 1762
+zcmWIWW@Zs#U|`??V#Sz$Pbx*P09ij785o3tbhLARUP)?RNqk6UL27ZVUPW%s+KGGf
+z4mk+4#2?)y_Rv*CL~xmBMq`tB#N6xOG`}yu{Zu`FzNw*zpy#Y9<;M5Vc<i>TOL_E4
+zs^-Zt9;KhG4R0M7clym-q!p{h=sJICd(Su7>ZYej8<}P=3YfC9M>1`5-C{ofxK(dM
+z_upK4V}{c_-><(?Wp+z7TUMtBhO`&w?B9B3d0W)U+3oDpE0?h``%Ak$ecsf0d;Ut1
+z>p`Ull&pDPHF<04ZaF!xY0}sChW=&C))h~a`!i#j_ogFnlH_at1~Bci_?^u@xufXM
+zf9rQAzjGGs{_#vW03{F-tM#2bfu8>a#N0p}UzD0ttgi<md(T_*F)0eLJy<Qkw_$Ts
+zgv5ePH?LJNG96ad>*ta9`YkA8&9Os8&*s<EyUi)QYCG+Y)0$q}OS5J_S@^w*B||OY
+zQm&ThXOEbLOMXk7biVp*mF=OrdHfF1&DtAHZzicOKl;vMw~h9{Wbx;V4h9=;Z`t{O
+z#gAPQo7DPaKUFJof7?5c?X)B3kBY#(45%(Xq8HWJ4s_{rAeI5*^8BI{eTcJD@{>z*
+zfiVb*I;a<HxtI(ESRbrzkx5A3x?zIK)U(?ju{xD~YMw1`r2OKoukxCNM9cRFze|)J
+zJzKP@H7QGFUZwVu)Req*h9beuOIModEdIDP{q*BEjI&D1r3Lyv*EH=jUlLdyth0Jr
+zZ6trtojBhA8&`in`Ecnj_hX0b)fy&PPIWlE#a1Evr{}UnPXn%f|BUicJ&@kq`1b=a
+z%^eqHU;rYB2auiqHo`mawt>Li?;=fRajH{f!b@9EI8LYwGi}--zChC}Nuh{kQrDz8
+zi`8E)t?KQw+j4PH?3c+ATzdqT&Q#}<Pk+|fbWZ<W>dU)@xhyME#OARX_iMAQ45&0(
+zom;kPPVAbvx#opjYo^6S@~dkIn|H=XL?3OD2rKYBs~HlbIIVHol|?IyFE#jS^Y%zL
+ze@yXw<|rWO+4?D5qKNyYbM^XN52LnkkA7zQQC3%Y|C5<tZ7*3da;B-8T;G~>?cqU&
+zSzSgweeZOSAFX`UUVLQMjI?R5-|bb?Yjt{{b3@X+w3DySe`a*cH8C@Z?)}yOKMPf7
+z{8e@-+w(iI;vd7QS<@O5omBp%EAISwZO_L%hoGxL8hTTInjTuYak|@uBlkIWuAF-N
+z>EdY17`}Cr%68xLuh8*ZcdhUGfurjRtS6+dJ^jtW|F@>l|4Ena;{Qb6+F$!qi?7hu
+zd*T1thYlG|`;{-UY?;c2z_h;_8y*XOvu<45?|vguL`?2cl_3|m`qB-avWbh&{0dC?
+zudzYXL-ncTT5s#1jXq1>9{>C_&0@3dMy>l>qO&%r9@_4BMU{2_;-@oTPtf}BV!BH=
+zr1Sr>_wRKhxQo)aZ9V4M?V6rBQ9NT`-y%Di<uBJwk!)C<EpEg5EwFnF@Be^A-*&s=
+zo5ePrzw@2G{Z9$I&xo2lK2`J1I08%-n!qFiPaegoB_)}8>BXRwojSoWkJ*sJb-mC}
+zhQg?ou@N(KHmwPAJ;k}A{ba<ZgNJ<X+}o!TXxja*;e0dyZ#k(|YP+_bEkAk1N&e27
+zsOImw=OPy5?o^s-woxR&`{^s|(-E!8+tM;l{wv*H{hd{4=iz<r7R?SJQ@mR<c-_@R
+z&&`(0o4{`VN&WRiZ_&qd_X{6+-nvL{LFY^6)}AVki?<xEzxY&=y_kcG?_H#Cyr%kJ
+z%a0xBmbhNpukF=!s8{{2)T7E-K}U|uzB_;I^zFOd@#Vk1TDHdrcr!AIFyJnWf&K@B
+z24EmyEt$~`KrhE2+8G!c7+HZvAeCz98qtdrgvRYajra-|bd%8YHNvC{CM>xeT|0Wb
+dBeYLvfoexi1p(fyY#=49K<ET?X%{Pq2LKC>!t4M5
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+index b620243394acc2f5c91bab91589f0f23ff0ef0fe..6863824a5d78b5084538b6bfc81059006665cb30 100644
+--- a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
++++ b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+@@ -169,6 +169,51 @@ CPPUNIT_TEST_FIXTURE(Test, testWordChinesePunctuationCompression)
+ #endif
+ }
+ 
++CPPUNIT_TEST_FIXTURE(Test, testWordAutoSpacingImport)
++{
++    createSwDoc("word-auto-spacing-inheritance.docx");
++    const bool aExpected[][2] = {
++        { false, false }, { true, false }, { false, true }, { true, true },
++        { false, true }, { false, false }, { true, true }, { true, false },
++    };
++    for (size_t i = 0; i < SAL_N_ELEMENTS(aExpected); ++i)
++    {
++        auto xParagraph = getParagraph(static_cast<sal_Int32>(i + 1));
++        CPPUNIT_ASSERT_EQUAL(aExpected[i][0], getProperty<bool>(xParagraph, u"ParaAutoSpaceDE"_ustr));
++        CPPUNIT_ASSERT_EQUAL(aExpected[i][1], getProperty<bool>(xParagraph, u"ParaAutoSpaceDN"_ustr));
++    }
++    // The existing combined API must still control both options.
++    uno::Reference<beans::XPropertySet> xParagraph(getParagraph(1), uno::UNO_QUERY_THROW);
++    xParagraph->setPropertyValue(u"ParaIsCharacterDistance"_ustr, uno::Any(true));
++    CPPUNIT_ASSERT(getProperty<bool>(xParagraph, u"ParaAutoSpaceDE"_ustr));
++    CPPUNIT_ASSERT(getProperty<bool>(xParagraph, u"ParaAutoSpaceDN"_ustr));
++    xParagraph->setPropertyValue(u"ParaIsCharacterDistance"_ustr, uno::Any(false));
++    CPPUNIT_ASSERT(!getProperty<bool>(xParagraph, u"ParaAutoSpaceDE"_ustr));
++    CPPUNIT_ASSERT(!getProperty<bool>(xParagraph, u"ParaAutoSpaceDN"_ustr));
++
++    saveAndReload(TestFilter::DOCX);
++    for (size_t i = 0; i < SAL_N_ELEMENTS(aExpected); ++i)
++    {
++        auto xReloaded = getParagraph(static_cast<sal_Int32>(i + 1));
++        CPPUNIT_ASSERT_EQUAL(aExpected[i][0], getProperty<bool>(xReloaded, u"ParaAutoSpaceDE"_ustr));
++        CPPUNIT_ASSERT_EQUAL(aExpected[i][1], getProperty<bool>(xReloaded, u"ParaAutoSpaceDN"_ustr));
++    }
++
++#if defined(_WIN32)
++    CPPUNIT_ASSERT(Application::GetDefaultDevice()->IsFontAvailable(u"SimSun"_ustr));
++    createSwDoc("word-auto-spacing.docx");
++    xmlDocUniquePtr pDump = parseLayoutDump();
++    const sal_Int32 aLengths[] = { 30, 22, 26, 20, 22 };
++    for (size_t i = 0; i < SAL_N_ELEMENTS(aLengths); ++i)
++    {
++        const OString aPath = "/root/page[1]/body/txt[" + OString::number((i + 1) * 2)
++            + "]/SwParaPortion/SwLineLayout[1]";
++        CPPUNIT_ASSERT_EQUAL_MESSAGE(getParagraph(static_cast<sal_Int32>((i + 1) * 2))->getString().toUtf8().getStr(),
++            aLengths[i], getXPath(pDump, aPath, "length").toInt32());
++    }
++#endif
++}
++
+ CPPUNIT_TEST_FIXTURE(Test, testImageHyperlink)
+ {
+     createSwDoc("image-hyperlink.docx");
+diff --git a/sw/source/core/text/itrform2.cxx b/sw/source/core/text/itrform2.cxx
+index 109e86af965f51c31a798f3dd69b05e8a564892e..b45f759eaeba01eb72c7516d1056e9b7add1deed 100644
+--- a/sw/source/core/text/itrform2.cxx
++++ b/sw/source/core/text/itrform2.cxx
+@@ -22,6 +22,7 @@
+ #include <memory>
+ #include <com/sun/star/i18n/ScriptType.hpp>
+ #include <editeng/lspcitem.hxx>
++#include <editeng/scriptspaceitem.hxx>
+ #include <txtflcnt.hxx>
+ #include <txtftn.hxx>
+ #include <flyfrms.hxx>
+@@ -492,6 +493,14 @@ void SwTextFormatter::BuildPortions( SwTextFormatInfo &rInf )
+                 && nPrevScriptType != css::i18n::ScriptType::ASIAN)
+                 return false;
+ 
++            const auto& rSpace = rInf.GetTextFrame()->GetTextNodeForParaProps()->GetSwAttrSet().GetScriptSpace();
++            const sal_Int32 nNonAsian = nCurrScriptType == css::i18n::ScriptType::ASIAN
++                ? sal_Int32(nIdx) - 1 : sal_Int32(nIdx);
++            const CharClass& rSpacingClass = GetAppCharClass();
++            if (rSpacingClass.isDigit(rInf.GetText(), nNonAsian)
++                    ? !rSpace.IsDigitSpace() : !rSpace.IsLetterSpace())
++                return false;
++
+             // tdf#136663: However, this extra space is only a feature of Chinese and Japanese
+             // typesetting. Extra space shouldn't be inserted between Hangul and non-CJK characters.
+             const CharClass& rCC = GetAppCharClass();
+@@ -566,7 +575,7 @@ void SwTextFormatter::BuildPortions( SwTextFormatInfo &rInf )
+                     bAllowBefore = rCC.isLetterNumeric(rInf.GetText(), sal_Int32(rInf.GetIdx()) - 1);
+                 }
+ 
+-                nLstHeight /= 5;
++                nLstHeight /= rDoc.getIDocumentSettingAccess().get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS) ? 4 : 5;
+                 // does the kerning portion still fit into the line?
+                 if (bAllowBefore && fnRequireKerningAtPosition(rInf.GetIdx()) && nLstHeight
+                     && rInf.X() + nLstHeight <= rInf.Width() && !pPor->InTabGrp())
+@@ -709,7 +718,8 @@ void SwTextFormatter::BuildPortions( SwTextFormatInfo &rInf )
+                     && nTmp != TextFrameIndex(rInf.GetText().getLength())
+                     && fnRequireKerningAtPosition(nTmp))
+                 {
+-                    const SwTwips nDist = rInf.GetFont()->GetHeight()/5;
++                    const SwTwips nDist = rInf.GetFont()->GetHeight()
++                        / (rDoc.getIDocumentSettingAccess().get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS) ? 4 : 5);
+ 
+                     if( nDist )
+                     {
+diff --git a/sw/source/core/unocore/unomapproperties.hxx b/sw/source/core/unocore/unomapproperties.hxx
+index e2dfba35bf15aa4accb5fa781411adc8c9c42f3b..9aa7dda3948c6b39c0e5034c16aac1a5e4443771 100644
+--- a/sw/source/core/unocore/unomapproperties.hxx
++++ b/sw/source/core/unocore/unomapproperties.hxx
+@@ -238,6 +238,8 @@
+         { UNO_NAME_CHAR_EMPHASIS,                       RES_CHRATR_EMPHASIS_MARK,      cppu::UnoType<sal_Int16>::get(),         PropertyAttribute::MAYBEVOID, MID_EMPHASIS                           }, \
+         { UNO_NAME_PARA_IS_HANGING_PUNCTUATION,         RES_PARATR_HANGINGPUNCTUATION, cppu::UnoType<bool>::get(),       PropertyAttribute::MAYBEVOID, 0                                      }, \
+         { UNO_NAME_PARA_IS_CHARACTER_DISTANCE,          RES_PARATR_SCRIPTSPACE,        cppu::UnoType<bool>::get(),       PropertyAttribute::MAYBEVOID, 0                                      }, \
++        { u"ParaAutoSpaceDE"_ustr,                     RES_PARATR_SCRIPTSPACE,        cppu::UnoType<bool>::get(),       PropertyAttribute::MAYBEVOID, 1                                      }, \
++        { u"ParaAutoSpaceDN"_ustr,                     RES_PARATR_SCRIPTSPACE,        cppu::UnoType<bool>::get(),       PropertyAttribute::MAYBEVOID, 2                                      }, \
+         { UNO_NAME_PARA_IS_FORBIDDEN_RULES,             RES_PARATR_FORBIDDEN_RULES,    cppu::UnoType<bool>::get(),       PropertyAttribute::MAYBEVOID, 0                                      }, \
+         { UNO_NAME_PARA_VERT_ALIGNMENT,                 RES_PARATR_VERTALIGN,          cppu::UnoType<sal_Int16>::get(),         PropertyAttribute::MAYBEVOID, 0                                      }, \
+         { UNO_NAME_CHAR_ROTATION,                       RES_CHRATR_ROTATE,             cppu::UnoType<sal_Int16>::get(),         PropertyAttribute::MAYBEVOID, MID_ROTATE                             }, \
+@@ -529,6 +531,8 @@
+                     { UNO_NAME_CHAR_EMPHASIS, RES_CHRATR_EMPHASIS_MARK,           cppu::UnoType<sal_Int16>::get(),   PROPERTY_NONE, MID_EMPHASIS},\
+                     { UNO_NAME_PARA_IS_HANGING_PUNCTUATION, RES_PARATR_HANGINGPUNCTUATION,  cppu::UnoType<bool>::get(),   PROPERTY_NONE ,0     },\
+                     { UNO_NAME_PARA_IS_CHARACTER_DISTANCE, RES_PARATR_SCRIPTSPACE,         cppu::UnoType<bool>::get(),    PROPERTY_NONE ,0     },\
++                    { u"ParaAutoSpaceDE"_ustr, RES_PARATR_SCRIPTSPACE, cppu::UnoType<bool>::get(), PROPERTY_NONE, 1 },\
++                    { u"ParaAutoSpaceDN"_ustr, RES_PARATR_SCRIPTSPACE, cppu::UnoType<bool>::get(), PROPERTY_NONE, 2 },\
+                     { UNO_NAME_PARA_IS_FORBIDDEN_RULES, RES_PARATR_FORBIDDEN_RULES,     cppu::UnoType<bool>::get(),    PROPERTY_NONE ,0    },\
+                     { UNO_NAME_PARA_VERT_ALIGNMENT, RES_PARATR_VERTALIGN,             cppu::UnoType<sal_Int16>::get(),    PROPERTY_NONE , 0  },\
+                     { UNO_NAME_CHAR_ROTATION, RES_CHRATR_ROTATE,      cppu::UnoType<sal_Int16>::get(),   PROPERTY_NONE,    MID_ROTATE      },\
+diff --git a/sw/source/filter/ww8/attributeoutputbase.hxx b/sw/source/filter/ww8/attributeoutputbase.hxx
+index 0f30865b04259f44172d1a5692584eae2c5d21b4..da041d26553f8afb3091af027f106d1b4cc84d6d 100644
+--- a/sw/source/filter/ww8/attributeoutputbase.hxx
++++ b/sw/source/filter/ww8/attributeoutputbase.hxx
+@@ -60,6 +60,7 @@ class SvxCharReliefItem;
+ class SvxCharHiddenItem;
+ class SvxBoxItem;
+ class SvxScriptHintItem;
++class SvxScriptSpaceItem;
+ class SwFormatINetFormat;
+ class SwFormatCharFormat;
+ class SwFormatField;
+@@ -526,7 +527,7 @@ protected:
+     virtual void ParaNumRule_Impl( const SwTextNode *pTextNd, sal_Int32 nLvl, sal_Int32 nNumId ) = 0;
+ 
+     /// Sfx item RES_PARATR_SCRIPTSPACE
+-    virtual void ParaScriptSpace( const SfxBoolItem& ) = 0;
++    virtual void ParaScriptSpace( const SvxScriptSpaceItem& ) = 0;
+ 
+     /// Sfx item RES_PARATR_HANGINGPUNCTUATION
+     virtual void ParaHangingPunctuation( const SfxBoolItem& ) = 0;
+diff --git a/sw/source/filter/ww8/docxattributeoutput.cxx b/sw/source/filter/ww8/docxattributeoutput.cxx
+index e79f62134c442bbddd97f9539d0f1a29c61d4d11..395c03960c272b6518468734e70a10966596cd2b 100644
+--- a/sw/source/filter/ww8/docxattributeoutput.cxx
++++ b/sw/source/filter/ww8/docxattributeoutput.cxx
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include <memory>
++#include <editeng/scriptspaceitem.hxx>
+ #include "docxattributeoutput.hxx"
+ #include "docxhelper.hxx"
+ #include "docxsdrexport.hxx"
+@@ -5273,7 +5274,8 @@ void DocxAttributeOutput::OutputDefaultItem(const SfxPoolItem& rHt)
+             bMustWrite = !rHt.StaticWhichCast(RES_PARATR_NUMRULE).GetValue().isEmpty();
+             break;
+         case RES_PARATR_SCRIPTSPACE:
+-            bMustWrite = !rHt.StaticWhichCast(RES_PARATR_SCRIPTSPACE).GetValue();
++            bMustWrite = !rHt.StaticWhichCast(RES_PARATR_SCRIPTSPACE).IsLetterSpace()
++                || !rHt.StaticWhichCast(RES_PARATR_SCRIPTSPACE).IsDigitSpace();
+             break;
+         case RES_PARATR_HANGINGPUNCTUATION:
+             bMustWrite = !rHt.StaticWhichCast(RES_PARATR_HANGINGPUNCTUATION).GetValue();
+@@ -9406,10 +9408,12 @@ void DocxAttributeOutput::ParaNumRule_Impl( const SwTextNode* pTextNd, sal_Int32
+     m_pSerializer->endElementNS(XML_w, XML_numPr);
+ }
+ 
+-void DocxAttributeOutput::ParaScriptSpace( const SfxBoolItem& rScriptSpace )
++void DocxAttributeOutput::ParaScriptSpace( const SvxScriptSpaceItem& rScriptSpace )
+ {
+     m_pSerializer->singleElementNS( XML_w, XML_autoSpaceDE,
+-           FSNS( XML_w, XML_val ), OString::boolean( rScriptSpace.GetValue() ) );
++           FSNS( XML_w, XML_val ), OString::boolean( rScriptSpace.IsLetterSpace() ) );
++    m_pSerializer->singleElementNS( XML_w, XML_autoSpaceDN,
++           FSNS( XML_w, XML_val ), OString::boolean( rScriptSpace.IsDigitSpace() ) );
+ }
+ 
+ void DocxAttributeOutput::ParaHangingPunctuation( const SfxBoolItem& rItem )
+diff --git a/sw/source/filter/ww8/docxattributeoutput.hxx b/sw/source/filter/ww8/docxattributeoutput.hxx
+index cfe93a2d7467936be03bb415fbaa254325777473..5cea9bd9144a1fac1fdd7c7c2936457e9bf7331d 100644
+--- a/sw/source/filter/ww8/docxattributeoutput.hxx
++++ b/sw/source/filter/ww8/docxattributeoutput.hxx
+@@ -673,7 +673,7 @@ protected:
+     virtual void ParaNumRule_Impl( const SwTextNode *pTextNd, sal_Int32 nLvl, sal_Int32 nNumId ) override;
+ 
+     /// Sfx item RES_PARATR_SCRIPTSPACE
+-    virtual void ParaScriptSpace( const SfxBoolItem& ) override;
++    virtual void ParaScriptSpace( const SvxScriptSpaceItem& ) override;
+ 
+     /// Sfx item RES_PARATR_HANGINGPUNCTUATION
+     virtual void ParaHangingPunctuation( const SfxBoolItem& ) override;
+diff --git a/sw/source/filter/ww8/rtfattributeoutput.cxx b/sw/source/filter/ww8/rtfattributeoutput.cxx
+index da226da6fa040118e819cfa86adbdcf261d32ec2..726f5003ebc36a7cf709ff0d0606b166f9a3ac7f 100644
+--- a/sw/source/filter/ww8/rtfattributeoutput.cxx
++++ b/sw/source/filter/ww8/rtfattributeoutput.cxx
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include "rtfattributeoutput.hxx"
++#include <editeng/scriptspaceitem.hxx>
+ #include <memory>
+ #include <cstring>
+ #include "rtfsdrexport.hxx"
+@@ -3716,9 +3717,9 @@ void RtfAttributeOutput::ParaNumRule_Impl(const SwTextNode* pTextNd, sal_Int32 n
+     FormatTextLeftMargin(leftMargin);
+ }
+ 
+-void RtfAttributeOutput::ParaScriptSpace(const SfxBoolItem& rScriptSpace)
++void RtfAttributeOutput::ParaScriptSpace(const SvxScriptSpaceItem& rScriptSpace)
+ {
+-    if (!rScriptSpace.GetValue())
++    if (!rScriptSpace.IsLetterSpace())
+         return;
+ 
+     m_aParaFormatting.append(OOO_STRING_SVTOOLS_RTF_ASPALPHA);
+diff --git a/sw/source/filter/ww8/rtfattributeoutput.hxx b/sw/source/filter/ww8/rtfattributeoutput.hxx
+index 1288dbbe65692e871c2502ca2196c375a7d882f1..81ff7cf7b1b67582927beb82b3e9e6150e846a64 100644
+--- a/sw/source/filter/ww8/rtfattributeoutput.hxx
++++ b/sw/source/filter/ww8/rtfattributeoutput.hxx
+@@ -398,7 +398,7 @@ protected:
+     void ParaNumRule_Impl(const SwTextNode* pTextNd, sal_Int32 nLvl, sal_Int32 nNumId) override;
+ 
+     /// Sfx item RES_PARATR_SCRIPTSPACE
+-    void ParaScriptSpace(const SfxBoolItem& rScriptSpace) override;
++    void ParaScriptSpace(const SvxScriptSpaceItem& rScriptSpace) override;
+ 
+     /// Sfx item RES_PARATR_HANGINGPUNCTUATION
+     void ParaHangingPunctuation(const SfxBoolItem& rItem) override;
+diff --git a/sw/source/filter/ww8/ww8atr.cxx b/sw/source/filter/ww8/ww8atr.cxx
+index 7a67175f73104d4b619c57ad1188a65f8ca57ec2..1c6396bf2029795b44fed572f5f1e8409d82f651 100644
+--- a/sw/source/filter/ww8/ww8atr.cxx
++++ b/sw/source/filter/ww8/ww8atr.cxx
+@@ -24,6 +24,7 @@
+ 
+ 
+ #include <algorithm>
++#include <editeng/scriptspaceitem.hxx>
+ #include <hintids.hxx>
+ 
+ #include <o3tl/safeint.hxx>
+@@ -3594,10 +3595,12 @@ void WW8AttributeOutput::ParaHyphenZone( const SvxHyphenZoneItem& rHyphenZone )
+     m_rWW8Export.m_pO->push_back( rHyphenZone.IsHyphen() ? 0 : 1 );
+ }
+ 
+-void WW8AttributeOutput::ParaScriptSpace( const SfxBoolItem& rScriptSpace )
++void WW8AttributeOutput::ParaScriptSpace( const SvxScriptSpaceItem& rScriptSpace )
+ {
+     m_rWW8Export.InsUInt16( NS_sprm::PFAutoSpaceDE::val );
+-    m_rWW8Export.m_pO->push_back( rScriptSpace.GetValue() ? 1 : 0 );
++    m_rWW8Export.m_pO->push_back( rScriptSpace.IsLetterSpace() ? 1 : 0 );
++    m_rWW8Export.InsUInt16( NS_sprm::PFAutoSpaceDN::val );
++    m_rWW8Export.m_pO->push_back( rScriptSpace.IsDigitSpace() ? 1 : 0 );
+ }
+ 
+ void WW8AttributeOutput::ParaHangingPunctuation( const SfxBoolItem& rItem )
+diff --git a/sw/source/filter/ww8/ww8attributeoutput.hxx b/sw/source/filter/ww8/ww8attributeoutput.hxx
+index 113c086f78283ea2c4c6c70d02ba6dcd1ece4d2e..e19e6369ee0f3ad39fd7405a7adf800cb0962de4 100644
+--- a/sw/source/filter/ww8/ww8attributeoutput.hxx
++++ b/sw/source/filter/ww8/ww8attributeoutput.hxx
+@@ -348,7 +348,7 @@ protected:
+     virtual void ParaNumRule_Impl( const SwTextNode *pTextNd, sal_Int32 nLvl, sal_Int32 nNumId ) override;
+ 
+     /// Sfx item RES_PARATR_SCRIPTSPACE
+-    virtual void ParaScriptSpace( const SfxBoolItem& ) override;
++    virtual void ParaScriptSpace( const SvxScriptSpaceItem& ) override;
+ 
+     /// Sfx item RES_PARATR_HANGINGPUNCTUATION
+     virtual void ParaHangingPunctuation( const SfxBoolItem& ) override;
+diff --git a/sw/source/filter/ww8/ww8par6.cxx b/sw/source/filter/ww8/ww8par6.cxx
+index 09b6de4636543bc9954be46be8fac507a26ea743..e7cd8822361cfcae6e88dc2949c072f3ede6fb83 100644
+--- a/sw/source/filter/ww8/ww8par6.cxx
++++ b/sw/source/filter/ww8/ww8par6.cxx
+@@ -4909,8 +4909,8 @@ void SwWW8ImplReader::Read_BoolItem( sal_uInt16 nId, const sal_uInt8* pData, sho
+         m_xCtrlStck->SetAttr( *m_pPaM->GetPoint(), nId );
+     else
+     {
+-        std::unique_ptr<SfxBoolItem> pI(static_cast<SfxBoolItem*>(GetDfltAttr( nId )->Clone()));
+-        pI->SetValue( 0 != *pData );
++        std::unique_ptr<SfxPoolItem> pI(GetDfltAttr(nId)->Clone());
++        pI->PutValue(uno::Any(0 != *pData), 0);
+         NewAttr( *pI );
+     }
+ }
+diff --git a/sw/source/writerfilter/dmapper/DomainMapper.cxx b/sw/source/writerfilter/dmapper/DomainMapper.cxx
+index 0906fe237f020ae915a1e8723f2378816f7fc620..11f8bb6e77a1aa57770b4f6cd7ab5b518bbe8bcb 100644
+--- a/sw/source/writerfilter/dmapper/DomainMapper.cxx
++++ b/sw/source/writerfilter/dmapper/DomainMapper.cxx
+@@ -2064,8 +2064,10 @@ void DomainMapper::sprmWithProps( Sprm& rSprm, const PropertyMapPtr& rContext )
+     case NS_ooxml::LN_CT_PPrBase_topLinePunct:
+         break;
+     case NS_ooxml::LN_CT_PPrBase_autoSpaceDE:
++        rContext->Insert(PROP_PARA_AUTO_SPACE_DE, uno::Any(nIntValue != 0));
+         break;
+     case NS_ooxml::LN_CT_PPrBase_autoSpaceDN:
++        rContext->Insert(PROP_PARA_AUTO_SPACE_DN, uno::Any(nIntValue != 0));
+         break;
+     case NS_ooxml::LN_CT_PPrBase_textAlignment:
+         {
+diff --git a/sw/source/writerfilter/dmapper/PropertyIds.cxx b/sw/source/writerfilter/dmapper/PropertyIds.cxx
+index 6deab30c727e1535314909490243afd85e3a6cb7..c6aa4adfa862a64d5504b13399a43fc6efdeb8fc 100644
+--- a/sw/source/writerfilter/dmapper/PropertyIds.cxx
++++ b/sw/source/writerfilter/dmapper/PropertyIds.cxx
+@@ -110,6 +110,8 @@ const OUString & getPropertyName( PropertyIds eId )
+         { PROP_PARA_HYPHENATION_KEEP_LINE, u"ParaHyphenationKeepLine"_ustr},
+         { PROP_PARA_LINE_NUMBER_COUNT, u"ParaLineNumberCount"_ustr},
+         { PROP_PARA_IS_HANGING_PUNCTUATION, u"ParaIsHangingPunctuation"_ustr},
++        { PROP_PARA_AUTO_SPACE_DE, u"ParaAutoSpaceDE"_ustr},
++        { PROP_PARA_AUTO_SPACE_DN, u"ParaAutoSpaceDN"_ustr},
+         { PROP_PARA_LINE_SPACING, u"ParaLineSpacing"_ustr},
+         { PROP_PARA_TAB_STOPS, u"ParaTabStops"_ustr},
+         { PROP_PARA_TOP_BORDER, u"ParaTopBorder"_ustr},
+diff --git a/sw/source/writerfilter/dmapper/PropertyIds.hxx b/sw/source/writerfilter/dmapper/PropertyIds.hxx
+index d1e4042a868b4075f2d8f5cdad1a4a8ce975b8a7..28e344da269999f1b2efcfeb6195a457796ae343 100644
+--- a/sw/source/writerfilter/dmapper/PropertyIds.hxx
++++ b/sw/source/writerfilter/dmapper/PropertyIds.hxx
+@@ -249,6 +249,8 @@ enum PropertyIds
+         ,PROP_PARA_FIRST_LINE_INDENT
+         ,PROP_PARA_FIRST_LINE_INDENT_UNIT
+         ,PROP_PARA_IS_HANGING_PUNCTUATION
++        ,PROP_PARA_AUTO_SPACE_DE
++        ,PROP_PARA_AUTO_SPACE_DN
+         ,PROP_PARA_IS_HYPHENATION
+         ,PROP_PARA_HYPHENATION_NO_CAPS
+         ,PROP_PARA_HYPHENATION_ZONE

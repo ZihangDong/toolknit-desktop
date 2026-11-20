@@ -14,16 +14,14 @@ const [html, main, specs, tool, workspace, exporter, view, featureCss] = await P
 ]);
 
 const [themeIndex, sharedTheme, pageTheme] = await Promise.all([
-  readFile(new URL('../src/styles/themes/index.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/styles/themes/pdf-workbench-light.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/styles/themes/pdf-page-number-light.css', import.meta.url), 'utf8')
+  readFile(new URL('../src/styles/index.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/styles/components/pdf-workbench.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/features/pdf-page-number/pdf-page-number.css', import.meta.url), 'utf8')
 ]);
-assert.match(themeIndex, /@import url\('\.\/pdf-workbench-light\.css'\)/);
-assert.match(themeIndex, /@import url\('\.\/pdf-page-number-light\.css'\)/);
 assert.match(sharedTheme, /\.pdf-crop-v2/);
 assert.match(sharedTheme, /\.pdf-page-number-v2/);
 assert.match(sharedTheme, /input:disabled \+ span/);
-assert.doesNotMatch(sharedTheme + pageTheme, /\.pdf-page-number-live-(?:text|background)/,
+assert.doesNotMatch(sharedTheme + pageTheme, /html:root\[data-theme\][^{]*\.pdf-page-number-live-(?:text|background)/,
   'UI themes must not override the actual PDF annotation colors');
 
 for (const id of [

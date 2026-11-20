@@ -15,7 +15,7 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, acc
 const errors = []; page.on('pageerror', error => errors.push(error.message));
 page.setDefaultTimeout(15000);
 const ready = () => page.waitForFunction(() => !document.getElementById('appStartupMask') && !document.querySelector('.app')?.inert);
-const settle = () => page.waitForFunction(() => { const veil = document.querySelector('[data-tk-page-transition-veil]'); return !veil || getComputedStyle(veil).visibility === 'hidden'; });
+const settle = () => page.waitForFunction(() => { const veil = document.querySelector('[data-tk-page-transition-veil]'); return (!veil || getComputedStyle(veil).visibility === 'hidden') && !document.getAnimations().some(animation => animation.playState === 'running' && animation.effect?.getTiming().iterations !== Infinity); });
 try {
   await page.goto(server.resolvedUrls.local[0]);
   await page.locator('#homeToolGrid [data-home-tool]').first().waitFor();
@@ -73,7 +73,7 @@ try {
     }
   }
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.evaluate(() => { localStorage.setItem('toolknit.theme.v3','dark'); });
+  await page.evaluate(() => { const config = JSON.parse(localStorage.getItem('toolknit.appearance.v1')); localStorage.setItem('toolknit.appearance.v1', JSON.stringify({ ...config, mode: 'dark' })); });
   await page.reload(); await ready();
   await search.fill('批量重命名'); await page.locator('#homeToolGrid [data-home-tool="batch-rename"]').click();
   await root.waitFor({ state: 'visible' }); await settle();

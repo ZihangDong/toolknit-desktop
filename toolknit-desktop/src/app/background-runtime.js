@@ -386,7 +386,11 @@ export function createBackgroundRuntime({
     runtime.toolSessions.clear();
     disposeMedia();
   };
+  let customAllowed = allowCustomBackground();
   permanentCleanup.push(onThemeChange(() => {
+    const allowed = allowCustomBackground();
+    if (allowed === customAllowed) return;
+    customAllowed = allowed;
     policyRevision += 1;
     refresh();
   }));

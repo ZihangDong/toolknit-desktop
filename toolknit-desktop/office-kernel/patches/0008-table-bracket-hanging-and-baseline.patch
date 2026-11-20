@@ -1,0 +1,224 @@
+diff --git a/sw/qa/extras/ooxmlimport/data/word-table-closing-bracket-disabled.docx b/sw/qa/extras/ooxmlimport/data/word-table-closing-bracket-disabled.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..218477128a1af1c70289450d2382f7c8939beaf9
+GIT binary patch
+literal 1808
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/data/word-table-closing-bracket.docx b/sw/qa/extras/ooxmlimport/data/word-table-closing-bracket.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..a96b1c9b43e2ed144c9838c6af55e121d968294c
+GIT binary patch
+literal 1807
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+index b100438a33c8c15469dee28b2bcf67d0dd0b1dbe..7b443f2720944e2579d86cd46677b57b14c77f79 100644
+--- a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
++++ b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+@@ -230,6 +230,23 @@ CPPUNIT_TEST_FIXTURE(Test, testTableIgnoredGridParagraphSpacing)
+     }
+ }
+ 
++CPPUNIT_TEST_FIXTURE(Test, testWordTableBracketHanging)
++{
++#if defined(_WIN32)
++    CPPUNIT_ASSERT(Application::GetDefaultDevice()->IsFontAvailable(u"SimSun"_ustr));
++    createSwDoc("word-table-closing-bracket.docx");
++    xmlDocUniquePtr pDump = parseLayoutDump();
++    for (size_t nRow = 1; nRow <= 2; ++nRow)
++    {
++        const OString aPath = "/root/page[1]/body/tab/row[" + OString::number(nRow)
++            + "]/cell/txt/SwParaPortion/SwLineLayout";
++        assertXPath(pDump, aPath + "[1]", "length", u"6");
++        assertXPath(pDump, aPath + "[1]", "height", u"312");
++        assertXPath(pDump, aPath + "[2]", "length", u"2");
++    }
++#endif
++}
++
+ CPPUNIT_TEST_FIXTURE(Test, testImageHyperlink)
+ {
+     createSwDoc("image-hyperlink.docx");
+diff --git a/sw/source/core/text/guess.cxx b/sw/source/core/text/guess.cxx
+index a9d4e83aea1d4dc94e608db3438492e64996872a..60e8adf1d6d10baeb7d8ac664084732367abb1e7 100644
+--- a/sw/source/core/text/guess.cxx
++++ b/sw/source/core/text/guess.cxx
+@@ -180,7 +180,7 @@ bool SwTextGuess::Guess( const SwTextPortion& rPor, SwTextFormatInfo &rInf,
+ 
+     const SwScriptInfo& rSI = rInf.GetParaPortion()->GetScriptInfo();
+ 
+-    const sal_uInt16 nMaxComp = rPor.GetMaxComp(rInf);
++    sal_uInt16 nMaxComp = rPor.GetMaxComp(rInf);
+ 
+     SwTwips nLineWidth = rInf.GetLineWidth();
+     TextFrameIndex nMaxLen = TextFrameIndex(rInf.GetText().getLength()) - rInf.GetIdx();
+@@ -213,6 +213,38 @@ bool SwTextGuess::Guess( const SwTextPortion& rPor, SwTextFormatInfo &rInf,
+         return false;
+ 
+     const auto& rSettings = rInf.GetTextFrame()->GetDoc().getIDocumentSettingAccess();
++    TextFrameIndex nTableHangingBreak(COMPLETE_STRING);
++    // Word allows a closing CJK bracket to use the half-em hanging area of a
++    // table cell. Prefer this to compressing brackets inside an otherwise
++    // uncompressed label. The locale iterator's default hanging list includes
++    // commas/full stops, but not these bracket characters.
++    if (nMaxComp && rInf.IsHanging() && !rInf.IsMulti() && !rPor.InFieldGrp()
++        && SwFontScript::CJK == rInf.GetFont()->GetActual()
++        && rInf.GetTextFrame()->IsInTab() && !rInf.GetTextFrame()->IsVertical()
++        && MsLangId::isChinese(rInf.GetFont()->GetLanguage(SwFontScript::CJK))
++        && rSettings.get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS))
++    {
++        const auto nNaturalCut = rInf.GetTextBreak(nLineWidth, nMaxLen, 0,
++                                                  rInf.GetCachedVclData().get());
++        if (nNaturalCut > rInf.GetIdx() && nNaturalCut < rInf.GetIdx() + nMaxLen)
++        {
++            const auto c = rInf.GetChar(nNaturalCut);
++            if (c == 0xFF09 || c == 0xFF3D || c == 0xFF5D || c == 0x3009
++                || c == 0x300B || c == 0x300D || c == 0x300F || c == 0x3011
++                || c == 0x3015 || c == 0x3017 || c == 0x3019 || c == 0x301B)
++            {
++                SwTwips nWidth = 0, nDiff = 0, nAsc = 0, nDesc = 0;
++                rInf.GetTextSize(&rSI, rInf.GetIdx(), nNaturalCut - rInf.GetIdx() + TextFrameIndex(1),
++                                std::nullopt, 0, nWidth, nDiff, nAsc, nDesc,
++                                rInf.GetCachedVclData().get());
++                if (nWidth <= nLineWidth + rInf.GetFont()->GetHeight(SwFontScript::CJK) / 2)
++                {
++                    nTableHangingBreak = nNaturalCut + TextFrameIndex(1);
++                    nMaxComp = 0;
++                }
++            }
++        }
++    }
+     const bool bWordPunctuation = !rInf.IsMulti() && !rPor.InFieldGrp() && !rPor.IsDropPortion()
+         && !rInf.GetTextFrame()->IsVertical() && !rInf.GetTextFrame()->IsInTab()
+         && rSI.ParagraphIsJustified()
+@@ -807,6 +839,15 @@ bool SwTextGuess::Guess( const SwTextPortion& rPor, SwTextFormatInfo &rInf,
+             rInf.GetText(), sal_Int32(m_nCutPos), aLocale,
+             sal_Int32(rInf.GetLineStart()), aHyphOpt, aUserOpt );
+ 
++        if (nTableHangingBreak != TextFrameIndex(COMPLETE_STRING)
++            && nTableHangingBreak == m_nCutPos + TextFrameIndex(1)
++            && (nTableHangingBreak == TextFrameIndex(rInf.GetText().getLength())
++                || aForbidden.beginLine.indexOf(rInf.GetChar(nTableHangingBreak)) == -1))
++        {
++            aResult.breakIndex = sal_Int32(nTableHangingBreak);
++            aResult.breakType = BreakType::HANGINGPUNCTUATION;
++        }
++
+         m_nBreakPos = TextFrameIndex(aResult.breakIndex);
+ 
+         // if we are formatting multi portions we want to allow line breaks
+@@ -918,6 +959,17 @@ bool SwTextGuess::Guess( const SwTextPortion& rPor, SwTextFormatInfo &rInf,
+             m_pHanging.reset( new SwHangingPortion( std::move(aTmpSize) ) );
+             m_pHanging->SetLen( nHangingLen );
+             nPorLen = m_nCutPos - rInf.GetIdx();
++            if (nTableHangingBreak == m_nBreakPos)
++            {
++                SwTwips nPrefix = 0, nDiff = 0, nAsc = 0, nDesc = 0;
++                rInf.GetTextSize(&rSI, rInf.GetIdx(), nPorLen, std::nullopt, 0,
++                                nPrefix, nDiff, nAsc, nDesc, rInf.GetCachedVclData().get());
++                // Only the part outside the cell is hanging. Count the inner
++                // part in center/right alignment, otherwise a centered label
++                // is shifted right by half the unused width of its line.
++                m_pHanging->Width(std::clamp<SwTwips>(nLineWidth - nPrefix, 0,
++                                                     m_pHanging->GetInnerWidth()));
++            }
+         }
+ 
+         // If we expanded a field, we must repair the original string.
+diff --git a/sw/source/core/text/itrform2.cxx b/sw/source/core/text/itrform2.cxx
+index 23855b3f91e7cdc82a8ea1e4def4e2b9e861a219..df36881666ad34c1fb94e8b4a1e382452a90d893 100644
+--- a/sw/source/core/text/itrform2.cxx
++++ b/sw/source/core/text/itrform2.cxx
+@@ -2320,8 +2320,7 @@ void SwTextFormatter::CalcRealHeight( bool bNewLine )
+                        ( nLineHeight - m_pCurr->Height() + nRubyHeight ) / 2 :
+                        ( nLineHeight - m_pCurr->Height() - nRubyHeight ) / 2 );
+ 
+-        if (m_pFrame->IsInTab() && !nRubyHeight && pSpace
+-            && pSpace->GetLineSpaceRule() == SvxLineSpaceRule::Fix
++        if (m_pFrame->IsInTab() && !nRubyHeight
+             && m_pFrame->GetDoc().getIDocumentSettingAccess().get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS))
+             nAsc = (4 * nLineHeight) / 5;
+ 
+diff --git a/sw/source/core/text/itrtxt.cxx b/sw/source/core/text/itrtxt.cxx
+index 7a2b7028044e602520fab743ed6830480e40b1fa..79193b6f438b2f2ef3cf567044f288e52dce6989 100644
+--- a/sw/source/core/text/itrtxt.cxx
++++ b/sw/source/core/text/itrtxt.cxx
+@@ -246,11 +246,9 @@ SwTwips SwTextCursor::AdjustBaseLine( const SwLineLayout& rLine,
+     const bool bIgnoreTableGrid = m_pFrame->IsInTab()
+         && !m_pFrame->GetDoc().getIDocumentSettingAccess().get(
+             DocumentSettingId::ADJUST_TABLE_LINE_HEIGHTS_TO_GRID_HEIGHT);
+-    const SvxLineSpacingItem* pLineSpacing = GetLineInfo().GetLineSpacing();
+-    const bool bFixedTableLine = m_pFrame->IsInTab() && pGrid && !pGrid->GetRubyHeight()
+-        && pLineSpacing && pLineSpacing->GetLineSpaceRule() == SvxLineSpaceRule::Fix
++    const bool bWordTableLine = m_pFrame->IsInTab() && pGrid && !pGrid->GetRubyHeight()
+         && m_pFrame->GetDoc().getIDocumentSettingAccess().get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS);
+-    if (pGrid && GetInfo().SnapToGrid() && pGrid->IsSquaredMode() && !bIgnoreTableGrid && !bFixedTableLine)
++    if (pGrid && GetInfo().SnapToGrid() && pGrid->IsSquaredMode() && !bIgnoreTableGrid && !bWordTableLine)
+     {
+         const sal_uInt16 nRubyHeight = pGrid->GetRubyHeight();
+         const bool bRubyTop = ! pGrid->GetRubyTextBelow();

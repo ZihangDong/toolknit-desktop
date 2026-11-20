@@ -37,8 +37,8 @@ const lazyToolsSource = await readFile(new URL('../src/features/lazy-tools.js', 
 const compatibilitySource = await readFile(new URL('../src/image-color-replace-ui.js', import.meta.url), 'utf8');
 const globalStyles = await readGlobalStyles(import.meta.url);
 const finalToolStyles = await readFile(new URL('../src/tool-page-v2-final.css', import.meta.url), 'utf8');
-const themeIndex = await readFile(new URL('../src/styles/themes/index.css', import.meta.url), 'utf8');
-const lightTheme = await readFile(new URL('../src/styles/themes/image-color-replace-light.css', import.meta.url), 'utf8');
+const themeIndex = await readFile(new URL('../src/styles/index.css', import.meta.url), 'utf8');
+const lightTheme = await readFile(new URL('../src/features/image-color-replace/image-color-replace.css', import.meta.url), 'utf8');
 
 assert.match(uiSource, /from ['"]\.\/template\.js['"]/, 'the tool must delegate its markup to the feature template');
 assert.match(uiSource, /from ['"]\.\/controller\.js['"]/, 'the tool entry must delegate runtime behavior to the feature controller');
@@ -70,8 +70,7 @@ assert.match(controllerSource, /className = 'color-replace-output-link'/, 'expor
 assert.match(controllerSource, /invoke\('open_path', \{ path \}\)/, 'clicking the exported path must open its containing folder');
 assert.match(controllerSource, /rawPath\.startsWith\('\\\\\\\\\?\\\\'\)/, 'Windows extended path prefix must be removed for Explorer');
 assert.match(uiStyles, /\.color-replace-output-link\s*\{[^}]*color:\s*#0969da/s, 'exported path must use blue link styling');
-assert.match(themeIndex, /@import url\('\.\/image-color-replace-light\.css'\)/, 'the light theme index must load color replacement styling');
-assert.match(lightTheme, /html\[data-theme="light"\] \.color-replace-shell/, 'color replacement light styles must stay scoped to the feature shell');
+assert.match(lightTheme, /html:root\[data-theme\] \.color-replace-shell/, 'color replacement light styles must stay scoped to the feature shell');
 assert.match(lightTheme, /\.color-replace-shell > \.tool-page-v2-bg\s*\{[^}]*display:\s*none/s, 'the light workspace must not expose the shared dark background layer');
 assert.doesNotMatch(lightTheme, /tool-page-v2-back|--tool-back-static-outline|--tool-back-hover-outline/, 'feature light themes defer back button visuals to shared navigation');
 assert.match(lightTheme, /\.color-replace-stage-actions \[data-cr-export\]:disabled/, 'the light theme must preserve a distinct disabled export state');

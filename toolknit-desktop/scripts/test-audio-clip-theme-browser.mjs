@@ -110,7 +110,7 @@ try {
       if (rule.cssRules) walk(rule.cssRules);
     } };
     walk(sheet.cssRules); return invalid;
-  }, await readFile('src/styles/themes/audio-clip-light.css', 'utf8'));
+  }, await readFile('src/features/audio-tools/audio-clip.css', 'utf8'));
   assert.deepEqual(unscoped, []);
   assert.equal(await color('.audio-clip-v2-empty h2', 'color'), 'rgb(23, 23, 23)');
   assert.equal(await color('.audio-clip-format-chip', 'color'), 'rgb(96, 99, 106)');

@@ -1042,3 +1042,394 @@
           min-height: 420px;
         }
       }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .bpm-detect-v2 {
+  --bpm-surface: var(--tk-page-bg);
+  --bpm-soft: var(--tk-inset);
+  --bpm-hover: var(--tk-surface);
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-detect-card {
+  padding: 24px;
+  border-color: var(--line);
+  border-radius: 8px;
+  background: var(--bpm-surface);
+  box-shadow: none;
+  overflow: hidden auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-detect-card::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+  height: 6px;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-detect-card::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-detect-control-card {
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-panel.visible {
+  border-color: var(--line);
+  background: var(--bpm-surface);
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-hero-title {
+  /* The legacy gradient is important; neutralize it only in this theme. */
+  background: none !important;
+  color: var(--ink);
+  -webkit-text-fill-color: currentColor;
+  -webkit-text-stroke: 0;
+  font-size: 38px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-detect-hero-top > * {
+  transition: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-detect-cta {
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 16px;
+  border-radius: 7px;
+  animation: none;
+  transform: none;
+  box-shadow: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-detect-cta::before {
+  content: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-detect-cta:is(:hover, :active) {
+  transform: none;
+  box-shadow: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-detect-flow {
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  gap: 20px;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-detect-flow > div {
+  padding: 0;
+  gap: 5px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-detect-flow > div span {
+  border-color: var(--line-strong);
+  background: var(--bpm-surface);
+  color: var(--muted);
+}
+
+html:root[data-theme] .bpm-detect-v2 :is(.bpm-detect-flow strong, .bpm-result-meta-item strong) {
+  color: var(--ink);
+}
+
+html:root[data-theme] .bpm-detect-v2 :is(.bpm-panel-head h2, .bpm-demo-header h2) {
+  font-size: 24px;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .bpm-detect-v2 :is(.bpm-panel-head p, .bpm-analysis-empty, .bpm-demo-status,
+    .bpm-detect-flow p, .bpm-result-hint, .bpm-result-meta-item span, .bpm-timeline-label,
+    .bpm-formats-title, .bpm-demo-info-label) {
+  color: var(--muted);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-panel-head {
+  flex-shrink: 0;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-panel-head p {
+  margin: 0;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-analysis-panel {
+  justify-content: flex-start;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-analysis-empty {
+  margin-block: auto;
+  border-color: var(--line-strong);
+  border-radius: 7px;
+  background: var(--bpm-soft);
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-result {
+  margin-block: auto;
+  gap: 20px;
+}
+
+html:root[data-theme] .bpm-detect-v2 :is(.bpm-result-number, .bpm-demo-bpm-number) {
+  color: var(--ink);
+  -webkit-text-fill-color: currentColor;
+  background: none;
+  animation: none;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-result-number {
+  font-size: 64px;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-bpm-number {
+  font-size: 48px;
+}
+
+html:root[data-theme] .bpm-detect-v2 :is(.bpm-unit, .bpm-demo-bpm-unit) {
+  color: var(--muted);
+  -webkit-text-fill-color: currentColor;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-timeline-track {
+  gap: 2px;
+  filter: none;
+  border-bottom: 1px solid var(--line);
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-timeline-bar {
+  min-width: 0;
+  background: var(--tk-border);
+  box-shadow: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-timeline-bar.beat {
+  background: var(--ink);
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-result-meta {
+  padding-block: 12px;
+  border-block: 1px solid var(--line);
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-result-meta-item {
+  padding: 0 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-result-meta-item + .bpm-result-meta-item {
+  border-left: 1px solid var(--line);
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-result-meta-item strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-result-hint {
+  max-width: 100%;
+  padding: 10px 12px;
+  border-color: var(--line);
+  border-radius: 7px;
+  background: var(--bpm-soft);
+  line-height: 1.6;
+}
+
+html:root[data-theme] .bpm-detect-v2 :is(.bpm-candidate-chip, .bpm-demo-close, .bpm-demo-stop-btn) {
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  color: var(--ink);
+  background: var(--bpm-soft);
+  box-shadow: none;
+  transform: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 :is(.bpm-candidate-chip, .bpm-demo-close, .bpm-demo-stop-btn):hover:not(:disabled):not(.active) {
+  background: var(--bpm-hover);
+  border-color: var(--tk-border);
+  transform: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-candidate-chip span {
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .bpm-detect-v2 :is(.bpm-candidate-chip.active, .bpm-demo-play-btn, .bpm-result-btn-primary) {
+  border: 1px solid var(--ink);
+  border-radius: 7px;
+  background: var(--ink);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+  transform: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 :is(.bpm-candidate-chip.active, .bpm-demo-play-btn, .bpm-result-btn-primary):hover:not(:disabled) {
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
+  opacity: 1;
+  transform: none;
+  box-shadow: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 :is(.bpm-demo-play-btn, .bpm-demo-stop-btn, .bpm-result-btn) {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 10px 20px;
+  line-height: 1.4;
+  justify-content: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-play-btn:disabled {
+  background: var(--tk-inset);
+  border-color: var(--line);
+  color: var(--tk-muted);
+  opacity: 1;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-close {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+}
+
+html:root[data-theme] .bpm-detect-v2 :is(.bpm-demo-content, .bpm-demo-body) {
+  flex: 1 0 auto;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-body {
+  gap: 20px;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-body > * {
+  flex-shrink: 0;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-visualizer {
+  width: min(100%, 200px);
+  height: 200px;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-rings span {
+  border-color: var(--line-strong);
+  animation: none;
+  opacity: 1;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-beat-indicator {
+  background: var(--bpm-soft);
+  border-color: var(--tk-border-strong);
+  box-shadow: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-beat-indicator.beat-active {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-slider {
+  margin: 6px 0;
+  background: var(--tk-surface-hover);
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-slider::-webkit-slider-thumb {
+  border: 2px solid var(--ink);
+  background: var(--bpm-surface);
+  box-shadow: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-demo-slider::-moz-range-thumb {
+  box-sizing: border-box;
+  border: 2px solid var(--ink);
+  background: var(--bpm-surface);
+  box-shadow: none;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-formats {
+  padding-block: 16px 0;
+}
+
+html:root[data-theme] .bpm-detect-v2 .bpm-format-chip,
+html:root[data-theme] .bpm-detect-v2 .bpm-format-chip:hover {
+  padding: 6px 10px;
+  border-color: var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  background: var(--bpm-surface);
+  transform: none;
+}
+
+/* This shared progress component is mounted beside, not inside, the page. */
+html:root[data-theme] #bpmProcessMask {
+  background: rgba(var(--tk-rgb-page), 0.96);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] #bpmProcessMask .audio-convert-process-bar {
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] #bpmProcessMask .audio-convert-process-bar-fill {
+  background: var(--tk-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] #bpmProcessMask .audio-convert-process-text {
+  color: var(--tk-muted);
+}
+
+@media (max-height: 760px) {
+  html:root[data-theme] .bpm-detect-v2 .bpm-detect-card {
+    padding: 20px;
+  }
+
+  html:root[data-theme] .bpm-detect-v2 .bpm-demo-body {
+    gap: 14px;
+  }
+
+  html:root[data-theme] .bpm-detect-v2 .bpm-demo-visualizer {
+    width: 140px;
+    height: 140px;
+  }
+}
+
+@media (max-width: 980px) {
+  html:root[data-theme] .bpm-detect-v2 .bpm-detect-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-auto-rows: max-content;
+    padding: 20px;
+  }
+
+  html:root[data-theme] .bpm-detect-v2 .bpm-detect-card {
+    overflow: visible;
+  }
+
+  html:root[data-theme] .bpm-detect-v2 .bpm-detect-control-card {
+    min-height: 0;
+  }
+
+  html:root[data-theme] .bpm-detect-v2 .bpm-analysis-panel {
+    min-height: 420px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .bpm-detect-v2 .bpm-demo-beat-indicator.beat-active {
+    transform: none;
+  }
+}

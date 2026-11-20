@@ -15,7 +15,7 @@ import '/src/styles/index.css';
 import '/src/tool-page-v2-final.css';
 import '/src/tool-custom-select.css';
 import '/src/tool-nav-unified.css';
-import '/src/styles/themes/index.css';
+
 import { mockIPC, mockWindows } from '@tauri-apps/api/mocks';
 import { createIcons, icons } from 'lucide';
 import { t, onLangChange, setLangWithoutFade, applyTranslations } from '/src/i18n.js';
@@ -36,7 +36,8 @@ mockIPC(async (command, args) => {
   return null;
 }, { shouldMockEvents: true });
 const { initTranscriptionTool } = await import('/src/features/transcription/tool.js');
-document.documentElement.dataset.theme = localStorage.getItem('toolknit.theme.v3') || 'dark';
+const { applyTheme } = await import('/src/app/theme-palette.js');
+applyTheme(document.documentElement, { mode: localStorage.getItem('toolknit.theme.v3') || 'light' });
 document.body.innerHTML = template;
 prepareToolPageChrome(document);
 applyTranslations();

@@ -19,7 +19,7 @@ import {
 } from './templates.js';
 import './hardware-inspector.css';
 import './hardware-inspector-overrides.css';
-import './hardware-inspector-light.css';
+
 
 const WEBSITE_URL = 'https://toolknit.com';
 

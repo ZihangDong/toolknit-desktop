@@ -419,3 +419,27 @@
   .developer-toolbox-shell .developer-toolbox-nav-index { padding: 0; }
   .developer-toolbox-shell .developer-toolbox-nav nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .developer-toolbox-shell .developer-toolbox-panel {
+  border: 0;
+  box-shadow: none;
+  padding: 12px 0 0;
+}
+
+html:root[data-theme] .developer-toolbox-shell :is(.developer-toolbox-field, .developer-toolbox-control-row label, .developer-toolbox-select-field, .developer-toolbox-jwt-grid article > span) {
+  color: var(--dev-ink);
+}
+
+html:root[data-theme] .developer-toolbox-shell .developer-toolbox-status {
+  background: var(--dev-soft);
+  border-color: var(--dev-line-strong);
+  color: var(--dev-muted);
+}
+
+html:root[data-theme] .developer-toolbox-shell .developer-toolbox-status.is-error {
+  background: var(--tk-inset);
+  border-color: #e4aaaa;
+  color: var(--tk-danger);
+}

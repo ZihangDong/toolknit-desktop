@@ -217,9 +217,9 @@
 .home-provider-niuniu { color: #f7c76d; }
 .home-provider-malian { color: #ef9a42; }
 .home-provider-doufu { color: #71baff; }
-html[data-theme="light"] .home-provider-niuniu { color: #964b05; }
-html[data-theme="light"] .home-provider-malian { color: #a84c00; }
-html[data-theme="light"] .home-provider-doufu { color: #005ec4; }
+html:root[data-theme] .home-provider-niuniu { color: #964b05; }
+html:root[data-theme] .home-provider-malian { color: #a84c00; }
+html:root[data-theme] .home-provider-doufu { color: #005ec4; }
 
 #customToolsOverlay {
   --custom-surface: #18181b;
@@ -228,12 +228,12 @@ html[data-theme="light"] .home-provider-doufu { color: #005ec4; }
   --custom-inset: #29292e;
   --custom-hover: #34343b;
 }
-html[data-theme="light"] #customToolsOverlay {
-  --custom-surface: #ffffff;
-  --custom-ink: #111111;
-  --custom-muted: #5e5e65;
-  --custom-inset: #f0f0f3;
-  --custom-hover: #e5e5e8;
+html:root[data-theme] #customToolsOverlay {
+  --custom-surface: var(--tk-page-bg);
+  --custom-ink: var(--tk-ink);
+  --custom-muted: var(--tk-muted);
+  --custom-inset: var(--tk-inset);
+  --custom-hover: var(--tk-surface);
 }
 #customToolsOverlay .audio-convert-success-dialog {
   max-width: 460px;

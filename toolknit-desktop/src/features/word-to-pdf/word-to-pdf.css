@@ -28,6 +28,10 @@
 .word-pdf-note { display: flex; align-items: flex-start; gap: 8px; margin: 0; }
 .word-pdf-note svg { flex: none; width: 16px; height: 16px; margin-top: 2px; }
 .word-pdf-status { margin: 6px 0 0; overflow-wrap: anywhere; }
+.word-pdf-font-notices { font-size: 12px; line-height: 1.6; text-align: start; overflow-wrap: anywhere; }
+.word-pdf-font-notices p { margin: 8px 0; }
+.word-pdf-success .word-pdf-font-notices { flex-shrink: 0; width: 100%; max-height: 25vh; overflow-y: auto; color: var(--tk-ink, #eee); }
+.word-pdf-success .word-pdf-font-notices:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .word-pdf-process { flex-direction: column; gap: 22px; background: #111; }
 .word-pdf-process h2 { font-size: 20px; color: #eee; }
 .word-pdf-result-choice { display: grid; width: 100%; gap: 8px; text-align: left; margin-block: 16px; font-size: 13px; }
@@ -37,19 +41,22 @@
 .word-pdf-success .audio-clip-success-actions { flex-wrap: wrap; }
 .word-pdf-success .audio-clip-success-btn { flex: 1 1 auto; min-width: max-content; white-space: nowrap; line-height: 1.5; }
 .word-pdf-success .audio-convert-success-value { text-align: left; }
-html[data-theme='light'] .word-pdf { --word-fg: #161616; --word-muted: #666; --word-bg: #fff; --word-panel: #f3f3f3; --word-border: #ddd; }
-html[data-theme='light'] .word-pdf-process { background: #fff; }
-html[data-theme='light'] .word-pdf-process h2 { color: #161616; }
-html[data-theme='light'] .word-pdf-process .word-pdf-button { background: #eee; color: #111; border-color: #ddd; }
-html[data-theme='light'] .word-pdf-process .audio-convert-process-bar { background: #ddd; }
-html[data-theme='light'] .word-pdf-process .audio-convert-process-bar-fill { background: #111; box-shadow: none; }
-html[data-theme='light'] .word-pdf-result-choice option { color: #111; background: #fff; }
+html:root[data-theme] .word-pdf { --word-fg: var(--tk-ink); --word-muted: var(--tk-muted); --word-bg: var(--tk-page-bg); --word-panel: var(--tk-inset); --word-border: var(--tk-border); }
+html:root[data-theme] .word-pdf-process { background: var(--tk-page-bg); }
+html:root[data-theme] .word-pdf-process h2 { color: var(--tk-ink); }
+html:root[data-theme] .word-pdf-process .word-pdf-button { background: var(--tk-inset); color: var(--tk-ink); border-color: var(--tk-border); }
+html:root[data-theme] .word-pdf-process .audio-convert-process-bar { background: var(--tk-surface-hover); }
+html:root[data-theme] .word-pdf-process .audio-convert-process-bar-fill { background: var(--tk-accent); box-shadow: none; }
+html:root[data-theme] .word-pdf-result-choice option { color: var(--tk-ink); background: var(--tk-page-bg); }
 @media (max-width: 1100px) {
   .word-pdf .pdf-merge-v2-body { grid-template-columns: 1fr; overflow-y: auto; }
   .word-pdf .pdf-merge-v2-poster { display: none; }
   .word-pdf .pdf-merge-v2-workspace { min-height: 420px; }
 }
 @media (max-height: 650px) {
+  .word-pdf-success .audio-clip-success-dialog { padding: 20px 24px; gap: 10px; }
+  .word-pdf-success .audio-clip-success-icon { width: 40px; height: 40px; }
+  .word-pdf-result-choice { margin-block: 8px; }
   .word-pdf .pdf-merge-v2-body { padding-block: 10px; }
   .word-pdf .pdf-merge-v2-workspace { min-height: 0; padding: 16px; }
   .word-pdf .pdf-merge-v2-upload { flex-direction: row; align-items: center; padding-block: 0 12px; gap: 16px; }

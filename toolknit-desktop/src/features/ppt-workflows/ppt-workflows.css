@@ -79,3 +79,164 @@
   .ppt-compress-v2 .ppt-compress-v2-workspace,
   .ppt-outline-v2 .ppt-outline-v2-workspace { min-height: 0; }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] :is(.ppt-text-v2, .ppt-compress-v2, .ppt-outline-v2) {
+  --ppt-workflow-panel: var(--tk-page-bg);
+  --ppt-workflow-border: var(--tk-border);
+  --ppt-workflow-ink: var(--tk-ink);
+  --ppt-workflow-muted: var(--tk-muted);
+}
+
+html:root[data-theme] :is(.ppt-text-v2, .ppt-compress-v2) :is(.ppt-images-summary, .ppt-images-results, .ppt-compress-stats, .ppt-text-list) {
+  color: var(--ppt-workflow-ink);
+}
+
+html:root[data-theme] :is(.ppt-text-v2, .ppt-compress-v2) :is(.ppt-images-summary, .ppt-compress-stat) {
+  border-color: var(--ppt-workflow-border);
+  background: var(--ppt-workflow-panel);
+}
+
+html:root[data-theme] :is(.ppt-text-v2, .ppt-compress-v2) :is(.ppt-images-summary strong, .ppt-compress-stat strong, .ppt-text-item strong, .ppt-text-item-title) {
+  color: var(--ppt-workflow-ink);
+}
+
+html:root[data-theme] :is(.ppt-text-v2, .ppt-compress-v2) :is(.ppt-images-summary, .ppt-compress-stat span, .ppt-compress-stat em) {
+  color: var(--ppt-workflow-muted);
+}
+
+html:root[data-theme] .ppt-text-v2 :is(.ppt-text-item, .ppt-text-detail) {
+  border-color: var(--ppt-workflow-border);
+  color: var(--ppt-workflow-ink);
+}
+
+html:root[data-theme] .ppt-text-v2 :is(.ppt-text-detail-block h4, .ppt-text-detail-text, .ppt-text-detail-line) {
+  color: var(--ppt-workflow-ink);
+}
+
+html:root[data-theme] .ppt-text-v2 :is(.ppt-text-preview, .ppt-text-meta, .ppt-text-chevron) {
+  color: var(--ppt-workflow-muted);
+}
+
+html:root[data-theme] .ppt-text-v2 :is(.ppt-text-page, .ppt-text-meta span:first-child) {
+  border-color: var(--ppt-workflow-border);
+  background: var(--tk-inset);
+  color: var(--ppt-workflow-ink);
+}
+
+html:root[data-theme] .ppt-text-v2 .ppt-text-item-toggle:hover .ppt-text-page {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] :is(.ppt-text-v2, .ppt-compress-v2) :is(.ppt-text-list, .ppt-compress-stats) {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] :is(.ppt-text-v2, .ppt-compress-v2) :is(.ppt-text-list, .ppt-compress-stats)::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-outline-compose, .ppt-outline-preview) {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-outline-compose, .ppt-outline-preview)::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] .ppt-outline-v2 .ppt-outline-empty svg {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
+}
+
+html:root[data-theme] .ppt-outline-v2 .ppt-outline-v2-empty-hints span {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-outline-compose, .ppt-outline-preview) :is(.ppt-outline-field, .ppt-ai-preset-panel, .ppt-outline-result, .ppt-outline-card, .ppt-outline-preview-card) {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-outline-field > span, .ppt-outline-preview-card p, .ppt-outline-preview-card small) {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-outline-preview-card h3, .ppt-outline-preview-card strong) {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-outline-action-btn, .ppt-outline-export) {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .ppt-outline-v2 .ppt-outline-action-btn:hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .ppt-outline-v2 #pptDraftOutlineStatus[data-ready="true"] {
+  border-color: #c8e2d2;
+  background: var(--tk-inset);
+  color: #247447;
+}
+
+html:root[data-theme] .ppt-outline-v2 .ppt-outline-guide {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-outline-guide-intro, .ppt-outline-guide-story, .ppt-outline-guide-next) {
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-outline-guide-section, .ppt-outline-guide-slide) {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-outline-guide-head strong, .ppt-outline-guide-intro strong, .ppt-outline-guide-section strong, .ppt-outline-guide-story strong, .ppt-outline-guide-next strong, .ppt-outline-guide-slides-title, .ppt-outline-guide-slide-content strong) {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-outline-guide-intro p, .ppt-outline-guide-story p, .ppt-outline-guide-next p, .ppt-outline-guide-list span, .ppt-outline-guide-slide-content p) {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .ppt-outline-v2 .ppt-outline-guide-section.is-warning {
+  border-color: #ead6a6;
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-images-summary, .ppt-outline-fact-group, .ppt-outline-quality-list > div, .ppt-outline-slide) {
+  border-color: var(--ppt-workflow-border);
+  background: var(--ppt-workflow-panel);
+  color: var(--ppt-workflow-ink);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-images-summary strong, .ppt-outline-fact-group strong, .ppt-outline-quality-list strong, .ppt-outline-quality-score, .ppt-outline-slide-content strong) {
+  color: var(--ppt-workflow-ink);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-images-summary > span, .ppt-outline-fact-group div, .ppt-outline-quality-list span, .ppt-outline-slide-content p, .ppt-outline-slide-content em, .ppt-outline-guide-eyebrow) {
+  color: var(--ppt-workflow-muted);
+}
+
+html:root[data-theme] .ppt-outline-v2 :is(.ppt-outline-fact-group span, .ppt-outline-slide-tags span, .ppt-outline-slide-number) {
+  border-color: var(--ppt-workflow-border);
+  background: var(--tk-inset);
+  color: var(--ppt-workflow-muted);
+}
+
+html:root[data-theme] .ppt-outline-v2 .ppt-outline-slide-number { color: var(--ppt-workflow-ink); }

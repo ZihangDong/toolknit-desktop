@@ -1,5 +1,6 @@
 import { createScreenshotRuntime } from '../platform/screenshot-runtime.js';
 import { createLifecycleScope } from './tool-lifecycle.js';
+import { getAppliedThemeConfig } from './theme-palette.js';
 // Auxiliary WebViews have isolated storage. Mirror metadata, never credentials.
 export function createScreenshotContextRuntime({ isTauri, getAiPlatformConfig, getLang, onLangChange, notify, translate, onNavigate } = {}) {
   if (!isTauri) return;
@@ -18,10 +19,10 @@ export function createScreenshotContextRuntime({ isTauri, getAiPlatformConfig, g
     timer=setTimeout(()=>{
       if(disposed) return;
       const provider=getAiPlatformConfig();
-      void runtime.call('context',{context:{theme:document.documentElement.dataset.theme || 'dark',lang:getLang(),provider}}).catch(()=>{});
+      void runtime.call('context',{context:{theme:document.documentElement.dataset.theme || 'light',appearance:getAppliedThemeConfig(document.documentElement),lang:getLang(),provider}}).catch(()=>{});
     },100);
   };
-  const observer=new MutationObserver(sync); observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  const observer=new MutationObserver(sync); observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','data-theme-config']});
   scope.use(()=>observer.disconnect()); scope.use(onLangChange(sync));
   scope.event(window,'screenshot-provider-changed',sync);
   scope.event(document,'click',sync); scope.event(window,'storage',sync);

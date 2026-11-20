@@ -2,8 +2,8 @@
   --shot-bg: #080808; --shot-fg: #f5f5f5; --shot-muted: #a3a3a3; --shot-panel: #191919; --shot-line: #333;
   color: var(--shot-fg); font-family: var(--tk-font-ui, sans-serif); letter-spacing: 0;
 }
-html[data-theme="light"] :is(.quick-screenshot,.shot-capture,.shot-viewer,.shot-history,.shot-dialog) {
-  --shot-bg: #fff; --shot-fg: #111; --shot-muted: #626262; --shot-panel: #f2f2f2; --shot-line: #dedede;
+html:root[data-theme] :is(.quick-screenshot,.shot-capture,.shot-viewer,.shot-history,.shot-dialog) {
+  --shot-bg: var(--tk-page-bg); --shot-fg: var(--tk-ink); --shot-muted: var(--tk-muted); --shot-panel: var(--tk-inset); --shot-line: var(--tk-border);
 }
 .quick-screenshot { background: var(--shot-bg); }
 :is(.quick-screenshot,.shot-capture,.shot-viewer,.shot-history,.shot-dialog) [hidden] { display: none; }
@@ -21,6 +21,7 @@ html[data-theme="light"] :is(.quick-screenshot,.shot-capture,.shot-viewer,.shot-
 .screenshot-settings .screenshot-primary { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 10px 14px; border: 0; font-size: 16px; border-radius: 999px; background: var(--shot-fg); color: var(--shot-bg); }
 .screenshot-settings .screenshot-primary:hover { opacity: .85; background: var(--shot-fg); color: var(--shot-bg); }
 .screenshot-settings input:not([type="checkbox"]) { width: 100%; padding: 10px 12px; border: 1px solid var(--shot-line); border-radius: 5px; background: var(--shot-bg); color: var(--shot-fg); font-size: 16px; user-select: text; }
+.screenshot-settings input::placeholder { color: var(--shot-muted); opacity: 1; }
 .screenshot-row { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
 .screenshot-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .screenshot-setting-row p { margin: 0; }
@@ -36,10 +37,10 @@ html[data-theme="light"] :is(.quick-screenshot,.shot-capture,.shot-viewer,.shot-
 .screenshot-capabilities span { padding: 9px 14px; border-radius: 999px; background: var(--shot-panel); font-size: 13px; }
 .screenshot-error { margin-top: 16px; }
 body:is(.shot-capture-body,.shot-history-body,.shot-viewer-body) { margin: 0; width: 100vw; height: 100vh; overflow: hidden; }
-html[data-theme="dark"] body:is(.shot-capture-body,.shot-viewer-body) .app-toast { background: #191919; color: #f5f5f5; border-color: #333; }
-html[data-theme="dark"] body:is(.shot-capture-body,.shot-viewer-body) .app-toast-icon { color: #f5f5f5; }
-html[data-theme="dark"] body:is(.shot-capture-body,.shot-viewer-body) .app-toast-close { background: #ffffff1a; color: #f5f5f5; }
-html[data-theme="dark"] body:is(.shot-capture-body,.shot-viewer-body) .app-toast-close:hover { background: #ffffff2b; }
+html:root[data-theme] body:is(.shot-capture-body,.shot-viewer-body) .app-toast { background: var(--tk-surface); color: var(--tk-ink); border-color: var(--tk-border); }
+html:root[data-theme] body:is(.shot-capture-body,.shot-viewer-body) .app-toast-icon { color: var(--tk-ink); }
+html:root[data-theme] body:is(.shot-capture-body,.shot-viewer-body) .app-toast-close { background: var(--tk-inset); color: var(--tk-ink); }
+html:root[data-theme] body:is(.shot-capture-body,.shot-viewer-body) .app-toast-close:hover { background: var(--tk-surface-hover); }
 .shot-capture { position: fixed; inset: 0; background: #000; }
 .shot-capture>img,.shot-capture>canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .shot-capture>img { pointer-events: none; object-fit: fill; }
@@ -159,10 +160,10 @@ body.shot-history-body { --tk-window-bg: transparent; }
 .shot-history-search input::-webkit-search-cancel-button,.shot-history-search input::-webkit-search-decoration { -webkit-appearance:none; display:none; }
 .shot-history-search button { position:absolute; right:4px; display:grid; place-items:center; width:28px; height:28px; padding:0; border:0; border-radius:50%; background:transparent; color:var(--shot-fg); }
 .shot-history-search button:hover { background:var(--shot-panel); }
-html[data-theme="light"] .shot-history-search { background:#e5e5e5; }
-html[data-theme="light"] .shot-history-search button { color:#111; }
+html:root[data-theme] .shot-history-search { background:var(--tk-surface); }
+html:root[data-theme] .shot-history-search button { color:var(--tk-ink); }
 body.shot-history-body .tk-page-transition-veil { inset:16px; border-radius:8px; background:#000; }
-html[data-theme="light"] body.shot-history-body .tk-page-transition-veil { background:#fff; }
+html:root[data-theme] body.shot-history-body .tk-page-transition-veil { background:var(--tk-page-bg); }
 .shot-history-editor { display:flex; flex-direction:column; gap:12px; }
 .shot-history-editor label { display:flex; flex-direction:column; gap:6px; font-size:13px; }
 .shot-history-editor input,.shot-history-editor textarea { box-sizing:border-box; width:100%; resize:vertical; max-height:180px; min-height:36px; border:1px solid var(--shot-line); border-radius:6px; background:var(--shot-panel); color:var(--shot-fg); padding:8px; font:inherit; font-size:14px; line-height:1.5; }
@@ -195,7 +196,7 @@ html[data-theme="light"] body.shot-history-body .tk-page-transition-veil { backg
 html:has(body.shot-toast-body),body.shot-toast-body,body.shot-toast-body #screenshotRoot { background:transparent; }
 body.shot-toast-body { --tk-window-bg:transparent; margin:0; width:100vw; height:100vh; overflow:hidden; pointer-events:none; }
 body.shot-toast-body #screenshotRoot { display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
-.shot-desktop-toast { display:flex; align-items:center; justify-content:center; gap:10px; min-height:46px; max-width:calc(100vw - 40px); box-sizing:border-box; padding:12px 24px; border-radius:999px; background:#fff; color:#111; box-shadow:0 5px 18px #0003,0 1px 4px #0002; font:600 14px/20px var(--tk-font-ui,sans-serif); }
+.shot-desktop-toast { display:flex; align-items:center; justify-content:center; gap:10px; min-height:46px; max-width:calc(100vw - 40px); box-sizing:border-box; padding:12px 24px; border-radius:999px; background:var(--tk-page-bg); color:var(--tk-ink); box-shadow:0 5px 18px #0003,0 1px 4px #0002; font:600 14px/20px var(--tk-font-ui,sans-serif); }
 .shot-desktop-toast svg { width:18px; height:18px; flex-shrink:0; stroke-width:2; }
 .shot-desktop-toast span { overflow-wrap:anywhere; }
 @keyframes shot-history-arrive { from { opacity: 0; transform: translateY(14px) rotate(-1deg); } to { opacity: 1; transform: translateY(0) rotate(0); } }

@@ -23,10 +23,10 @@ const [
   readFile(new URL('../src/features/lazy-tools.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/ai-polish/tool.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/ai-polish/ai-polish.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/features/ai-polish/ai-polish-light.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/features/ai-polish/ai-polish.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/ai-translate/tool.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/ai-translate/ai-translate.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/features/ai-translate/ai-translate-light.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/features/ai-translate/ai-translate.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/ai-text/ai-text-shared.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/ai-workbench/ai-workbench-shared.css', import.meta.url), 'utf8')
 ]);
@@ -71,18 +71,18 @@ for (const [name, source] of [['polish', polish], ['translate', translate]]) {
 
 assert.match(polish, /保持原文核心意思不变/);
 assert.match(polish, /import '\.\/ai-polish\.css'/);
-assert.match(polish, /import '\.\/ai-polish-light\.css'/);
+assert.match(polish, /import '\.\/ai-polish\.css'/);
 assert.match(translate, /逐句翻译，保持句子对应关系/);
 assert.match(translate, /import '\.\/ai-translate\.css'/);
-assert.match(translate, /import '\.\/ai-translate-light\.css'/);
+assert.match(translate, /import '\.\/ai-translate\.css'/);
 assert.doesNotMatch(translate, /aiTranslatePairsData/);
 assert.match(sharedStyles, /\.ai-polish-overlay/);
 assert.match(polishStyles, /\.ai-polish-v2/);
-assert.match(polishLightStyles, /html\[data-theme="light"\] \.ai-polish-v2/);
-assert.match(polishLightStyles, /html\[data-theme="light"\] #aiPolishMask/);
+assert.match(polishLightStyles, /html:root\[data-theme\] \.ai-polish-v2/);
+assert.match(polishLightStyles, /html:root\[data-theme\] #aiPolishMask/);
 assert.match(translateStyles, /\.ai-translate-v2/);
 assert.match(translateStyles, /\.ai-translate-sentence/);
-assert.match(translateLightStyles, /html\[data-theme="light"\] \.ai-translate-v2/);
-assert.match(translateLightStyles, /html\[data-theme="light"\] #aiTranslateMask/);
+assert.match(translateLightStyles, /html:root\[data-theme\] \.ai-translate-v2/);
+assert.match(translateLightStyles, /html:root\[data-theme\] #aiTranslateMask/);
 
 console.log('AI text tools lazy-loading, gate, injection and lifecycle contracts passed');

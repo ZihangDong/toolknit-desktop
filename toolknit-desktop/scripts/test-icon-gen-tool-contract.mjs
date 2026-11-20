@@ -36,7 +36,7 @@ assert.match(template, /id="iconGenSuccessPath"/);
 assert.match(template, /audio-convert-success-btn-secondary[^>]*id="iconGenOpenFolder"/);
 assert.match(featureStyles, /#iconGenFiles \.audio-convert-file-item\s*\{[^}]*display:\s*flex/);
 assert.match(featureStyles, /#iconGenFiles \.audio-convert-file-name\s*\{[^}]*text-align:\s*left/);
-assert.match(featureStyles, /html\[data-theme="light"\] \.icon-gen-v2 \.audio-convert-file-size/);
+assert.match(featureStyles, /html:root\[data-theme\] \.icon-gen-v2 \.audio-convert-file-size/);
 assert.doesNotMatch(controller, /openFolder\.style\.display/);
 assert.match(controller, /openFolder\.disabled = !canOpenFolder \|\| openingFolder/);
 assert.match(controller, /await openOutputFolder\(outputPath\)/);

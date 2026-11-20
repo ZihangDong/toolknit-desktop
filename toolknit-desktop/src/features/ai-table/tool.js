@@ -18,8 +18,8 @@ import {
 } from './prompts.js';
 import '../ai-workbench/ai-workbench-shared.css';
 import './ai-table.css';
-import '../../styles/components/ai-workbench-light.css';
-import './ai-table-light.css';
+import '../../styles/components/ai-workbench.css';
+
 
 const REQUEST_TIMEOUT_MS = AI_PROVIDER_LIMITS.maxTimeoutMs;
 

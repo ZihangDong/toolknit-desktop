@@ -551,3 +551,326 @@
       .ai-translate-lang-btn .ai-polish-direction-btn-desc {
         display: none;
       }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* AI translate reuses the shared tool shell and owns its paired-result states. */
+html:root[data-theme] .ai-translate-v2 {
+  --ai-translate-surface: var(--tk-page-bg);
+  --ai-translate-soft: var(--tk-inset);
+  --ai-translate-hover: var(--tk-surface);
+  --ai-translate-scrollbar: var(--tk-muted);
+}
+
+html:root[data-theme] .ai-translate-v2 :is(
+  .ai-translate-v2-input-card,
+  .ai-translate-v2-result-card
+) {
+  border-color: var(--line);
+  background: var(--ai-translate-surface);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-card-head h2 {
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-card-head p,
+html:root[data-theme] .ai-translate-v2 .pdf-merge-v2-step p {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-source {
+  border-color: var(--line);
+  background: var(--ai-translate-soft);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-source > :is(svg, i) {
+  border-color: var(--line-strong);
+  background: var(--ai-translate-surface);
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-source strong {
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-source span {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-source-mark {
+  border-color: var(--line-strong);
+  background: var(--ai-translate-surface);
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-drop-card {
+  border-color: var(--line-strong);
+  background: var(--ai-translate-soft);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-drop-card span,
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-drop-card p {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-translate-v2 :is(
+  .ai-translate-v2-drop-card.is-dragging,
+  .drag-over .ai-translate-v2-drop-card
+) {
+  border-color: var(--ink);
+  background: var(--ai-translate-hover);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-select-btn {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-select-btn :is(span, svg) {
+  color: inherit;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-select-btn:hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-select-btn:active {
+  transform: translateY(0);
+}
+
+html:root[data-theme] .ai-translate-v2 :is(
+  .ai-translate-v2-textarea,
+  .ai-translate-v2-original,
+  .ai-translate-v2-result-card .ai-polish-polished
+) {
+  border-color: var(--line-strong);
+  background:
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.035) 1px, transparent 1px) 0 0 / 38px 100%,
+    var(--ai-translate-surface);
+  color: var(--ink);
+  scrollbar-color: var(--ai-translate-scrollbar) transparent;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-textarea {
+  caret-color: var(--ink);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-textarea::placeholder {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-textarea:focus {
+  border-color: var(--ink);
+  background:
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.04) 1px, transparent 1px) 0 0 / 38px 100%,
+    var(--ai-translate-surface);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] .ai-translate-v2 :is(
+  .ai-translate-v2-textarea,
+  .ai-translate-v2-original,
+  .ai-polish-polished,
+  .ai-polish-direction-list
+)::-webkit-scrollbar-thumb {
+  background: var(--ai-translate-scrollbar);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-start-btn:not(.disabled) {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-start-btn:not(.disabled):hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-start-btn.disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-surface-hover);
+  color: var(--muted);
+  box-shadow: none;
+  opacity: 1;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-v2-start-btn :is(span, svg) {
+  color: inherit;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-right-empty {
+  border-color: var(--line-strong);
+  background: var(--ai-translate-soft);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-empty-icon-wrap {
+  border-color: var(--line-strong);
+  background: var(--ai-translate-surface);
+  animation-name: aiTranslateEmptyPulseLight;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-empty-icon {
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-right-empty p {
+  color: var(--muted);
+}
+
+@keyframes aiTranslateEmptyPulseLight {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(17, 17, 17, 0.12);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(17, 17, 17, 0);
+    transform: scale(1.05);
+  }
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-directions-title {
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-direction-btn {
+  border-color: var(--line);
+  background: var(--ai-translate-soft);
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-direction-btn::before {
+  background: var(--ink);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-direction-btn:hover {
+  border-color: var(--line-strong);
+  background: var(--ai-translate-hover);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-direction-btn-name {
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-direction-btn-desc {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-direction-cancel {
+  border-color: var(--line-strong);
+  background: var(--ai-translate-soft);
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-direction-cancel:hover {
+  border-color: var(--line-strong);
+  background: var(--ai-translate-hover);
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-sentence {
+  border-color: var(--ai-translate-pair-border, var(--line));
+  background: var(--ai-translate-pair-bg, var(--ai-translate-soft));
+  color: var(--ink);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-sentence:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-sentence.copied-flash {
+  opacity: 1;
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-sentence:nth-child(8n + 1) {
+  --ai-translate-pair-bg: #fee2e2;
+  --ai-translate-pair-border: #fecaca;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-sentence:nth-child(8n + 2) {
+  --ai-translate-pair-bg: #dbeafe;
+  --ai-translate-pair-border: #bfdbfe;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-sentence:nth-child(8n + 3) {
+  --ai-translate-pair-bg: #dcfce7;
+  --ai-translate-pair-border: #bbf7d0;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-sentence:nth-child(8n + 4) {
+  --ai-translate-pair-bg: #fef3c7;
+  --ai-translate-pair-border: #fde68a;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-sentence:nth-child(8n + 5) {
+  --ai-translate-pair-bg: var(--tk-inset);
+  --ai-translate-pair-border: #e9d5ff;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-sentence:nth-child(8n + 6) {
+  --ai-translate-pair-bg: var(--tk-inset);
+  --ai-translate-pair-border: #fbcfe8;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-sentence:nth-child(8n + 7) {
+  --ai-translate-pair-bg: #ccfbf1;
+  --ai-translate-pair-border: #99f6e4;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-translate-sentence:nth-child(8n + 8) {
+  --ai-translate-pair-bg: #ffedd5;
+  --ai-translate-pair-border: #fed7aa;
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-copy-fab {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--tk-on-accent);
+  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.14);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-copy-fab:hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .ai-translate-v2 .ai-polish-copy-fab.copied {
+  border-color: #b8ddc4;
+  background: var(--tk-inset);
+  color: #166534;
+}
+
+html:root[data-theme] .ai-translate-v2.is-reading-file .ai-translate-v2-workspace {
+  opacity: 0.58;
+}
+
+html:root[data-theme] #aiTranslateMask {
+  background: rgba(var(--tk-rgb-page), 0.96);
+}
+
+html:root[data-theme] #aiTranslateMask .audio-convert-process-text {
+  color: var(--tk-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .ai-translate-v2 :is(
+    .ai-polish-empty-icon-wrap,
+    .ai-polish-empty-icon,
+    .ai-polish-directions,
+    .ai-polish-result
+  ) {
+    animation: none;
+  }
+}

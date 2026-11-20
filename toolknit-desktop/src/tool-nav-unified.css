@@ -37,12 +37,12 @@
   background: var(--tk-nav-bg);
   color: var(--tk-nav-ink);
 }
-html[data-theme="light"] .tk-tool-nav {
-  --tk-nav-bg: #fff;
-  --tk-nav-ink: #111;
-  --tk-nav-muted: #666;
-  --tk-nav-hover: #eee;
-  --tk-nav-inverse: #fff;
+html:root[data-theme] .tk-tool-nav {
+  --tk-nav-bg: var(--tk-page-bg);
+  --tk-nav-ink: var(--tk-ink);
+  --tk-nav-muted: var(--tk-muted);
+  --tk-nav-hover: var(--tk-inset);
+  --tk-nav-inverse: var(--tk-page-bg);
 }
 .tk-tool-nav .tk-nav-left {
   min-width: 0;

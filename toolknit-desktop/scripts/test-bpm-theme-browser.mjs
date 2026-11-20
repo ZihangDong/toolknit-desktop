@@ -73,7 +73,7 @@ try {
 
   await open();
   // Parse the dedicated theme with the browser, including nested media rules.
-  const themeSource = await readFile('src/styles/themes/bpm-light.css', 'utf8');
+  const themeSource = await readFile('src/features/audio-tools/bpm.css', 'utf8');
   const unscoped = await page.evaluate(css => {
     const sheet = new CSSStyleSheet(); sheet.replaceSync(css);
     const invalid = [];

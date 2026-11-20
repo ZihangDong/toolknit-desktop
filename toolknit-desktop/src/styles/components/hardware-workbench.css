@@ -243,3 +243,150 @@
     gap: 4px;
   }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* Shared system-tool light surfaces; navigation uses the tool shell. */
+html:root[data-theme] .hardware-v2.pdf-merge-v2 {
+  --hardware-surface: var(--tk-page-bg);
+  --hardware-soft: var(--tk-inset);
+  --hardware-hover: var(--tk-surface);
+  --hardware-good: #24603c;
+  --hardware-good-bg: var(--tk-inset);
+  --hardware-attention: var(--tk-warning);
+  --hardware-attention-bg: var(--tk-warning);
+  --hardware-warning: var(--tk-warning);
+  --hardware-scrollbar: var(--tk-muted);
+  background: var(--hardware-surface);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-v2-body {
+  color: var(--ink);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-v2-panel, .hardware-overview-section) {
+  border-color: var(--line);
+  background: var(--hardware-surface);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-v2-panel-head, .hardware-overview-section:last-child) {
+  border-color: var(--line);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-overview-field {
+  background: var(--hardware-soft);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-overview-section-title, .hardware-overview-value) {
+  color: var(--ink);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-overview-key, .hardware-overview-section-note, .hardware-v2-refresh-row span) {
+  color: var(--muted);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-v2-refresh {
+  color: var(--ink);
+  border-color: var(--line-strong);
+  background: var(--hardware-soft);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-v2-refresh:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--line-strong);
+  background: var(--hardware-hover);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-v2-refresh:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-v2-refresh:disabled {
+  color: var(--muted);
+  opacity: 1;
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-v2-content, .hardware-v2-body, .hardware-device-table-wrap, .cpu-memory-module-table-wrap) {
+  scrollbar-color: var(--hardware-scrollbar) transparent;
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-device-table-wrap, .cpu-memory-module-table-wrap) {
+  border-color: var(--line);
+  background: var(--hardware-surface);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-device-table, .cpu-memory-module-table) {
+  color: var(--ink);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-device-table, .cpu-memory-module-table) :is(th, td) {
+  border-color: var(--line);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-device-table, .cpu-memory-module-table) th {
+  color: var(--muted);
+  background: var(--hardware-soft);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-device-table-primary, .cpu-memory-module-primary, .cpu-memory-module-brand) {
+  color: var(--ink);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-device-table-secondary, .cpu-memory-module-secondary, .cpu-memory-module-part) {
+  color: var(--muted);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-overview-status-item, .cpu-memory-status-item) {
+  color: var(--muted);
+  border-color: var(--line);
+  background: var(--hardware-soft);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-overview-status-item, .cpu-memory-status-item).is-good {
+  color: var(--hardware-good);
+  background: var(--hardware-good-bg);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-overview-status-item, .cpu-memory-status-item).is-attention {
+  color: var(--hardware-attention);
+  background: var(--hardware-attention-bg);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 :is(.hardware-overview-loading, .hardware-overview-error) {
+  color: var(--muted);
+  border-color: var(--line-strong);
+  background: var(--hardware-soft);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-overview-loading-copy::before {
+  background: var(--ink);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-overview-error strong {
+  color: var(--ink);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-overview-error span {
+  color: var(--muted);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-storage-usage-copy {
+  color: var(--ink);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-storage-usage-track {
+  background: var(--line);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-storage-usage-fill {
+  background: var(--ink);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-storage-usage.is-attention .hardware-storage-usage-fill {
+  background: var(--hardware-attention);
+}
+
+html:root[data-theme] .hardware-v2.pdf-merge-v2 .hardware-storage-usage.is-warning .hardware-storage-usage-fill {
+  background: var(--hardware-warning);
+}

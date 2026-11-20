@@ -1,0 +1,153 @@
+diff --git a/sw/source/core/text/itrform2.cxx b/sw/source/core/text/itrform2.cxx
+index df36881666ad34c1fb94e8b4a1e382452a90d893..ee1ab60a124f1c9fdcbcb9020ca492247d974646 100644
+--- a/sw/source/core/text/itrform2.cxx
++++ b/sw/source/core/text/itrform2.cxx
+@@ -463,12 +463,31 @@ void SwTextFormatter::BuildPortions( SwTextFormatInfo &rInf )
+     // and will break the SwTabPortion.
+     SwKernPortion* pGridKernPortion = nullptr;
+ 
++    // Preserve fractional quarter-em spacing across a line. A 10.5 pt em
++    // contains 210 twips: rounding/truncating every 52.5-twip gap separately
++    // accumulates an error large enough to change the final CJK character.
++    SwTwips nScriptSpaceRemainder = 0;
++    const bool bWordScriptSpace = rDoc.getIDocumentSettingAccess().get(
++        DocumentSettingId::MS_WORD_COMP_GRID_METRICS);
++
+     bool bFull = false;
+     SwTwips nUnderLineStart = 0;
+     rInf.Y( Y() );
+ 
+     while( pPor && !rInf.IsStop() )
+     {
++        // Underflow may discard and rebuild the end of the current line.
++        // Recover the remainder from the last surviving script kern, rather
++        // than counting gaps which have already been removed.
++        nScriptSpaceRemainder = 0;
++        if (bWordScriptSpace)
++            for (const auto* p = m_pCurr->GetFirstPortion(); p; p = p->GetNextPortion())
++                if (p->IsKernPortion())
++                {
++                    const auto nRemainder = static_cast<const SwKernPortion*>(p)->GetScriptSpaceRemainder();
++                    if (nRemainder < 4)
++                        nScriptSpaceRemainder = nRemainder;
++                }
+         OSL_ENSURE(rInf.GetLen() < TextFrameIndex(COMPLETE_STRING) &&
+                 rInf.GetIdx() <= TextFrameIndex(rInf.GetText().getLength()),
+                 "SwTextFormatter::BuildPortions: bad length in info" );
+@@ -575,14 +594,20 @@ void SwTextFormatter::BuildPortions( SwTextFormatInfo &rInf )
+                     bAllowBefore = rCC.isLetterNumeric(rInf.GetText(), sal_Int32(rInf.GetIdx()) - 1);
+                 }
+ 
+-                nLstHeight /= rDoc.getIDocumentSettingAccess().get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS) ? 4 : 5;
++                const SwTwips nScriptHeight = nLstHeight;
++                nLstHeight = bWordScriptSpace ? (nScriptHeight + nScriptSpaceRemainder) / 4
++                                              : nScriptHeight / 5;
+                 // does the kerning portion still fit into the line?
+                 if (bAllowBefore && fnRequireKerningAtPosition(rInf.GetIdx()) && nLstHeight
+                     && rInf.X() + nLstHeight <= rInf.Width() && !pPor->InTabGrp())
+                 {
++                    if (bWordScriptSpace)
++                        nScriptSpaceRemainder = (nScriptHeight + nScriptSpaceRemainder) % 4;
+                     SwKernPortion* pKrn =
+                         new SwKernPortion( *rInf.GetLast(), nLstHeight,
+                                            pLast->InFieldGrp() && pPor->InFieldGrp() );
++                    if (bWordScriptSpace)
++                        pKrn->SetScriptSpaceRemainder(nScriptSpaceRemainder);
+ 
+                     // ofz#58550 Direct-leak, pKrn adds itself as the NextPortion
+                     // of rInf.GetLast(), but may use CopyLinePortion to add a copy
+@@ -718,8 +743,9 @@ void SwTextFormatter::BuildPortions( SwTextFormatInfo &rInf )
+                     && nTmp != TextFrameIndex(rInf.GetText().getLength())
+                     && fnRequireKerningAtPosition(nTmp))
+                 {
+-                    const SwTwips nDist = rInf.GetFont()->GetHeight()
+-                        / (rDoc.getIDocumentSettingAccess().get(DocumentSettingId::MS_WORD_COMP_GRID_METRICS) ? 4 : 5);
++                    const SwTwips nScriptHeight = rInf.GetFont()->GetHeight();
++                    const SwTwips nDist = bWordScriptSpace
++                        ? (nScriptHeight + nScriptSpaceRemainder) / 4 : nScriptHeight / 5;
+ 
+                     if( nDist )
+                     {
+@@ -731,7 +757,14 @@ void SwTextFormatter::BuildPortions( SwTextFormatInfo &rInf )
+                         {
+                             // does the kerning portion still fit into the line?
+                             if ( rInf.X() + pPor->Width() + nDist <= rInf.Width() )
+-                                new SwKernPortion( *pPor, nDist );
++                            {
++                                auto* pKern = new SwKernPortion( *pPor, nDist );
++                                if (bWordScriptSpace)
++                                {
++                                    nScriptSpaceRemainder = (nScriptHeight + nScriptSpaceRemainder) % 4;
++                                    pKern->SetScriptSpaceRemainder(nScriptSpaceRemainder);
++                                }
++                            }
+                             else
+                                 bFull = true;
+                         }
+diff --git a/sw/source/core/text/porrst.hxx b/sw/source/core/text/porrst.hxx
+index 15cf813d4d8c346fc1e92fd0eafdef20501fc2bf..e09399bd13124b90136453b97debad1449f8e15e 100644
+--- a/sw/source/core/text/porrst.hxx
++++ b/sw/source/core/text/porrst.hxx
+@@ -89,6 +89,8 @@ class SwKernPortion : public SwLinePortion
+     short m_nKern;
+     bool m_bBackground;
+     bool m_bGridKern;
++    // 4 marks a non-script kern; 0..3 retain quarter-twip remainder.
++    sal_uInt8 m_nScriptSpaceRemainder = 4;
+ 
+ public:
+ 
+@@ -104,6 +106,9 @@ public:
+     // of rPortion. It is only used for kerning portions for grid mode
+     explicit SwKernPortion( const SwLinePortion &rPortion );
+ 
++    sal_uInt8 GetScriptSpaceRemainder() const { return m_nScriptSpaceRemainder; }
++    void SetScriptSpaceRemainder(sal_uInt8 nValue) { m_nScriptSpaceRemainder = nValue; }
++
+     virtual void FormatEOL( SwTextFormatInfo &rInf ) override;
+     virtual void Paint( const SwTextPaintInfo &rInf ) const override;
+ };
+diff --git a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+index 7b443f2720944e2579d86cd46677b57b14c77f79..d21604bb56ac07ca5c23f6fd8b51f8bbebf29c11 100644
+--- a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
++++ b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+@@ -247,6 +247,26 @@ CPPUNIT_TEST_FIXTURE(Test, testWordTableBracketHanging)
+ #endif
+ }
+ 
++CPPUNIT_TEST_FIXTURE(Test, testWordFractionalScriptSpacing)
++{
++#if defined(_WIN32)
++    CPPUNIT_ASSERT(Application::GetDefaultDevice()->IsFontAvailable(u"SimSun"_ustr));
++    CPPUNIT_ASSERT(Application::GetDefaultDevice()->IsFontAvailable(u"Times New Roman"_ustr));
++    for (const char* pFile : { "word-fractional-script-spacing.docx", "word-fractional-script-spacing-split.docx" })
++    {
++        createSwDoc(pFile);
++        xmlDocUniquePtr pDump = parseLayoutDump();
++        for (size_t i = 0; i < 8; ++i)
++        {
++            const OString aPath = "/root/page[1]/body/txt[" + OString::number((i + 1) * 2)
++                + "]/SwParaPortion/SwLineLayout[1]";
++            CPPUNIT_ASSERT_EQUAL_MESSAGE(pFile, sal_Int32(20),
++                                         getXPath(pDump, aPath, "length").toInt32());
++        }
++    }
++#endif
++}
++
+ CPPUNIT_TEST_FIXTURE(Test, testImageHyperlink)
+ {
+     createSwDoc("image-hyperlink.docx");
+@@ -1139,10 +1159,10 @@ CPPUNIT_TEST_FIXTURE(Test, testTdf133647_unicode)
+     xFields->nextElement();
+ 
+     uno::Reference<text::XTextField> xEnumerationAccess1(xFields->nextElement(), uno::UNO_QUERY);
+-    CPPUNIT_ASSERT_EQUAL(u"defined(預期結果)"_ustr, xEnumerationAccess1->getPresentation(true).trim());
++    CPPUNIT_ASSERT_EQUAL(u"defined(闋愭湡绲愭灉)"_ustr, xEnumerationAccess1->getPresentation(true).trim());
+ 
+     uno::Reference<text::XTextField> xEnumerationAccess2(xFields->nextElement(), uno::UNO_QUERY);
+-    CPPUNIT_ASSERT_EQUAL(u"defined(نتيجةمتوقعة)"_ustr, xEnumerationAccess2->getPresentation(true).trim());
++    CPPUNIT_ASSERT_EQUAL(u"defined(賳鬲賷噩丞賲鬲賵賯毓丞)"_ustr, xEnumerationAccess2->getPresentation(true).trim());
+ 
+     uno::Reference<text::XTextField> xEnumerationAccess3(xFields->nextElement(), uno::UNO_QUERY);
+     CPPUNIT_ASSERT_EQUAL(u"defined(ExpectedResult)"_ustr, xEnumerationAccess3->getPresentation(true).trim());

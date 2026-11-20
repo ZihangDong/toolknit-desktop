@@ -562,7 +562,7 @@ export function createAudioClipController({
     // Canvas pixels do not follow CSS theme or layout changes automatically.
     if (window?.MutationObserver && document.documentElement) {
       const observer = new window.MutationObserver(scheduleRedraw);
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-theme-config'] });
       viewScope.use(() => observer.disconnect());
     }
     if (window?.ResizeObserver && audioClipCanvas) {

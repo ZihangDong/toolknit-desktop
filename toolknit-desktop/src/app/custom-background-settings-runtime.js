@@ -102,10 +102,10 @@ export function createCustomBackgroundSettingsRuntime({
     const disabled = importBusy || blocked;
     if (blocked && backgroundControls?.contains(root?.activeElement)) {
       root.activeElement?.blur?.();
-      if (settingsOverlay?.classList.contains('visible')) root.querySelector('[data-theme-choice="light"]')?.focus?.();
+      if (settingsOverlay?.classList.contains('visible')) root.getElementById('themeWallpaperToggle')?.focus?.();
     }
-    backgroundCard?.classList.toggle('is-theme-disabled', blocked);
-    backgroundCard?.setAttribute('aria-disabled', String(blocked));
+    backgroundCard?.classList.toggle('is-wallpaper-disabled', blocked);
+    backgroundControls?.setAttribute('aria-disabled', String(blocked));
     if (backgroundControls) backgroundControls.inert = blocked;
     if (chooseImage) chooseImage.disabled = disabled;
     if (chooseVideo) chooseVideo.disabled = disabled;
@@ -366,7 +366,11 @@ export function createCustomBackgroundSettingsRuntime({
   }
   if (root) scope.event(root, 'visibilitychange', syncPreviewPlayback);
   scope.use(onLanguageChange(() => setSummary(readMetadata())));
+  let customAllowed = allowCustomBackground();
   scope.use(onThemeChange(() => {
+    const allowed = allowCustomBackground();
+    if (allowed === customAllowed) return;
+    customAllowed = allowed;
     policyRevision += 1;
     void render(readMetadata());
   }));

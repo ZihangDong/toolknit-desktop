@@ -139,3 +139,39 @@
 @media (prefers-reduced-motion: reduce) {
   .md-tool-shell .md-tool-main,.md-tool-shell .md-outline-panel,.md-toolbar button > * { transition: none; }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .md-tool-shell {
+  --md-line: var(--tk-border);
+  --md-surface: var(--tk-page-bg);
+  --md-ink: var(--tk-ink);
+  --md-muted: var(--tk-muted);
+  --md-syntax-weight: var(--tk-syntax-weight);
+  --md-syntax-tint: var(--tk-ink);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--md-ink);
+  background: var(--tk-page-bg) !important;
+}
+html:root[data-theme] .md-tool-shell > .tool-page-v2-bg { display: none !important; }
+html:root[data-theme] .md-tool-shell .md-outline-panel { background: var(--tk-inset); color: var(--md-ink); border-color: var(--md-line); box-shadow: none; }
+html:root[data-theme] .md-tool-shell :is(.tool-page-v2-rail-kicker,.tool-page-v2-rail-note span,.tool-page-v2-rail > p,.tool-page-v2-rail-note strong) { color: var(--md-muted); }
+html:root[data-theme] .md-tool-shell .tool-page-v2-rail h1 { color: var(--md-ink); letter-spacing: 0; }
+html:root[data-theme] .md-tool-shell .tool-page-v2-rail-note { border-color: var(--md-line); }
+html:root[data-theme] .md-tool-shell .tool-page-v2-steps > div { color: var(--md-muted); }
+html:root[data-theme] .md-tool-shell .tool-page-v2-steps b { border-color: var(--tk-border); background: var(--tk-page-bg); color: var(--md-muted); }
+html:root[data-theme] .md-tool-shell .tool-page-v2-steps > .is-active b { border-color: var(--tk-accent); background: var(--tk-accent); color: var(--tk-on-accent); }
+html:root[data-theme] .md-tool-shell .tool-page-v2-steps strong { color: var(--md-ink); }
+html:root[data-theme] .md-tool-shell .tool-page-v2-steps small { color: var(--md-muted); }
+html:root[data-theme] .md-tool-shell .md-toolbar { background: var(--tk-inset); }
+html:root[data-theme] .md-tool-shell .md-pane-head { background: var(--tk-inset); }
+html:root[data-theme] .md-tool-shell .md-codemirror .cm-editor { background: var(--tk-page-bg); color: var(--tk-ink); }
+html:root[data-theme] .md-tool-shell .md-codemirror .cm-gutters { border-right: 1px solid var(--tk-inset); background: var(--tk-inset); color: var(--md-muted); }
+html:root[data-theme] .md-tool-shell .md-help-page { background: var(--tk-inset); color: var(--md-ink); }
+html:root[data-theme] .md-export-success-overlay {
+  --md-dialog-bg: var(--tk-page-bg);
+  --md-dialog-ink: var(--tk-ink);
+  --md-dialog-muted: var(--tk-muted);
+  --md-dialog-soft: var(--tk-inset);
+  background: rgba(var(--tk-rgb-ink), 0.18);
+}

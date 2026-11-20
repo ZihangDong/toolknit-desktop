@@ -532,3 +532,209 @@
       }
 
       /* ===== End Text Format ===== */
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .text-format-v2 {
+  --text-format-light-surface: var(--tk-on-accent);
+  --text-format-light-soft: var(--tk-on-accent);
+  --text-format-light-output: var(--tk-on-accent);
+  --text-format-light-hover: var(--tk-muted);
+  --text-format-light-line: var(--tk-border);
+  --text-format-light-line-strong: var(--tk-border);
+  --text-format-light-ink: var(--tk-ink);
+  --text-format-light-muted: var(--tk-muted);
+  --text-format-light-quiet: var(--tk-muted);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--text-format-light-ink);
+  background: var(--text-format-light-surface);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-workspace {
+  background: var(--text-format-light-surface);
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .text-format-v2 :is(.text-format-v2-input-card, .text-format-v2-actions-card, .text-format-v2-output-card) {
+  border-color: var(--text-format-light-line);
+  background: var(--text-format-light-surface);
+  box-shadow: none;
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-card-head h2 {
+  color: var(--text-format-light-ink);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-card-head p {
+  color: var(--text-format-light-muted);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-source {
+  border-color: var(--text-format-light-line);
+  background: var(--text-format-light-soft);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-source > :is(svg, i) {
+  border-color: var(--text-format-light-line-strong);
+  background: var(--text-format-light-surface);
+  color: var(--text-format-light-ink);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-source strong {
+  color: var(--text-format-light-ink);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-source span {
+  color: var(--text-format-light-muted);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-source-mark {
+  border-color: var(--text-format-light-line);
+  background: var(--text-format-light-surface);
+  color: var(--text-format-light-muted);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-drop-card {
+  border-color: var(--text-format-light-line-strong);
+  background: var(--text-format-light-soft);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-drop-card.is-dragging,
+html:root[data-theme] .text-format-v2.drag-over .text-format-v2-drop-card {
+  border-color: var(--text-format-light-ink);
+  background: var(--text-format-light-hover);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-drop-card span {
+  color: var(--text-format-light-quiet);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-drop-card p {
+  color: var(--text-format-light-muted);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-select-btn {
+  border-color: var(--text-format-light-ink);
+  background: var(--text-format-light-ink);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-select-btn :is(span, svg),
+html:root[data-theme] .text-format-v2 .text-format-v2-select-btn:hover {
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-select-btn:hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  box-shadow: 0 6px 14px rgba(17, 17, 17, 0.12);
+}
+
+html:root[data-theme] .text-format-v2 :is(.text-format-v2-textarea, .text-format-v2-output) {
+  border-color: var(--text-format-light-line-strong);
+  background:
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.045) 1px, transparent 1px) 0 0 / 38px 100%,
+    var(--text-format-light-surface);
+  color: var(--text-format-light-ink);
+  caret-color: var(--text-format-light-ink);
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-output {
+  background:
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.04) 1px, transparent 1px) 0 0 / 38px 100%,
+    var(--text-format-light-output);
+}
+
+html:root[data-theme] .text-format-v2 :is(.text-format-v2-textarea, .text-format-v2-output)::placeholder {
+  color: var(--text-format-light-quiet);
+}
+
+html:root[data-theme] .text-format-v2 :is(.text-format-v2-textarea, .text-format-v2-output):focus {
+  border-color: var(--text-format-light-ink);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] .text-format-v2 :is(.text-format-v2-textarea, .text-format-v2-output, .text-format-v2-actions)::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] .text-format-v2 :is(.text-format-v2-textarea, .text-format-v2-output, .text-format-v2-actions)::-webkit-scrollbar-thumb:hover {
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-actions .text-format-btn {
+  border-color: var(--text-format-light-line-strong);
+  background: var(--text-format-light-soft);
+  color: var(--text-format-light-ink);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-actions .text-format-btn:hover {
+  border-color: var(--text-format-light-ink);
+  background: var(--text-format-light-hover);
+  color: var(--text-format-light-ink);
+  box-shadow: 0 5px 12px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-toolbar .text-format-btn {
+  border-color: var(--text-format-light-line-strong);
+  background: var(--text-format-light-surface);
+  color: var(--text-format-light-ink);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-toolbar .text-format-btn:hover {
+  border-color: var(--text-format-light-ink);
+  background: var(--text-format-light-hover);
+  color: var(--text-format-light-ink);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-toolbar .text-format-clear-btn:hover {
+  border-color: #c65a5a;
+  background: var(--tk-inset);
+  color: #a63232;
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-toolbar :is(.text-format-use-as-input-btn, .text-format-copy-btn) {
+  border-color: var(--text-format-light-ink);
+  background: var(--text-format-light-ink);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-v2-toolbar :is(.text-format-use-as-input-btn, .text-format-copy-btn):hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: 0 6px 14px rgba(17, 17, 17, 0.12);
+}
+
+html:root[data-theme] .text-format-v2 .text-format-btn:focus-visible {
+  outline: 2px solid var(--text-format-light-ink);
+  outline-offset: 2px;
+}
+
+html:root[data-theme] .text-format-v2 .text-format-btn:disabled {
+  border-color: var(--text-format-light-line);
+  background: var(--tk-surface-hover);
+  color: var(--tk-muted);
+  box-shadow: none;
+}
+
+html:root[data-theme] .text-format-v2.is-reading-file .text-format-v2-workspace {
+  opacity: 0.72;
+}
+
+html:root[data-theme] .text-format-v2.is-reading-file::before {
+  inset: 68px 0 0;
+  z-index: 10;
+  display: block;
+  background: rgba(var(--tk-rgb-page), 0.72);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .text-format-v2 :is(.text-format-v2-select-btn, .text-format-v2-actions .text-format-btn, .text-format-v2-toolbar .text-format-btn) {
+    transition: none;
+  }
+}

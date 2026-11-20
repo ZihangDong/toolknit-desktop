@@ -22,7 +22,7 @@ assert.match(runtime, /prefers-reduced-motion/);
 assert.match(styles, /\.tk-page-transition-veil\.is-active/);
 assert.match(styles, /\.tk-page-transition-veil\.is-revealing/);
 assert.match(styles, /pointer-events:\s*auto/);
-assert.match(styles, /background:\s*#000/);
+assert.match(styles, /background:\s*var\(--tk-page-bg\)/);
 assert.match(styles, /\.tk-page-transition-veil\.is-active[\s\S]*?opacity:\s*1/);
 assert.match(styles, /transition:\s*opacity\s+250ms\s+ease/);
 assert.match(styles, /transition-duration:\s*350ms/);

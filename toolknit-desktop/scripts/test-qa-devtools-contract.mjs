@@ -21,7 +21,8 @@ assert.deepEqual(releaseConfig.app.security.capabilities, ['default', 'screensho
   'production must retain only the explicitly scoped capabilities');
 assert.match(cargo, /^default\s*=\s*\["custom-protocol"\]/m, 'production default features must not enable QA');
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
-assert.equal(pkg.scripts['build:release-package'], 'tauri build', 'production build must not use QA features or config');
+assert.equal(pkg.scripts['build:release-package'], 'node scripts/verify-office-kernel.mjs && tauri build',
+  'production build must verify the bundled kernel and must not use QA features or config');
 const platform = await readFile(new URL('../src-tauri/src/platform/mod.rs', import.meta.url), 'utf8');
 assert.match(platform, /#\[cfg\(feature = "qa-devtools"\)\]\s*pub mod qa_devtools;/,
   'the QA module must be compiled out of production');

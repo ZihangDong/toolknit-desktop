@@ -73,8 +73,8 @@ export const HELP_CONTENT = {
     title: '功能概览',
     html: `<div class="help-doc">
       <h2>ToolKnit 功能概览</h2>
-      <p>ToolKnit 3.3 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前源码提供 12 个分类、83 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 78 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
-      <p>当前为 V3.3 正式版，新增文件快速搜索、Word 转 PDF，增强本地 OCR、扫描 PDF 转 Word 和截图体验。桌面安装包与 CLI/MCP 分别通过官网和 npm 发布。</p>
+      <p>ToolKnit 3.4 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前开发版本提供 12 个分类、83 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 78 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
+      <p>当前为尚未发布的 V3.4 开发版本，新增统一主题布局、八套配色与自选主题色，壁纸独立开关，并优化设置页滚动和排列。正式安装包与 npm 仍以已发布的 V3.3 为准。</p>
 
       <h3>工具分类一览</h3>
       <div class="help-tool-grid">
@@ -1050,7 +1050,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       <p>把 ToolKnit CLI 连接到支持 MCP 的 IDE 后，你可以直接用自然语言让 Agent 处理项目里的本地文件。Agent 调用的是真正的 ToolKnit 工具，不需要打开桌面端，也不应把“我已经处理好了”当成没有调用工具时的替代答案。</p>
 
       <h3>当前可用范围</h3>
-      <div class="help-agent-scope"><p>V3.3 MCP 提供 <strong>78 项</strong>能力，新增 Word 转 PDF；对应 npm 版本为 3.3.0。CLI 独立运行，无需打开桌面端。</p><ul>
+      <div class="help-agent-scope"><p>V3.4 开发源码提供 <strong>78 项</strong> MCP 能力，沿用 V3.3 的 Word 转 PDF 等功能；源码版本为 3.4.0（未发布），当前正式 npm 版本为 3.3.0。CLI 独立运行，无需打开桌面端。</p><ul>
         <li><strong>PDF 与 Office</strong>：检查、合并、拆分、旋转、加解密、压缩、增强、导出图像、转 Word、文本/Markdown、裁剪、页码、扫描效果、空白 PDF，以及 XLSX 转 PDF。Word 默认离线，复杂区域可保留图像；Excel 渲染需要 LibreOffice。</li>
         <li><strong>PPT</strong>：转 PDF/图像、提取素材/文字、压缩、AI 大纲和可编辑草稿。</li>
         <li><strong>图像</strong>：转 PDF、格式转换、压缩、裁剪/旋转/翻转、颜色替换、图标包、取色、长图拼接与颜色空间换算。</li>
@@ -1384,7 +1384,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
   'developer-tools': {
     title: '开发者工具',
-    html: `<div class="help-doc"><h2>3.3 开发者工具</h2><p>这里集中介绍现有的本地工具。它们默认在需要时加载，关闭页面后会释放 Worker、Canvas 和临时任务。</p><h3>Markdown 文档编辑器</h3><p>支持 GFM、任务列表、Mermaid、数学公式、目录跳转、草稿恢复，以及 Markdown 和离线 HTML 导出。导出本地图片时会自动整理 assets 目录。</p><h3>智能颜色替换</h3><p>使用吸管选择源色和目标色，可调节感知阈值、边缘柔化、亮度保持和八连通智能保护。预览使用降采样 Worker，导出由 Rust 按原始分辨率完成。</p><h3>Hash &amp; Crypto</h3><p>覆盖常用 Hash、HMAC、国密、AES 文件加密、RSA 和 SM2。旧算法仅用于兼容，敏感输入不会写入历史或本地存储。</p></div>`
+    html: `<div class="help-doc"><h2>3.4 开发者工具</h2><p>这里集中介绍现有的本地工具。它们默认在需要时加载，关闭页面后会释放 Worker、Canvas 和临时任务。</p><h3>Markdown 文档编辑器</h3><p>支持 GFM、任务列表、Mermaid、数学公式、目录跳转、草稿恢复，以及 Markdown 和离线 HTML 导出。导出本地图片时会自动整理 assets 目录。</p><h3>智能颜色替换</h3><p>使用吸管选择源色和目标色，可调节感知阈值、边缘柔化、亮度保持和八连通智能保护。预览使用降采样 Worker，导出由 Rust 按原始分辨率完成。</p><h3>Hash &amp; Crypto</h3><p>覆盖常用 Hash、HMAC、国密、AES 文件加密、RSA 和 SM2。旧算法仅用于兼容，敏感输入不会写入历史或本地存储。</p></div>`
   },
   'hardware-tools': {
     title: '硬件工具总览',

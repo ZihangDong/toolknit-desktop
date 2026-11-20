@@ -33,11 +33,11 @@
   box-shadow: 0 24px 90px rgba(0, 0, 0, 0.4);
 }
 
-html[data-theme="light"] .release-announcement-panel {
-  --release-surface: #ffffff;
-  --release-ink: #17191c;
-  --release-muted: #555c64;
-  --release-line: #d9dde2;
+html:root[data-theme] .release-announcement-panel {
+  --release-surface: var(--tk-page-bg);
+  --release-ink: var(--tk-ink);
+  --release-muted: var(--tk-muted);
+  --release-line: var(--tk-border);
   --release-accent: #134d8a;
 }
 

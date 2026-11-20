@@ -1,3 +1,4 @@
+import { createThemePalette } from '../src/app/theme-palette.js';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -71,8 +72,10 @@ async function scenario(theme, { reduced = false, failFonts = false, width = 140
         top: document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest('#appStartupMask') === node };
     });
     const initial = await measure();
-    assert.equal(initial.background, theme === 'dark' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)');
-    assert.equal(initial.color, theme === 'dark' ? 'rgb(238, 238, 238)' : 'rgb(17, 17, 17)');
+    const palette = createThemePalette({ mode: theme });
+    const rgb = value => 'rgb(' + [1, 3, 5].map(i => parseInt(value.slice(i, i + 2), 16)).join(', ') + ')';
+    assert.equal(initial.background, rgb(palette['--tk-page-bg']));
+    assert.equal(initial.color, rgb(palette['--tk-ink']));
     assert.equal(initial.opacity, '1');
     assert.equal(initial.width, width);
     assert.equal(initial.height, height);

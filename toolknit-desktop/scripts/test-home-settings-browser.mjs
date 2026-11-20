@@ -261,7 +261,7 @@ try {
       await page.waitForFunction(() => getComputedStyle(document.querySelector('#customToolsOverlay')).opacity === '1');
       assert.equal(await page.locator('.app').evaluate(n => n.inert), true);
       assert.equal(await page.locator('#customToolsDescription').evaluate(n => n.scrollHeight <= n.clientHeight), true, 'complete description is visible');
-      assert.equal(await page.locator('#customToolsOverlay .audio-convert-success-dialog').evaluate(n => getComputedStyle(n).backgroundColor), theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(24, 24, 27)');
+      assert.equal(await page.locator('#customToolsOverlay .audio-convert-success-dialog').evaluate(n => getComputedStyle(n).backgroundColor), theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(20, 21, 24)');
       if (exit === 'copy') {
         await page.locator('#customToolsCopy').click();
         await page.waitForFunction(() => window.__copied.includes('wunanvip6'));

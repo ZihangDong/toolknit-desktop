@@ -1,4 +1,3 @@
-@import url('../productivity/palette.css');
 .workbench-sheet textarea{box-sizing:border-box;width:100%;min-width:0;resize:vertical;border:1px solid var(--tk-border);border-radius:7px;background:var(--tk-page-bg);color:var(--tk-ink);font:14px/1.6 var(--tk-font-ui);padding:12px}
 html:root[data-theme] .workbench-sheet textarea{background-image:none!important;border-bottom:1px solid var(--tk-border-strong)!important}
 .wb-toolbar,.wb-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.wb-toolbar{margin:18px 0}.wb-toolbar>h2{margin:0 auto 0 0}.wb-actions{gap:8px}.wb-query{flex:1;min-width:200px}.wb-results{margin-top:24px}.workbench-sheet [data-index-progress]{width:100%;height:6px;accent-color:var(--tk-accent);margin-bottom:12px}

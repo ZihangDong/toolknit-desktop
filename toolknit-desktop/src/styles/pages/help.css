@@ -909,3 +909,166 @@
           padding-inline: 0;
         }
       }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* Help and legal documents share a reading palette, not the tool-page theme. */
+html:root[data-theme] .help-overlay {
+  --ink: var(--tk-page-ink);
+  --muted: var(--tk-page-muted);
+  --quiet: var(--tk-home-card-muted);
+  --line: var(--tk-page-line);
+  --line-strong: var(--tk-border);
+  --tk-nav-bg: var(--tk-page-bg);
+  --tk-nav-support-bg: var(--tk-accent);
+  --tk-nav-support-ink: var(--tk-on-accent);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--ink);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .help-overlay .help-v2-shell {
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .help-overlay :is(.help-v2-layout, .help-content-body) {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .help-overlay .help-v2-layout {
+  gap: 24px;
+  padding-top: 24px;
+  background-image:
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.025) 1px, transparent 1px),
+    linear-gradient(rgba(var(--tk-rgb-ink), 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+html:root[data-theme] .help-overlay .help-sidebar {
+  min-width: 0;
+  padding: 24px;
+  border: 0;
+  border-radius: 32px;
+  background: var(--tk-home-card-bg);
+}
+
+html:root[data-theme] .help-overlay .help-sidebar-header {
+  padding: 0 0 24px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-areas: "mark title" "mark sub";
+  align-items: center;
+  column-gap: 12px;
+}
+
+html:root[data-theme] .help-overlay .help-sidebar-header .tk-mascot {
+  grid-area: mark;
+  position: static;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: url('/logo.png') center / cover no-repeat;
+  image-rendering: auto;
+  animation: none;
+  filter: grayscale(1);
+}
+
+html:root[data-theme] .help-overlay .help-sidebar-title {
+  grid-area: title;
+  padding-left: 0;
+  color: var(--ink);
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .help-overlay .help-sidebar-sub {
+  grid-area: sub;
+  padding-left: 0;
+  color: var(--muted);
+}
+
+html:root[data-theme] .help-overlay .help-search-wrap { padding: 0 0 20px; }
+html:root[data-theme] .help-overlay .help-search-icon { left: 14px; color: var(--muted); }
+
+html:root[data-theme] .help-overlay .help-search-input {
+  color: var(--ink);
+  background: var(--tk-page-bg);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+html:root[data-theme] .help-overlay .help-search-input::placeholder { color: var(--quiet); }
+html:root[data-theme] .help-overlay .help-search-input:focus { background: var(--tk-page-bg); border-color: var(--tk-accent); }
+
+html:root[data-theme] .help-overlay .help-nav {
+  min-height: 0;
+  padding: 0 4px 0 0;
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .help-overlay :is(.help-nav, .help-content-body)::-webkit-scrollbar-thumb { background: var(--tk-muted); }
+html:root[data-theme] .help-overlay .help-nav-group-title { padding-left: 12px; color: var(--muted); letter-spacing: 0; }
+
+html:root[data-theme] .help-overlay .help-nav-item {
+  min-height: 36px;
+  margin-bottom: 4px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: var(--tk-home-card-ink);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+html:root[data-theme] .help-overlay .help-nav-item:hover { background: var(--tk-home-card-hover); color: var(--ink); transform: none; }
+html:root[data-theme] .help-overlay .help-nav-item.active { background: var(--tk-accent); color: var(--tk-on-accent); }
+html:root[data-theme] .help-overlay .help-nav-item::before { display: none; }
+
+html:root[data-theme] .help-overlay .help-content { min-width: 0; background: var(--tk-page-bg); }
+html:root[data-theme] .help-overlay .help-content-header { border-color: var(--line); padding-inline: 28px; }
+html:root[data-theme] .help-overlay .help-content-kicker { color: var(--quiet); letter-spacing: 0; }
+html:root[data-theme] .help-overlay .help-content-title { color: var(--ink); font-size: 28px; line-height: 1.4; overflow-wrap: anywhere; }
+html:root[data-theme] .help-overlay .help-content-body { min-width: 0; padding: 28px 28px 48px; }
+html:root[data-theme] .help-overlay .help-doc { color: var(--muted); overflow-wrap: anywhere; }
+html:root[data-theme] .help-overlay .help-doc h2 { color: var(--ink); font-size: 26px; line-height: 1.4; letter-spacing: 0; }
+html:root[data-theme] .help-overlay .help-doc :is(h3, h4, strong, .help-faq-q, .help-tool-card-name) { color: var(--ink); border-color: var(--line); }
+html:root[data-theme] .help-overlay .help-doc :is(p, li, .help-faq-a, .help-agent-scope, .help-tool-card-desc) { color: var(--muted); }
+html:root[data-theme] .help-overlay .help-doc a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+html:root[data-theme] .help-overlay .help-doc :is(code, pre, .help-agent-prompt-text) {
+  color: var(--tk-home-card-ink);
+  background: var(--tk-home-card-bg);
+  border: 0;
+}
+
+html:root[data-theme] .help-overlay .help-doc :is(pre, .help-agent-prompt-text) { border-radius: 20px; scrollbar-color: var(--tk-muted) transparent; }
+html:root[data-theme] .help-overlay .help-doc pre code { color: var(--tk-home-card-ink); background: transparent; }
+html:root[data-theme] .help-overlay .help-doc .help-note { background: transparent; border-left-color: var(--tk-border-strong); }
+html:root[data-theme] .help-overlay .help-doc .help-note p { color: var(--muted); }
+html:root[data-theme] .help-overlay .help-doc .help-steps li { display: block; position: relative; padding-left: 38px; }
+html:root[data-theme] .help-overlay .help-doc .help-steps li::before { position: absolute; background: var(--tk-home-card-bg); color: var(--ink); border-color: var(--line); }
+html:root[data-theme] .help-overlay .help-doc :is(.help-tool-grid, .help-tool-card, .help-faq-item, .help-agent-prompt) { border-color: var(--line); }
+
+html:root[data-theme] .help-overlay .help-doc .help-prompt-copy {
+  color: var(--tk-on-accent);
+  background: var(--tk-accent);
+  border-color: transparent;
+  border-radius: 999px;
+}
+
+html:root[data-theme] .help-overlay .help-doc .help-prompt-copy:is(:hover, .is-copied) { color: var(--tk-on-accent); background: var(--tk-accent); border-color: transparent; }
+html:root[data-theme] .help-overlay .help-search-empty { color: var(--muted); border-color: var(--line); }
+html:root[data-theme] .help-overlay :is(button, input, a):focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 3px; }
+
+@media (max-width: 820px) {
+  html:root[data-theme] .help-overlay .help-v2-layout { gap: 24px; grid-auto-rows: max-content; align-content: start; }
+  html:root[data-theme] .help-overlay.v2-help .help-nav { flex: 0 0 auto; max-height: 220px; }
+  html:root[data-theme] .help-overlay.v2-help .help-content { overflow: visible; }
+  html:root[data-theme] .help-overlay.v2-help .help-content-body { flex: none; overflow: visible; }
+  html:root[data-theme] .help-overlay .help-sidebar { padding: 20px; }
+  html:root[data-theme] .help-overlay :is(.help-content-header, .help-content-body) { padding-inline: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .help-overlay :is(.help-nav-item, .help-search-input) { transition: none; }
+}

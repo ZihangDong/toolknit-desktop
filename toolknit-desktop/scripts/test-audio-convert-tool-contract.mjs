@@ -60,9 +60,9 @@ assert.match(template, /data-audio-convert-action="start"/);
 assert.match(template, /data-audio-convert-success-path/);
 assert.match(featureStyles, /\.audio-convert-feature\.audio-convert-v2/);
 assert.doesNotMatch(appStyles, /\.audio-convert-v2 \.pdf-merge-v2-poster::after/);
-const lightStyles = await read('src/styles/themes/pdf-tools-light.css');
-assert.match(lightStyles, /html\[data-theme="light"\] \.pdf-merge-v2 :is\(\[data-audio-convert-files\], #videoConvertFiles\) \.audio-convert-file-item:has\(> \.audio-convert-file-size\)\s*\{\s*grid-template-columns: 28px minmax\(0, 1fr\) max-content 30px;/);
-assert.match(lightStyles, /:is\(\[data-audio-convert-files\], #videoConvertFiles\) \.audio-convert-file-size\s*\{\s*color: #65686f;/);
+const lightStyles = await read('src/styles/components/tool-pages.css');
+assert.match(lightStyles, /html:root\[data-theme\] \.pdf-merge-v2 :is\(\[data-audio-convert-files\], #videoConvertFiles\) \.audio-convert-file-item:has\(> \.audio-convert-file-size\)\s*\{\s*grid-template-columns: 28px minmax\(0, 1fr\) max-content 30px;/);
+assert.match(lightStyles, /:is\(\[data-audio-convert-files\], #videoConvertFiles\) \.audio-convert-file-size\s*\{\s*color: var\(--tk-muted\);/);
 
 const ids = [...audioConvertTemplate().matchAll(/\sid="([^"]+)"/g)].map(match => match[1]);
 assert.equal(ids.length, 0, 'audio convert template must use scoped data hooks instead of global IDs');

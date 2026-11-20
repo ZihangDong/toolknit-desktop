@@ -1,6 +1,5 @@
       import { createElement as createLucideElement, createIcons, icons } from 'lucide';
       import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
-      import { initLightRays } from './lightrays.js';
       import { initPlasma } from './plasma.js';
       import { getLang, setLang, applyTranslations, onLangChange, t } from './i18n.js';
       import { initUpdateDialog } from './update-dialog.js';
@@ -665,7 +664,7 @@
       const versionUpdateStatus = document.getElementById('versionUpdateStatus');
       const checkVersionUpdateBtn = document.getElementById('checkVersionUpdateBtn');
       const openReleasePageBtn = document.getElementById('openReleasePageBtn');
-      const APP_VERSION_FALLBACK = '3.3.0';
+      const APP_VERSION_FALLBACK = '3.4.0';
       let updateDialogController = null;
       const updateRuntime = createUpdateRuntime({
         isTauri,
@@ -1469,9 +1468,6 @@
         getHelpContent,
         getLegalContent,
         escapeHtml,
-        initLightRays,
-        getTheme: themeRuntime.get,
-        onThemeChange: themeRuntime.subscribe,
         settingsOverlay,
         settingsContent,
         pageTransition,

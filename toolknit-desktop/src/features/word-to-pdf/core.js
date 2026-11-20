@@ -62,5 +62,6 @@ export function applyWordResult(rows, result) {
       outputBytes: result.outputBytes ?? result.bytes ?? 0,
       pageCount: result.pageCount ?? result.page_count ?? 0,
       error: result.error || null,
+      fontNotices: result.fontNotices ?? result.font_notices ?? [],
     });
 }

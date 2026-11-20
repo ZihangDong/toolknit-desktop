@@ -1,11 +1,14 @@
 """Test the disposable Writer extension cache without opening user documents."""
 import importlib.util
-import os
+import sys
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from unittest.mock import Mock
+import subprocess
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src-tauri/resources/office"))
 spec = importlib.util.spec_from_file_location("word_driver", Path(__file__).resolve().parents[1] / "src-tauri/resources/office/word-to-pdf.py")
 driver = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(driver)
@@ -61,6 +64,42 @@ class CacheTests(unittest.TestCase):
             self.assertEqual(driver.extension_cache_path(str(self.root / "soffice.exe")), driver.extension_cache_path(str(self.root / "soffice.com")))
         finally:
             self.patcher.start()
+
+
+class SessionTests(unittest.TestCase):
+    def test_session_closes_after_export_or_cache_seed_failure(self):
+        for fail_during_seed in (False, True):
+            office, desktop = Mock(), Mock()
+            with patch.object(driver, "prepare_profile"), patch.object(driver, "restore_extensions"), \
+                 patch.object(driver, "start_writer", return_value=(office, desktop)), \
+                 patch.object(driver, "remember_extensions", side_effect=RuntimeError("cache") if fail_during_seed else None):
+                with self.assertRaises(RuntimeError):
+                    with driver.writer_session("soffice", "profile") as active:
+                        self.assertIs(active, desktop)
+                        raise RuntimeError("export")
+            desktop.terminate.assert_called_once()
+            office.wait.assert_called_once_with(timeout=3)
+
+    def test_shutdown_timeout_kills_only_the_owned_process(self):
+        office, desktop = Mock(pid=4321), Mock()
+        office.wait.side_effect = [subprocess.TimeoutExpired("soffice", 3), 0]
+        with patch.object(driver.os, "name", "nt"), patch.object(driver.subprocess, "run") as stop:
+            driver.stop_writer(office, desktop)
+        self.assertEqual(stop.call_args.args[0], ["taskkill", "/PID", "4321", "/T", "/F"])
+        self.assertEqual(office.wait.call_count, 2)
+
+    def test_partial_pdf_is_removed_and_errors_remain_stable(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "result.pdf"
+            item = {"index": 5, "source": "sample.docx", "destination": str(output)}
+            for error, expected in [(driver.WordError("invalid-document"), "invalid-document"), (RuntimeError("private contents"), "render-failed")]:
+                def fail(*args):
+                    output.write_bytes(b"partial")
+                    raise error
+                with patch.object(driver, "convert_with_writer", side_effect=fail):
+                    row = driver.convert_batch_item(Mock(), item, Mock(), Mock())
+                self.assertEqual(row, {"index": 5, "status": "failed", "code": expected})
+                self.assertFalse(output.exists())
 
 
 if __name__ == "__main__":

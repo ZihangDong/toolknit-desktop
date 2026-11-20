@@ -1,0 +1,122 @@
+/* Appearance choices share the existing settings geometry in every mode. */
+html:root[data-theme] .settings-overlay.v2-settings .settings-theme-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+html:root[data-theme] .settings-overlay.v2-settings .settings-theme-hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--tk-muted);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+.settings-appearance-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--tk-border); }
+.settings-appearance-label { display: block; margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--tk-ink); }
+.settings-palette-options {
+  display: flex; align-items: center; flex-wrap: nowrap; gap: 8px;
+  max-width: 100%; overflow-x: auto; padding: 4px;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.settings-palette-options::-webkit-scrollbar { display: none; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-palette-options .settings-v2-choice {
+  display: grid; place-items: center; flex: 0 0 36px;
+  width: 36px; min-width: 36px; height: 36px; min-height: 36px;
+  padding: 4px; border: 0; border-radius: 50%; background: transparent;
+}
+html:root[data-theme] .settings-overlay.v2-settings .settings-palette-options .settings-v2-choice::before {
+  content: ''; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--theme-swatch); border: 1px solid rgba(var(--tk-rgb-ink), .22);
+}
+html:root[data-theme] .settings-overlay.v2-settings .settings-palette-options .settings-v2-choice[aria-checked="true"] {
+  background: transparent; box-shadow: inset 0 0 0 2px var(--tk-ink);
+}
+html:root[data-theme] .settings-overlay.v2-settings .settings-palette-options .settings-v2-choice:hover {
+  background: rgba(var(--tk-rgb-ink), .08);
+}
+html:root[data-theme] .settings-overlay.v2-settings .settings-palette-options .settings-v2-choice:focus-visible {
+  outline: 2px solid var(--tk-accent); outline-offset: 1px;
+}
+html:root[data-theme] .v2-settings .settings-v2-choice[aria-checked="true"] {
+  color: var(--tk-on-accent); background: var(--tk-accent); border-color: var(--tk-accent);
+}
+.settings-theme-custom-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+html:root[data-theme] .v2-settings .settings-theme-color { width: 44px; height: 40px; padding: 3px; border: 1px solid var(--tk-border-strong); border-radius: 8px; background: var(--tk-page-bg); cursor: pointer; }
+html:root[data-theme] .v2-settings .settings-theme-hex { width: 130px; min-width: 0; height: 40px; padding: 0 14px; border: 1px solid var(--tk-border-strong); border-radius: 999px; background: var(--tk-page-bg); color: var(--tk-ink); font: inherit; }
+.settings-theme-preview-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.settings-theme-preview-actions[hidden], #themeColorError[hidden] { display: none !important; }
+#themeColorError { color: var(--tk-danger); font-size: 12px; margin: 8px 0; }
+.settings-theme-hex[aria-invalid="true"] { outline: 2px solid var(--tk-danger); outline-offset: 2px; }
+.settings-appearance-reset { margin-top: 16px; }
+
+/* Keep the long settings page reachable without showing a sidebar track. */
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster {
+  max-height: calc(100dvh - 116px); scrollbar-width: none; -ms-overflow-style: none;
+}
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster::-webkit-scrollbar { display: none; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-grid { align-items: start; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-card { height: auto; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-language-theme-card {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 28px;
+}
+.settings-language-theme-card > .settings-v2-head { grid-column: 1 / -1; }
+.settings-theme-basics, .settings-theme-colors { min-width: 0; }
+.settings-theme-colors > .settings-appearance-section:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-theme-colors .settings-appearance-reset { width: auto; }
+@media (min-width: 981px) and (max-height: 760px) {
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster { padding: 22px; }
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster h1 { font-size: 34px; margin-block: 10px; }
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-meta { margin-top: 16px; padding-top: 14px; }
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-list { gap: 8px; }
+}
+@media (max-width: 1279px) {
+  html:root[data-theme] .settings-overlay.v2-settings .settings-language-theme-card { grid-template-columns: minmax(0, 1fr); }
+  .settings-theme-colors { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--tk-border); }
+}
+@media (max-width: 980px) {
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster { max-height: none; }
+}
+@media (max-width: 480px) {
+  .settings-palette-options { gap: 4px; }
+  html:root[data-theme] .settings-overlay.v2-settings .settings-palette-options .settings-v2-choice {
+    flex-basis: 32px; width: 32px; min-width: 32px; height: 32px; min-height: 32px;
+  }
+  html:root[data-theme] .settings-overlay.v2-settings .settings-palette-options .settings-v2-choice::before { width: 22px; height: 22px; }
+}
+html:root[data-theme] .v2-settings [data-background-controls] { min-width: 0; }
+.settings-wallpaper-toggle { margin-bottom: 16px; }
+.is-wallpaper-disabled [data-background-controls] { opacity: .65; }
+html:root[data-theme] :is(button, input, textarea, select):focus-visible { outline-color: var(--tk-accent); }
+html:root[data-theme] ::selection { background: var(--tk-accent); color: var(--tk-on-accent); }
+html:root[data-theme] { accent-color: var(--tk-accent); caret-color: var(--tk-ink); scrollbar-color: var(--tk-border-strong) var(--tk-page-bg); }
+
+/* Reveal loaded wallpapers in either mode; cards and controls keep their surfaces. */
+html:root[data-theme] .app.is-v2-home.has-custom-background .home-v2-custom-background-host { display: block; }
+html:root[data-theme] .app.is-v2-home.has-custom-background .main-content {
+  background: transparent;
+}
+html:root[data-theme] .app.is-v2-home.has-custom-background .home-v2-shader-overlay {
+  display: none;
+}
+html:root[data-theme] .has-custom-background > .toolknit-custom-background-media {
+  opacity: 1;
+  filter: none;
+}
+/* Theme styles hide or dim these hosts, including in lazily loaded tool CSS. */
+html:root[data-theme] :is(.plasma-bg, .tool-page-v2-bg).has-custom-background {
+  display: block !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-shell, .tool-page-v2-light):has(> .has-custom-background)::before,
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-shell, .tool-page-v2-light):has(> .has-custom-background)::after {
+  display: none;
+}
+html:root[data-theme] :is(.pdf-merge-v2, .excel-to-pdf-overlay, .tool-page-v2-shell, .tool-page-v2-light):has(> .has-custom-background) > :is(.pdf-merge-v2-body, .tool-page-v2-body) {
+  background: transparent;
+}
+html:root[data-theme] .tk-tool-nav { --tk-nav-support-bg: var(--tk-accent); --tk-nav-support-ink: var(--tk-on-accent); }

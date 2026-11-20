@@ -2,9 +2,9 @@
 
 <img src="assets/readme/v3.1/01-hero.webp" alt="ToolKnit Desktop: a boy and his head-perched spider make everyday desktop work simpler" width="100%" />
 
-# ToolKnit Desktop 3.3
+# ToolKnit Desktop 3.4
 
-> V3.3 released November 15, 2026. Windows Desktop and npm CLI / MCP 3.3.0 are available. Author-owned source uses the MIT License.
+> V3.4 is in development and has not been released. Source version: 3.4.0. The current stable release remains V3.3, published November 15, 2026, including Desktop and npm CLI / MCP 3.3.0. Author-owned source uses the MIT License.
 
 **One toolbox for the little tasks scattered across your desktop.**
 
@@ -50,6 +50,15 @@ Set an output folder and favorite your tools. Install models only when needed.
 Enable **one-click recording mode** for startup, clipboard monitoring and floating history. Press `Alt + Q` to capture.
 The home page groups **New features** by **V3.3 and V3.2**, newest first.
 See [Get started](#08--get-started) for installation requirements and instructions.
+
+### V3.4 development updates
+
+- Added a global quick launcher (`Ctrl+Shift+Space`, or `Ctrl+K` inside the app), local document content search, text comparison, an SRT/VTT subtitle workbench, and folder automation that preserves original files. [Usage guide (Chinese)](docs/WORKBENCH.zh-CN.md).
+- Added batch rename, Task Center, and reusable workflows. Rename supports live previews, sequences, dates, regular expressions, conflict checks, and undo for the most recent batch. Workflows combine images into a PDF or merge PDFs, optionally add page numbers, and save parameter presets. [Usage guide (Chinese)](docs/PRODUCTIVITY.zh-CN.md).
+- Task Center covers these new tools, Word to PDF, image conversion/compression, and batch audio/video conversion, with progress, cancellation, current-session retry, and local history. Supported native batch conversions run in sequence.
+- Light and dark modes share one layout, with eight palettes, custom theme colors, preview, save, cancel, and reset.
+- Image and video wallpaper works independently of appearance; screenshot and file-search windows follow the selected palette.
+- Settings gains a responsive sidebar with a hidden scrollbar, one row of circular color choices, and a clearer order for appearance, storage, daily behavior, and AI/runtime settings.
 
 ### V3.3 highlights
 

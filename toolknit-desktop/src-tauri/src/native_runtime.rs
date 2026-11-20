@@ -43,6 +43,7 @@ mod office;
 use office::LibreOfficeRuntimeInfo;
 mod quick_screenshot;
 mod file_search;
+mod appearance;
 mod batch_rename;
 mod workbench;
 pub(crate) use quick_screenshot::open_clipboard_image;

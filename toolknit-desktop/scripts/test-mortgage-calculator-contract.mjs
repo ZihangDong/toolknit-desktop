@@ -9,8 +9,8 @@ const [html, main, lazy, tool, styles, themeIndex, calculatorLightStyles] = awai
   readFile(new URL('../src/features/lazy-tools.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/mortgage-calculator/tool.js', import.meta.url), 'utf8'),
   readGlobalStyles(import.meta.url),
-  readFile(new URL('../src/styles/themes/index.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/styles/themes/calculator-tools-light.css', import.meta.url), 'utf8')
+  readFile(new URL('../src/styles/index.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/styles/components/calculator-form.css', import.meta.url), 'utf8')
 ]);
 
 for (const id of ['mortgageCalcOverlay', 'mortgageCalcBack', 'mortgageCalcMethodTabs', 'mortgageCalcBtn', 'mortgageCalcScheduleBody']) {
@@ -29,7 +29,6 @@ assert.match(tool, /replaceChildren\(fragment\)/);
 assert.match(tool, /lifecycle\.use\(onLangChange/);
 assert.match(tool, /dispose\(\)[\s\S]*lifecycle\.dispose\(\)/);
 assert.doesNotMatch(styles, /#mortgageCalcOverlay|\.mortgage-calc-v2/);
-assert.match(themeIndex, /@import url\('\.\/calculator-tools-light\.css'\);/);
-assert.match(calculatorLightStyles, /html\[data-theme="light"\][\s\S]*\.mortgage-calc-v2/);
+assert.match(calculatorLightStyles, /html:root\[data-theme\][\s\S]*\.mortgage-calc-v2/);
 assert.match(calculatorLightStyles, /mortgage-calc-schedule-header/);
 console.log('Mortgage calculator feature contract passed');

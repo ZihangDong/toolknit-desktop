@@ -797,3 +797,399 @@
   background-size: var(--tk-vertical-stripe-surface-size);
   background-color: var(--tk-vertical-stripe-surface-color);
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .image-stitch-v2 {
+  --image-stitch-ink: var(--tk-ink);
+  --image-stitch-heading: var(--tk-accent);
+  --image-stitch-muted: var(--tk-muted);
+  --image-stitch-quiet: var(--tk-muted);
+  --image-stitch-line: var(--tk-border);
+  --image-stitch-line-strong: var(--tk-border);
+  --ink: var(--image-stitch-ink);
+  --muted: var(--image-stitch-muted);
+  --line: var(--image-stitch-line);
+  --line-strong: var(--image-stitch-line-strong);
+  --white: var(--tk-accent);
+  --black: var(--tk-page-bg);
+  --tk-vertical-stripe-surface-image: linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.025) 1px, transparent 1px);
+  --tk-vertical-stripe-surface-color: var(--tk-inset);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--image-stitch-ink);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .feature-tool-overlay.image-stitch-overlay {
+  background: var(--tk-page-bg) !important;
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-body {
+  background: transparent;
+}
+
+html:root[data-theme] .image-stitch-v2 :is(.image-stitch-control-card, .image-stitch-preview-panel, .image-stitch-settings) {
+  border-color: var(--image-stitch-line);
+  border-radius: 8px;
+  background: var(--tk-page-bg);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-control-card {
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-control-card::after {
+  color: rgba(var(--tk-rgb-ink), 0.045);
+}
+
+html:root[data-theme] .image-stitch-v2 .pdf-merge-v2-poster-kicker,
+html:root[data-theme] .image-stitch-v2 :is(.image-stitch-panel-heading span, .image-stitch-settings-head span) {
+  color: var(--tk-muted);
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-hero .audio-convert-hero-title {
+  color: var(--image-stitch-heading);
+  font-size: 48px;
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-hero .audio-convert-hero-subtitle {
+  color: var(--image-stitch-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 :is(.image-stitch-text-button, .image-stitch-icon-button) {
+  border-color: var(--tk-border);
+  border-radius: 7px;
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] .image-stitch-v2 :is(.image-stitch-text-button, .image-stitch-icon-button):hover:not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+  transform: none;
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-text-button.primary {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-text-button.primary:hover:not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-text-button.danger {
+  color: var(--image-stitch-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 :is(.image-stitch-text-button, .image-stitch-icon-button):disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-muted);
+  opacity: 1;
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-queue-panel {
+  border-color: var(--image-stitch-line);
+  border-radius: 8px;
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-panel-heading {
+  border-bottom-color: var(--image-stitch-line);
+  color: var(--image-stitch-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-panel-heading strong,
+html:root[data-theme] .image-stitch-v2 .image-stitch-queue-empty strong {
+  color: var(--image-stitch-heading);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-queue-empty {
+  color: var(--image-stitch-quiet);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-queue-empty svg {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 :is(.image-stitch-queue, .image-stitch-preview-viewport, .image-stitch-settings) {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .image-stitch-v2 :is(.image-stitch-queue, .image-stitch-preview-viewport, .image-stitch-settings)::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-row {
+  border-color: var(--tk-border);
+  border-radius: 8px;
+  background: var(--tk-page-bg);
+  color: var(--image-stitch-heading);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-row:hover {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  transform: none;
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-row.drag-target::before {
+  background: var(--tk-accent);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-row-index {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-row-thumb {
+  border-color: var(--tk-border);
+  border-radius: 7px;
+  background: repeating-conic-gradient(var(--tk-page-bg) 0 25%, var(--tk-surface) 0 50%) 0 / 12px 12px;
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-row-info strong {
+  color: var(--image-stitch-heading);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-row-info span {
+  color: var(--image-stitch-quiet);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-row-actions button {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-row-actions button:hover:not(:disabled) {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-preview-viewport {
+  background-color: var(--tk-vertical-stripe-surface-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-preview-empty {
+  color: var(--image-stitch-quiet);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-preview-empty > span {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-preview-composition {
+  border-color: var(--image-stitch-line-strong);
+  box-shadow: 0 16px 42px rgba(17, 17, 17, .14);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-settings-head {
+  border-bottom-color: var(--image-stitch-line);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-settings-head strong {
+  color: var(--image-stitch-heading);
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .image-stitch-v2 :is(
+  .image-stitch-setting-label,
+  .image-stitch-number-setting > span:first-child,
+  .image-stitch-color-setting > span,
+  .image-stitch-alpha-setting > span,
+  .image-stitch-name-setting > span
+) {
+  color: var(--image-stitch-muted);
+  letter-spacing: 0;
+}
+
+/* Settings own their button surfaces even when the shell also uses PDF classes. */
+html:root[data-theme] .image-stitch-v2 .image-stitch-settings .audio-convert-format-option {
+  border-color: var(--tk-border);
+  border-radius: 7px;
+  background: var(--tk-inset);
+  color: var(--image-stitch-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-settings .audio-convert-format-option:hover:not(.active):not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-settings .audio-convert-format-option.active {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .image-stitch-v2 :is(.image-stitch-number-field, .image-stitch-name-setting input) {
+  border-color: var(--tk-border);
+  border-radius: 7px;
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+  color-scheme: var(--tk-color-scheme);
+}
+
+html:root[data-theme] .image-stitch-v2 :is(.image-stitch-number-field:focus-within, .image-stitch-name-setting input:focus) {
+  border-color: var(--tk-accent);
+  background: var(--tk-page-bg);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, .08);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-name-setting input::placeholder {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 :is(.image-stitch-number-field em, .image-stitch-alpha-setting em) {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-footer {
+  border-top-color: var(--image-stitch-line);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-footer > span {
+  color: var(--image-stitch-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchExport {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchExport:hover:not(:disabled) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchExport:disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-muted);
+  opacity: 1;
+}
+
+html:root[data-theme] .image-stitch-v2 .pdf-merge-v2-drop-zone {
+  background: rgba(var(--tk-rgb-page), 0.92);
+}
+
+html:root[data-theme] .image-stitch-v2 .pdf-merge-v2-drop-zone .drop-hint {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+  box-shadow: 0 10px 30px rgba(17, 17, 17, .08);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-processing {
+  background: rgba(var(--tk-rgb-page), 0.96);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-processing-value {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-processing .audio-convert-process-bar {
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-processing .audio-convert-process-bar-fill {
+  background: var(--tk-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-processing p {
+  color: var(--image-stitch-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-processing .audio-convert-cancel-btn {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .image-stitch-v2 .image-stitch-processing .audio-convert-cancel-btn:hover {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchSuccessOverlay {
+  background: rgba(var(--tk-rgb-ink), 0.18);
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchSuccessOverlay .audio-convert-success-dialog {
+  background: var(--tk-page-bg);
+  box-shadow: 0 18px 50px rgba(17, 17, 17, .14);
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchSuccessOverlay :is(.audio-convert-success-title, .audio-convert-success-value) {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchSuccessOverlay :is(.audio-convert-success-meta, .audio-convert-success-key) {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchSuccessOverlay .audio-convert-success-detail {
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchSuccessOverlay .audio-convert-success-btn-secondary {
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchSuccessOverlay .audio-convert-success-btn-secondary:hover {
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchSuccessOverlay .audio-convert-success-btn-primary {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .image-stitch-v2 #imageStitchSuccessOverlay .audio-convert-success-btn-primary:hover {
+  background: var(--tk-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] .image-stitch-v2 :is(button, .image-stitch-name-setting input):focus-visible {
+  outline: 2px solid var(--tk-accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 1220px) {
+  html:root[data-theme] .image-stitch-v2 .image-stitch-hero .audio-convert-hero-title {
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 980px) {
+  html:root[data-theme] .image-stitch-v2 :is(.image-stitch-control-card, .image-stitch-preview-panel, .image-stitch-settings) {
+    border-radius: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .image-stitch-v2 :is(button, .image-stitch-row) {
+    transition: none;
+  }
+}

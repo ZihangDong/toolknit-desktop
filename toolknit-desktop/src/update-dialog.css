@@ -21,19 +21,23 @@
   overflow: auto;
   overscroll-behavior: contain;
 }
-html[data-theme="light"] .update-dialog {
-  --update-bg: #fff;
-  --update-fg: #181818;
-  --update-muted: #626262;
-  --update-soft: #f2f2f2;
-  --update-action: #111;
-  --update-action-fg: #fff;
-  --update-symbol: #111;
-  border-color: #00000014;
+html:root[data-theme] .update-dialog {
+  --update-bg: var(--tk-page-bg);
+  --update-fg: var(--tk-ink);
+  --update-muted: var(--tk-muted);
+  --update-soft: var(--tk-inset);
+  --update-action: var(--tk-accent);
+  --update-action-fg: var(--tk-on-accent);
+  --update-symbol: var(--tk-accent);
+  border-color: rgba(var(--tk-rgb-ink), 0.0784);
 }
 .update-dialog::backdrop { background: #0008; backdrop-filter: blur(8px); }
 .update-dialog[open] { animation: update-dialog-enter 240ms ease-out; }
-.update-dialog-content { padding: 28px 32px; text-align: center; }
+.update-dialog-content { position: relative; padding: 28px 32px; text-align: center; }
+.update-dialog .update-dialog-close { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--update-muted); cursor: pointer; }
+.update-dialog .update-dialog-close:hover { background: var(--update-soft); color: var(--update-fg); }
+.update-dialog .update-dialog-close:focus-visible { outline: 2px solid var(--update-fg); outline-offset: -4px; }
+.update-dialog-close svg { width: 20px; height: 20px; }
 .update-dialog-brand { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; font-weight: 600; }
 .update-dialog-brand img { width: 28px; height: 28px; object-fit: contain; }
 .update-dialog-symbol { display: grid; place-items: center; margin: 24px auto 18px; width: 64px; height: 64px; border-radius: 50%; background: var(--update-soft); color: var(--update-symbol); }
@@ -57,7 +61,7 @@ html[data-theme="light"] .update-dialog {
 .update-dialog .update-dialog-download:focus-visible { opacity: .88; }
 .update-dialog-status { min-height: 20px; font-size: 13px; line-height: 1.5; margin: 12px 0 0; color: var(--update-muted); }
 .update-dialog-status[data-error="true"] { color: #ed795c; }
-html[data-theme="light"] .update-dialog-status[data-error="true"] { color: #ad371b; }
+html:root[data-theme] .update-dialog-status[data-error="true"] { color: var(--tk-danger); }
 .update-dialog-note { color: var(--update-muted); font-size: 12px; line-height: 1.6; margin: 12px 0 0; }
 body.update-dialog-open { overflow: hidden; }
 @keyframes update-dialog-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

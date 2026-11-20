@@ -70,8 +70,8 @@ export const HELP_CONTENT_EN = {
     title: 'Overview',
     html: `<div class="help-doc">
       <h2>ToolKnit Overview</h2>
-      <p>ToolKnit 3.3 is a <strong>local-first</strong> Windows toolbox whose current source provides 83 desktop tools across 12 categories and 78 capabilities exposed to IDE Agents through CLI / MCP. Basic file processing stays local; AI tools send the necessary content to your selected provider only when explicitly invoked.</p>
-      <p>This is the V3.3 release, adding file search and Word to PDF, with improved local OCR, scanned PDF to Word and screenshots. Desktop installers and CLI/MCP are distributed separately through the website and npm.</p>
+      <p>ToolKnit 3.4 is a <strong>local-first</strong> Windows toolbox whose current source provides 83 desktop tools across 12 categories and 78 capabilities exposed to IDE Agents through CLI / MCP. Basic file processing stays local; AI tools send the necessary content to your selected provider only when explicitly invoked.</p>
+      <p>This is an unreleased V3.4 development version with a shared theme layout, eight palettes, custom theme colors, independent wallpaper controls, and refined settings scrolling and order. Published installers and npm remain at V3.3.</p>
 
       <h3>Tool Categories</h3>
       <div class="help-tool-grid">
@@ -1020,7 +1020,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
       <p>After connecting ToolKnit CLI to an MCP-capable IDE, you can ask an Agent in plain language to process local files from the project. The Agent calls real ToolKnit tools; it does not need the desktop app to stay open and should not claim a result without a tool call.</p>
 
       <h3>Current scope</h3>
-      <div class="help-agent-scope"><p>V3.3 exposes <strong>78 capabilities</strong>, adding Word to PDF. The corresponding npm version is 3.3.0. The CLI runs independently of the desktop app.</p><ul>
+      <div class="help-agent-scope"><p>V3.4 development source exposes <strong>78 capabilities</strong>, retaining Word to PDF and the V3.3 baseline. Source version 3.4.0 is unreleased; the current stable npm version is 3.3.0. The CLI runs independently of the desktop app.</p><ul>
         <li><strong>PDF and Office</strong>: inspect, merge, split, rotate, encrypt/decrypt, compress, enhance, export images, convert to Word, extract text/Markdown, crop, number pages, create scan effects or blank PDFs, and render XLSX to PDF. Word defaults to local analysis; complex regions may remain images. Excel rendering needs LibreOffice.</li>
         <li><strong>PPT</strong>: PDF/image export, asset/text extraction, compression, AI outlines and editable drafts.</li>
         <li><strong>Images</strong>: PDF creation, format conversion, compression, crop/rotate/flip, color replacement, icon archives, palette extraction, stitching and color-space conversion.</li>
@@ -1354,7 +1354,7 @@ toolknit ppt draft --outline-file outline.json --output-dir out --theme minimal-
 
   'developer-tools': {
     title: 'Developer Tools',
-    html: `<div class="help-doc"><h2>Developer Tools in 3.3</h2><p>These local-first tools load on demand and release Workers, canvases, and temporary jobs when closed.</p><h3>Markdown Document Editor</h3><p>GFM, task lists, Mermaid, math, outline navigation, draft recovery, and offline Markdown/HTML export are supported. Local images are organized into an assets folder during export.</p><h3>Smart Color Replacement</h3><p>Sample source and target colors, tune perceptual tolerance, feathering, luminance preservation, and 8-connected smart protection. Preview work runs in a Worker; Rust exports at original resolution.</p><h3>Hash &amp; Crypto</h3><p>Includes common hashes, HMAC, SM algorithms, AES file encryption, RSA, and SM2. Legacy algorithms are compatibility-only, and sensitive inputs are not persisted.</p></div>`
+    html: `<div class="help-doc"><h2>Developer Tools in 3.4</h2><p>These local-first tools load on demand and release Workers, canvases, and temporary jobs when closed.</p><h3>Markdown Document Editor</h3><p>GFM, task lists, Mermaid, math, outline navigation, draft recovery, and offline Markdown/HTML export are supported. Local images are organized into an assets folder during export.</p><h3>Smart Color Replacement</h3><p>Sample source and target colors, tune perceptual tolerance, feathering, luminance preservation, and 8-connected smart protection. Preview work runs in a Worker; Rust exports at original resolution.</p><h3>Hash &amp; Crypto</h3><p>Includes common hashes, HMAC, SM algorithms, AES file encryption, RSA, and SM2. Legacy algorithms are compatibility-only, and sensitive inputs are not persisted.</p></div>`
   },
   'hardware-tools': {
     title: 'Hardware Tools Overview',

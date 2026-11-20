@@ -12,7 +12,7 @@ const {chromium}=require('playwright');
 const settings=await readFile('src/app/templates/settings.html','utf8');
 const managers=await readFile('src/app/templates/dependency-managers.html','utf8');
 const overlay=managers.slice(managers.indexOf('<div class="transcription-model-overlay" id="localTranslationOverlay"'));
-const html=`<!doctype html><html><head><link rel="stylesheet" href="/src/styles/index.css"><link rel="stylesheet" href="/src/styles/themes/index.css"></head><body>${settings}${overlay}<script type="module">
+const html=`<!doctype html><html><head><link rel="stylesheet" href="/src/styles/index.css"></head><body>${settings}${overlay}<script type="module">
 import {createLocalTranslationSettings} from '/src/app/local-translation-runtime.js';
 import zh from '/src/locales/zh.json'; import en from '/src/locales/en.json';
 import {createIcons,icons} from 'lucide';

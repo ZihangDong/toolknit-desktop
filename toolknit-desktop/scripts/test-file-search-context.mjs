@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createFileSearchContextRuntime } from '../src/app/file-search-context-runtime.js';
+import { DEFAULT_THEME_CONFIG } from '../src/app/theme-palette.js';
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const view = new EventTarget(), motion = new EventTarget();
 motion.matches = false; view.matchMedia = () => motion;
@@ -21,7 +22,7 @@ root.documentElement.dataset.theme='dark';observer();
 lang='en';onLanguage(); motion.matches=true;motion.dispatchEvent(new Event('change'));
 assert.equal(calls.length,2,'later context waits for the first write');
 pending[1].resolve();await tick();
-assert.equal(calls.length,3);assert.deepEqual(calls[2].payload,{lang:'en',theme:'dark',reducedMotion:true});
+assert.equal(calls.length,3);assert.deepEqual(calls[2].payload,{lang:'en',theme:'dark',reducedMotion:true,appearance:{...DEFAULT_THEME_CONFIG,mode:'dark'}});
 pending[2].reject(new Error('synthetic IPC failure'));await tick();
 observer();assert.equal(calls.length,4,'failed context is retried on the next meaningful event');
 pending[3].resolve();await tick();
