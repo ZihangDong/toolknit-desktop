@@ -3969,6 +3969,54 @@
   ],
   "desktopCoverage": [
     {
+      "desktop": "batch-rename",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Interactive filename preview and persistent last-batch undo use the desktop runtime."
+    },
+    {
+      "desktop": "task-center",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Task history, session retries and cancellation belong to the desktop session."
+    },
+    {
+      "desktop": "tool-workflows",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Saved PDF workflow presets and their task execution are desktop workbench features."
+    },
+    {
+      "desktop": "quick-launcher",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Global shortcuts, recent tools and interactive tool navigation require the desktop app."
+    },
+    {
+      "desktop": "content-search",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "The personal persistent document content index is managed through explicit desktop controls."
+    },
+    {
+      "desktop": "document-compare",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Interactive extracted-text comparison and report export remain in the desktop workbench."
+    },
+    {
+      "desktop": "subtitle-workbench",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Subtitle editing, media preview and local drafts are desktop features; standalone transcription retains its existing CLI interface."
+    },
+    {
+      "desktop": "folder-automation",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Background folder rules, baseline tracking and processing history require the running desktop app."
+    },
+    {
       "desktop": "word-to-pdf",
       "scope": "supported",
       "tools": [

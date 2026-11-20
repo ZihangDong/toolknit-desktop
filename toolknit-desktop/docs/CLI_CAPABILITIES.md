@@ -91,10 +91,18 @@
 
 ## 桌面覆盖
 
-75 个桌面工具：61 项支持、6 项按明确范围部分支持、8 项保留桌面。MCP 另有 PDF 检查、模型管理和工程编辑等辅助接口，因此数量与桌面卡片数不同。
+83 个桌面工具：61 项支持、6 项按明确范围部分支持、16 项保留桌面。MCP 另有 PDF 检查、模型管理和工程编辑等辅助接口，因此数量与桌面卡片数不同。
 
 | 桌面工具 ID | 覆盖 | MCP 接口 / 说明 |
 | --- | --- | --- |
+| `batch-rename` | 保留桌面 |  Interactive filename preview and persistent last-batch undo use the desktop runtime. |
+| `task-center` | 保留桌面 |  Task history, session retries and cancellation belong to the desktop session. |
+| `tool-workflows` | 保留桌面 |  Saved PDF workflow presets and their task execution are desktop workbench features. |
+| `quick-launcher` | 保留桌面 |  Global shortcuts, recent tools and interactive tool navigation require the desktop app. |
+| `content-search` | 保留桌面 |  The personal persistent document content index is managed through explicit desktop controls. |
+| `document-compare` | 保留桌面 |  Interactive extracted-text comparison and report export remain in the desktop workbench. |
+| `subtitle-workbench` | 保留桌面 |  Subtitle editing, media preview and local drafts are desktop features; standalone transcription retains its existing CLI interface. |
+| `folder-automation` | 保留桌面 |  Background folder rules, baseline tracking and processing history require the running desktop app. |
 | `word-to-pdf` | 支持 | `toolknit_word_to_pdf` DOC/DOCX, local LibreOffice Writer, single and batch output; interactive PDF preview remains on desktop. |
 | `file-search` | 保留桌面 |  Personal persistent filename index, optional NTFS acceleration, floating windows and Explorer selection use explicit desktop scope controls. |
 | `quick-screenshot` | 保留桌面 |  Interactive selection, annotations and pinned windows require a visible desktop session. |
