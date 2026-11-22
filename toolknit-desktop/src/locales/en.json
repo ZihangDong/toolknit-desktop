@@ -5644,6 +5644,7 @@
       "rescan": "Scan again",
       "cancel": "Stop scan",
       "clear": "Clear results",
+      "removalWarning": "Unplugging a USB drive or external disk during a scan can corrupt data or cause data loss. Stop the scan and wait for it to finish, then safely eject the drive before unplugging it.",
       "method": "Measures logical file lengths. Hard links count once, attributed to the first path in lexical order. This is not allocated disk space or free capacity.",
       "totalLabel": "Scanned logical size (deduplicated)",
       "filesLabel": "File paths",

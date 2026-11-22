@@ -20,6 +20,7 @@ export function createDiskSpaceController({ overlay, isTauri=false, invokeNative
   function controls(){
     const busy=!!operation||viewLoading;q('Choose').disabled=!isTauri||busy||picking;q('Rescan').disabled=!isTauri||busy||picking||!summary;q('Clear').disabled=busy||!summary;
     q('Cancel').hidden=!operation;q('Cancel').disabled=!!operation?.stopping;
+    q('RemovalWarning').hidden=!operation;
     q('Results').inert=busy;q('Results').setAttribute('aria-busy',String(busy));q('Results').hidden=!summary;q('Empty').hidden=!!summary;
     q('Up').disabled=busy||!view||view.node.parent===null;q('Previous').disabled=busy||!view||view.offset===0;q('Next').disabled=busy||!view||view.offset+view.items.length>=view.total;
     q('Enter').disabled=busy||selected?.kind!=='directory'||selected?.id===view?.node.id;q('Reveal').disabled=busy||!selected||!isTauri;

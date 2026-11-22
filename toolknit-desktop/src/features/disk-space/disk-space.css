@@ -15,6 +15,7 @@
 .disk-space-status {display:flex;flex-direction:column;gap:6px;}
 .disk-space-status p {margin:0;font-size:13px;line-height:1.5;overflow-wrap:anywhere;}
 #diskSpaceStatus.is-error {color:var(--tk-danger);}
+#diskSpaceRemovalWarning {color:var(--tk-warning);}
 .disk-space-totals {display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:16px;margin:0 0 18px;}
 .disk-space-totals>div {display:flex;flex-direction:column;gap:6px;min-width:0;}
 .disk-space-totals span {font-size:13px;color:var(--tk-muted);}

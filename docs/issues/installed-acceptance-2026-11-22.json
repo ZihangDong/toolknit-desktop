@@ -214,7 +214,8 @@
     ],
     "operatorUsbScan": {
       "status": "passed",
-      "scope": "The operator confirmed that Disk Space Analysis can scan a physical USB drive on the test device. The file system and unplug-during-scan behavior were not reported."
+      "scope": "The operator confirmed that Disk Space Analysis can scan a physical USB drive on the test device and reported that unplugging it during an active scan passed. The file system and detailed scan output were not reported.",
+      "followUp": "The scan now warns that unplugging a removable drive can corrupt data or cause data loss. It advises users to stop the scan, wait for it to finish, and safely eject the drive."
     },
     "virtualVolumeDetach": {
       "status": "passed",
@@ -222,7 +223,7 @@
       "result": "The scan ended with an incomplete result showing 1.74 MiB, 65393 file paths, 67 directories and 74 skip events. Expanding the events showed unreadable directory entries and a file whose identity could not be confirmed.",
       "rescan": "Rescanning the detached path reported the directory as unreadable and kept the prior partial statistics and listing."
     },
-    "remaining": ["Physically disconnect removable media during a scan"]
+    "remaining": []
   },
   "reviewOfficeDesktop": {
     "status": "passed",
