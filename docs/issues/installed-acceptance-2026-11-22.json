@@ -212,6 +212,10 @@
       "Fixed D drive root accepted in the Windows picker and reached a partial result",
       "Clicking Stop during the C drive scan preserved partial results and recorded a cancelled Task Center entry"
     ],
+    "operatorUsbScan": {
+      "status": "passed",
+      "scope": "The operator confirmed that Disk Space Analysis can scan a physical USB drive on the test device. The file system and unplug-during-scan behavior were not reported."
+    },
     "virtualVolumeDetach": {
       "status": "passed",
       "scope": "Detached a dedicated 1 GiB NTFS VHDX with 170000 synthetic files while the isolated 3.4.0 app was scanning its E drive root. Windows confirmed the image was detached.",
