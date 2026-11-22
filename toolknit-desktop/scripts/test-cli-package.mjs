@@ -59,9 +59,14 @@ const packOutput = execFileSync(process.execPath, [npmCli, 'pack', '--dry-run', 
 const pack = JSON.parse(packOutput)[0];
 const packedFiles = new Set(pack.files.map(file => file.path));
 assert.ok(packedFiles.has('resources/office/word-to-pdf.py'), 'Word UNO driver is included in npm packages');
-for (const name of ['word_layout.py', 'word_font_metrics.py']) {
+for (const name of ['word_layout.py', 'word_font_metrics.py', 'word_fields.py']) {
   assert.ok(packedFiles.has(`resources/office/${name}`), `Word driver dependency ${name} ships in npm packages`);
 }
+for (const name of ['word-watermark-core.js', 'word-watermark-image.js', 'word-encryption-core.js', 'pdf-lib-fontkit.js']) {
+  assert.ok(packedFiles.has(`lib/core/${name}`), `Watermark dependency ${name} ships in npm packages`);
+}
+assert.ok(packedFiles.has('lib/word-watermark.mjs'), 'Word watermark CLI runtime ships in npm packages');
+assert.ok(packedFiles.has('lib/word-encryption.mjs'), 'Word encryption runtime ships in npm packages');
 for (const required of ['README.md', 'LICENSE', 'NOTICE', 'LICENSES/MIT.txt', 'LICENSES/Download-Whisper-MIT.txt', 'package.json', 'npm-shrinkwrap.json', 'toolknit.mjs']) {
   assert.equal(packedFiles.has(required), true, `published CLI package must include ${required}`);
 }

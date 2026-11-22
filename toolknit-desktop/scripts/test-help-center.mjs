@@ -93,6 +93,8 @@ const toolToHelp = new Map([
   ['pdf-page-number', 'pdf-page-number'],
   ['pdf-crop', 'pdf-crop'],
   ['pdf-to-image', 'pdf-to-image'],
+  ['pdf-object-remove', 'pdf-object-remove'],
+  ['pdf-to-ppt', 'pdf-to-ppt'],
   ['pdf-to-scan', 'pdf-to-scan'],
   ['pdf-to-word', 'pdf-to-word'],
   ['pdf-text-markdown', 'pdf-text-markdown'],
@@ -126,6 +128,8 @@ const toolToHelp = new Map([
   ['video-frame', 'video-frame'],
   ['video-gif', 'video-gif'],
   ['transcription', 'transcription'],
+  ['ocr-editor', 'ocr-editor'],
+  ['meeting-notes', 'meeting-notes'],
   ['teleprompter', 'teleprompter'],
   ['text-stats', 'text-stats'],
   ['text-format', 'text-format'],
@@ -138,6 +142,7 @@ const toolToHelp = new Map([
   ['color-space-compare', 'color-space-compare'],
   ['typing-test', 'typing-test'],
   ['large-file-cleanup', 'large-file-cleanup'],
+  ['disk-space', 'disk-space'],
   ['duplicate-file-cleanup', 'duplicate-file-cleanup'],
   ['c-drive-cleanup', 'c-drive-cleanup'],
   ['hardware-overview', 'hardware-tools'],
@@ -152,6 +157,7 @@ const toolToHelp = new Map([
   ['image-color-replace', 'developer-tools'],
   ['hash-crypto', 'developer-tools'],
   ['json-tools', 'developer-tools'],
+  ['xml-tools', 'developer-tools'],
   ['base64', 'developer-tools'],
   ['url-codec', 'developer-tools'],
   ['uuid', 'developer-tools'],
@@ -164,7 +170,7 @@ const toolToHelp = new Map([
 
 toolToHelp.set('image-to-pdf', 'image-to-pdf');
 const desktopTools = unique(valuesForAttribute(indexHtml, 'data-tool'));
-assert.equal(desktopTools.length, 83, 'Current desktop catalog must contain exactly 83 unique tools.');
+assert.equal(desktopTools.length, 89, 'Current desktop catalog must contain exactly 89 unique tools.');
 for (const tool of desktopTools) {
   const section = toolToHelp.get(tool);
   assert.ok(section, `Desktop tool has no help mapping: ${tool}`);

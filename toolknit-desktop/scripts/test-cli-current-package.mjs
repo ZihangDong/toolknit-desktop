@@ -77,7 +77,7 @@ try {
   assert.equal(pack.version, JSON.parse(await readFile(path.join(snapshot, 'cli/package.json'), 'utf8')).version);
   assert.ok(pack.files.some(file => file.path === 'lib/pdf-word-engine.mjs'));
   assert.ok(pack.files.some(file => file.path === 'resources/office/word-to-pdf.py'), 'Word driver ships in the isolated npm package');
-  for (const name of ['word_layout.py', 'word_font_metrics.py']) {
+  for (const name of ['word_layout.py', 'word_font_metrics.py', 'word_fields.py']) {
     assert.ok(pack.files.some(file => file.path === `resources/office/${name}`), `Word driver dependency ${name} ships in the isolated npm package`);
   }
   assert.ok(!pack.files.some(file => /(?:SKILL\.md|V32_CLI_MCP_AUDIT|\.env$)/i.test(file.path)));

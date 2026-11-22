@@ -6,6 +6,9 @@ import { ToolKnitError, throwIfAborted } from './errors.mjs';
 
 const MAX_ARGUMENT_BYTES = 8 * 1024 * 1024;
 const usage = message => new ToolKnitError('USAGE', message);
+function containsSecret(value) {
+  return value && typeof value === 'object' && Object.entries(value).some(([key, child]) => /(^|_)(password|api_key|secret)$|^(token|access_token|refresh_token)$/i.test(key) || containsSecret(child));
+}
 const catalogHelp = 'toolknit tools list [--json]\ntoolknit tools coverage [--json]\ntoolknit tools describe <toolknit_name> [--json]\ntoolknit run <toolknit_name> --arguments-file <request.json> [--json]\ntoolknit run <toolknit_name> --arguments-stdin [--json]';
 export function extendedHelp() {
   return '\nTools (also available through MCP):\n' + EXTENDED_OPERATIONS.map(item => `  toolknit ${item.command.join(' ')} --help`).join('\n') + '\n\n' + catalogHelp;
@@ -101,13 +104,15 @@ async function argumentsFor(tokens, definition, signal) {
       }
       args[name] = pages;
     } else args[name] = valueFor(value, rule);
+    if (containsSecret(args[name])) throw usage('Secrets must use arguments-stdin; never command-line options.');
   }
   if (Number(argumentFile !== undefined) + Number(argumentStdin) + Number(textStdin) > 1) throw usage('Choose one stdin or arguments-file source.');
   if (argumentFile !== undefined || argumentStdin) {
     if (Object.keys(args).length) throw usage('Arguments JSON cannot be combined with individual parameters.');
     const bytes = argumentStdin ? await stdinBytes(signal) : (await readInputFile(argumentFile, { maxBytes: MAX_ARGUMENT_BYTES, signal })).bytes;
-    const parsed = decodeJson(bytes);
-    if (!argumentStdin && parsed && Object.hasOwn(parsed, 'password')) throw usage('Passwords must use arguments-stdin, not an arguments file.');
+    let parsed;
+    try { parsed = decodeJson(bytes); } finally { bytes.fill(0); }
+    if (!argumentStdin && containsSecret(parsed)) throw usage('Passwords must use arguments-stdin, not an arguments file.');
     return parsed;
   }
   if (textStdin) {

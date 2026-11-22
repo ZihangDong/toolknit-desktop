@@ -539,6 +539,14 @@ PDF 加密和解密需要密码。不要将密码粘贴到 Agent 对话、共享
 
 ## Word 转 PDF（V3.3 新增）
 
+V3.4 可选 `encryption`（默认不传），必需 `password`，可选 `permissions`。打开密码至少 8 个 Unicode 字符、最多 127 个 UTF-8 字节，不能含 NUL / CR / LF。使用本地 AES-256，每份最多 200 页 / 150 MiB；可与 ZIP、水印、内部域刷新组合。权限支持 `printing:false|"lowResolution"|"highResolution"`、`copying`、`modifying`、`annotating`、`fillingForms`、`documentAssembly`；默认允许，辅助技术访问保留。只发布通过密码核验的加密文件，成功项返回 `encrypted:true`；失败或取消不发布普通中间文件，已完成项保留。CLI 含密码的完整请求必须用受控管道传 `--arguments-stdin`，拒绝命令行嵌套 `--encryption` 和 JSON 参数文件；MCP 只经内存参数传入。不要记录口令。任务中心不保留带密码的自动重试，需回到 Word 工具重新输入；加密结果不能直接交给编辑器，先显式用 PDF 解密另存副本。
+
+V3.4 可选 `watermark` 对象，桌面也有默认关闭的开关。文字：`{"type":"text","text":"内部资料 DRAFT","pages":"1,3-5","opacity":0.2,"angle":45,"width":60}`；图片改为 `type:"image"` 和本地 `image_path`（PNG / JPEG，4 MiB、400 万像素以内）。文字最多 80 个 Unicode 字符，使用内置 Noto Sans SC，缺字明确失败。页码留空为全部；逐文档验证实际页数，越界项失败且不发布 PDF。输出增加 `watermark_pages`。覆盖层按每页纸张等比缩放并居中，正文保持可搜索；预览只展示不含正文的 A4 位置。取消保留已发布的带水印文件，失败不留下普通中间 PDF。用通用 `run ... --arguments-file request.json --json` 或 MCP 传嵌套对象，可与 `refresh_fields`、ZIP 组合。请核对成品；首版无平铺、自由定位和彩色文字。
+
+V3.4 开发源码可显式传布尔 `refresh_fields:true`，默认关闭。仅刷新内部内容目录、页码 / 总页数、章节和内部引用，输出逐项 `field_update` 的更新 / 跳过计数及稳定状态；不主动刷新外部 / DDE / 数据库、日期或未知域。目录重建会重新分页，必须检查目录目标与正文页。关闭只是不额外执行刷新，导入器仍可计算动态域。失败可改为 false 重试；不要自动改用全量更新命令。CLI 参数为 `--refresh-fields true`，DOC / DOCX / ZIP 批量均支持，正式 npm 3.3.0 尚无此扩展。
+
+V3.4 开发源码新增 ZIP 批量输入：把 ZIP 路径放入 `input_paths` 并提供 `output_dir`，可与 DOC / DOCX 混合。展开后最多 20 个 Word，每个文档 / ZIP 50 MiB；每包 1000 项 / 200 MiB，选中文档及压缩输入缓存各合计 200 MiB。不展开嵌套 ZIP；拒绝加密、链接、重复 / 不安全路径和 ZIP64。结果逐项返回原 ZIP 的 `input_path`、`archive_entry`、`source_name`；同名文档输出分开，坏项不丢弃成功文件。正式 npm 3.3.0 不含此新增 ZIP 能力。
+
 `toolknit_word_to_pdf` 使用本地 LibreOffice Writer + UNO/Python。单文件传 `input_path`、`output_path`；批量传 `input_paths`、`output_dir`。支持 DOC/DOCX，最多 20 个，每个 50 MiB。批量逐项返回结果，保留成功文件；取消请求终止未完成转换。源文件不改动，已有输出默认不覆盖。加密文件及 DOCX 主动内容不支持。请检查字体、页眉、表格和分页，复杂布局可能与 Word 有差异。
 
 命令：`toolknit word to-pdf --input source.docx --output result.pdf --json`。正式 npm 3.2.0 尚无此命令。

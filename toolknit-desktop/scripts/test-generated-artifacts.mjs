@@ -11,10 +11,12 @@ const repository = path.dirname(desktop.replace(/[\\/]$/, ''));
 const generated = ['.github-outreach/local/submission.json',
   'toolknit-desktop/cli/resources/office/word-to-pdf.py',
   'toolknit-desktop/cli/resources/office/word_layout.py',
-  'toolknit-desktop/cli/resources/office/word_font_metrics.py'];
+  'toolknit-desktop/cli/resources/office/word_font_metrics.py',
+  'toolknit-desktop/cli/resources/office/word_fields.py'];
 const source = ['toolknit-desktop/src-tauri/resources/office/word-to-pdf.py',
   'toolknit-desktop/src-tauri/resources/office/word_layout.py',
   'toolknit-desktop/src-tauri/resources/office/word_font_metrics.py',
+  'toolknit-desktop/src-tauri/resources/office/word_fields.py',
   'toolknit-desktop/cli/lib/word-runtime.mjs'];
 for (const file of [...generated, ...source]) {
   let ignored = false;

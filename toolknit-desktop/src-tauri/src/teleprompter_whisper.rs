@@ -412,7 +412,8 @@ impl WhisperSession {
             params.language = language
                 .as_ref()
                 .map_or(ptr::null(), |value| value.as_ptr());
-            params.detect_language = language.is_none();
+            // A null language auto-detects and transcribes. detect_language stops after detection.
+            params.detect_language = false;
             params.initial_prompt = prompt.as_ref().map_or(ptr::null(), |value| value.as_ptr());
             params.abort_callback = Some(should_abort);
             params.abort_callback_user_data = Arc::as_ptr(&cancelled) as *mut c_void;

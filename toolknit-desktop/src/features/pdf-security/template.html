@@ -242,7 +242,7 @@
       <div class="audio-convert-drop-zone pdf-merge-v2-drop-zone" id="pdfDecryptDropZone">
         <span class="drop-hint" data-i18n="home.pdfDecrypt.dropHint">松手即可上传</span>
       </div>
-      <input id="pdfDecryptInput" type="file" accept=".pdf,application/pdf" hidden />
+      <input id="pdfDecryptInput" type="file" accept=".pdf,application/pdf" multiple hidden />
       <header class="pdf-merge-v2-topbar pdf-decrypt-v2-topbar">
         <div class="pdf-merge-v2-topbar-left pdf-decrypt-v2-topbar-left">
           <button class="settings-v2-back settings-back pdf-merge-v2-back" id="pdfDecryptBack" type="button" data-i18n-title="settings.back" title="返回首页">
@@ -286,14 +286,14 @@
               <span>01</span>
               <div>
                 <strong>添加文件</strong>
-                <p>选择一个 PDF 文件，准备输入正确密码。</p>
+                <p data-i18n="home.pdfDecrypt.batchStepFiles">追加多个 PDF，每批最多 50 个。</p>
               </div>
             </div>
             <div class="pdf-merge-v2-step">
               <span>02</span>
               <div>
                 <strong>输入密码</strong>
-                <p>输入并确认 PDF 密码后进入解密流程。</p>
+                <p data-i18n="home.pdfDecrypt.batchStepPassword">使用共用密码，或为文件单独设置密码。</p>
               </div>
             </div>
             <div class="pdf-merge-v2-step">
@@ -317,8 +317,8 @@
           <section class="pdf-merge-v2-upload pdf-decrypt-v2-upload" aria-label="上传 PDF 文件">
             <div class="pdf-merge-v2-upload-copy">
               <span class="pdf-merge-v2-upload-eyebrow">DROP OR SELECT</span>
-              <h2>把要解密的 PDF 放到这里</h2>
-              <p>上传后进入文件队列，输入密码后即可执行解密并导出新的 PDF。</p>
+              <h2 data-i18n="home.pdfDecrypt.batchUploadTitle">添加要解密的 PDF 文件</h2>
+              <p data-i18n="home.pdfDecrypt.batchUploadHint">支持追加和去重。单文件最多 150 MB、200 页，原文件保留。</p>
             </div>
             <button class="audio-convert-cta pdf-merge-v2-cta" id="pdfDecryptCta" type="button">
               <i data-lucide="upload"></i>
@@ -330,37 +330,23 @@
             <div class="pdf-merge-v2-section-head">
               <div>
                 <span class="pdf-merge-v2-section-kicker">DECRYPT QUEUE</span>
-                <h2>待解密文件</h2>
+                <h2 data-i18n="home.pdfDecrypt.queueTitle">解密队列</h2>
               </div>
-              <p>单个 PDF 即可解密；文件重选会替换当前队列。</p>
+              <div class="pdf-decrypt-queue-tools">
+                <button type="button" id="pdfDecryptBatchRetry" data-i18n="home.pdfDecrypt.retryFailed" hidden>重试失败或取消项</button>
+                <button type="button" id="pdfDecryptBatchClear" data-i18n="home.pdfDecrypt.clearQueue">清空队列</button>
+              </div>
             </div>
-            <div class="audio-convert-files pdf-merge-v2-files pdf-decrypt-v2-files" id="pdfDecryptFiles" aria-live="polite"></div>
-          </section>
-
-          <section class="audio-convert-formats pdf-merge-v2-info pdf-decrypt-v2-info" aria-label="解密说明">
-            <h3 class="audio-convert-formats-title" data-i18n="home.pdfDecrypt.infoTitle">解密说明</h3>
-            <div class="pdf-merge-info-grid">
-              <div class="pdf-merge-info-item">
-                <i data-lucide="unlock"></i>
-                <span data-i18n="home.pdfDecrypt.info1">输入正确密码即可移除密码保护</span>
-              </div>
-              <div class="pdf-merge-info-item">
-                <i data-lucide="check-circle"></i>
-                <span data-i18n="home.pdfDecrypt.info2">解密后移除所有限制（打印、复制、修改等）</span>
-              </div>
-              <div class="pdf-merge-info-item">
-                <i data-lucide="file-output"></i>
-                <span data-i18n="home.pdfDecrypt.info3">解密后导出到本地，安全可靠</span>
-              </div>
-              <div class="pdf-merge-info-item">
-                <i data-lucide="shield"></i>
-                <span data-i18n="home.pdfDecrypt.info4">纯本地处理，文件不上传服务器</span>
-              </div>
+            <div class="audio-convert-files pdf-merge-v2-files pdf-decrypt-v2-files" id="pdfDecryptFiles"></div>
+            <div class="pdf-decrypt-batch-feedback">
+              <p id="pdfDecryptBatchSummary" role="status" aria-live="polite"></p>
+              <progress id="pdfDecryptBatchProgress" max="1" value="0" data-i18n-aria-label="home.pdfDecrypt.queueProgress" aria-label="队列进度" hidden></progress>
+              <button type="button" id="pdfDecryptBatchCancel" data-i18n="home.pdfDecrypt.stopQueue" hidden>停止后续文件</button>
             </div>
           </section>
 
           <footer class="pdf-merge-v2-actions pdf-decrypt-v2-actions">
-            <span>确认文件后输入密码，再执行解密导出。</span>
+            <span data-i18n="home.pdfDecrypt.batchFooter">密码仅本次使用，重试时重新输入；成功结果可逐个定位。</span>
             <button class="audio-convert-process-btn pdf-merge-v2-process" id="pdfDecryptProcessBtn" data-i18n="home.pdfDecrypt.processBtn" style="display:none;">开始处理</button>
           </footer>
         </main>
@@ -374,13 +360,14 @@
         <div class="pdf-encrypt-field">
           <label class="pdf-encrypt-label" data-i18n="home.pdfDecrypt.passwordLabel">密码</label>
           <div class="pdf-encrypt-input-wrap">
-            <input type="password" class="pdf-encrypt-input" id="pdfDecryptPasswordInput" data-i18n-placeholder="home.pdfDecrypt.passwordPlaceholder" placeholder="请输入 PDF 密码" />
+            <input type="password" class="pdf-encrypt-input" id="pdfDecryptPasswordInput" autocomplete="off" maxlength="1024" data-i18n-placeholder="home.pdfDecrypt.passwordPlaceholder" placeholder="请输入 PDF 密码" />
             <button class="pdf-encrypt-eye-btn" id="pdfDecryptEyeBtn" type="button" aria-label="toggle password visibility">
               <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
             </button>
           </div>
         </div>
+        <p class="pdf-decrypt-password-help" data-i18n="home.pdfDecrypt.passwordHelp">共用密码用于未设置单独密码的文件。单独密码留空表示没有打开密码，执行后密码自动清空。</p>
         <div class="pdf-encrypt-dialog-actions">
           <button class="audio-clip-success-btn audio-clip-success-btn-secondary" id="pdfDecryptPasswordCancel" data-i18n="home.pdfDecrypt.cancel">取消</button>
           <button class="audio-clip-success-btn audio-clip-success-btn-primary" id="pdfDecryptPasswordConfirm" data-i18n="home.pdfDecrypt.confirmDecrypt">确认解密</button>

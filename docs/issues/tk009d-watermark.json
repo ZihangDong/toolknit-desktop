@@ -1,0 +1,196 @@
+{
+  "task": "TK-009-D",
+  "date": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "first-version-complete",
+  "scope": {
+    "types": [
+      "text",
+      "PNG",
+      "JPEG"
+    ],
+    "textCharacters": 80,
+    "imageMiB": 4,
+    "imagePixels": 4000000,
+    "opacity": [
+      0.05,
+      1
+    ],
+    "widthPercentOnA4": [
+      20,
+      80
+    ],
+    "angles": [
+      -45,
+      0,
+      45
+    ],
+    "pages": "blank all, otherwise 1-based comma-separated ranges; per-document bounds enforced",
+    "placement": "A4 overlay uniformly fitted and centered on each page",
+    "preview": "actual generated PDF layer without source content",
+    "defaultEnabled": false,
+    "preserveSearchableBody": true,
+    "cliAndMcp": true
+  },
+  "core": {
+    "passed": true,
+    "groups": 9,
+    "checks": [
+      "ranges reject zero, reversed, empty tokens, leading zeros and outside pages",
+      "options reject multiline, empty, >80 Unicode characters, invalid numbers and angles",
+      "missing font and unsupported glyph fail explicitly",
+      "CJK text produces a one-page embedded-font PDF layer",
+      "transparent PNG and JPEG accepted",
+      "oversized dimensions, malformed and >4 MiB images rejected before preview decoding",
+      "real qpdf overlay preserves searchable body, mixed paper sizes and exact selected pages",
+      "out-of-range stamping fails without altering the original temporary PDF",
+      "pre-cancelled watermark work retains the original and cleans overlay artifacts"
+    ]
+  },
+  "browser": {
+    "passed": true,
+    "runs": [
+      {
+        "theme": "light",
+        "language": "zh",
+        "assertions": 63
+      },
+      {
+        "theme": "light",
+        "language": "en",
+        "assertions": 63
+      },
+      {
+        "theme": "dark",
+        "language": "zh",
+        "assertions": 63
+      },
+      {
+        "theme": "dark",
+        "language": "en",
+        "assertions": 63
+      }
+    ],
+    "screenshots": 28,
+    "pageErrors": [],
+    "console": []
+  },
+  "production": {
+    "passed": true,
+    "checks": [
+      "production home search and lazy Word entry",
+      "default off",
+      "actual bundled-font PDF preview",
+      "actual PNG PDF preview",
+      "Escape returns home with reset controls"
+    ],
+    "errors": []
+  },
+  "real": {
+    "groups": 8,
+    "checks": [
+      "default-off baseline is a searchable three-page mixed portrait/landscape PDF",
+      "actual CLI embeds CJK text, stamps only 1/3 and preserves all other page pixels and dimensions",
+      "ZIP image watermark retains successful output and fails short document without exposing its plain PDF",
+      "actual MCP schema accepts JPEG watermark alongside internal field refresh",
+      "failed single-file stamping preserves an existing overwrite target",
+      "cancelling after first publication retains exactly that stamped PDF and reports remaining items cancelled",
+      "actual Rust batch stamps text/image before publication, isolates page-range failures and composes with internal field refresh",
+      "source DOCX and ZIP hashes unchanged"
+    ],
+    "outputs": [
+      {
+        "name": "baseline",
+        "pages": 3,
+        "selected": [],
+        "sha256": "d332be46ac68cc2de41e98d806afc0d2114a1a334c54161b164f9cf1676f1013"
+      },
+      {
+        "name": "cli-text",
+        "pages": 3,
+        "selected": [
+          1,
+          3
+        ],
+        "sha256": "163c74f4407a94cf330647288a3036db83b3fb2e4c1b5ed702a1408a43d99bec"
+      },
+      {
+        "name": "cli-zip-image",
+        "pages": 3,
+        "selected": [
+          3
+        ],
+        "sha256": "96669c9597d792bba65d5d86f19c72bab6852942599e341449220eadebfc7ff2"
+      },
+      {
+        "name": "mcp-jpeg",
+        "pages": 3,
+        "selected": [
+          2
+        ],
+        "sha256": "714e863b32de3423870ed068fa5bfd7aecdcc777f74b4d580c2c39641c4e91bd"
+      },
+      {
+        "name": "cancelled-kept",
+        "pages": 3,
+        "selected": [
+          1,
+          2,
+          3
+        ],
+        "sha256": "6eee747da3bbfbb042b0ad50ff0256e23dadd46463884f3260a6e57de4722077"
+      },
+      {
+        "name": "rust-text",
+        "pages": 3,
+        "selected": [
+          1,
+          3
+        ],
+        "sha256": "cf9741c363b4ba18cd00f71c1d6c536f1171d646d41bcf6bf0a38049eac99f5c"
+      },
+      {
+        "name": "rust-image",
+        "pages": 3,
+        "selected": [
+          2
+        ],
+        "sha256": "2b21e4d1f06175dfc8eb43ba046e9950ee57e471378660feaa68d1cfb504487b"
+      }
+    ],
+    "sourceUnchanged": true,
+    "zipUnchanged": true,
+    "pdfParser": "PDF.js independent text/page/rgba pixel comparison with default-off baseline",
+    "pdfStructureCheck": "qpdf --check",
+    "platform": "Windows; real LibreOffice Writer/UNO/Python, Rust native worker, CLI process and MCP stdio"
+  },
+  "regression": {
+    "wordCoreAndProcess": true,
+    "wordZipChecks": 29,
+    "rustWordTests": {
+      "passed": 6,
+      "ignored": 5
+    },
+    "realDocDocxCliMcp": true,
+    "realInternalFields": {
+      "groups": 9,
+      "independentPdfs": 7,
+      "externalProbeRequests": 0
+    },
+    "cliPackage": true,
+    "productionBuild": true,
+    "impeccableChangedUiFindings": 0
+  },
+  "limits": [
+    "Centered first version; no tiling, free positioning or colored text",
+    "A4 layer scales with each target page, not fixed physical dimensions",
+    "Installed Tauri/WebView2 file dialogs and full native UI flow remain TK-009-D1",
+    "No installer built or release published"
+  ],
+  "artifacts": {
+    "realRun": "run-Y8BOCS",
+    "directory": "toolknit-desktop/tmp/word-watermark",
+    "browser": "toolknit-desktop/tmp/word-pdf-browser-acceptance",
+    "production": "toolknit-desktop/tmp/word-watermark-production"
+  }
+}

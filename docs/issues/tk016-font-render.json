@@ -1,0 +1,131 @@
+{
+  "task": "TK-016-A",
+  "scope": "typography-render-verification",
+  "sourceRun": "run-TuXlnt",
+  "fontSha256": "afa0d43789047c9a52861f7d69bc8ff4dce74621e19ea266cd8d656ddc7f9c79",
+  "cases": [
+    {
+      "scenario": "unicode-text",
+      "sameSourceFont": true,
+      "sourceCoverageWithin1px": 1.0,
+      "outputCoverageWithin1px": 1.0,
+      "sourceInkBounds": [
+        28,
+        26,
+        513,
+        101
+      ],
+      "outputInkBounds": [
+        28,
+        27,
+        514,
+        101
+      ],
+      "missingGlyphs": [],
+      "textWidthError": 0
+    },
+    {
+      "scenario": "mixed-glyph-widths",
+      "sameSourceFont": true,
+      "sourceCoverageWithin1px": 1.0,
+      "outputCoverageWithin1px": 1.0,
+      "sourceInkBounds": [
+        31,
+        26,
+        822,
+        101
+      ],
+      "outputInkBounds": [
+        31,
+        27,
+        823,
+        101
+      ],
+      "missingGlyphs": [],
+      "textWidthError": 0
+    },
+    {
+      "scenario": "unicode-rotation-90",
+      "sameSourceFont": true,
+      "sourceCoverageWithin1px": 1.0,
+      "outputCoverageWithin1px": 1.0,
+      "sourceInkBounds": [
+        28,
+        28,
+        103,
+        513
+      ],
+      "outputInkBounds": [
+        29,
+        28,
+        103,
+        514
+      ],
+      "missingGlyphs": [],
+      "textWidthError": 0
+    },
+    {
+      "scenario": "paper-mm",
+      "sameSourceFont": false,
+      "sourceCoverageWithin1px": 0.805706776797447,
+      "outputCoverageWithin1px": 0.8174647887323944,
+      "sourceInkBounds": [
+        26,
+        33,
+        342,
+        93
+      ],
+      "outputInkBounds": [
+        27,
+        30,
+        352,
+        94
+      ],
+      "missingGlyphs": [],
+      "textWidthError": 3.552713678800501e-15
+    },
+    {
+      "scenario": "compressed-text",
+      "sameSourceFont": false,
+      "sourceCoverageWithin1px": 0.8423423423423423,
+      "outputCoverageWithin1px": 0.8339552238805971,
+      "sourceInkBounds": [
+        25,
+        33,
+        246,
+        93
+      ],
+      "outputInkBounds": [
+        26,
+        30,
+        253,
+        94
+      ],
+      "missingGlyphs": [],
+      "textWidthError": 0
+    },
+    {
+      "scenario": "expanded-text",
+      "sameSourceFont": false,
+      "sourceCoverageWithin1px": 0.7989869753979739,
+      "outputCoverageWithin1px": 0.8042374111159484,
+      "sourceInkBounds": [
+        27,
+        33,
+        437,
+        93
+      ],
+      "outputInkBounds": [
+        28,
+        30,
+        450,
+        94
+      ],
+      "missingGlyphs": [],
+      "textWidthError": 3.552713678800501e-15
+    }
+  ],
+  "method": "same-page-scale; 2400px longest side; TrueType nonzero winding; same-font glyph masks within 1px; 99.5% mutual coverage and <=2px ink-bound error",
+  "status": "shipped-font-render-checks-passed",
+  "interactiveCadAcceptance": "not-tested"
+}

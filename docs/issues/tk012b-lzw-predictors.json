@@ -1,0 +1,124 @@
+{
+  "task": "TK-012-B-E",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "lzw-inline-prediction-complete",
+  "parentTaskComplete": false,
+  "supported": {
+    "contexts": [
+      "inline image on page",
+      "inline image inside nested Form"
+    ],
+    "filterChains": [
+      [
+        "LZWDecode"
+      ],
+      [
+        "ASCIIHexDecode",
+        "LZWDecode"
+      ],
+      [
+        "ASCII85Decode",
+        "LZWDecode"
+      ]
+    ],
+    "earlyChange": [
+      0,
+      1
+    ],
+    "pngPredictors": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "pngBits": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "tiffPredictor": 2,
+    "tiffBits": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "colors": [
+      "DeviceGray",
+      "DeviceRGB",
+      "DeviceCMYK"
+    ]
+  },
+  "validation": [
+    "LZW settings separated from image prediction geometry",
+    "aligned parameter containers and no duplicate/unknown keys",
+    "full BitsPerComponent name for non-8-bit prediction",
+    "PNG row tags and encoded row length included in limits",
+    "strict Clear/EOD/padding and same-stream unambiguous boundary",
+    "EarlyChange and prediction both included in exact matching"
+  ],
+  "limits": {
+    "perStageBytes": 8388608,
+    "totalDecodedBytes": 33554432
+  },
+  "tests": {
+    "newGroups": [
+      "Both EarlyChange modes support TIFF/PNG residuals and count row tags plus ASCII intermediate data",
+      "Geometry, duplicate aliases, unaligned parameters and existing TIFF16/non-8-bit BPC restrictions remain enforced",
+      "Bad PNG tags/length, LZW truncation/trailers and decoded budgets fail safely; predicted page content stays excluded",
+      "42 predictor/EarlyChange/wrapper, 21 depth/color and six long dictionary-switch images retain exact matches and source bytes",
+      "Both EarlyChange modes and TIFF/PNG images inside nested Forms keep unselected shared calls intact",
+      "An invalid predicted image preserves its original page while the valid image on the next page remains editable",
+      "Prediction parameters stay in the exact-match fingerprint even when compressed residual bytes coincide",
+      "Poppler 288-page and PDF.js 142 first-page comparisons agree; qpdf accepts 73 edited outputs"
+    ],
+    "imageProfiles": 69,
+    "predictorEarlyChangeWrapperProfiles": 42,
+    "selectedDepthColorProfiles": 21,
+    "longDictionarySwitchImages": 6,
+    "nestedFormProfiles": 4,
+    "popplerPageComparisons": 288,
+    "pdfjsFirstPageComparisons": 142,
+    "qpdfEditedOutputs": 73,
+    "edgeChecks": 357,
+    "browserErrors": [],
+    "existingRegressions": {
+      "core": 107,
+      "flatePredictionGroups": 10,
+      "depthGroups": 8,
+      "runLengthGroups": 9,
+      "lzwGroups": 10
+    },
+    "productionEntry": "actual home; long PNG adaptive, EarlyChange=0, ASCII85/LZW; match, preview, PDF download, home return"
+  },
+  "commands": [
+    "npm run test:pdf-object-remove",
+    "npm run test:pdf-object-remove-browser",
+    "npm run build",
+    "npm run test:pdf-object-remove-production"
+  ],
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-lzw-predictor/report.json",
+    "toolknit-desktop/tmp/pdf-lzw-predictor-regression.log",
+    "toolknit-desktop/tmp/pdf-lzw-predictor-browser.log",
+    "toolknit-desktop/tmp/pdf-lzw-predictor-build.log",
+    "toolknit-desktop/tmp/pdf-lzw-predictor-production.log"
+  ],
+  "remaining": [
+    "prediction transforms for page/Form drawing streams",
+    "TIFF 16-bit reader differences",
+    "non-8-bit abbreviated BPC parameters remain rejected",
+    "other filters and longer/reverse filter chains",
+    "structured/transparency Form",
+    "linked/locked stamps",
+    "mixed text objects",
+    "formal installed Tauri/WebView2 UI acceptance (TK-012-C)"
+  ],
+  "nativeUiAcceptance": false,
+  "installerBuiltOrPublished": false
+}

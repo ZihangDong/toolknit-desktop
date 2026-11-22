@@ -17,7 +17,7 @@ const [html, main, lazyTools, lazyRegistry, ui, core, styles, finalStyles, featu
   readFile(new URL('../src/developer-toolbox-core.js', import.meta.url), 'utf8')
 ]);
 
-for (const id of ['json-tools', 'base64', 'url-codec', 'uuid', 'jwt']) assert.match(html, new RegExp(`data-tool="${id}"`));
+for (const id of ['json-tools', 'xml-tools', 'base64', 'url-codec', 'uuid', 'jwt']) assert.match(html, new RegExp(`data-tool="${id}"`));
 assert.match(html, /id="developerToolboxOverlay"/);
 assert.match(lazyTools, /instanceKey: 'developer-toolbox'/);
 assert.match(lazyTools, /import\('\.\/developer-toolbox\/tool\.js'\)/);

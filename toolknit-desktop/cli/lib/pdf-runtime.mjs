@@ -262,7 +262,7 @@ function qpdfCandidatePaths() {
   return candidates;
 }
 
-async function resolveQpdf() {
+export async function resolveQpdf() {
   for (const candidate of qpdfCandidatePaths()) {
     if (await fileExists(candidate)) return candidate;
   }
@@ -270,7 +270,7 @@ async function resolveQpdf() {
   return process.platform === 'win32' ? 'qpdf.exe' : 'qpdf';
 }
 
-async function runProcess(command, args, input, options = {}) {
+export async function runProcess(command, args, input, options = {}) {
   return new Promise((resolve, reject) => {
     try {
       throwIfAborted(options.signal);

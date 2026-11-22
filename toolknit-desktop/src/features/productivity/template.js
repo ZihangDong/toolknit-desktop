@@ -29,7 +29,8 @@ ${toolTopbarMarkup({ tag: 'ToolKnit · <span data-i18n="productivity.workspace">
     </div>
   </section>
   <section data-productivity-panel="task-center" hidden>
-    <div class="productivity-heading"><div><h1 data-i18n="productivity.tasks">任务中心</h1><p data-i18n="productivity.tasksHint">查看串联流程及已接入转换的状态。历史保存在本机；重试适用于当前会话。</p></div><button type="button" data-action="clear-tasks" data-i18n="productivity.clearFinished">清除已结束记录</button></div>
+    <div class="productivity-heading"><div><h1 data-i18n="productivity.tasks">任务中心</h1><p data-i18n="productivity.tasksHint">历史保存在本机。Word 任务可在重启后恢复到转换页；其他工具的重试适用于当前会话。</p></div><button type="button" data-action="clear-tasks" data-i18n="productivity.clearFinished">清除已结束记录</button></div>
+    <p data-task-storage-warning class="productivity-error" data-i18n="productivity.storageUnavailable" hidden>本机存储不可用，当前历史仅在本次会话保留。</p>
     <div class="productivity-toolbar"><label class="productivity-search"><span class="sr-only" data-i18n="productivity.searchTasks">搜索任务</span><input data-task-search data-i18n-placeholder="productivity.searchTasks" placeholder="搜索任务"></label><label><span class="sr-only" data-i18n="productivity.filter">筛选状态</span><select data-task-filter><option value="all" data-i18n="productivity.all">全部状态</option><option value="active" data-i18n="productivity.active">处理中</option><option value="succeeded" data-i18n="productivity.succeeded">已完成</option><option value="failed" data-i18n="productivity.failed">失败</option><option value="cancelled" data-i18n="productivity.cancelled">已取消</option><option value="interrupted" data-i18n="productivity.interrupted">已中断</option></select></label></div>
     <p class="productivity-inline" data-task-summary role="status" aria-live="polite"></p><div data-task-rows></div>
   </section>

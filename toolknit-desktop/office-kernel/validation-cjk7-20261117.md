@@ -56,7 +56,7 @@
 
 ## 证据位置
 
-- 三份最新 PDF、`验证结果.json`：`<local-samples>\ToolKnit-转换复测-20261117-v4`。v2/v3 是旧阶段结果。
+- 三份最新 PDF、`验证结果.json`：`D:\work\试验区\文件\ToolKnit-转换复测-20261117-v4`。v2/v3 是旧阶段结果。
 - 通用 PDF：`D:\tk-lo\cjk7-delivery-fixtures\report.json`。
 - 原生测试：`D:\tk-lo\test-cjk7-final16.log`、`D:\tk-lo\build\workdir\CppunitTest\sw_ooxmlimport.test.log`。
 - 完整内核：`D:\tk-lo\build-cjk7-final16.log`。

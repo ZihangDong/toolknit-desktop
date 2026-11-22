@@ -1,3 +1,5 @@
+import { createWordHistory, updateWordHistory } from '../app/word-conversion-history.js';
+import { wordErrorCode } from '../features/word-to-pdf/core.js';
 // Explicit allowlist keeps reads, credentials, and binary output payloads out of history.
 const COMMANDS = {
   convert_word_to_pdf: ['Word → PDF', 'word-to-pdf', 'cancel_word_to_pdf'],
@@ -6,6 +8,11 @@ const COMMANDS = {
   convert_audio_batch: ['音频转换 / Audio conversion', 'audio-convert', 'cancel_convert'],
   convert_video_batch: ['视频转换 / Video conversion', 'video-convert', 'cancel_convert'],
 };
+
+function protectedWordError(error) {
+  const code = wordErrorCode(error);
+  return code === 'render-failed' ? 'word-render:encryption-failed' : `word-render:${code}`;
+}
 
 export function resultOutputs(value) {
   const paths = new Set();
@@ -42,18 +49,20 @@ export function createTrackedInvoke({ invoke, listen, center, isEnabled = () => 
     }
     const spec = COMMANDS[command];
     if (!spec || !isEnabled()) return invoke(command, args, options);
+    const sensitive = command === 'convert_word_to_pdf' && Boolean(args?.encryption);
+    let recovery = command === 'convert_word_to_pdf' ? createWordHistory(args) : null;
     let cancelled = false, started = false, unlisten;
     const cancelledError = () => Object.assign(new Error('已取消 / Cancelled'), { code: 'CANCELLED' });
     const previous = tail;
     let release;
     tail = new Promise(resolve => { release = resolve; });
-    const task = center.begin({ label: spec[0], tool: spec[1],
+    const task = center.begin({ label: spec[0], tool: spec[1], recovery,
       cancel: async () => {
         cancelled = true;
         if (started) await invoke(spec[2], command === 'convert_word_to_pdf' ? { jobId: args.jobId } : {});
-        else task.fail(cancelledError());
+        else { if (sensitive) args.encryption.password = ''; task.fail(cancelledError()); }
       },
-      retry: () => trackedInvoke(command, { ...args, ...(command === 'convert_word_to_pdf' ? { jobId: crypto.randomUUID() } : {}) }, options)
+      retry: sensitive || recovery ? undefined : () => trackedInvoke(command, { ...args, ...(command === 'convert_word_to_pdf' ? { jobId: crypto.randomUUID() } : {}) }, options)
     });
     const operation = { id: task.id, tool: spec[1], args }; operations.add(operation);
     task.queued();
@@ -65,6 +74,7 @@ export function createTrackedInvoke({ invoke, listen, center, isEnabled = () => 
         unlisten = await listen(command === 'convert_word_to_pdf' ? 'word-to-pdf-progress' : 'convert-progress', event => {
           const value = event?.payload || {};
           if (command === 'convert_word_to_pdf' && (value.job_id ?? value.jobId) !== args.jobId) return;
+          if (recovery && value.file) { recovery = updateWordHistory(recovery, value.file); task.recovery?.(recovery); }
           const percent = value.percent ?? value.progress ?? (value.total > 0 ? value.current / value.total * 100 : null);
           task.progress(percent, value.message || value.current_file || '');
         });
@@ -73,16 +83,21 @@ export function createTrackedInvoke({ invoke, listen, center, isEnabled = () => 
       started = true;
       active = { command, args, markCancelled: () => { cancelled = true; } };
       const result = await invoke(command, args, options);
+      if (recovery) { for (const file of result?.files || []) recovery = updateWordHistory(recovery, file); task.recovery?.(recovery); }
       started = false;
       const outputs = resultOutputs(result);
       if (cancelled || result?.cancelled) task.fail(cancelledError(), { outputs });
       else if (Number(result?.fail_count) > 0 || result?.files?.some(row => row.status === 'failed')) {
-        const error = new Error((result.errors || result.files?.filter(row => row.error).map(row => row.error) || []).join('\n') || '部分文件处理失败 / Some files failed');
-        task.fail(error, { outputs });
+        const errors = result.errors || result.files?.filter(row => row.error).map(row => row.error) || [];
+        const message = sensitive
+          ? errors.map(protectedWordError).join('\n') || protectedWordError()
+          : errors.join('\n') || '部分文件处理失败 / Some files failed';
+        task.fail(new Error(message), { outputs });
       } else task.finish({ outputs });
       return result;
     } catch (error) {
-      task.fail(cancelled ? Object.assign(new Error('Cancelled'), { code: 'CANCELLED' }) : error); throw error;
-    } finally { try { unlisten?.(); } catch {} operations.delete(operation); if (active?.args === args) active = null; release(); }
+      const safeError = cancelled ? cancelledError() : sensitive ? new Error(protectedWordError(error)) : error;
+      task.fail(cancelled ? Object.assign(new Error('Cancelled'), { code: 'CANCELLED' }) : safeError); throw safeError;
+    } finally { if (sensitive) args.encryption.password = ''; try { unlisten?.(); } catch {} operations.delete(operation); if (active?.args === args) active = null; release(); }
   };
 }

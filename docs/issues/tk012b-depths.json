@@ -1,0 +1,417 @@
+{
+  "task": "TK-012-B-B",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "packed-tiff-and-16-bit-plain-png-complete",
+  "parentTaskComplete": false,
+  "supported": {
+    "tiffPredictor2Bits": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "plainImageBits": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "pngPredictorBits": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "colorSpaces": [
+      "DeviceGray",
+      "DeviceRGB",
+      "DeviceCMYK"
+    ],
+    "non8BitParameterKey": "BitsPerComponent",
+    "BpcAliasAcceptedValue": 8
+  },
+  "tests": {
+    "existingCoreChecks": 107,
+    "existingPredictorGroups": 10,
+    "newGroups": [
+      "16-bit PNG includes row tags in its budget; TIFF 16-bit remains rejected after the reader consistency probe",
+      "Packed 1/2/4-bit TIFF samples preserve row padding and use sample/channel differences",
+      "Unsupported depth, conflicting geometry, odd 16-bit rows and decoding limits remain rejected",
+      "Identical 16-bit compressed bytes with different image geometry and prediction semantics are kept separate",
+      "45 depth/color/filter combinations preserve cross-page matches, different images, searchable body and input bytes",
+      "TIFF 16-bit and ambiguous non-8-bit BPC aliases preserve their original pages without selectable drawing objects",
+      "Poppler passes 180 original/removed page comparisons, and qpdf accepts 45 edited PDFs",
+      "PDF.js passes 90 source/removed first-page comparisons against raw or clean references"
+    ],
+    "variants": [
+      {
+        "name": "tiff2-G-1-flate",
+        "bits": 1,
+        "color": "G",
+        "encoding": "flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-G-1-hex-flate",
+        "bits": 1,
+        "color": "G",
+        "encoding": "hex-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-G-1-ascii85-flate",
+        "bits": 1,
+        "color": "G",
+        "encoding": "ascii85-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-RGB-1-flate",
+        "bits": 1,
+        "color": "RGB",
+        "encoding": "flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-RGB-1-hex-flate",
+        "bits": 1,
+        "color": "RGB",
+        "encoding": "hex-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-RGB-1-ascii85-flate",
+        "bits": 1,
+        "color": "RGB",
+        "encoding": "ascii85-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-CMYK-1-flate",
+        "bits": 1,
+        "color": "CMYK",
+        "encoding": "flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-CMYK-1-hex-flate",
+        "bits": 1,
+        "color": "CMYK",
+        "encoding": "hex-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-CMYK-1-ascii85-flate",
+        "bits": 1,
+        "color": "CMYK",
+        "encoding": "ascii85-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-G-2-flate",
+        "bits": 2,
+        "color": "G",
+        "encoding": "flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-G-2-hex-flate",
+        "bits": 2,
+        "color": "G",
+        "encoding": "hex-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-G-2-ascii85-flate",
+        "bits": 2,
+        "color": "G",
+        "encoding": "ascii85-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-RGB-2-flate",
+        "bits": 2,
+        "color": "RGB",
+        "encoding": "flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-RGB-2-hex-flate",
+        "bits": 2,
+        "color": "RGB",
+        "encoding": "hex-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-RGB-2-ascii85-flate",
+        "bits": 2,
+        "color": "RGB",
+        "encoding": "ascii85-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-CMYK-2-flate",
+        "bits": 2,
+        "color": "CMYK",
+        "encoding": "flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-CMYK-2-hex-flate",
+        "bits": 2,
+        "color": "CMYK",
+        "encoding": "hex-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-CMYK-2-ascii85-flate",
+        "bits": 2,
+        "color": "CMYK",
+        "encoding": "ascii85-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-G-4-flate",
+        "bits": 4,
+        "color": "G",
+        "encoding": "flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-G-4-hex-flate",
+        "bits": 4,
+        "color": "G",
+        "encoding": "hex-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-G-4-ascii85-flate",
+        "bits": 4,
+        "color": "G",
+        "encoding": "ascii85-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-RGB-4-flate",
+        "bits": 4,
+        "color": "RGB",
+        "encoding": "flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-RGB-4-hex-flate",
+        "bits": 4,
+        "color": "RGB",
+        "encoding": "hex-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-RGB-4-ascii85-flate",
+        "bits": 4,
+        "color": "RGB",
+        "encoding": "ascii85-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-CMYK-4-flate",
+        "bits": 4,
+        "color": "CMYK",
+        "encoding": "flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-CMYK-4-hex-flate",
+        "bits": 4,
+        "color": "CMYK",
+        "encoding": "hex-flate",
+        "predictor": 2
+      },
+      {
+        "name": "tiff2-CMYK-4-ascii85-flate",
+        "bits": 4,
+        "color": "CMYK",
+        "encoding": "ascii85-flate",
+        "predictor": 2
+      },
+      {
+        "name": "png15-G-16-flate",
+        "bits": 16,
+        "color": "G",
+        "encoding": "flate",
+        "predictor": 15
+      },
+      {
+        "name": "png15-G-16-hex-flate",
+        "bits": 16,
+        "color": "G",
+        "encoding": "hex-flate",
+        "predictor": 15
+      },
+      {
+        "name": "png15-G-16-ascii85-flate",
+        "bits": 16,
+        "color": "G",
+        "encoding": "ascii85-flate",
+        "predictor": 15
+      },
+      {
+        "name": "png15-RGB-16-flate",
+        "bits": 16,
+        "color": "RGB",
+        "encoding": "flate",
+        "predictor": 15
+      },
+      {
+        "name": "png15-RGB-16-hex-flate",
+        "bits": 16,
+        "color": "RGB",
+        "encoding": "hex-flate",
+        "predictor": 15
+      },
+      {
+        "name": "png15-RGB-16-ascii85-flate",
+        "bits": 16,
+        "color": "RGB",
+        "encoding": "ascii85-flate",
+        "predictor": 15
+      },
+      {
+        "name": "png15-CMYK-16-flate",
+        "bits": 16,
+        "color": "CMYK",
+        "encoding": "flate",
+        "predictor": 15
+      },
+      {
+        "name": "png15-CMYK-16-hex-flate",
+        "bits": 16,
+        "color": "CMYK",
+        "encoding": "hex-flate",
+        "predictor": 15
+      },
+      {
+        "name": "png15-CMYK-16-ascii85-flate",
+        "bits": 16,
+        "color": "CMYK",
+        "encoding": "ascii85-flate",
+        "predictor": 15
+      },
+      {
+        "name": "plain-G-16-raw",
+        "bits": 16,
+        "color": "G",
+        "encoding": "raw",
+        "predictor": 1
+      },
+      {
+        "name": "plain-G-16-hex",
+        "bits": 16,
+        "color": "G",
+        "encoding": "hex",
+        "predictor": 1
+      },
+      {
+        "name": "plain-G-16-ascii85",
+        "bits": 16,
+        "color": "G",
+        "encoding": "ascii85",
+        "predictor": 1
+      },
+      {
+        "name": "plain-RGB-16-raw",
+        "bits": 16,
+        "color": "RGB",
+        "encoding": "raw",
+        "predictor": 1
+      },
+      {
+        "name": "plain-RGB-16-hex",
+        "bits": 16,
+        "color": "RGB",
+        "encoding": "hex",
+        "predictor": 1
+      },
+      {
+        "name": "plain-RGB-16-ascii85",
+        "bits": 16,
+        "color": "RGB",
+        "encoding": "ascii85",
+        "predictor": 1
+      },
+      {
+        "name": "plain-CMYK-16-raw",
+        "bits": 16,
+        "color": "CMYK",
+        "encoding": "raw",
+        "predictor": 1
+      },
+      {
+        "name": "plain-CMYK-16-hex",
+        "bits": 16,
+        "color": "CMYK",
+        "encoding": "hex",
+        "predictor": 1
+      },
+      {
+        "name": "plain-CMYK-16-ascii85",
+        "bits": 16,
+        "color": "CMYK",
+        "encoding": "ascii85",
+        "predictor": 1
+      }
+    ],
+    "popplerPageComparisons": 180,
+    "pdfjsFirstPageComparisons": 90,
+    "qpdfEditedOutputs": 45,
+    "edgeChecks": 198,
+    "browserErrors": [],
+    "productionEntry": "actual home entry; CMYK 16-bit adaptive PNG in ASCII85/Flate; match, preview, PDF download, return home"
+  },
+  "guardedReaderDifferences": [
+    {
+      "name": "TIFF 16-bit carry",
+      "pdfjsMatchesRaw": true,
+      "popplerMatchesRaw": false,
+      "popplerDifferentBytes": 26244,
+      "status": "not enabled; preserved by parser guard"
+    },
+    {
+      "name": "non-8-bit BPC alias",
+      "pdfjsMatchesRaw": true,
+      "popplerMatchesRaw": false,
+      "popplerDifferentBytes": 12774,
+      "status": "not enabled; preserved by parser guard"
+    }
+  ],
+  "commands": [
+    "npm run test:pdf-object-remove",
+    "node scripts/test-pdf-inline-depths.mjs",
+    "npm run test:pdf-object-remove-browser",
+    "npm run build",
+    "npm run test:pdf-object-remove-production"
+  ],
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-inline-depths/report.json",
+    "toolknit-desktop/tmp/pdf-inline-depths/ambiguous-bpc-source.pdf",
+    "toolknit-desktop/tmp/pdf-inline-depths/tiff16-probe-source.pdf",
+    "toolknit-desktop/tmp/pdf-inline-depths-test.log",
+    "toolknit-desktop/tmp/pdf-inline-depths-regression.log",
+    "toolknit-desktop/tmp/pdf-inline-depths-browser.log",
+    "toolknit-desktop/tmp/pdf-inline-depths-build.log",
+    "toolknit-desktop/tmp/pdf-inline-depths-production.log"
+  ],
+  "remaining": [
+    "TIFF 16-bit reader consistency",
+    "non-8-bit abbreviated BPC parameter remains rejected",
+    "other filters",
+    "structured/transparency Form",
+    "linked/locked stamps",
+    "mixed text objects",
+    "formal installed Tauri/WebView2 UI acceptance (TK-012-C)"
+  ],
+  "nativeUiAcceptance": false,
+  "installerBuiltOrPublished": false
+}

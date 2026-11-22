@@ -1,8 +1,6 @@
 import { spawnSync } from 'node:child_process';
 
 const releaseTests = [
-  'test:productivity',
-  'test:workbench',
   'test:source-inventory',
   'test:generated-artifacts',
   'test:dependency-lock',

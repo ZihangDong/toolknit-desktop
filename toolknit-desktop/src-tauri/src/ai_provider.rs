@@ -424,6 +424,26 @@ mod tests {
     use super::*;
 
     #[test]
+    fn orcarouter_documented_chat_envelope_uses_existing_transport() {
+        let mut request = test_request();
+        request.url = "https://api.orcarouter.ai/v1/chat/completions".into();
+        request.model = "openai/gpt-4o-mini".into();
+        request.max_tokens = Some(1024);
+        request.temperature = Some(0.1);
+        let endpoint = validate_native_request(&request).unwrap();
+        assert_eq!(endpoint.host_str(), Some("api.orcarouter.ai"));
+        assert_eq!(endpoint.path(), "/v1/chat/completions");
+        let body = request_body(&request, &endpoint);
+        assert_eq!(body["model"], "openai/gpt-4o-mini");
+        assert_eq!(body["stream"], false);
+        assert_eq!(body["max_tokens"], 1024);
+        assert_eq!(body["temperature"], 0.1);
+        assert!(body.get("reasoning_effort").is_none());
+        assert!(body.get("apiKey").is_none());
+        assert!(body.get("requestId").is_none());
+    }
+
+    #[test]
     fn multimodal_messages_are_bounded_and_local_images_only() {
         let mut request = test_request();
         request.messages[0].content = serde_json::json!([

@@ -1,0 +1,36 @@
+{
+  "task": "TK-012-C",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "complete",
+  "nativeUiAcceptance": true,
+  "scope": "Local isolated Windows NSIS installation with WebView2; no public release",
+  "preflight": "tk012c-native-preflight.json",
+  "installedExecutableSha256": "2a7e467e3b10fcd6b8a0c7e5fcc9704d4e9bfe017dd7a92360f63b3bece53282",
+  "uiChecks": {
+    "realWindowsFilePicker": true,
+    "workerCandidateCount": 15,
+    "pageTargetsMatched": 6,
+    "formTargetsMarked": 1,
+    "beforeAfterPreviewAndDifference": true,
+    "nativeExport": true,
+    "returnedToHome": true
+  },
+  "outputChecks": {
+    "pageCount": 7,
+    "selectedTargetsRemoved": 7,
+    "pageBodyCount": 7,
+    "formBodyRetained": true,
+    "sourceUnchanged": true,
+    "sourceSha256": "12178dc533acb8d37ebda12958c2c4826d665a1b721f60f37f8dccfb68beda54",
+    "exportSha256": "cb05fb274a6f293de6e08b4652bc696f02fb432993b67fb9403c8cd8ff1f3d22",
+    "qpdfChecks": 1,
+    "popplerPageComparisons": 7,
+    "pdfjsPageComparisons": 7
+  },
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-object-remove-native/tk012c-installed-input.pdf",
+    "toolknit-desktop/tmp/pdf-object-remove-native-verification-WgtKK2/export.pdf",
+    "toolknit-desktop/tmp/pdf-object-remove-native-verification-WgtKK2/report.json"
+  ]
+}

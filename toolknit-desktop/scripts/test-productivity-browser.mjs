@@ -15,7 +15,7 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, acc
 const errors = []; page.on('pageerror', error => errors.push(error.message));
 page.setDefaultTimeout(15000);
 const ready = () => page.waitForFunction(() => !document.getElementById('appStartupMask') && !document.querySelector('.app')?.inert);
-const settle = () => page.waitForFunction(() => { const veil = document.querySelector('[data-tk-page-transition-veil]'); return (!veil || getComputedStyle(veil).visibility === 'hidden') && !document.getAnimations().some(animation => animation.playState === 'running' && animation.effect?.getTiming().iterations !== Infinity); });
+const settle = () => page.waitForFunction(() => { const veil = document.querySelector('[data-tk-page-transition-veil]'); return !veil || getComputedStyle(veil).visibility === 'hidden'; });
 try {
   await page.goto(server.resolvedUrls.local[0]);
   await page.locator('#homeToolGrid [data-home-tool]').first().waitFor();

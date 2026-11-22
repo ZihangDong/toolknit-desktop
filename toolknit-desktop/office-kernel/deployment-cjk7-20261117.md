@@ -53,7 +53,7 @@ Writer 模块 SHA-256：`2ebad22dcb6996308387eb4705728057c393f4fa7d7d64ea3edb882
 - 安装后独立发现：项目 `tmp\bundled-installed-discovery.json`。
 - 普通安装版启动：项目 `tmp\bundled-installed-launch.json`。
 - Word 原生/CLI/MCP：项目 `tmp\word-pdf-bundled-native.log`。
-- 三份样本：`<local-samples>\ToolKnit-默认内核复测-20261117` 下的三个 PDF 和 `默认内核验证.json`。
+- 三份样本：`D:\work\试验区\文件\ToolKnit-默认内核复测-20261117` 下的三个 PDF 和 `默认内核验证.json`。
 - 三份样本原生批处理：项目 `tmp\bundled-real-samples-final.log`；原始输出位于 Downloads 的 `ToolKnit\默认内核复测-20261117`。
 - 排版通用回归：`D:\tk-lo\cjk7-packaged-fixtures\report.json`。
 - PPT/Excel：项目 `tmp\bundled-ppt-smoke.log`、`tmp\bundled-excel-smoke.log`。

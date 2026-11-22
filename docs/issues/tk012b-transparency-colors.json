@@ -1,0 +1,33 @@
+{
+  "task": "TK-012-B-I",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "complete",
+  "parentTaskComplete": false,
+  "scope": {
+    "addedColorSpaces": ["DeviceGray", "DeviceCMYK"],
+    "retainedColorSpaces": ["DeviceRGB"],
+    "explicitIsolation": true,
+    "knockout": false,
+    "editGranularity": "individual objects inside direct or nested Form calls"
+  },
+  "tests": {
+    "newFixtureSharedOccurrences": 8,
+    "newFixtureEditedOccurrences": 4,
+    "newFixturePopplerPageComparisons": 6,
+    "newFixturePdfjsPageComparisons": 6,
+    "newFixtureQpdfOutputs": 2,
+    "rejectedGroupProfiles": 12,
+    "edgeChecks": 392,
+    "fullObjectRemovalRegression": "passed",
+    "productionBuildAndCmykEntry": "passed",
+    "newNsisPackageTested": false
+  },
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-transparency-group-colors/report.json",
+    "toolknit-desktop/tmp/pdf-transparency-colors-regression.log",
+    "toolknit-desktop/tmp/pdf-transparency-colors-browser.log",
+    "toolknit-desktop/tmp/pdf-transparency-colors-build.log",
+    "toolknit-desktop/tmp/pdf-transparency-colors-production.log"
+  ]
+}

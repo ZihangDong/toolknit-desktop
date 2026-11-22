@@ -1,0 +1,35 @@
+{
+  "task": "TK-012-B-F",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "complete",
+  "parentTaskComplete": false,
+  "supported": {
+    "contexts": ["page drawing stream", "Form drawing stream"],
+    "filters": ["FlateDecode", "LZWDecode"],
+    "optionalOuterFilters": ["ASCIIHexDecode", "ASCII85Decode"],
+    "lzwEarlyChange": [0, 1],
+    "predictors": [2, 10, 11, 12, 13, 14, 15],
+    "bitsPerComponent": 8,
+    "colors": 1
+  },
+  "tests": {
+    "byteComparisonProfiles": 63,
+    "pdfFixturePages": 7,
+    "popplerPageComparisons": 14,
+    "pdfjsFirstPageComparisons": 2,
+    "qpdfEditedOutputs": 1,
+    "edgeChecks": 371,
+    "fullObjectRemovalRegression": "passed",
+    "productionBuildAndEntry": "passed",
+    "malformedPageStreamPreservedDuringAdjacentPageEdit": true
+  },
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-content-predictor/report.json",
+    "toolknit-desktop/tmp/pdf-content-predictor-regression.log",
+    "toolknit-desktop/tmp/pdf-content-predictor-browser.log",
+    "toolknit-desktop/tmp/pdf-content-predictor-build.log",
+    "toolknit-desktop/tmp/pdf-content-predictor-production.log"
+  ],
+  "nativeUiAcceptance": false
+}

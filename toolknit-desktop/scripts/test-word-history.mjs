@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { createTaskCenter } from '../src/app/task-center.js';
+import { createTrackedInvoke } from '../src/platform/tracked-invoke.js';
+import { createWordHistory, sanitizeWordHistory, updateWordHistory } from '../src/app/word-conversion-history.js';
+
+const root=path.resolve('tmp/word-history');await mkdir(root,{recursive:true});const checks=[];
+const secret='PRIVATE_PASSWORD_SAMPLE',binary='PRIVATE_PDF_BYTES_SAMPLE';
+const archive={archivePath:'C:/资料/batch.zip',entryName:'合同/old.doc',archiveHash:'a'.repeat(64)};
+const zipId=`zip:${JSON.stringify([archive.archivePath,archive.entryName])}`;
+const args={inputPaths:['C:/资料/source.docx',zipId],archiveInputs:[archive],refreshFields:true,watermark:{pdfBase64:binary,text:'PRIVATE_WATERMARK_SAMPLE'},encryption:{password:secret,permissions:{copying:false,printing:'lowResolution'}},jobId:'not-persisted'};
+let recipe=createWordHistory(args);assert.equal(recipe.files.length,2);assert.equal(recipe.encryptionRequired,true);assert.equal(recipe.watermarkRequired,true);assert.equal(recipe.permissions.copying,false);
+for(const value of [secret,binary,'PRIVATE_WATERMARK_SAMPLE','not-persisted'])assert.ok(!JSON.stringify(recipe).includes(value));checks.push('allowlisted source/ZIP/settings metadata excludes passwords, watermark contents, binary payloads and invocation IDs');
+recipe=updateWordHistory(recipe,{inputPath:args.inputPaths[0],status:'success',sourceHash:'b'.repeat(64),outputPath:'C:/exports/source.pdf',outputHash:'c'.repeat(64),outputBytes:1234,pageCount:2,encrypted:true,watermarkPages:2});
+assert.equal(recipe.files[0].sourceHash,'b'.repeat(64));assert.equal(recipe.files[0].outputHash,'c'.repeat(64));assert.equal(recipe.files[1].status,'pending');checks.push('per-file completion retains output fingerprints and pending entries separately');
+for(const value of [{...recipe,version:2},{...recipe,files:Array(21).fill(recipe.files[0])},{...recipe,files:[{inputPath:'relative.docx'}]},
+  {...recipe,files:[{inputPath:'javascript:alert(1)'}]},{...recipe,files:[{...recipe.files[1],inputPath:'zip:forged'}]},
+  {...recipe,files:[{...recipe.files[1],archive:{...archive,entryName:'../bad.doc'}}]}, {...recipe,files:[recipe.files[0],recipe.files[0]]}])assert.equal(sanitizeWordHistory(value),null);
+assert.equal(sanitizeWordHistory({...recipe,files:[{...recipe.files[0],sourceHash:['b'.repeat(64)]}]}),null);
+assert.equal(sanitizeWordHistory({...recipe,encryptionRequired:'true'}),null);
+assert.equal(sanitizeWordHistory({...recipe,permissions:{copying:'false'}}),null);
+assert.ok(!JSON.stringify(sanitizeWordHistory({...recipe,password:secret,files:[{...recipe.files[0],password:secret}]})).includes(secret));
+checks.push('invalid versions, counts, paths, archive identities, traversal, duplicate sources and malformed hashes are rejected; unknown fields are dropped');
+const values=new Map(),storage={getItem:key=>values.get(key),setItem:(key,value)=>values.set(key,value)};
+const center=createTaskCenter({storage});const task=center.begin({label:'Word → PDF',tool:'word-to-pdf',recovery:recipe});task.queued();task.start();
+const restarted=createTaskCenter({storage});assert.equal(restarted.list()[0].state,'interrupted');assert.equal(restarted.list()[0].canRecover,true);assert.equal(restarted.list()[0].canRetry,false);
+const copy=restarted.list()[0];copy.recovery.files[0].inputPath='C:/changed.docx';assert.equal(restarted.list()[0].recovery.files[0].inputPath,args.inputPaths[0]);
+checks.push('restart restores an interrupted job without callbacks and returns detached recovery metadata');
+task.finish({outputs:['C:/exports/source.pdf']});const completed=createTaskCenter({storage});assert.equal(completed.list()[0].canRecover,true);completed.clearFinished();assert.equal(completed.list().length,0);assert.deepEqual(createTaskCenter({storage}).list(),[]);checks.push('successful jobs remain regeneratable across restart; clearing history removes metadata only');
+const old=createTaskCenter({storage:{getItem:()=>JSON.stringify([{id:'old',label:'Word',tool:'word-to-pdf',state:'succeeded',outputs:['C:/old.pdf'],password:secret,createdAt:{password:secret}}]),setItem(){}}});
+assert.equal(old.list()[0].canRecover,false);assert.equal(old.list()[0].outputs[0],'C:/old.pdf');assert.ok(!JSON.stringify(old.list()).includes(secret));
+const unavailable=createTaskCenter({storage:{getItem:()=>null,setItem(){throw Error('quota');}}});unavailable.begin({label:'Word',tool:'word-to-pdf',recovery:recipe});assert.equal(unavailable.persistenceAvailable(),false);checks.push('legacy records keep output paths without invented sources; unavailable storage is reported without discarding the live task');
+let eventHandler,resolveNative;const live=createTaskCenter({storage});const tracked=createTrackedInvoke({center:live,listen:async(_name,handler)=>{eventHandler=handler;return()=>{};},invoke:async()=>new Promise(resolve=>{resolveNative=resolve;})});
+const request={...args,encryption:{password:secret,permissions:args.encryption.permissions}};const running=tracked('convert_word_to_pdf',request);await new Promise(resolve=>setImmediate(resolve));
+eventHandler({payload:{jobId:args.jobId,phase:'done',index:0,file:{inputPath:args.inputPaths[0],status:'success',sourceHash:'d'.repeat(64),outputPath:'C:/exports/new.pdf',outputHash:'e'.repeat(64),outputBytes:300,pageCount:2,encrypted:true}}});
+const duringRestart=createTaskCenter({storage});assert.equal(duringRestart.list()[0].recovery.files[0].outputPath,'C:/exports/new.pdf');assert.equal(duringRestart.list()[0].recovery.files[1].status,'pending');
+resolveNative({files:[{inputPath:zipId,status:'failed',error:'word-render:invalid-document'}]});await running;
+const final=createTaskCenter({storage}).list()[0];assert.equal(final.recovery.files[0].outputPath,'C:/exports/new.pdf');assert.equal(final.recovery.files[1].status,'failed');assert.equal(final.canRecover,true);assert.equal(final.canRetry,false);assert.equal(request.encryption.password,'');
+for(const value of [secret,binary,'PRIVATE_WATERMARK_SAMPLE'])assert.ok(!JSON.stringify([...values.values()]).includes(value));checks.push('real tracked invocation persists progress before completion, retains partial output metadata and clears passwords without automatic native replay');
+await writeFile(path.join(root,'core-report.json'),JSON.stringify({passed:true,checks},null,2));console.log(`Word history: ${checks.length} groups passed.`);

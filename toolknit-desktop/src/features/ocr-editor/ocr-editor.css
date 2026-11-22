@@ -1,0 +1,39 @@
+@font-face { font-family: 'ToolKnit OCR Sans'; src: url('/assets/fonts/NotoSansSC-Regular.ttf') format('truetype'); font-display: block; }
+.ocr-edit-tool { position:fixed; inset:0; z-index:200; display:none; flex-direction:column; background:var(--tk-page-bg); color:var(--tk-ink); }
+.ocr-edit-tool.visible { display:flex; }
+.ocr-edit-tool [hidden] { display:none !important; }
+.ocr-edit-layout { display:grid; grid-template-columns:320px minmax(0,1fr); gap:24px; padding:16px 28px 24px; flex:1; min-height:0; }
+.ocr-edit-controls { display:flex; flex-direction:column; gap:10px; overflow:auto; padding-right:8px; }
+.ocr-edit-controls > * { flex-shrink:0; }
+.ocr-edit-layout h1 { font-size:24px; line-height:1.35; margin:0; }
+.ocr-edit-layout h2 { font-size:16px; margin:0; }
+.ocr-edit-muted { margin:0; color:var(--tk-muted); font-size:13px; line-height:1.65; overflow-wrap:anywhere; }
+.ocr-edit-layout label,.ocr-edit-layout legend { font-size:13px; line-height:1.5; }
+.ocr-edit-layout button { border:1px solid var(--tk-border); border-radius:6px; padding:9px 12px; min-height:38px; background:var(--tk-inset); color:var(--tk-ink); font:inherit; font-size:13px; cursor:pointer; }
+.ocr-edit-layout button[data-primary] { background:var(--tk-ink); color:var(--tk-page-bg); }
+.ocr-edit-layout button:disabled { opacity:.45; cursor:default; }
+.ocr-edit-layout button:focus-visible { outline:2px solid var(--tk-accent); outline-offset:2px; }
+.ocr-edit-layout input,.ocr-edit-layout select,.ocr-edit-layout textarea { box-sizing:border-box; width:100%; min-width:0; padding:8px; border:1px solid var(--tk-border-strong); border-radius:4px; background-color:var(--tk-page-bg); color:var(--tk-ink); font:inherit; font-size:14px; }
+.ocr-edit-layout input[type=color] { height:38px; padding:3px; }
+.ocr-edit-layout textarea { resize:vertical; min-height:80px; }
+.ocr-edit-layout fieldset { border:0; border-top:1px solid var(--tk-border); margin:4px 0 0; padding:12px 0 0; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.ocr-edit-fields { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.ocr-edit-fields label { display:flex; flex-direction:column; gap:4px; }
+.ocr-edit-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.ocr-edit-workspace { display:flex; flex-direction:column; gap:12px; min-height:0; min-width:0; }
+.ocr-edit-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
+.ocr-edit-toolbar label { display:flex; align-items:center; gap:6px; }
+.ocr-edit-toolbar select { width:auto; }
+.ocr-edit-layout .ocr-edit-check input { width:18px; height:18px; }
+.ocr-edit-searchable { display:inline-flex; align-items:center; gap:6px; min-height:38px; }
+.ocr-edit-stage { flex:1; min-height:220px; overflow:auto; background:var(--tk-inset); padding:16px; }
+.ocr-edit-paper { position:relative; margin:auto; }
+.ocr-edit-paper canvas { display:block; width:100%; height:100%; }
+.ocr-edit-boxes { position:absolute; inset:0; pointer-events:none; }
+.ocr-edit-layout .ocr-edit-boxes button { position:absolute; min-height:0; min-width:0; padding:0; border:1px solid #1769d2; border-radius:0; background:transparent; pointer-events:auto; }
+.ocr-edit-layout .ocr-edit-boxes button[aria-pressed=true] { outline:2px solid #1769d2; outline-offset:1px; }
+.ocr-edit-boxes button[data-edited=true] { border-style:dashed; }
+#ocrEditStatus { font-size:13px; line-height:1.65; margin:0; overflow-wrap:anywhere; }
+#ocrEditStatus.is-error { color:var(--tk-danger); }
+.ocr-edit-mobile-link { display:none; }
+@media (max-width:760px) { .ocr-edit-tool { overflow:auto; } .ocr-edit-layout { display:flex; flex-direction:column; min-height:auto; padding:16px; } .ocr-edit-controls { overflow:visible; padding:0; } .ocr-edit-workspace { min-height:500px; } .ocr-edit-stage { flex:none; height:340px; } .ocr-edit-toolbar { align-items:flex-start; } .ocr-edit-mobile-link { display:inline-flex; } }

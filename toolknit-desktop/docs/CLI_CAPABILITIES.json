@@ -1420,7 +1420,7 @@
     },
     {
       "name": "toolknit_word_to_pdf",
-      "description": "Convert local DOC/DOCX documents to searchable PDF using LibreOffice with UNO/Python. Single input_path/output_path or up to 20 input_paths/output_dir; batch failures are returned per file, successful files survive cancellation. 50 MiB per input. Macro execution and external updates disabled; DOCX external resources, embedded objects and macros rejected. No ZIP input or encrypted documents; fonts/layout may differ.",
+      "description": "Convert local DOC/DOCX documents to searchable PDF using LibreOffice with UNO/Python. Single input_path/output_path, or DOC/DOCX/ZIP input_paths/output_dir with up to 20 Word documents after expansion and source de-duplication. ZIP: 50 MiB compressed, 1000 entries, 200 MiB expanded per archive and selected documents per batch; 50 MiB per Word file, no nested archive expansion, encrypted entries, links or unsafe paths. Invalid ZIPs and document failures are reported per source/entry; successful files survive cancellation. Macro execution and external updates disabled; DOCX external resources, embedded objects and macros rejected. Fonts/layout may differ. Optional centered text/PNG/JPEG watermark layers support opacity, rotation, width and page ranges; failures publish no PDF for the item.",
       "inputSchema": {
         "type": "object",
         "additionalProperties": false,
@@ -1438,6 +1438,108 @@
           "overwrite": {
             "type": "boolean",
             "default": false
+          },
+          "refresh_fields": {
+            "type": "boolean",
+            "default": false,
+            "description": "Opt in to bounded internal TOC, page-count/number, chapter and internal reference updates. External/DDE/database content, dates and unknown field types are never explicitly refreshed. Inspect per-file field_update counts; fonts and pagination may change."
+          },
+          "encryption": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "password"
+            ],
+            "description": "Optional AES-256 encryption after conversion and watermarking. Passwords require 8 characters and at most 127 UTF-8 bytes, with no NUL/CR/LF. CLI secrets must use --arguments-stdin. Only encrypted, verified output is published; retry requires the password again. Up to 200 pages per encrypted document.",
+            "properties": {
+              "password": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 127,
+                "description": "Secret opening password; never place in command arguments, paths, logs or files."
+              },
+              "permissions": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "printing": {
+                    "enum": [
+                      false,
+                      "lowResolution",
+                      "highResolution"
+                    ]
+                  },
+                  "copying": {
+                    "type": "boolean"
+                  },
+                  "modifying": {
+                    "type": "boolean"
+                  },
+                  "annotating": {
+                    "type": "boolean"
+                  },
+                  "fillingForms": {
+                    "type": "boolean"
+                  },
+                  "documentAssembly": {
+                    "type": "boolean"
+                  },
+                  "contentAccessibility": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          },
+          "watermark": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Optional centered A4 watermark layer, uniformly fitted to each output page. Body text stays searchable. A failed watermark publishes no PDF for that item.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "image"
+                ],
+                "default": "text"
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 160
+              },
+              "image_path": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Explicit regular local file; no symlinks or junctions."
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0.05,
+                "maximum": 1,
+                "default": 0.2
+              },
+              "angle": {
+                "type": "number",
+                "enum": [
+                  -45,
+                  0,
+                  45
+                ],
+                "default": 45
+              },
+              "width": {
+                "type": "number",
+                "minimum": 20,
+                "maximum": 80,
+                "default": 60
+              },
+              "pages": {
+                "type": "string",
+                "maxLength": 500,
+                "description": "Blank for all pages, otherwise 1-based comma-separated pages/ranges, e.g. 1,3-5. An out-of-range page fails that document."
+              }
+            }
           },
           "input_paths": {
             "type": "array",
@@ -3969,60 +4071,96 @@
   ],
   "desktopCoverage": [
     {
-      "desktop": "batch-rename",
-      "scope": "desktop-only",
-      "tools": [],
-      "note": "Interactive filename preview and persistent last-batch undo use the desktop runtime."
-    },
-    {
-      "desktop": "task-center",
-      "scope": "desktop-only",
-      "tools": [],
-      "note": "Task history, session retries and cancellation belong to the desktop session."
-    },
-    {
-      "desktop": "tool-workflows",
-      "scope": "desktop-only",
-      "tools": [],
-      "note": "Saved PDF workflow presets and their task execution are desktop workbench features."
-    },
-    {
-      "desktop": "quick-launcher",
-      "scope": "desktop-only",
-      "tools": [],
-      "note": "Global shortcuts, recent tools and interactive tool navigation require the desktop app."
-    },
-    {
-      "desktop": "content-search",
-      "scope": "desktop-only",
-      "tools": [],
-      "note": "The personal persistent document content index is managed through explicit desktop controls."
-    },
-    {
-      "desktop": "document-compare",
-      "scope": "desktop-only",
-      "tools": [],
-      "note": "Interactive extracted-text comparison and report export remain in the desktop workbench."
-    },
-    {
-      "desktop": "subtitle-workbench",
-      "scope": "desktop-only",
-      "tools": [],
-      "note": "Subtitle editing, media preview and local drafts are desktop features; standalone transcription retains its existing CLI interface."
-    },
-    {
-      "desktop": "folder-automation",
-      "scope": "desktop-only",
-      "tools": [],
-      "note": "Background folder rules, baseline tracking and processing history require the running desktop app."
-    },
-    {
       "desktop": "word-to-pdf",
       "scope": "supported",
       "tools": [
         "toolknit_word_to_pdf"
       ],
-      "note": "DOC/DOCX, local LibreOffice Writer, single and batch output; interactive PDF preview remains on desktop."
+      "note": "DOC/DOCX single input or DOC/DOCX/ZIP batch, with bounded expansion and per-entry origins; interactive queue and PDF editing remain on desktop."
+    },
+    {
+      "desktop": "batch-rename",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Interactive rename preview and confirmation have no CLI/MCP entry."
+    },
+    {
+      "desktop": "content-search",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Personal local content index and search UI have no standalone CLI/MCP entry."
+    },
+    {
+      "desktop": "disk-space",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Native directory scan, treemap and Explorer navigation currently use the desktop runtime."
+    },
+    {
+      "desktop": "document-compare",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Interactive document comparison currently has no CLI/MCP entry."
+    },
+    {
+      "desktop": "folder-automation",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Local folder rules, monitoring and controls currently belong to the desktop session."
+    },
+    {
+      "desktop": "meeting-notes",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Microphone recording, transcript review and minutes currently use the desktop workflow."
+    },
+    {
+      "desktop": "ocr-editor",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Visual OCR boxes, pixel replacement and export require the desktop editor."
+    },
+    {
+      "desktop": "pdf-object-remove",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Per-object review and mandatory before/after preview have no CLI/MCP entry."
+    },
+    {
+      "desktop": "pdf-to-ppt",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "The new page-selection and image-slide workflow currently has no CLI/MCP entry."
+    },
+    {
+      "desktop": "quick-launcher",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Personal launcher and interactive hotkeys belong to the desktop session."
+    },
+    {
+      "desktop": "subtitle-workbench",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Interactive subtitle editing and preview currently have no CLI/MCP entry."
+    },
+    {
+      "desktop": "task-center",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Desktop task metadata and recovery UI are not exposed by the standalone CLI."
+    },
+    {
+      "desktop": "tool-workflows",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "Interactive desktop workflow composition currently has no CLI/MCP entry."
+    },
+    {
+      "desktop": "xml-tools",
+      "scope": "desktop-only",
+      "tools": [],
+      "note": "XML formatting and error feedback currently use the developer toolbox UI."
     },
     {
       "desktop": "file-search",

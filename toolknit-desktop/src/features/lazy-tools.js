@@ -1,4 +1,7 @@
 export const LAZY_TOOL_SPECS = Object.freeze({
+  'pdf-object-remove': Object.freeze({ overlayId: 'pdfRemoveOverlay', markup: () => import('./pdf-object-remove/template.js'), load: () => import('./pdf-object-remove/tool.js'), init: 'initPdfObjectRemoveTool' }),
+  'disk-space': Object.freeze({ overlayId: 'diskSpaceOverlay', markup: () => import('./disk-space/template.js'), load: () => import('./disk-space/tool.js'), init: 'initDiskSpaceTool' }),
+  'ocr-editor': Object.freeze({ overlayId: 'ocrEditOverlay', markup: () => import('./ocr-editor/template.js'), load: () => import('./ocr-editor/tool.js'), init: 'initOcrEditorTool' }),
   'quick-launcher': Object.freeze({ overlayId: 'quickLauncherOverlay', load: () => import('./workbench/launcher-tool.js'), init: 'initQuickLauncherTool' }),
   'content-search': Object.freeze({ instanceKey: 'document-workbench', overlayId: 'documentWorkbenchOverlay', markup: () => import('./workbench/template.js'), load: () => import('./workbench/tool.js'), init: 'initDocumentWorkbenchTool' }),
   'document-compare': Object.freeze({ instanceKey: 'document-workbench', overlayId: 'documentWorkbenchOverlay', markup: () => import('./workbench/template.js'), load: () => import('./workbench/tool.js'), init: 'initDocumentWorkbenchTool' }),
@@ -53,6 +56,12 @@ export const LAZY_TOOL_SPECS = Object.freeze({
     markup: () => import('./pdf-merge/template.html?raw'),
     load: () => import('./pdf-merge/tool.js'),
     init: 'initPdfMergeTool'
+  }),
+  'pdf-to-ppt': Object.freeze({
+    overlayId: 'pdfPptOverlay',
+    markup: () => import('./pdf-to-ppt/template.js'),
+    load: () => import('./pdf-to-ppt/tool.js'),
+    init: 'initPdfPptTool'
   }),
   'pdf-to-image': Object.freeze({
     overlayId: 'pdfToImageOverlay',
@@ -171,6 +180,12 @@ export const LAZY_TOOL_SPECS = Object.freeze({
     overlayId: 'teleprompterOverlay',
     load: () => import('./teleprompter/tool.js'),
     init: 'initTeleprompterTool'
+  }),
+  'meeting-notes': Object.freeze({
+    overlayId: 'meetingOverlay',
+    markup: () => import('./meeting/template.js'),
+    load: () => import('./meeting/tool.js'),
+    init: 'initMeetingTool'
   }),
   transcription: Object.freeze({
     overlayId: 'transcriptionOverlay',
@@ -400,6 +415,12 @@ export const LAZY_TOOL_SPECS = Object.freeze({
     init: 'initAiTableTool'
   }),
   'json-tools': Object.freeze({
+    instanceKey: 'developer-toolbox',
+    overlayId: 'developerToolboxOverlay',
+    load: () => import('./developer-toolbox/tool.js'),
+    init: 'initDeveloperToolbox'
+  }),
+  'xml-tools': Object.freeze({
     instanceKey: 'developer-toolbox',
     overlayId: 'developerToolboxOverlay',
     load: () => import('./developer-toolbox/tool.js'),

@@ -1,0 +1,37 @@
+{
+  "task": "TK-012-B-K",
+  "auditedOn": "2026-11-22",
+  "timezone": "Asia/Shanghai",
+  "status": "complete",
+  "parentTaskComplete": false,
+  "scope": {
+    "isolated": false,
+    "isolationFlag": ["explicit false", "omitted"],
+    "knockout": true,
+    "colorSpace": "inherited; no explicit CS",
+    "exactMatching": "within selected Form occurrence"
+  },
+  "tests": {
+    "sharedOccurrences": 4,
+    "selectedCallsEdited": 2,
+    "occurrenceOnlyMatches": 4,
+    "popplerReferencePages": 3,
+    "pdfjsReferencePages": 3,
+    "muPdfReferencePages": 3,
+    "pdfjsIsolationControlPages": 3,
+    "muPdfIsolationControlPages": 3,
+    "qpdfOutputs": 1,
+    "edgeChecks": 424,
+    "fullObjectRemovalRegression": "passed",
+    "productionBuildAndEntry": "passed",
+    "newNsisPackageTested": false
+  },
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-transparency-group-backdrop/report.json",
+    "toolknit-desktop/tmp/pdf-backdrop-mupdf.json",
+    "toolknit-desktop/tmp/pdf-backdrop-regression.log",
+    "toolknit-desktop/tmp/pdf-backdrop-browser.log",
+    "toolknit-desktop/tmp/pdf-backdrop-build.log",
+    "toolknit-desktop/tmp/pdf-backdrop-production.log"
+  ]
+}

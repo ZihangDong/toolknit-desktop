@@ -47,7 +47,7 @@ Writer 的两端对齐收缩预算用十个连续 ASCII 空格测量普通词间
 
 ## 复查位置
 
-- 最新三个 PDF 及 `验证结果.json`：`<local-samples>\ToolKnit-转换复测-20261117-v2`。早一轮目录保留，最新结果以 v2 为准。
+- 最新三个 PDF 及 `验证结果.json`：`D:\work\试验区\文件\ToolKnit-转换复测-20261117-v2`。早一轮目录保留，最新结果以 v2 为准。
 - 通用回归：`D:\tk-lo\cjk6-delivery-fixtures\report.json`。
 - 构建与原生测试：`D:\tk-lo\build-cjk6-delivery.log`、`D:\tk-lo\test-cjk6-delivery.log`。
 - 桌面实际调用链：项目 `tmp\word-pdf-cjk6-delivery-native.log` 及 `tmp\word-pdf-native\verification.json`。

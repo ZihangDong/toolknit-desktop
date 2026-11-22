@@ -1,0 +1,33 @@
+{
+  "task": "TK-012-B-H",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "complete",
+  "parentTaskComplete": false,
+  "scope": {
+    "groupSubtype": "Transparency",
+    "explicitIsolation": true,
+    "knockout": false,
+    "colorSpace": "DeviceRGB",
+    "editGranularity": "individual objects inside direct or nested Form calls"
+  },
+  "tests": {
+    "sharedOccurrences": 4,
+    "editedOccurrences": 2,
+    "rejectedGroupProfiles": 12,
+    "popplerPageComparisons": 3,
+    "pdfjsPageComparisons": 3,
+    "qpdfEditedOutputs": 1,
+    "edgeChecks": 378,
+    "fullObjectRemovalRegression": "passed",
+    "productionBuildAndEntry": "passed",
+    "newNsisPackageTested": false
+  },
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-transparency-group/report.json",
+    "toolknit-desktop/tmp/pdf-transparency-group-regression.log",
+    "toolknit-desktop/tmp/pdf-transparency-group-browser.log",
+    "toolknit-desktop/tmp/pdf-transparency-group-build.log",
+    "toolknit-desktop/tmp/pdf-transparency-group-production.log"
+  ]
+}

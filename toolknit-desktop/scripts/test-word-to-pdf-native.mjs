@@ -25,8 +25,10 @@ import {
   Footer,
   PageNumber,
   PageBreak,
+  ImageRun,
 } from 'docx';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { createCanvas } from '@napi-rs/canvas';
 import { word_to_pdf } from '../cli/lib/word-runtime.mjs';
 import { resolveLibreOfficeRuntime } from '../cli/lib/ppt-render-runtime.mjs';
 import JSZip from 'jszip';
@@ -44,6 +46,10 @@ for (const suite of ['test-word-to-pdf-layout.py', 'test-word-to-pdf-fonts.py'])
 const source = path.join(root, '中文 文档.docx'),
   corrupt = path.join(root, '坏文件.docx'),
   empty = path.join(root, '空文件.docx');
+const sampleImage = createCanvas(120, 60), sampleContext = sampleImage.getContext('2d');
+sampleContext.fillStyle = '#145a8d'; sampleContext.fillRect(0, 0, 120, 60);
+sampleContext.fillStyle = '#e49d32'; sampleContext.fillRect(60, 0, 60, 60);
+const imageBytes = await sampleImage.encode('png');
 const document = new Document({
   sections: [
     {
@@ -78,6 +84,7 @@ const document = new Document({
             }),
           ],
         }),
+        new Paragraph({ children: [new ImageRun({ type: 'png', data: imageBytes, transformation: { width: 120, height: 60 } })] }),
         new Table({
           rows: [
             new TableRow({
@@ -143,12 +150,16 @@ async function inspect(file) {
   try {
     const pdf = await loading.promise;
     assert.equal(pdf.numPages, 2);
-    let text = '';
+    let text = '', images = 0;
     for (let n = 1; n <= pdf.numPages; n++) {
       const page = await pdf.getPage(n);
       const v = page.getViewport({ scale: 1 });
       assert.ok(Math.abs(v.width - 595) < 2 && Math.abs(v.height - 842) < 2);
-      text += (await page.getTextContent()).items.map((x) => x.str).join(' ');
+      const pageText = (await page.getTextContent()).items.map((x) => x.str).join(' ');
+      text += pageText;
+      assert.match(pageText, new RegExp(`Page\\s*${n}\\b`), 'footer contains the correct current page number');
+      const operators = await page.getOperatorList();
+      images += operators.fnArray.filter(op => [OPS.paintImageXObject, OPS.paintInlineImageXObject].includes(op)).length;
     }
     for (const token of [
       'WORD_HEADER',
@@ -159,7 +170,8 @@ async function inspect(file) {
       '中文',
     ])
       assert.ok(text.includes(token), token);
-    return { pages: pdf.numPages, bytes: (await readFile(file)).length };
+    assert.ok(images > 0, 'embedded image survives conversion');
+    return { pages: pdf.numPages, bytes: (await readFile(file)).length, images };
   } finally {
     await loading.destroy();
   }
@@ -264,11 +276,8 @@ try {
 }
 assert.equal(hash(await readFile(source)), original);
 const single = path.join(root, 'single.pdf');
-try {
-  await word_to_pdf({ input_path: source, output_path: single });
-} catch (e) {
-  if (e.code !== 'OUTPUT_EXISTS') throw e;
-}
+await word_to_pdf({ input_path: source, output_path: single, overwrite: true });
+await inspect(single);
 await assert.rejects(
   () => word_to_pdf({ input_path: source, output_path: single }),
   (e) => e.code === 'OUTPUT_EXISTS',
@@ -349,6 +358,8 @@ await writeFile(
       pages: 2,
       header: true,
       table: true,
+      image: true,
+      footerPageNumbers: true,
       unicode: true,
       partialFailure: true,
       sourceUnchanged: true,

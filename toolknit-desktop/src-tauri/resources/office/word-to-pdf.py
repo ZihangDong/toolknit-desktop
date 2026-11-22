@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 
 from word_layout import apply_docx_layout_compatibility, docx_import_source
 from word_font_metrics import substitute_document_fonts
+from word_fields import refresh_internal_fields, FieldUpdateError
 
 MAX_INPUT = 50 * 1024 * 1024
 MAX_EXPANDED = 200 * 1024 * 1024
@@ -232,15 +233,17 @@ def writer_session(soffice, profile):
         stop_writer(office, desktop)
 
 
-def convert_with_writer(desktop, source, destination, uno, AbortPrompts):
+def convert_with_writer(desktop, source, destination, uno, AbortPrompts, refresh_fields=False, field_update=None):
+    if not isinstance(refresh_fields, bool):
+        raise WordError("invalid-options")
     inspect_word(source)
     with docx_import_source(source) as import_source:
-        notices = export_imported_document(desktop, import_source, source, destination, uno, AbortPrompts)
+        notices = export_imported_document(desktop, import_source, source, destination, uno, AbortPrompts, refresh_fields, field_update)
     validate_pdf(destination)
     return notices
 
 
-def export_imported_document(desktop, import_source, source, destination, uno, AbortPrompts):
+def export_imported_document(desktop, import_source, source, destination, uno, AbortPrompts, refresh_fields=False, field_update=None):
     handler = AbortPrompts()
     document = desktop.loadComponentFromURL(uno.systemPathToFileUrl(os.path.abspath(import_source)), "_blank", 0,
         (prop(uno, "Hidden", True), prop(uno, "ReadOnly", True), prop(uno, "MacroExecutionMode", 0),
@@ -253,7 +256,14 @@ def export_imported_document(desktop, import_source, source, destination, uno, A
             raise WordError("invalid-document")
         notices = substitute_document_fonts(document)
         apply_docx_layout_compatibility(document, source, uno)
-        # Preserve cached fields and never refresh external/DDE data.
+        if refresh_fields:
+            try:
+                summary = refresh_internal_fields(document)
+            except FieldUpdateError as error:
+                raise WordError(str(error)) from None
+            if field_update is not None:
+                field_update.update(summary)
+        # No blanket document/field refresh. External/DDE updates stay disabled.
         document.storeToURL(uno.systemPathToFileUrl(os.path.abspath(destination)),
             (prop(uno, "FilterName", "writer_pdf_Export"), prop(uno, "Overwrite", False),
              prop(uno, "FilterData", uno.Any("[]com.sun.star.beans.PropertyValue", (prop(uno, "ExportBookmarks", True), prop(uno, "ExportFormFields", False))))))
@@ -299,8 +309,11 @@ def convert_batch_item(desktop, item, uno, AbortPrompts):
             os.remove(destination)
         except FileNotFoundError:
             pass
-        notices = convert_with_writer(desktop, item["source"], destination, uno, AbortPrompts)
-        return {"index": row["index"], "status": "success", "code": None, "fontNotices": notices}
+        refresh_fields = item.get("refreshFields", False)
+        summary = {}
+        notices = convert_with_writer(desktop, item["source"], destination, uno, AbortPrompts, refresh_fields, summary)
+        return {"index": row["index"], "status": "success", "code": None, "fontNotices": notices,
+                **({"fieldUpdate": summary} if refresh_fields else {})}
     except WordError as error:
         row["code"] = str(error)
     except Exception:
@@ -326,13 +339,15 @@ def convert_batch(soffice, manifest_path, profile, status_path):
     return {"files": results}
 
 
-def convert(soffice, source, destination, profile):
+def convert(soffice, source, destination, profile, refresh_fields=False):
     inspect_word(source)
     import uno
     import unohelper
     AbortPrompts = make_abort_handler(uno, unohelper)
     with writer_session(soffice, profile) as desktop:
-        return convert_with_writer(desktop, source, destination, uno, AbortPrompts)
+        summary = {}
+        notices = convert_with_writer(desktop, source, destination, uno, AbortPrompts, refresh_fields, summary)
+        return {"fontNotices": notices, **({"fieldUpdate": summary} if refresh_fields else {})}
 
 
 if __name__ == "__main__":
@@ -340,9 +355,9 @@ if __name__ == "__main__":
         if len(sys.argv) == 6 and sys.argv[2] == "--manifest":
             result = convert_batch(sys.argv[1], sys.argv[3], sys.argv[4], sys.argv[5])
             print(json.dumps({"ok": True, **result}))
-        elif len(sys.argv) == 5:
-            notices = convert(*sys.argv[1:])
-            print(json.dumps({"ok": True, "fontNotices": notices}))
+        elif len(sys.argv) == 5 or (len(sys.argv) == 6 and sys.argv[5] == "--refresh-fields"):
+            result = convert(*sys.argv[1:5], refresh_fields=len(sys.argv) == 6)
+            print(json.dumps({"ok": True, **result}))
         else:
             raise WordError("invalid-options")
     except Exception as error:

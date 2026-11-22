@@ -46,7 +46,7 @@ assert.match(tool, /error instanceof AiProviderError/);
 assert.match(tool, /error\.code === 'timeout'/);
 assert.match(tool, /import '\.\.\/ai-workbench\/ai-workbench-shared\.css'/);
 assert.match(tool, /import '\.\/ai-table\.css'/);
-assert.match(tool, /import '\.\/ai-table\.css';\s*import '\.\.\/\.\.\/styles\/components\/ai-workbench\.css'/);
+assert.match(tool, /import '\.\/ai-table\.css';\s*import '\.\.\/\.\.\/styles\/components\/ai-workbench\.css';\s*import '\.\/ai-table\.css'/);
 assert.match(tool, /requests\.cancel\(\)/);
 assert.match(tool, /owner\.use\(\(\) => requests\.cancel\(request\.id\)\)/);
 assert.match(tool, /releaseRequest\(\)/);

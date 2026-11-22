@@ -1,0 +1,289 @@
+{
+  "auditedOn": "2026-11-22",
+  "timezone": "Asia/Shanghai",
+  "status": "partial",
+  "build": {
+    "version": "3.4.0",
+    "source": "Current local working tree",
+    "scope": "The initial local NSIS release build used a separate app identity, install directory and WebView2 profile, and per-user installation. Native model directories are shared under ToolKnit AppData.",
+    "devtools": false,
+    "webView2Version": "157.0.4341.60",
+    "authenticode": "NotSigned",
+    "installerSha256": "2314d5eb8c3bac44e8dd44d0c2185da4f3d782412df4d86954992e3c84ffc4ea",
+    "installedExecutableSha256": "26582d445d92f6173f22cf7321b981fe481bb33548035f7ee95077be34b971f1",
+    "installAndRelaunch": "passed",
+    "uninstallAndReinstall": "Passed. Uninstall removed the binary and per-user registration. Reinstall restored the same binary hash and registration.",
+    "isolatedUpgradeFixtureChecksPassed": 21,
+    "wordErrorRebuild": {
+      "authenticode": "NotSigned",
+      "installerSha256": "63d5c0926a16d90ff0cb9f6b0613703073b63158bf43185e4dc345f93ef933c7",
+      "installedExecutableSha256": "e4e0dc5bed836d8e5b29605b6c7933702655b83727412d570d73b3f103f47f88",
+      "sameVersionReplacementAndLaunch": "passed"
+    },
+    "wordProgressRebuild": {
+      "authenticode": "NotSigned",
+      "installerSha256": "cb34e7dcb7579083ae2424ba3d02f40e6a13337353dcdcaec100a8bdfa0a8038",
+      "installedExecutableSha256": "4acbabeb7feab774ea4bd86f3020f3c12660f0da51f0b9d747138f909ccaa400",
+      "sameVersionReplacementAndLaunch": "passed"
+    },
+    "isolatedCrossVersionUpgrade": {
+      "status": "passed",
+      "fromVersion": "3.3.0",
+      "fromSourceCommit": "b651dc0",
+      "fromInstallerSha256": "3079bf2db9604c9d7166ae9f2caa792bbb99d9a54072103a0148ce1c1710ebba",
+      "fromInstalledExecutableSha256": "ad1f3a2abf6fb8942ff1988df8229854620d07b3b93f0f0dc4d97a68289325e2",
+      "toVersion": "3.4.0",
+      "toBuild": "wordProgressRebuild",
+      "scope": "Current-user NSIS installers using a shared QA product name and identifier, with the same custom directory. The installed 3.3.0 app launched first, then the 3.4.0 installer ran directly against the existing registration.",
+      "historyRowsBefore": 22,
+      "historyRowsAfter": 22,
+      "productionExeAndRegistrationUnchanged": true
+    },
+    "productionInstallerCandidate": {
+      "status": "built and verified",
+      "identifier": "com.toolknit.desktop",
+      "installer": "toolknit-desktop/src-tauri/target/release/bundle/nsis/toolknit-desktop_3.4.0_x64-setup.exe",
+      "installerBytes": 219093008,
+      "installerSha256": "8a5a8c093ba011bb9237d6d7539e3dfed7f30da8e6641c259f01101417ff9a9b",
+      "authenticode": "NotSigned",
+      "archiveEntriesVerified": 4733,
+      "packagedExecutableSha256": "4eef1942e67014847e6b49d4e57fa3bb87a03fe7efb59e02e0ac42a536125d72",
+      "baselineInstaller": "toolknit-desktop/src-tauri/target/release/bundle/nsis/toolknit-desktop_3.3.0_x64-setup.exe",
+      "baselineInstallerSha256": "4d9571d31c4375b3eac5286c35c6ed45223b1e0724cc7df36c5100778330fe39",
+      "hostInstalledVersion": "3.3.0",
+      "hostInstalledExecutableSha256BeforeAndAfter": "e353c45eeee3b5d9fd90ed7597522d71076f035c1151d5dbccecdaab14f3020e",
+      "supersedes": {
+        "installer": "toolknit-desktop/tmp/installed-acceptance/windows-media/guest-payload/toolknit-3.4.0-setup.exe",
+        "installerSha256": "6c9ae78a88f0d1edc1582c51957381856ad1605d851131136c5fba4dd8cc93d8",
+        "packagedExecutableSha256": "764b7fde8875ad24622c818099a44162b4ebb844c3cb5bfad44bfde790425242",
+        "usedFor": "Production per-user and machine-wide upgrades from 3.3.0 and the original offline OCR failure."
+      }
+    },
+    "productionPerUserUpgrade": {
+      "installerStatus": "passed",
+      "scope": "Ran the production-identity 3.3.0 installer and 3.4.0 candidate under a temporary standard Windows account. The first install used a custom per-user directory. The silent 3.4.0 upgrade used /CurrentUser /UPDATE without an override directory.",
+      "verification": "Both installers exited 0. The per-user uninstall registration changed from 3.3.0 to 3.4.0, the original install location was restored, and both installed executables matched their respective installer payload hashes. The temporary account and profile were removed. The existing machine-wide registration and executable hash were unchanged.",
+      "startupStatus": "Passed. The initial alternate-account launcher resolved LocalAppData to the administrator profile and both versions failed with Windows error 183. With the test subprocesses using the temporary account's profile paths, both original installed versions launched WebView2 and showed their versioned interactive windows.",
+      "savedAppearance": {
+        "status": "passed",
+        "verification": "Selected Dark in 3.3.0 and confirmed its saved appearance record in WebView2 storage. After the real in-place upgrade, 3.4.0 reopened the same database and retained the Dark record. Replaying the captured 3.3.0 storage in the original 3.4.0 installer showed Dark selected in Settings and applied on the home page without changing the mode.",
+        "coldLaunch": "Retested the original 3.4.0 NSIS package as the only ToolKnit instance using the captured 3.3.0 profile. Both the first observed release notice and the first complete homepage after dismissing it rendered in Dark, without opening Settings or changing the theme. The earlier light screenshot did not reproduce in this control.",
+        "firstPaintBrowserRegression": "Five Edge scenarios passed. The added case seeds the appearance record used by 3.3.0 and verifies the dark startup mask before application scripts load, the revealed homepage, and the theme after reload."
+      }
+    },
+    "productionMachineWideUpgrade": {
+      "status": "passed",
+      "guest": "Dedicated Hyper-V Windows 11 Enterprise Evaluation build 26300 with WebView2 152.0.4191.66. The virtual adapter had no virtual switch and the guest had no IPv4 or IPv6 default gateway.",
+      "scope": "Installed the original 3.3.0 with /S /AllUsers and the original 3.4.0 with /S /AllUsers /UPDATE. Both returned exit code 0. The original installation directory, HKLM registration scope and both installed executable hashes were verified.",
+      "savedAppearance": "Selected Dark and Forest Green in 3.3.0. The first 3.4.0 release notice and home page rendered in dark mode. Settings confirmed V3.4.0, Dark selected and Forest Green retained.",
+      "rebuiltCandidateReplacement": "Installed the ONNX loader fix over the original 3.4.0 using /S /AllUsers /UPDATE. The installer returned 0. The original HKLM registration and directory, new NSIS payload hash and interactive launch were verified."
+    },
+    "remaining": []
+  },
+  "wordToPdf": {
+    "tasks": ["TK-009-B1", "TK-009-D1", "TK-009-E1", "TK-009-F1"],
+    "verified": [
+      "Windows file picker accepted a ZIP and showed both archive entries with their source paths",
+      "One valid entry converted to a 72-page PDF and the corrupt entry failed independently",
+      "Refresh reported one table of contents, five internal fields and two skipped fields or indexes",
+      "The native output passed qpdf and rendered in the installed PDF editor",
+      "Application restart and Task Center restore kept one matching PDF and requeued one unfinished entry with the original refresh setting",
+      "Windows pickers loaded DOC, DOCX, ZIP and an 800 by 400 PNG; the installed A4 preview rendered the rotated image watermark",
+      "Combined conversion wrote three 71-page AES-256 PDFs with an image watermark; one corrupt ZIP entry failed independently",
+      "qpdf checked all three encrypted PDFs, confirmed the password requirement and rejected the wrong password; PDF.js verified the watermark image and body text on pages 1 and 71 of each decrypted verification copy",
+      "Word result location selected the ZIP result in Windows Explorer. Direct import to the editor was disabled for the encrypted result. Installed PDF Decrypt wrote a valid unencrypted 71-page copy, which rendered with its watermark in the installed PDF editor",
+      "With a DOCX source and one ZIP-result PDF temporarily moved, restore kept the valid existing output for the missing source and requeued the missing PDF. Restore required re-entry of the password and watermark. A newly entered mixed Chinese and English text watermark rendered in the A4 preview",
+      "Rechecking a changed DOCX surfaced the source change; explicitly accepting the current version requeued the item. The original DOCX and PDF were restored and verified by hash",
+      "Native watermark regression kept the PDF already published when cancellation was triggered and marked the remaining item cancelled"
+    ],
+    "inputZipSha256BeforeAndAfter": "547998aff402c4a9e1a64dfd301b9ea4caab285931af069a6da60b9e24eebe22",
+    "outputSha256": "6af41ee1a759bb7735883140e6c12c97e7fe937f696027d87568df7c65a79efc",
+    "combinedOutputSha256": {
+      "legacy-source.pdf": "ab34671a6d39a23fac596f8712bfcd418ed0a2e9319e2690ae0bbe3cd2ceb44b",
+      "internal-fields.pdf": "8e4a6f55a2e30bdfde162d9ed72d214324260e6867bf78d7cfafb42dd3317410",
+      "fields.pdf": "8ff2f4fea39fc0416d04a8332e5eb94eba0f505ab1b661915ab52379d394e108",
+      "installed-ui-decrypted.pdf": "d7db9cee5181c9c07c22294a668d8d729064ba8f922e3b062c5a22d975c0953e"
+    },
+    "taskCenterErrorFix": {
+      "before": "The corrupt Word entry displayed an invalid-document error in the conversion queue, but the protected batch recorded encryption-failed in the Task Center.",
+      "after": "The rebuilt installed app recorded word-render:invalid-document for the same protected ZIP batch while retaining the successful AES-256 output. qpdf verified that output. The regression test covers filtering private diagnostics and clearing the password.",
+      "retestOutputSha256": "d113215620cc20cb6d1d121547635f1219d9b000fc3f5ade77256cda41e9c10a"
+    },
+    "installedCancellation": {
+      "inputZipSha256": "4cd4a4130a548f4d6aee777d6f3f6b5cd494ae0c727f5d43cef38f6bbb3ab3df",
+      "completed": 1,
+      "cancelled": 19,
+      "verifiedOutputPages": 2,
+      "outputSha256": "90c5d769b6998881a0c186471d6be0306539025a52fe53454486dc8038e239f8",
+      "verification": "Clicked Cancel in the installed WebView2 UI; Task Center recorded a cancelled task, and qpdf verified the sole output."
+    },
+    "progressRetest": {
+      "before": "Staging events advanced the progress bar before rendering and displayed 20 / 20 for the 20-entry batch.",
+      "after": "The rebuilt installed app displayed 1 / 20 with an empty bar before the first file completed. Cancelling kept two valid PDFs and left the other 18 unpublished.",
+      "browserThemeAndLanguageRuns": 4,
+      "browserLayoutScreenshots": 60,
+      "outputs": [
+        {"name": "progress-retest-cancel-01-short.pdf", "pages": 2, "sha256": "d2bac8d531e5514434a8b6ad7df1e8e4065dc7084144c299228634415734464e"},
+        {"name": "progress-retest-cancel-02-long.pdf", "pages": 720, "sha256": "9c7dd92f6b896c610c2c6a54a56c1ba828581eb1fffd74e5528ce1c59f361af5"}
+      ]
+    },
+    "protectedHistoryRegeneration": {
+      "verified": "Restoring the saved task detected a changed PDF. Re-entering a new password and selecting a PNG generated a fresh 71-page AES-256 PDF. The two unchanged successful records were retained, and the replaced PDF was untouched during regeneration. The original synthetic file was restored afterwards.",
+      "outputSha256": "e0a225b0939566c2f4ae3936b20febc9669fdff1ee88d2b3f782434f3e32e07c",
+      "verification": "qpdf accepted only the new password, and PDF.js read the watermark image on pages 1 and 71."
+    },
+    "externalZipDrop": {
+      "status": "passed",
+      "scope": "User dragged the synthetic batch.zip from Windows Explorer into the same isolated 3.4.0 app after the cross-version upgrade.",
+      "queueEntries": ["目录/fields.docx", "broken.docx"],
+      "completed": 1,
+      "invalidDocuments": 1,
+      "outputPages": 72,
+      "refreshedIndexes": 1,
+      "refreshedInternalFields": 5,
+      "skippedOtherFieldsOrIndexes": 2,
+      "verification": "qpdf accepted the only output. PDF.js found the refreshed sections and the reference to page 72. The input ZIP hash remained unchanged.",
+      "outputSha256": "7552113bcb398452cf829dfbe90382d97a5c2a486bf725f7531d0d2c64787351"
+    },
+    "remaining": []
+  },
+  "meeting": {
+    "task": "TK-006-A",
+    "verified": [
+      "Windows file picker imported synthetic speech WAV",
+      "Installed app ran local FFmpeg and Whisper transcription and exported UTF-8 TXT",
+      "Saved TXT retained the 00:00:00.000 to 00:00:10.880 time range and recognized sample text"
+    ],
+    "outputSha256": "35eeba1d1613ffb778e84449ebe3b66d4cc4411c1b8ffcddab3888f464349649",
+    "releaseRerun": {
+      "browserChecksPassed": 69,
+      "nativeAiTransportChecksPassed": 16,
+      "nativeTranscription": "Passed with synthetic WAV and WebM, including live PCM with automatic language detection, timestamps, job cancellation, duration limits and regression coverage for legacy transcription.",
+      "physicalDevicePreflight": "Windows enumerated the K02BS capture endpoint and its USB device parent. The isolated app was opened at Meeting Recording & Minutes for the operator to start the physical recording."
+    },
+    "remaining": ["Physical microphone permission, unplugging and recording in the background", "Live transcription timing from a microphone", "Segmented requests to a real AI provider with dedicated test credentials"]
+  },
+  "ocr": {
+    "task": "TK-010-C",
+    "verified": [
+      "Windows file picker imported an 800 by 400 pixel synthetic image",
+      "First model download started and was cancelled, then retry completed install and checksum validation",
+      "Native OCR returned two Chinese and English regions, and the installed editor applied a replacement",
+      "Searchable one-page export passed qpdf and PDF.js text extraction, with the replaced and unchanged strings present and old text absent"
+    ],
+    "outputSha256": "68729afa526cf1ef47e3f7ef163392a5efb4a9fc34edf1685e2d8a38a2b2733d",
+    "offlineAttempt": {
+      "status": "reproduced on the original production candidate",
+      "verification": "Imported an 800 by 400 PNG in the disconnected Hyper-V guest with verified onnx-20261106-r1 models provisioned to the interactive profile. Recognition failed with ocr:runtime-unavailable in Task Center storage.",
+      "diagnosis": "The guest LoadLibraryEx probe returned Windows error 126 using the mixed-separator path constructed by the original loader. The same library and flags succeeded using native path separators, then the mixed-separator probe reproduced the error again."
+    },
+    "offlineRetest": {
+      "status": "passed",
+      "fix": "Construct the packaged and development ONNX DLL paths using native path components in the shared loader.",
+      "scope": "Rebuilt production NSIS package installed machine-wide in the dedicated Hyper-V guest. The virtual adapter was disconnected and the guest had no IPv4 or IPv6 default route. The models were already provisioned and verified.",
+      "verification": "The installed app loaded its bundled onnxruntime.dll and recognized two boxes. Replaced Invoice 123 with Offline 456 and exported a searchable one-page PDF. qpdf passed. PDF.js extracted 本地改字2027 and Offline 456 and did not find Invoice 123.",
+      "inputSha256": "8aec74119d1b2e98e1d38a3f84256fe8c7f92b152a67eeb6d53a9f6306b2836d",
+      "outputSha256": "998db6f503ec9180fa4eee37a8dc2b960931e2905289896d398f7703b1b673b6",
+      "nativeOcrChecksPassed": 6
+    },
+    "remaining": []
+  },
+  "diskSpace": {
+    "task": "TK-011-A",
+    "nativeChecksPassed": 8,
+    "productionEntryRerun": "Passed. The host enumerated two NVMe disks and no removable test disk.",
+    "verified": [
+      "Native picker and scan of a synthetic folder returned 12 KiB, two files, two directories and zero skipped entries",
+      "Treemap and list matched the 8 KiB file and 4 KiB child directory, which opened to show the nested file",
+      "Windows Explorer opened the child directory and selected the requested file",
+      "Fixed D drive root accepted in the Windows picker and reached a partial result",
+      "Clicking Stop during the C drive scan preserved partial results and recorded a cancelled Task Center entry"
+    ],
+    "virtualVolumeDetach": {
+      "status": "passed",
+      "scope": "Detached a dedicated 1 GiB NTFS VHDX with 170000 synthetic files while the isolated 3.4.0 app was scanning its E drive root. Windows confirmed the image was detached.",
+      "result": "The scan ended with an incomplete result showing 1.74 MiB, 65393 file paths, 67 directories and 74 skip events. Expanding the events showed unreadable directory entries and a file whose identity could not be confirmed.",
+      "rescan": "Rescanning the detached path reported the directory as unreadable and kept the prior partial statistics and listing."
+    },
+    "remaining": ["Physically disconnect removable media during a scan"]
+  },
+  "releaseGate": {
+    "command": "npm run test:security-release",
+    "status": "passed",
+    "initialFailure": "CLI staged core source must be tracked: toolknit-desktop/src/word-watermark-core.js",
+    "actualIndexRerun": {
+      "checksPassed": 2239,
+      "stagedFiles": ["word-watermark-core.js", "word-watermark-image.js", "word-encryption-core.js"]
+    },
+    "productionCandidateChecks": {
+      "releaseVersionAndHelp": "passed after aligning the Chinese and English README and app help with the 89 current desktop tools. The 3.3 release catalog still lists 75.",
+      "releaseArtifactAudit": {"status": "passed", "publicFiles": 20, "builtFiles": 590, "nativeResources": 4724},
+      "onnxRebuildRerun": {"securityChecksPassed": 2239, "releaseArtifactAudit": "passed", "nsisIntegrityEntries": 4733}
+    },
+    "temporaryIndex": {
+      "checksPassed": 2239,
+      "actualIndexHashUnchanged": true,
+      "entriesAddedForAudit": ["word-watermark-core.js", "word-watermark-image.js", "word-encryption-core.js"]
+    },
+    "architecture": {
+      "status": "passed",
+      "desktopTools": 89,
+      "tauriImplementations": 173,
+      "uniqueTauriCommands": 172,
+      "mcpTools": 78
+    },
+    "bundledOfficeKernelFilesVerified": 4667,
+    "focusedChecksPassed": ["word-history", "word-encryption", "word-watermark-native", "productivity", "meeting", "ocr-editor", "disk-space", "disk-space-native", "windows-installer", "windows-upgrade-native"]
+  },
+  "localEvidence": [
+    "toolknit-desktop/tmp/installed-acceptance-build.log",
+    "toolknit-desktop/tmp/installed-acceptance/output/fields.pdf",
+    "toolknit-desktop/tmp/installed-acceptance/output/edited-edited.pdf",
+    "toolknit-desktop/tmp/installed-acceptance/output/meeting.txt",
+    "toolknit-desktop/tmp/installed-acceptance/output/word-combination",
+    "toolknit-desktop/tmp/installed-acceptance/output/word-error-retest.pdf",
+    "toolknit-desktop/tmp/installed-acceptance/fixtures/cancel-long-batch.zip",
+    "toolknit-desktop/tmp/installed-acceptance/output/cancel-01-short.pdf",
+    "toolknit-desktop/tmp/installed-acceptance/output/word-history-regenerated.pdf",
+    "toolknit-desktop/tmp/installed-acceptance/output/word-zip-explorer-drop.pdf",
+    "toolknit-desktop/tmp/installed-acceptance/output/progress-retest-cancel-01-short.pdf",
+    "toolknit-desktop/tmp/installed-acceptance/output/progress-retest-cancel-02-long.pdf",
+    "toolknit-desktop/tmp/installed-acceptance/word-progress-browser.log",
+    "toolknit-desktop/tmp/installed-acceptance/word-progress-core.log",
+    "toolknit-desktop/tmp/installed-acceptance/word-progress-rebuild.log",
+    "toolknit-desktop/tmp/installed-acceptance/upgrade-3.3-build.log",
+    "toolknit-desktop/tmp/installed-acceptance/upgrade-3.3-dependencies.log",
+    "toolknit-desktop/tmp/installed-acceptance/word-error-rebuild.log",
+    "toolknit-desktop/tmp/installed-acceptance/word-error-architecture.log",
+    "toolknit-desktop/tmp/installed-acceptance/word-watermark-native.log",
+    "toolknit-desktop/tmp/installed-acceptance/security-release-current-index.log",
+    "toolknit-desktop/tmp/installed-acceptance/security-release-current-index-rerun.log",
+    "toolknit-desktop/tmp/installed-acceptance/security-release-temporary-index.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-3.4-rebuild.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-3.4-installer-integrity.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-per-user-upgrade.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-per-user-upgrade-profile.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-per-user-upgrade-appearance.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-per-user-upgrade-appearance-replay.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-appearance-startup-browser.log",
+    "toolknit-desktop/tmp/startup-browser/report.json",
+    "toolknit-desktop/tmp/installed-acceptance/production-release-version.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-release-artifacts.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-help.log",
+    "toolknit-desktop/tmp/installed-acceptance/disk-space-native.log",
+    "toolknit-desktop/tmp/installed-acceptance/windows-upgrade-native.log",
+    "toolknit-desktop/tmp/installed-acceptance/windows-media/machine-baseline.log",
+    "toolknit-desktop/tmp/installed-acceptance/windows-media/machine-upgrade.log",
+    "toolknit-desktop/tmp/installed-acceptance/windows-media/machine-onnx-replacement.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-3.4-onnx-rebuild.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-3.4-onnx-installer-integrity.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-3.4-onnx-security.log",
+    "toolknit-desktop/tmp/installed-acceptance/production-3.4-onnx-artifacts.log",
+    "toolknit-desktop/tmp/installed-acceptance/onnx-path-local-ocr.log",
+    "toolknit-desktop/tmp/installed-acceptance/output/ocr-offline-searchable.pdf",
+    "toolknit-desktop/tmp/installed-acceptance/meeting-browser-release-rerun.log",
+    "toolknit-desktop/tmp/installed-acceptance/meeting-native-release-rerun.log",
+    "toolknit-desktop/tmp/installed-acceptance/meeting-ai-transport-release-rerun.log",
+    "toolknit-desktop/tmp/installed-acceptance/disk-production-release-rerun.log"
+  ]
+}

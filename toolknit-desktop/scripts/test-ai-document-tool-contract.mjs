@@ -53,7 +53,7 @@ assert.doesNotMatch(tool, /console\.(?:log|error)\([^\n]*(?:apiKey|messages|cont
 assert.match(tool, /import '\.\.\/ai-workbench\/ai-workbench-shared\.css'/);
 assert.match(tool, /import '\.\/ai-document\.css'/);
 assert.match(tool, /import '\.\/ai-document-editor\.css'/);
-assert.match(tool, /import '\.\/ai-document\.css';\s*import '\.\/ai-document-editor\.css';\s*import '\.\.\/\.\.\/styles\/components\/ai-workbench\.css'/);
+assert.match(tool, /import '\.\/ai-document-editor\.css';\s*import '\.\.\/\.\.\/styles\/components\/ai-workbench\.css';\s*import '\.\/ai-document\.css'/);
 assert.match(tool, /requests\.cancel\(\)/);
 assert.match(tool, /owner\.use\(\(\) => requests\.cancel\(request\.id\)\)/);
 assert.match(tool, /releaseRequest\(\)/);

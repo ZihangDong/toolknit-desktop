@@ -1,0 +1,32 @@
+{
+  "task": "TK-012-C",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "in-progress",
+  "nativeUiAcceptance": false,
+  "verified": {
+    "currentSourceReleaseBuild": true,
+    "isolatedNsisInstall": true,
+    "installedWindowAndWebView2Started": true,
+    "webView2Version": "157.0.4341.60",
+    "standaloneWindowsFilePicker": true
+  },
+  "outputVerifierSelfCheck": {
+    "input": "synthetic fixture copy",
+    "output": "core regression output, not an installed UI export",
+    "qpdfChecks": 1,
+    "popplerPageComparisons": 7,
+    "pdfjsPageComparisons": 7
+  },
+  "remaining": [
+    "Select the synthetic PDF from the installed application with its system file picker",
+    "Confirm worker analysis, PDF.js comparison, and native file export in a single installed UI run",
+    "Run the independent output verifier against that exported PDF"
+  ],
+  "evidence": [
+    "toolknit-desktop/scripts/fixtures/pdf-object-remove-native.conf.json",
+    "toolknit-desktop/scripts/verify-pdf-object-remove-native-output.mjs",
+    "toolknit-desktop/tmp/pdf-object-remove-native-install/toolknit-pdf-removal-qa.exe",
+    "toolknit-desktop/tmp/pdf-object-remove-native-verification-iSpOoj/report.json"
+  ]
+}

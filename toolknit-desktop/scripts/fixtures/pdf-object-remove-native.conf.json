@@ -1,0 +1,28 @@
+{
+  "productName": "ToolKnit PDF Removal QA",
+  "mainBinaryName": "toolknit-pdf-removal-qa",
+  "identifier": "com.toolknit.pdfremovalqa",
+  "app": {
+    "windows": [{
+      "label": "main",
+      "title": "ToolKnit PDF Removal QA",
+      "width": 1100,
+      "height": 700,
+      "minWidth": 720,
+      "minHeight": 480,
+      "center": true,
+      "resizable": false,
+      "decorations": false,
+      "transparent": true,
+      "shadow": false,
+      "devtools": false,
+      "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI --use-fake-ui-for-media-stream",
+      "dragDropEnabled": true
+    }]
+  },
+  "bundle": {
+    "windows": {
+      "nsis": { "installMode": "currentUser", "displayLanguageSelector": false }
+    }
+  }
+}

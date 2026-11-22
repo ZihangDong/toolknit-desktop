@@ -1,0 +1,118 @@
+{
+  "task": "TK-012-B-D",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "lzw-identity-predictor-first-version-complete",
+  "parentTaskComplete": false,
+  "supported": {
+    "contexts": [
+      "page content stream",
+      "nested shared Form invocation",
+      "inline image"
+    ],
+    "filterChains": [
+      [
+        "LZWDecode"
+      ],
+      [
+        "ASCIIHexDecode",
+        "LZWDecode"
+      ],
+      [
+        "ASCII85Decode",
+        "LZWDecode"
+      ]
+    ],
+    "inlineAliases": [
+      "LZW",
+      "LZWDecode"
+    ],
+    "earlyChange": [
+      0,
+      1
+    ],
+    "defaultEarlyChange": 1,
+    "predictor": 1,
+    "inlineBits": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "colorSpaces": [
+      "DeviceGray",
+      "DeviceRGB",
+      "DeviceCMYK"
+    ]
+  },
+  "validation": [
+    "mandatory initial Clear and final EOD",
+    "valid dictionary references and special new-word case",
+    "9–12-bit code widths and 4096-entry dictionary",
+    "zero final bit padding and no whole-byte trailing data",
+    "scan decoded lengths before output allocation",
+    "non-null settings match scalar/array filter form",
+    "same-stream unambiguous inline boundary and exact sample count",
+    "EarlyChange included in image fingerprint"
+  ],
+  "limits": {
+    "perStageBytes": 8388608,
+    "totalDecodedBytes": 33554432,
+    "dictionaryEntries": 4096
+  },
+  "tests": {
+    "existingCoreChecks": 107,
+    "existingPredictorGroups": 10,
+    "existingDepthGroups": 8,
+    "existingRunLengthGroups": 9,
+    "lzwGroups": [
+      "EarlyChange 0/1, 9–12-bit widths, full/saturated dictionaries, resets and special new words agree with pdf-lib",
+      "Clear/EOD, legal dictionary references, zero final padding, exact stream end and preallocation limits are mandatory",
+      "Page/Form LZW parameters and each ASCII/decoded stage are validated independently; prediction transforms stay excluded",
+      "Inline LZW aliases, explicit/default EarlyChange, exact sample length, ambiguous EI, split streams and invalid parameters are checked",
+      "EarlyChange is part of the image fingerprint even when short compressed bytes happen to be identical",
+      "Six long page streams exercise dictionary width transitions/reset in both EarlyChange modes and all three wrapper variants",
+      "Shared nested Forms mix EarlyChange modes and keep all unselected invocations",
+      "90 depth/color/wrapper profiles and six long dictionary-switch images retain exact matches and source bytes",
+      "Bad LZW data keeps its original page while a valid adjacent image can be removed",
+      "Independent Poppler 393-page and PDF.js 194 first-page comparisons agree; qpdf accepts 98 edited outputs"
+    ],
+    "inlineVariants": 96,
+    "shortDepthColorProfiles": 90,
+    "longDictionarySwitchImages": 6,
+    "longContentPages": 6,
+    "popplerPageComparisons": 393,
+    "pdfjsFirstPageComparisons": 194,
+    "qpdfEditedOutputs": 98,
+    "edgeChecks": 299,
+    "browserErrors": [],
+    "productionEntry": "actual home; long EarlyChange=0 ASCII85/LZW image; matching, preview, download, home return"
+  },
+  "commands": [
+    "npm run test:pdf-object-remove",
+    "npm run test:pdf-object-remove-browser",
+    "npm run build",
+    "npm run test:pdf-object-remove-production"
+  ],
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-lzw/report.json",
+    "toolknit-desktop/tmp/pdf-lzw-regression.log",
+    "toolknit-desktop/tmp/pdf-lzw-browser.log",
+    "toolknit-desktop/tmp/pdf-lzw-build.log",
+    "toolknit-desktop/tmp/pdf-lzw-production.log"
+  ],
+  "remaining": [
+    "LZW prediction transforms",
+    "nonzero LZW padding or missing initial Clear remains rejected",
+    "reverse or longer filter chains",
+    "TIFF 16-bit reader differences",
+    "other filters",
+    "structured/transparency Form",
+    "linked/locked stamps",
+    "mixed text objects",
+    "formal installed Tauri/WebView2 UI acceptance (TK-012-C)"
+  ],
+  "nativeUiAcceptance": false,
+  "installerBuiltOrPublished": false
+}

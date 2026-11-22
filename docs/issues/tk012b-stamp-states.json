@@ -1,0 +1,32 @@
+{
+  "task": "TK-012-B-N",
+  "auditedOn": "2026-11-22",
+  "timezone": "Asia/Shanghai",
+  "status": "complete",
+  "parentTaskComplete": false,
+  "scope": {
+    "annotation": "Stamp with a normal appearance dictionary and explicit appearance name",
+    "activeAppearance": "indirect Form stream",
+    "exactMatching": "same appearance name, appearance reference and existing placement criteria"
+  },
+  "tests": {
+    "stamps": 5,
+    "matched": 2,
+    "rejectedProfiles": 9,
+    "popplerReferencePages": 5,
+    "pdfjsReferencePages": 5,
+    "pdfjsActiveStateControlPages": 1,
+    "qpdfChecks": 2,
+    "edgeChecks": 447,
+    "fullObjectRemovalRegression": "passed",
+    "productionBuildAndEntry": "passed",
+    "newNsisPackageTested": false
+  },
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-stamp-states/report.json",
+    "toolknit-desktop/tmp/pdf-stamp-states-regression.log",
+    "toolknit-desktop/tmp/pdf-stamp-states-browser.log",
+    "toolknit-desktop/tmp/pdf-stamp-states-build.log",
+    "toolknit-desktop/tmp/pdf-stamp-states-production.log"
+  ]
+}

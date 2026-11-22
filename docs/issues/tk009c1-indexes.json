@@ -1,0 +1,124 @@
+{
+  "task": "TK-009-C1-A",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "local-alphabetical-and-marked-indexes-complete",
+  "parentTaskComplete": false,
+  "defaultEnabled": false,
+  "desktopOption": "refreshFields",
+  "cliMcpOption": "refresh_fields",
+  "supported": {
+    "alphabetical": "com.sun.star.text.DocumentIndex with empty IndexAutoMarkFileURL",
+    "markedToc": "com.sun.star.text.ContentIndex imported from TOC / TC"
+  },
+  "externalConcordance": {
+    "policy": "skip; preserve URL and cached index",
+    "testedSources": [
+      "HTTP",
+      "file"
+    ],
+    "unknownOrUnreadableProperty": "skip",
+    "realWriterChecks": [
+      "external concordance index skipped; source and cached index preserved",
+      "external concordance index skipped; source and cached index preserved",
+      "empty concordance URL permits local alphabetical index update"
+    ]
+  },
+  "unitChecksPassed": 12,
+  "profileRegressionChecksPassed": 6,
+  "realGroups": [
+    "actual Writer skips HTTP and file concordance sources without changing URLs or cached indexes; empty URL permits local XE update",
+    "nonboolean option rejected before conversion",
+    "CLI default keeps cached TOC and existing dynamic-field behavior",
+    "CLI opt-in rebuilds 70-entry multipage TOC; all TOC targets, internal refs, page counts and footers match actual PDF pages",
+    "figure and table indexes preserve their cache by default; opt-in resolves caption page numbers while a locked date remains unchanged",
+    "alphabetical XE and marked TC indexes rebuild against actual PDF pages; expression and custom-property fields retain the default import results",
+    "ZIP batch carries opt-in per entry and retains successful refreshed output beside failed input",
+    "actual MCP server receives opt-in and returns per-file update summary",
+    "actual Rust transport forwards false/true and isolates failed documents",
+    "legacy DOC imports expose the same outline TOC, alphabetical XE, marked TC and internal page/reference update contract",
+    "loopback external-data canary received zero requests across every conversion",
+    "original DOCX and ZIP SHA-256 unchanged"
+  ],
+  "pdfs": [
+    {
+      "label": "CLI default",
+      "pageCount": 71,
+      "tocUpdated": false,
+      "sections": 70,
+      "targetPage": 71,
+      "footerChecks": 71,
+      "date": "2026-11-21"
+    },
+    {
+      "label": "CLI refreshed",
+      "pageCount": 73,
+      "tocUpdated": true,
+      "sections": 70,
+      "targetPage": 73,
+      "footerChecks": 73,
+      "date": "2026-11-21"
+    },
+    {
+      "label": "ZIP refreshed",
+      "pageCount": 73,
+      "tocUpdated": true,
+      "sections": 70,
+      "targetPage": 73,
+      "footerChecks": 73,
+      "date": "2026-11-21"
+    },
+    {
+      "label": "MCP refreshed",
+      "pageCount": 73,
+      "tocUpdated": true,
+      "sections": 70,
+      "targetPage": 73,
+      "footerChecks": 73,
+      "date": "2026-11-21"
+    },
+    {
+      "label": "native-default",
+      "pageCount": 71,
+      "tocUpdated": false,
+      "sections": 70,
+      "targetPage": 71,
+      "footerChecks": 71,
+      "date": "2026-11-21"
+    },
+    {
+      "label": "native-updated",
+      "pageCount": 73,
+      "tocUpdated": true,
+      "sections": 70,
+      "targetPage": 73,
+      "footerChecks": 73,
+      "date": "2026-11-21"
+    },
+    {
+      "label": "Legacy DOC refreshed",
+      "pageCount": 72,
+      "tocUpdated": true,
+      "sections": 70,
+      "targetPage": 72,
+      "footerChecks": 72,
+      "date": "2026-11-21"
+    }
+  ],
+  "pdfFooterChecks": 506,
+  "externalRequests": 0,
+  "sourceUnchanged": true,
+  "zipUnchanged": true,
+  "expressionAndPropertyBaselineUnchanged": true,
+  "commands": [
+    "npm run test:word-fields-native",
+    "npm run test:word-to-pdf",
+    "python scripts/test-word-to-pdf-profile.py"
+  ],
+  "evidence": "toolknit-desktop/tmp/word-fields/report.json; per-run index-guard.json and native-tests.log",
+  "remaining": [
+    "date/expression/custom-property refresh is not enabled",
+    "Writer UserIndex, object and bibliography indexes remain excluded",
+    "formal installed Tauri/WebView2 UI acceptance remains TK-009-B1"
+  ]
+}

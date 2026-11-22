@@ -1,0 +1,282 @@
+{
+  "task": "TK-009-B",
+  "auditedOn": "2026-11-20",
+  "timezone": "Asia/Shanghai",
+  "status": "implemented-and-verified",
+  "parentTaskComplete": false,
+  "scope": [
+    "desktop-queue-with-synthetic-native-boundary",
+    "real-Rust-and-LibreOffice",
+    "real-CLI-subprocess",
+    "real-MCP-subprocess"
+  ],
+  "limits": {
+    "documents": 20,
+    "documentBytes": 52428800,
+    "archiveBytes": 52428800,
+    "archiveEntries": 1000,
+    "expandedPerArchive": 209715200,
+    "selectedZipBytesPerBatch": 209715200,
+    "compressedCachePerBatch": 209715200,
+    "compressionMethods": [
+      "stored",
+      "deflate"
+    ],
+    "zip64": false,
+    "recursiveArchives": false
+  },
+  "core": {
+    "passed": 29,
+    "checks": [
+      "manifest valid.zip",
+      "manifest traversal.zip",
+      "manifest backslash.zip",
+      "manifest absolute.zip",
+      "manifest drive.zip",
+      "manifest device.zip",
+      "manifest trailing.zip",
+      "manifest duplicate.zip",
+      "manifest same-name.zip",
+      "manifest symlink.zip",
+      "manifest encrypted.zip",
+      "manifest unsupported.zip",
+      "manifest oversize.zip",
+      "manifest expanded.zip",
+      "manifest many-documents.zip",
+      "manifest many-entries.zip",
+      "manifest empty.zip",
+      "manifest bad-crc.zip",
+      "manifest bad-size.zip",
+      "bounded extraction bad-crc.zip",
+      "bounded extraction bad-size.zip",
+      "archive origin, ignored entries, flat staging and source de-duplication",
+      "temporary documents removed after disposal",
+      "expanded document count checked before extracting an archive",
+      "bad archive does not discard valid archive documents",
+      "pre-dispatch cancellation",
+      "desktop stable entry identity and repeated archive de-duplication",
+      "combined queue limit is atomic",
+      "portable archive path checks"
+    ],
+    "sharedZipFixtures": [
+      {
+        "file": "valid.zip",
+        "accepted": true,
+        "readInvalid": false
+      },
+      {
+        "file": "traversal.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "backslash.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "absolute.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "drive.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "device.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "trailing.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "duplicate.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "same-name.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "symlink.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "encrypted.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "unsupported.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "oversize.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "expanded.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "many-documents.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "many-entries.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "empty.zip",
+        "accepted": false,
+        "readInvalid": false
+      },
+      {
+        "file": "bad-crc.zip",
+        "accepted": true,
+        "readInvalid": true
+      },
+      {
+        "file": "bad-size.zip",
+        "accepted": true,
+        "readInvalid": true
+      }
+    ]
+  },
+  "real": {
+    "groups": [
+      "CLI ZIP expansion, repeated-source de-duplication, same-name outputs, partial failure and searchable PDFs",
+      "MCP real ZIP conversion and per-entry origins",
+      "Rust shared malformed ZIP fixtures, real native conversion, changed hash, CRC and cancellation with retained output",
+      "source archive SHA-256 unchanged"
+    ],
+    "outputs": [
+      {
+        "name": "同名.pdf",
+        "bytes": 31710,
+        "pageCount": 1,
+        "searchableChinese": true
+      },
+      {
+        "name": "同名_1.pdf",
+        "bytes": 31710,
+        "pageCount": 1,
+        "searchableChinese": true
+      },
+      {
+        "name": "同名.pdf",
+        "bytes": 31710,
+        "pageCount": 1,
+        "searchableChinese": true
+      },
+      {
+        "name": "同名_1.pdf",
+        "bytes": 31710,
+        "pageCount": 1,
+        "searchableChinese": true
+      },
+      {
+        "name": "同名.pdf",
+        "bytes": 31710,
+        "pageCount": 1,
+        "searchableChinese": true
+      },
+      {
+        "name": "同名.pdf",
+        "bytes": 31710,
+        "pageCount": 1,
+        "searchableChinese": true
+      },
+      {
+        "name": "同名.pdf",
+        "bytes": 31710,
+        "pageCount": 1,
+        "searchableChinese": true
+      }
+    ],
+    "sourceUnchanged": true,
+    "rustTests": 4
+  },
+  "browser": {
+    "runs": [
+      {
+        "theme": "light",
+        "language": "zh",
+        "checks": 41
+      },
+      {
+        "theme": "light",
+        "language": "en",
+        "checks": 41
+      },
+      {
+        "theme": "dark",
+        "language": "zh",
+        "checks": 41
+      },
+      {
+        "theme": "dark",
+        "language": "en",
+        "checks": 41
+      }
+    ],
+    "screenshots": 16,
+    "widths": [
+      1440,
+      1024,
+      720,
+      390
+    ],
+    "pageErrors": []
+  },
+  "inspector": {
+    "findings": [],
+    "allowances": [
+      "button-fx",
+      "font-count",
+      "heavy-shadow",
+      "panel-void"
+    ],
+    "widths": [
+      1440,
+      768,
+      390
+    ],
+    "style": "achromatic-ledger",
+    "seed": 1986984968
+  },
+  "regressions": [
+    "word core",
+    "real process cancellation/timeout/descendant cleanup",
+    "help center",
+    "homepage/settings/light/dark/en",
+    "generated CLI catalog",
+    "package module and guide file list"
+  ],
+  "build": {
+    "passed": true,
+    "installerBuilt": false,
+    "knownWarnings": [
+      "launcher static/dynamic import",
+      "large chunks"
+    ]
+  },
+  "remaining": [
+    "TK-009-B1: installed Tauri/WebView2 ZIP file chooser, drag/drop and installer lifecycle"
+  ],
+  "nextIndependentTask": "TK-009-C",
+  "sourceArtifactDirectory": "toolknit-desktop/tmp/word-zip/"
+}

@@ -1,4 +1,4 @@
-import { createThemePalette } from '../src/app/theme-palette.js';
+import { APPEARANCE_STORAGE_KEY, createThemePalette, normalizeThemeConfig } from '../src/app/theme-palette.js';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -17,8 +17,8 @@ const browser = await chromium.launch({ headless: true,
 const report = { scenarios: [], errors: [] };
 const baseUrl = server.resolvedUrls.local[0];
 
-async function scenario(theme, { reduced = false, failFonts = false, width = 1400, height = 887 } = {}) {
-  const label = `${theme}-${reduced ? 'reduced' : 'normal'}-${failFonts ? 'failed-fonts' : 'cold'}-${width}`;
+async function scenario(theme, { savedAppearance = false, reduced = false, failFonts = false, width = 1400, height = 887 } = {}) {
+  const label = `${theme}-${reduced ? 'reduced' : 'normal'}-${failFonts ? 'failed-fonts' : 'cold'}-${width}${savedAppearance ? '-saved-appearance' : ''}`;
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion: reduced ? 'reduce' : 'no-preference' });
   const page = await context.newPage();
   page.setDefaultTimeout(20000);
@@ -26,9 +26,17 @@ async function scenario(theme, { reduced = false, failFonts = false, width = 140
   page.on('console', message => {
     if (/\[startup\]|Blocked aria-hidden/.test(message.text())) report.errors.push(`${label}: ${message.text()}`);
   });
-  await page.addInitScript(({ theme, backgroundKey, backgroundSrc }) => {
-    localStorage.setItem('toolknit.theme.v3', theme);
-    localStorage.setItem(backgroundKey, JSON.stringify({ type: 'image', src: backgroundSrc, name: 'Default' }));
+  const preferences = savedAppearance
+    ? { [APPEARANCE_STORAGE_KEY]: JSON.stringify(normalizeThemeConfig({ mode: theme })) }
+    : {
+        'toolknit.theme.v3': theme,
+        [CUSTOM_BACKGROUND_STORAGE_KEY]: JSON.stringify({ type: 'image', src: DEFAULT_DARK_BACKGROUND_SRC, name: 'Default' })
+      };
+  const storageKey = savedAppearance ? APPEARANCE_STORAGE_KEY : 'toolknit.theme.v3';
+  await page.addInitScript(({ preferences, storageKey }) => {
+    if (localStorage.getItem(storageKey) === null) {
+      for (const [key, value] of Object.entries(preferences)) localStorage.setItem(key, value);
+    }
     window.__startupFrames = [];
     const sample = () => {
       const mask = document.getElementById('appStartupMask');
@@ -38,7 +46,7 @@ async function scenario(theme, { reduced = false, failFonts = false, width = 140
       if (state || !document.querySelector('.app')) requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
-  }, { theme, backgroundKey: CUSTOM_BACKGROUND_STORAGE_KEY, backgroundSrc: DEFAULT_DARK_BACKGROUND_SRC });
+  }, { preferences, storageKey });
   let releaseScripts;
   let releaseFonts;
   let releaseBackground;
@@ -95,7 +103,7 @@ async function scenario(theme, { reduced = false, failFonts = false, width = 140
     assert.equal(await page.evaluate(() => document.querySelector('.app').contains(document.activeElement)), false);
     fontsReleased = true; releaseFonts();
     await page.evaluate(() => document.fonts.ready);
-    if (theme === 'dark') {
+    if (theme === 'dark' && !savedAppearance) {
       await page.waitForTimeout(150);
       assert.equal((await measure()).opacity, '1', 'home wallpaper decoding must also finish before reveal');
     }
@@ -105,6 +113,7 @@ async function scenario(theme, { reduced = false, failFonts = false, width = 140
     assert.ok(frames.some(frame => frame.state === 'revealing' && frame.opacity > 0 && frame.opacity < 1), 'fade must have intermediate frames');
     assert.ok(frames.filter(frame => frame.state === 'revealing').every(frame => frame.fonts === 'loaded'), 'no font swap during reveal');
     assert.equal(await page.locator('.app').evaluate(node => node.inert), false);
+    assert.equal(await page.locator('html').getAttribute('data-theme'), theme, 'the revealed app keeps its startup theme');
     await page.screenshot({ path: path.join(output, `${label}-ready.png`) });
     await page.locator('#homeV2Settings').click();
     await page.waitForSelector('#settingsOverlay.visible');
@@ -121,6 +130,7 @@ async function scenario(theme, { reduced = false, failFonts = false, width = 140
     await page.reload({ waitUntil: 'load' });
     await page.waitForSelector('#appStartupMask', { state: 'detached' });
     assert.equal(await page.locator('.app').evaluate(node => node.inert), false, 'warm reload releases input too');
+    assert.equal(await page.locator('html').getAttribute('data-theme'), theme, 'the reloaded app keeps its saved theme');
     report.scenarios.push({ label, fontRequests, initial, frames });
     console.log(`PASS ${label}: first paint, slow fonts, background, fade, keyboard, theme switching, settings and reload`);
   } finally {
@@ -132,6 +142,7 @@ async function scenario(theme, { reduced = false, failFonts = false, width = 140
 try {
   await scenario('light');
   await scenario('dark');
+  await scenario('dark', { savedAppearance: true });
   await scenario('light', { reduced: true, width: 1024, height: 600 });
   await scenario('dark', { reduced: true, failFonts: true, width: 390, height: 780 });
   assert.deepEqual(report.errors, []);

@@ -27,6 +27,43 @@
   grid-row: 2;
 }
 
+.pdf-decrypt-v2 .pdf-decrypt-v2-queue { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.pdf-decrypt-v2 .pdf-decrypt-v2-workspace { grid-template-rows: auto minmax(0, 1fr) auto; }
+.pdf-decrypt-v2 .pdf-decrypt-v2-files { display: flex; flex-direction: column; align-items: stretch; gap: 10px; min-height: 100px; max-height: none; overflow-y: auto; }
+.pdf-decrypt-v2 .pdf-decrypt-batch-row { flex: none; box-sizing: border-box; width: 100%; min-width: 0; padding: 14px; border: 1px solid var(--tk-border); border-radius: 10px; background: var(--tk-surface); color: var(--tk-ink); }
+.pdf-decrypt-row-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+html:root[data-theme] .pdf-decrypt-v2 .pdf-decrypt-row-heading .audio-convert-file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; text-align: left; }
+.pdf-decrypt-row-status { flex: none; font-size: 12px; color: var(--tk-muted); }
+.pdf-decrypt-row-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin-top: 10px; }
+.pdf-decrypt-password-mode { display: grid; gap: 4px; font-size: 12px; color: var(--tk-muted); }
+.pdf-decrypt-v2 :is(.pdf-decrypt-row-controls select, .pdf-decrypt-file-password) { min-height: 36px; padding: 6px 10px; border: 1px solid var(--tk-border); border-radius: 6px; background: var(--tk-inset); color: var(--tk-ink); font: inherit; font-size: 13px; }
+.pdf-decrypt-file-password { flex: 1; min-width: 140px; max-width: 300px; }
+.pdf-decrypt-file-password[hidden] { display: none; }
+.pdf-decrypt-row-actions, .pdf-decrypt-queue-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.pdf-decrypt-row-actions { margin-top: 10px; justify-content: flex-end; }
+.pdf-decrypt-v2 :is(.pdf-decrypt-row-action, .pdf-decrypt-queue-tools button, #pdfDecryptBatchCancel) { padding: 6px 10px; border: 1px solid var(--tk-border); border-radius: 6px; background: var(--tk-surface); color: var(--tk-ink); font: inherit; font-size: 12px; cursor: pointer; }
+.pdf-decrypt-v2 :is(button, input, select):disabled { opacity: .55; cursor: default; }
+.pdf-decrypt-v2 :is(.pdf-decrypt-row-action, .pdf-decrypt-queue-tools button, #pdfDecryptBatchCancel):focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 2px; }
+.pdf-decrypt-v2 .pdf-decrypt-row-output { margin: 8px 0 0; font-size: 12px; color: var(--tk-muted); overflow-wrap: anywhere; }
+.pdf-decrypt-v2 .pdf-decrypt-row-error { margin: 8px 0 0; font-size: 13px; color: var(--tk-danger); }
+.pdf-decrypt-batch-row[data-status="failed"] .pdf-decrypt-row-status { color: var(--tk-danger); }
+.pdf-decrypt-batch-row[data-status="succeeded"] .pdf-decrypt-row-status { color: var(--tk-success); }
+.pdf-decrypt-queue-empty, #pdfDecryptBatchSummary { margin: 0; font-size: 13px; color: var(--tk-muted); overflow-wrap: anywhere; }
+.pdf-decrypt-batch-feedback { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+#pdfDecryptBatchSummary { flex: 1 1 200px; }
+#pdfDecryptBatchSummary.is-error { color: var(--tk-danger); }
+#pdfDecryptBatchProgress { flex: 1 1 120px; width: 120px; height: 8px; accent-color: var(--tk-accent); }
+.pdf-decrypt-password-help { margin: 0; color: #606266; font-size: 13px; line-height: 1.6; }
+@media (max-width: 760px) {
+  html:root[data-theme] .pdf-decrypt-v2 .pdf-decrypt-v2-workspace { display: flex; flex-direction: column; gap: 20px; align-self: start; height: auto; min-height: max-content; max-height: none; overflow: visible; }
+  .pdf-decrypt-v2 .pdf-decrypt-v2-queue { flex: none; overflow: visible; }
+  .pdf-decrypt-v2 .pdf-decrypt-v2-files { flex: none; height: auto; min-height: 140px; max-height: 480px; }
+  .pdf-decrypt-v2 .pdf-merge-v2-section-head { align-items: start; flex-wrap: wrap; gap: 10px; }
+  .pdf-decrypt-row-controls { align-items: stretch; flex-direction: column; }
+  .pdf-decrypt-file-password { width: 100%; max-width: none; min-width: 0; }
+  .pdf-decrypt-row-heading { align-items: start; }
+}
+
 .pdf-security-password-page.pdf-merge-v2 {
   grid-template-rows: auto minmax(0, 1fr);
   align-items: stretch;

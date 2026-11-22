@@ -443,3 +443,29 @@ html:root[data-theme] .developer-toolbox-shell .developer-toolbox-status.is-erro
   border-color: #e4aaaa;
   color: var(--tk-danger);
 }
+.developer-toolbox-shell[data-developer-tool="xml-tools"] .developer-toolbox-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+.developer-toolbox-shell[data-developer-tool="xml-tools"] .developer-toolbox-status {
+  min-width: 0;
+  max-width: 240px;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+.developer-toolbox-shell[data-developer-tool="xml-tools"] .developer-toolbox-status:not(.is-error) {
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .developer-toolbox-shell[data-developer-tool="xml-tools"] .developer-toolbox-heading {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .developer-toolbox-shell[data-developer-tool="xml-tools"] .developer-toolbox-status {
+    max-width: 100%;
+    justify-self: start;
+  }
+}

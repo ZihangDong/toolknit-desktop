@@ -8,6 +8,8 @@ const require = createRequire(process.env.TOOLKNIT_TEST_MODULES
 const { chromium } = require('playwright');
 const testModel = process.env.TOOLKNIT_TEST_AI_MODEL || 'glm-5.3-flash';
 const testUrl = process.env.TOOLKNIT_TEST_AI_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+const expectedEffort = process.env.TOOLKNIT_TEST_AI_REASONING_EFFORT === 'none'
+  ? undefined : process.env.TOOLKNIT_TEST_AI_REASONING_EFFORT || 'low';
 const server = await preview({ configFile: false, logLevel: 'error', preview: { host: '127.0.0.1', port: 0, open: false } });
 const directions = { directions: [
   { name: 'Formal', desc: 'Use a professional tone.' },
@@ -123,7 +125,7 @@ try {
       await maskHidden();
       for (const request of requests) {
         assert.equal(request.hasTokenCap, false, 'do not impose a new output-token limit');
-        assert.equal(request.effort, 'low');
+        assert.equal(request.effort, expectedEffort);
         assert.equal(request.thinking, undefined);
       }
       assert.deepEqual(errors, []);

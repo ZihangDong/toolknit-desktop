@@ -1,0 +1,166 @@
+{
+  "task": "TK-013",
+  "auditedOn": "2026-11-20",
+  "timezone": "Asia/Shanghai",
+  "status": "configuration-and-local-regressions-complete",
+  "parentComplete": false,
+  "authenticatedProvider": "unverified-no-dedicated-test-credentials",
+  "public": {
+    "checkedAt": "2026-11-20T14:03:01.959Z",
+    "scope": "public-documents-and-unauthenticated-model-catalog-only",
+    "authorizationSent": false,
+    "authenticatedCompletion": "unverified",
+    "documents": [
+      {
+        "url": "https://docs.orcarouter.ai/getting-started/quickstart.md",
+        "status": 200,
+        "bytes": 2791,
+        "sha256": "9f8d75600cec12dda31ce84244a4b9c7823fbf2c1392d9cbf62ab24fe0750dbc"
+      },
+      {
+        "url": "https://docs.orcarouter.ai/getting-started/models.md",
+        "status": 200,
+        "bytes": 5340,
+        "sha256": "84d59dd53e33e21ab7007ce1ee33d51599fd9cb541790f9c9200905e976c035f"
+      },
+      {
+        "url": "https://docs.orcarouter.ai/getting-started/get-api-key.md",
+        "status": 200,
+        "bytes": 1927,
+        "sha256": "03701d67eed3f482631b9a419543e9688727ce16c49540d5cad1e3be32406b85"
+      },
+      {
+        "url": "https://docs.orcarouter.ai/native-formats/openai-compat.md",
+        "status": 200,
+        "bytes": 1992,
+        "sha256": "d3fd5481d9398628c9f61f78f7968dc3db87ae077b185f100292241eb7935970"
+      },
+      {
+        "url": "https://docs.orcarouter.ai/api-reference/chat/create-a-chat-completion.md",
+        "status": 200,
+        "bytes": 26818,
+        "sha256": "bde265268924a2237f624551baa8968afbf7d9a1868ba279d9bb9d679996f6a8"
+      },
+      {
+        "url": "https://docs.orcarouter.ai/operations/errors.md",
+        "status": 200,
+        "bytes": 12427,
+        "sha256": "1cf0295f551fa23f755ad6dc7903d395033b838ccc311617adb5cdf6e743793e"
+      }
+    ],
+    "models": {
+      "url": "https://api.orcarouter.ai/v1/models",
+      "status": 200,
+      "bytes": 237993,
+      "count": 217,
+      "example": {
+        "id": "openai/gpt-4o-mini",
+        "supported_endpoint_types": [
+          "openai",
+          "openai-response"
+        ],
+        "supported_parameters": [
+          "frequency_penalty",
+          "logit_bias",
+          "logprobs",
+          "max_completion_tokens",
+          "max_tokens",
+          "n",
+          "parallel_tool_calls",
+          "prediction",
+          "presence_penalty",
+          "response_format",
+          "seed",
+          "service_tier",
+          "stop",
+          "stream",
+          "structured_outputs",
+          "temperature",
+          "tool_choice",
+          "tools",
+          "top_logprobs",
+          "top_p",
+          "web_search_options"
+        ]
+      }
+    }
+  },
+  "localProtocol": {
+    "scope": "local-protocol-fixtures-only",
+    "realAuthenticatedProvider": "unverified",
+    "checks": [
+      "normalize /",
+      "normalize /v1",
+      "normalize /v1/",
+      "normalize /v1/chat/completions",
+      "HTTP nonstreaming completion and Bearer/model/token envelope",
+      "desktop app adapter forwards custom HTTPS configuration through native boundary fixture",
+      "desktop native bridge fixture HTTP 401",
+      "desktop native bridge fixture HTTP 402",
+      "desktop native bridge fixture HTTP 429",
+      "desktop native bridge fixture timeout",
+      "desktop request-id cancellation reaches native boundary fixture",
+      "CLI runtime rejects truncated output",
+      "CLI runtime rejects malformed output",
+      "CLI runtime maps shared HTTP deadline",
+      "CLI subprocess 200",
+      "CLI subprocess 401",
+      "CLI subprocess 402",
+      "CLI subprocess 429",
+      "MCP subprocess 200",
+      "MCP subprocess 401",
+      "MCP subprocess 402",
+      "MCP subprocess 429",
+      "MCP cancellation notification aborts in-flight HTTP call",
+      "MCP remains usable after cancellation"
+    ],
+    "requests": 20
+  },
+  "settingsBrowser": {
+    "scope": "actual-settings-template-and-runtime-with-memory-key-store",
+    "authenticatedProvider": "unverified",
+    "checks": [
+      "custom save /",
+      "custom save /v1",
+      "custom save /v1/",
+      "custom save /v1/chat/completions",
+      "key passed to dedicated store",
+      "key absent from configuration storage",
+      "custom settings restored",
+      "public HTTP rejected before key save",
+      "missing model rejected before key save"
+    ]
+  },
+  "native": {
+    "command": "cargo test --manifest-path src-tauri/Cargo.toml ai_provider --lib",
+    "passed": 17,
+    "failed": 0,
+    "realGateway": false
+  },
+  "browserAi": {
+    "script": "scripts/test-ai-text-provider-browser.mjs",
+    "phases": [
+      "translation",
+      "polish-analysis",
+      "polish-output"
+    ],
+    "transport": "intercepted-synthetic-responses",
+    "realGateway": false,
+    "status": "passed"
+  },
+  "sharedRegressions": [
+    "test-ai-provider-core.mjs",
+    "test-cli-ai-failure.mjs"
+  ],
+  "packageGuides": {
+    "command": "npm pack --dry-run --ignore-scripts --json",
+    "status": "both-language-guides-present-and-match-sources"
+  },
+  "remaining": [
+    "real-Tauri-WebView2-and-provider-completions",
+    "real-auth-and-account-limits",
+    "real-rate-limits-and-upstream-cancellation-billing",
+    "per-tool-output-quality"
+  ],
+  "nextIndependentTask": "TK-009-B"
+}

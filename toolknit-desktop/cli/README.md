@@ -100,6 +100,8 @@ toolknit ai-table create --prompt "生成一份季度销售复盘表，包含图
 
 ## AI Agent / MCP
 
+OrcaRouter 可沿用自定义 URL、模型与专用密钥配置，见随包提供的 [配置与验证边界](guides/orcarouter.zh-CN.md) · [English](guides/orcarouter.en.md)。真实服务认证生成仍待专用凭据验收。
+
 启动 MCP server：
 
 ```bash
@@ -160,6 +162,14 @@ toolknit agent guide --lang en
 V3.3 的作者自有代码（含 PDF 转 Word 引擎和派生适配器）采用 MIT 许可，允许商业及非商业使用、修改和分发，须保留版权与许可声明。推荐在项目介绍中注明 ToolKnit.com 并提供 DoFollow 外链，回链不是许可条件。第三方组件与既有 Apache-2.0 贡献保留原许可，详见 LICENSE、NOTICE 和 LICENSES。
 
 ### V3.3 新增：Word 转 PDF
+
+V3.4 新增可选 `encryption` 对象，包含必需的 `password` 和可选 `permissions`，使用本地 AES-256。密码至少 8 个 Unicode 字符、最多 127 个 UTF-8 字节且不含 NUL / CR / LF；每份最多 200 页 / 150 MiB，可与 DOC / DOCX / ZIP、水印和内部域刷新组合。打印支持 false / lowResolution / highResolution，另可设置复制、修改、注释、表单和页面组装；辅助技术访问保留，权限由阅读器遵守。成功返回 `encrypted:true`，失败不发布普通 PDF，取消保留已完成的加密结果。带密码的完整请求通过 `toolknit run toolknit_word_to_pdf --arguments-stdin --json` 接收，拒绝将嵌套口令放进命令行或 `--arguments-file`；不要将口令写入文件、日志和结果路径。再次调用需要重新提供密码；桌面任务中心不保存密码或提供自动重试。
+
+V3.4 增加可选 `watermark`：`{"type":"text","text":"内部资料 DRAFT","pages":"1,3-5","opacity":0.2,"angle":45,"width":60}`。图片使用 `type:"image"` 与本地 `image_path`，支持 PNG / JPEG（4 MiB、400 万像素以内）。文字上限 80 个 Unicode 字符；页码留空为全部，超出每份文档实际页数时仅该项失败。水印层按各页纸张等比缩放并居中，保留正文文字；成功结果返回 `watermark_pages`。中间 PDF 保留在私有临时目录，盖印验证成功后逐项发布，取消保留已发布文件。通过 `toolknit run toolknit_word_to_pdf --arguments-file request.json --json` 或 MCP 传嵌套参数，可与 ZIP 和 `refresh_fields` 组合。首版居中灰色文字或图片，不含平铺 / 自由定位；检查最终结果。
+
+V3.4 增加可选 `--refresh-fields true`（MCP / JSON 为 `refresh_fields:true`），默认关闭。刷新正文目录、由题注生成的图表目录、页码、总页数、章节和内部引用，逐项返回更新与跳过数量。刷新可能改变分页，失败时可关闭选项重试。Writer 导入时仍可能计算动态域。
+
+V3.4 开发源码新增 ZIP 批量输入：`input_paths` 可混合 DOC / DOCX / ZIP，并提供 `output_dir`；展开后最多 20 个 Word，每个文档或 ZIP 50 MiB。ZIP 限制 1000 项 / 200 MiB，拒绝不安全路径、链接与加密项；不展开嵌套 ZIP。逐项结果保留原包路径和 `archive_entry`，同名文档分开输出，临时副本自动清理。正式 npm 3.3.0 尚不含此新增 ZIP 能力，详见[随包 Agent 手册](guides/agent-guide.zh-CN.md#word-转-pdfv33-新增)。
 
 开发源码支持 `toolknit word to-pdf --input source.docx --output result.pdf --json`。需要完整 LibreOffice + UNO/Python，一次最多 20 个 DOC/DOCX、每个 50 MiB。批量通过 `toolknit run toolknit_word_to_pdf --arguments-file request.json --json`，参数为 `input_paths`、`output_dir`。取消保留已完成结果；源文件不修改。正式 npm 3.2.0 不包含此功能。
 

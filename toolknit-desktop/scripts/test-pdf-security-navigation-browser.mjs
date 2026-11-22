@@ -112,7 +112,9 @@ try {
             assert.equal(metrics.nav.background, template.background);
             if (width >= 1100) assert.equal(metrics.nav.padding, template.padding);
             assert.ok(metrics.atTop && metrics.panelFits && metrics.noHorizontalOverflow, `${label} ${width}x${height}: layout fits`);
-            assert.equal(metrics.controls.length, 7, 'Back, website, support, settings and three window controls');
+            assert.equal(metrics.controls.length, 9, 'Back, website, support, help, feedback, settings and three window controls');
+            assert.equal(await page.locator(`${dialog} > .pdf-merge-v2-topbar [data-tool-help]`).count(), 1);
+            assert.equal(await page.locator(`${dialog} > .pdf-merge-v2-topbar [data-tool-feedback]`).count(), 1);
             assert.ok(metrics.controls.every(control => control.enabled && control.visible && control.reachable && control.icons === 1));
             await page.locator(`${dialog} .pdf-encrypt-password-dialog`).evaluate(panel => { panel.scrollTop = panel.scrollHeight; });
             assert.equal(await page.locator(`#${prefix}PasswordConfirm`).evaluate(button => {
@@ -128,8 +130,15 @@ try {
           await page.locator(`${dialog} .pdf-encrypt-password-dialog`).evaluate(panel => { panel.scrollTop = 0; });
           await page.locator(`#${prefix}Back`).hover();
           await page.waitForFunction(selector => getComputedStyle(document.querySelector(selector)).width === '64px', `#${prefix}Back`);
-          const hover = await page.locator(`#${prefix}Back`).evaluate(node => getComputedStyle(node).backgroundColor);
-          assert.equal(hover, theme === 'light' ? 'rgb(17, 17, 17)' : 'rgb(243, 243, 244)', 'back uses the shared inverse capsule');
+          const hover = await page.locator(`#${prefix}Back`).evaluate(node => {
+            const probe = document.createElement('span');
+            probe.style.backgroundColor = 'var(--tk-nav-ink)';
+            node.append(probe);
+            const expected = getComputedStyle(probe).backgroundColor;
+            probe.remove();
+            return { actual: getComputedStyle(node).backgroundColor, expected };
+          });
+          assert.equal(hover.actual, hover.expected, 'back uses the shared inverse capsule token');
           await page.locator(`#${prefix}PasswordInput`).fill('ToolKnit-test-42');
           await page.locator(`#${prefix}PasswordConfirm`).focus();
           await page.keyboard.press('Tab');

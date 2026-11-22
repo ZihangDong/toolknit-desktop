@@ -9,12 +9,17 @@ fn runtime_path() -> Result<PathBuf, String> {
     let bundled = executable
         .parent()
         .ok_or("onnxruntime-dll-missing")?
-        .join("resources/onnxruntime/onnxruntime.dll");
+        .join("resources")
+        .join("onnxruntime")
+        .join("onnxruntime.dll");
     if bundled.is_file() {
         return Ok(bundled);
     }
-    let development =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("resources/onnxruntime/onnxruntime.dll");
+    // Windows uses native separators to find adjacent dependencies with LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR.
+    let development = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("resources")
+        .join("onnxruntime")
+        .join("onnxruntime.dll");
     if development.is_file() {
         return Ok(development);
     }

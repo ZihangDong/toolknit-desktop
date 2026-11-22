@@ -1,6 +1,6 @@
 import { applyTranslations, getLang, onLangChange, t } from '../../i18n.js';
 import { tauriCorePromise, loadTauriDialog, loadTauriWebview } from '../../platform/tauri-runtime.js';
-import { taskCenter } from '../../app/task-center.js';
+import { taskCenter as defaultTaskCenter } from '../../app/task-center.js';
 import { createModalSession } from '../../app/modal-runtime.js';
 import { buildRenamePlan } from './rename-core.js';
 import { WORKFLOW_PRESETS, normalizeWorkflow, validateWorkflowFiles } from './workflow-core.js';
@@ -8,12 +8,13 @@ import './productivity.css';
 
 const PRESET_KEY = 'toolknit.workflows.v1';
 const basename = path => String(path || '').split(/[\\/]/).pop();
-export function initProductivityTool({ overlay, isTauri = false, getOutputDir, refreshIcons = () => {} } = {}) {
+export function initProductivityTool({ overlay, isTauri = false, getOutputDir, refreshIcons = () => {}, openLazyTool, showToast = () => {}, nativeInvoke, center = defaultTaskCenter } = {}) {
+  const taskCenter = center;
   const q = selector => overlay.querySelector(selector);
   const qa = selector => [...overlay.querySelectorAll(selector)];
   const tr = key => t(`productivity.${key}`);
   const local = (zh, en) => getLang() === 'zh' ? zh : en;
-  const invoke = (command, args) => tauriCorePromise.then(api => api.invoke(command, args));
+  const invoke = nativeInvoke || ((command, args) => tauriCorePromise.then(api => api.invoke(command, args)));
   const renameForm = q('[data-rename-form]'), flowForm = q('[data-workflow-form]');
   const field = (form, name) => form.elements.namedItem(name);
   const button = action => q(`[data-action="${action}"]`);
@@ -134,6 +135,7 @@ export function initProductivityTool({ overlay, isTauri = false, getOutputDir, r
     const focusedId = document.activeElement?.dataset?.taskId, focusedCommand = document.activeElement?.dataset?.taskCommand;
     const filter = q('[data-task-filter]').value, search = q('[data-task-search]').value.toLowerCase();
     const all = taskCenter.list();
+    q('[data-task-storage-warning]').hidden = taskCenter.persistenceAvailable?.() !== false;
     const tasks = all.filter(row => (filter === 'all' || filter === 'active' && ['queued', 'running', 'cancelling'].includes(row.state) || row.state === filter)
       && `${row.label} ${row.message}`.toLowerCase().includes(search));
     const container = q('[data-task-rows]'); container.replaceChildren();
@@ -145,6 +147,7 @@ export function initProductivityTool({ overlay, isTauri = false, getOutputDir, r
     for (const task of tasks) {
       const row = node('article', undefined, 'productivity-task'), identity = node('div'), state = node('div'), controls = node('div', undefined, 'productivity-task-actions');
       identity.append(node('strong', task.label));
+      if (task.tool === 'word-to-pdf' && !task.recovery && ['succeeded', 'failed', 'cancelled', 'interrupted'].includes(task.state)) identity.append(node('p', tr('legacyWordHistory')));
       const time = node('time', new Date(task.createdAt).toLocaleString(getLang() === 'zh' ? 'zh-CN' : 'en-US')); time.dateTime = task.createdAt; identity.append(time);
       if (task.message) identity.append(node('p', task.message === 'interrupted' ? tr('interruptedHint') : task.message));
       const status = node('span', tr(task.state), 'productivity-state'); status.dataset.state = task.state; state.append(status);
@@ -155,7 +158,20 @@ export function initProductivityTool({ overlay, isTauri = false, getOutputDir, r
       }
       if (task.canCancel) controls.append(action(tr('cancel'), () => taskCenter.cancel(task.id)));
       if (task.canRetry) controls.append(action(tr('retry'), () => taskCenter.retry(task.id)));
-      if (isTauri && task.outputs?.length) controls.append(action(tr('openOutput'), () => invoke('open_path', { path: task.outputs[0] })));
+      if (task.canRecover) {
+        const recover = action(tr('recoverWord'), async () => {
+        modal.close();
+        try {
+          const instance = await openLazyTool?.('word-to-pdf');
+          if (!disposed && !await instance?.raw?.restoreHistory?.(task.recovery)) showToast(tr('recoverWordHint'));
+        } catch { if (!disposed) showToast(tr('recoverWordFailed')); }
+        }, !isTauri);
+        recover.dataset.taskRecovery = 'word'; controls.append(recover);
+      }
+      if (isTauri && task.outputs?.length) controls.append(action(tr('openOutput'), async () => {
+        try { await invoke('open_path', { path: task.outputs[0] }); }
+        catch { message(tr('outputMissing'), true); }
+      }));
       for (const control of controls.children) { control.dataset.taskId = task.id; control.dataset.taskCommand = control.textContent; }
       row.append(identity, state, controls); container.append(row);
     }

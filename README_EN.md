@@ -8,7 +8,7 @@
 
 **One toolbox for the little tasks scattered across your desktop.**
 
-83 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
+89 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
 
 [MIT source license and attribution](#source-license)
 
@@ -19,14 +19,6 @@
 </p>
 
 </div>
-
-## In development: local files and automation
-
-Eight desktop tools: batch rename, Task Center, PDF workflows, a global quick launcher, local document content search, text comparison, an SRT/VTT subtitle workbench, and folder automation. The source catalog contains 83 desktop tools; the stable download remains V3.3.
-
-Use `Ctrl+Shift+Space` globally or `Ctrl+K` inside the app. Indexes and subtitle drafts stay local; folder rules preserve original files.
-
-Usage guides (Chinese): [file workbench](docs/PRODUCTIVITY.zh-CN.md) · [documents and automation](docs/WORKBENCH.zh-CN.md). No installer release or new CLI/MCP capabilities are included.
 
 ## About the project and me
 
@@ -45,6 +37,18 @@ Most need no account. Supported file tasks run locally in your browser. Network 
 ### Then bring it to your desktop
 
 V3.3 contains **75 desktop tools**. File search and Word to PDF are new, with improvements to local OCR, scanned PDF to Word and screenshots.
+
+Current V3.4 source adds **PDF to PPT**: export selected pages as image-based PPTX at 144, 200 or 300 DPI. Each page is one movable, replaceable picture; original text and tables are not individually editable. Cancellation and local saving are supported. The installer has not been released yet.
+
+**Meeting recorder & minutes** supports microphone recording, pause and resume, local playback, and saving. Desktop users can enable local Whisper transcription during recording and receive timestamped segments. Generate sends the current transcript and meeting name to the configured AI while audio stays local. Long transcripts up to 120,000 characters are processed in parts and combined into one draft with source quotes. Edit and export transcripts as TXT and minutes as Markdown.
+
+**Word to PDF** gains ZIP batch input in Desktop, CLI and MCP, with per-document origins, de-duplication and failed-entry retry in the desktop queue. Limits: 20 Word documents after expansion, 50 MiB per document/ZIP, bounded expansion and safe paths. See the [implementation and acceptance notes](toolknit-desktop/docs/WORD_TO_PDF.zh-CN.md).
+
+An optional **Refresh internal TOCs and fields** setting, off by default, updates TOCs, page numbers/counts, chapters and internal references, with skipped-type counts. Other fields and external data are not explicitly refreshed. CLI/MCP use `refresh_fields:true`.
+
+Optional **text/image watermarks during conversion** support CJK text, transparent PNG / JPEG, opacity, size, rotation and page ranges, with an A4 placement preview. CLI/MCP accept the same `watermark` settings. Body text stays searchable; failed items publish no PDF, and cancellation keeps completed results. Packaged WebView2 file selection and preview integration remain a pre-release check.
+
+Optionally **encrypt PDFs during conversion** with AES-256, an opening password and printing/copying/editing permissions, up to 200 pages per document. This composes with watermarks and internal refresh. CLI/MCP accept `encryption`; passwords apply to the current run and must be re-entered for retry. Failed items publish no plain intermediate PDF.
 Available installers are listed on the [Windows download page](https://toolknit.com/exe.html).
 Set an output folder and favorite your tools. Install models only when needed.
 Enable **one-click recording mode** for startup, clipboard monitoring and floating history. Press `Alt + Q` to capture.
@@ -54,8 +58,10 @@ See [Get started](#08--get-started) for installation requirements and instructio
 ### V3.4 development updates
 
 - Added a global quick launcher (`Ctrl+Shift+Space`, or `Ctrl+K` inside the app), local document content search, text comparison, an SRT/VTT subtitle workbench, and folder automation that preserves original files. [Usage guide (Chinese)](docs/WORKBENCH.zh-CN.md).
+- PDF Decrypt now supports up to 50 files per queue, shared or individual passwords, per-file results, stopping pending files, and retry through Task Center. Passwords apply to this run only and originals stay unchanged.
 - Added batch rename, Task Center, and reusable workflows. Rename supports live previews, sequences, dates, regular expressions, conflict checks, and undo for the most recent batch. Workflows combine images into a PDF or merge PDFs, optionally add page numbers, and save parameter presets. [Usage guide (Chinese)](docs/PRODUCTIVITY.zh-CN.md).
 - Task Center covers these new tools, Word to PDF, image conversion/compression, and batch audio/video conversion, with progress, cancellation, current-session retry, and local history. Supported native batch conversions run in sequence.
+- Restore Word history to the conversion page after restart. Source and output fingerprints retain valid PDFs and identify missing results. Confirm changed sources or re-add changed ZIPs; re-enter passwords and watermark contents. Clearing history removes metadata only. [Recovery details (Chinese)](toolknit-desktop/docs/WORD_TO_PDF.zh-CN.md).
 - Light and dark modes share one layout, with eight palettes, custom theme colors, preview, save, cancel, and reset.
 - Image and video wallpaper works independently of appearance; screenshot and file-search windows follow the selected palette.
 - Settings gains a responsive sidebar with a hidden scrollbar, one row of circular color choices, and a clearer order for appearance, storage, daily behavior, and AI/runtime settings.
@@ -279,7 +285,7 @@ V3.3 exposes **78 CLI / MCP capabilities**, adding Word to PDF. npm 3.3.0 is als
 | File inspection | Read-only scanning, dependency checks and structured JSON results |
 
 Progress, cancellation and explicit errors are supported. Originals and existing outputs stay protected. Unicode paths, long paths and model downloads are improved.
-Windows, clipboard monitoring and system cleanup remain desktop interactions. **The catalog has 78 interfaces and 83 desktop tools; these do not map one-to-one.**
+Window controls, clipboard monitoring and system cleanup remain desktop interactions. The V3.4 source includes 89 desktop tools and 78 CLI / MCP capabilities.
 
 Use **`@toolknit/cli` 3.3.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for the 78 capabilities. Requires Node.js **22.13+**.
 
@@ -306,6 +312,8 @@ toolknit --help
 Basic file capabilities do not require an AI key. AI workflows require `DEEPSEEK_API_KEY` or `TOOLKNIT_AI_API_KEY` in the CLI / MCP process environment, as specified by the command contract.
 
 [CLI / MCP contract](toolknit-desktop/docs/cli-agent.md) · [English Agent guide](toolknit-desktop/docs/agent-guide.en.md) · [中文 Agent 手册](toolknit-desktop/docs/agent-guide.zh-CN.md)
+
+[OrcaRouter custom configuration and verification](toolknit-desktop/docs/orcarouter.en.md): uses existing compatible settings; local protocol checks passed, while real authenticated generation awaits dedicated test credentials.
 
 </details>
 
@@ -364,7 +372,7 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 ## Complete tool catalog
 
 <details>
-<summary><strong>Expand 83 desktop tools / 12 categories</strong></summary>
+<summary><strong>Expand the V3.3 release catalog of 75 desktop tools / 12 categories</strong></summary>
 
 | Category | Count | Tools |
 | --- | ---: | --- |
@@ -373,10 +381,10 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 | Image | 7 | Crop, smart color replacement, background removal, format conversion, compress, stitch, icon generator |
 | Audio | 4 | Format conversion, BPM measurement, trim, extract audio |
 | Video | 3 | Format conversion, full-resolution frame, GIF clipping |
-| Text | 6 | Markdown editor, media transcription, teleprompter, text statistics, text formatting, subtitle workbench |
+| Text | 5 | Markdown editor, media transcription, teleprompter, text statistics, text formatting |
 | Calculator | 5 | Body fat, timestamp, mortgage, interest, password generator |
 | Creative | 4 | Palette extraction, color-space comparison, quick screenshot, typing test |
-| Cleanup | 11 | Quick file search, AI large-file cleanup, C drive cleanup, duplicate files, batch rename, Task Center, PDF workflows, global quick launcher, document content search, text comparison, folder automation |
+| Cleanup | 4 | Quick file search, AI large-file cleanup, C drive cleanup, duplicate files |
 | AI | 5 | PDF to Markdown, text polishing, translation, document generation, spreadsheet generation |
 | Hardware | 8 | System overview, CPU / memory, GPU / displays, motherboard / firmware, storage / health, network / devices, power / sensors, clipboard history |
 | Developer | 6 | JSON formatting, Base64, URL encoding / decoding, UUID, JWT viewer, Hash & Crypto |

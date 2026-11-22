@@ -1,156 +1,157 @@
-import { t } from '../../i18n.js';
+import { applyTranslations, onLangChange } from '../../i18n.js';
 import { tauriCorePromise } from '../../platform/tauri-runtime.js';
-import {
-  PDF_DECRYPT_LIMITS,
-  assertPdfDecryptPassword,
-  assertPdfDecryptSelection,
-  getPdfDecryptErrorCode
-} from '../../pdf-decrypt-core.js';
+import { createLifecycleScope } from '../../app/tool-lifecycle.js';
+import { taskCenter } from '../../app/task-center.js';
 import { createPdfSecurityShell } from './shell.js';
+import { addDecryptFiles, prepareDecryptJobs, runDecryptBatch, clearDecryptJobs, decryptFileKey } from './decrypt-batch.js';
+import { createDecryptBatchView, decryptText as tr, decryptErrorText } from './decrypt-batch-view.js';
 import './pdf-security.css';
 
-function errorInfo(error) {
-  const code = getPdfDecryptErrorCode(error);
-  const messages = {
-    'invalid-password': 'home.pdfDecrypt.wrongPassword',
-    'input-too-large': 'home.pdfDecrypt.fileTooLarge',
-    'too-many-pages': 'home.pdfDecrypt.tooManyPages',
-    'invalid-pdf': 'home.pdfDecrypt.invalidPdf',
-    'desktop-only': 'home.pdfDecrypt.desktopOnly',
-    'qpdf-unavailable': 'home.pdfDecrypt.decryptFailed',
-    'decryption-failed': 'home.pdfDecrypt.decryptFailed'
-  };
-  return { code, message: t(messages[code] || 'home.pdfDecrypt.decryptFailed') };
-}
-
 export function initPdfDecryptTool({
-  overlay,
-  isTauri = false,
-  getOutputDir,
-  displayFilesystemPath,
-  notify,
-  refreshIcons,
-  initStandardToolPlasma,
-  disposeStandardToolPlasma
+  overlay, isTauri = false, getOutputDir, displayFilesystemPath, notify, refreshIcons,
+  initStandardToolPlasma, disposeStandardToolPlasma, openLazyTool,
+  invokeNative, center = taskCenter
 } = {}) {
   if (typeof getOutputDir !== 'function') throw new Error('pdf-decrypt:missing-output-directory');
-  let activeOperation = null;
-  let disposed = false;
-  let operationSequence = 0;
+  const scope = createLifecycleScope();
+  const invoke = async (command, args) => (invokeNative || (await tauriCorePromise).invoke)(command, args);
+  let rows = [], operation = null, requestedIds = [], notice = null, disposed = false;
   const shell = createPdfSecurityShell({
-    kind: 'decrypt',
-    overlay,
-    isTauri,
-    displayFilesystemPath,
-    notify,
-    refreshIcons,
-    initStandardToolPlasma,
-    disposeStandardToolPlasma,
-    isBusy: () => Boolean(activeOperation),
-    allowBrowserDrop: true
+    kind: 'decrypt', overlay, isTauri, displayFilesystemPath, notify, refreshIcons,
+    initStandardToolPlasma, disposeStandardToolPlasma,
+    isBusy: () => Boolean(operation), allowBrowserDrop: true, multiple: true
+  });
+  const view = createDecryptBatchView({
+    overlay, getRows: () => rows, getOperation: () => operation, getNotice: () => notice,
+    onRemove: id => { if (!operation) { const removed = rows.find(row => row.id === id); if (removed) removed.password = ''; rows = rows.filter(row => row.id !== id); notice = null; render(); } },
+    onRetry: requestRun, onCancel: cancel,
+    onClear: () => { if (!operation) { clearFiles(); render(); } },
+    onReveal: reveal, refreshIcons
   });
   const isDemo = import.meta.env.DEV
     && new URLSearchParams(window.location.search).get('pdf-security-demo') === 'decrypt';
-
-  function beginOperation(owner) {
-    if (activeOperation) return null;
-    const operation = {
-      id: ++operationSequence,
-      owner,
-      silent: false,
-      isCurrent: () => activeOperation === operation && shell.isOpenSession(owner)
-    };
-    activeOperation = operation;
-    return operation;
+  const visible = () => !disposed && shell.isOpenSession(shell.getSession());
+  function render() { if (visible()) shell.renderFiles(); }
+  function clearFiles() {
+    for (const row of rows) row.password = '';
+    rows = []; requestedIds = []; notice = null;
   }
-
-  function assertCurrent(operation) {
-    if (!operation?.isCurrent()) throw new Error('pdf-decrypt:cancelled');
+  function add(files) {
+    try { rows = addDecryptFiles(rows, files); notice = null; return true; }
+    catch (error) { shell.showToast(decryptErrorText(String(error.message).split(':')[1])); return false; }
   }
-
-  async function fileSize(file) {
-    if (isTauri && file?.path) {
-      const { invoke } = await tauriCorePromise;
-      return Number(await invoke('get_file_size', { path: file.path }));
-    }
-    return Number(file?.size || 0);
+  function requestRun(ids = rows.filter(row => row.status === 'pending').map(row => row.id)) {
+    if (!visible() || operation) return;
+    const selected = new Set(ids);
+    requestedIds = rows.filter(row => selected.has(row.id) && row.status !== 'succeeded').map(row => row.id);
+    if (requestedIds.length) shell.showPassword();
   }
-
-  async function confirm(owner) {
-    if (activeOperation || !shell.isOpenSession(owner)) return;
-    let password = shell.getPassword();
-    let reopenPassword = false;
-    try {
-      assertPdfDecryptPassword(password);
-    } catch (_) {
-      window.alert(t('home.pdfDecrypt.passwordUnsupported'));
-      return;
-    }
-    const operation = beginOperation(owner);
+  function cancel() {
     if (!operation) return;
-    shell.hidePassword();
-    shell.setProcessing(true, 10, t('home.pdfDecrypt.decrypting'));
+    operation.controller.abort();
+    notice = { key: 'stoppingHint' }; render();
+  }
+  async function reveal(id) {
+    const path = rows.find(row => row.id === id)?.outputPath;
+    if (!path || !isTauri) return;
+    try { await invoke('open_path', { path }); }
+    catch { shell.showToast(tr('openFailed')); }
+  }
+  async function retryFromHistory(files) {
+    if (disposed || operation || !files.length) return;
     try {
-      const file = shell.getFile();
-      if (!file) throw new Error('pdf-decrypt:invalid-pdf');
-      assertPdfDecryptSelection([file], await fileSize(file), PDF_DECRYPT_LIMITS);
-      assertCurrent(operation);
-      if (!isTauri) throw new Error('pdf-decrypt:desktop-only');
-      if (!file.path) throw new Error('pdf-decrypt:invalid-pdf');
-      shell.setProgress(40, t('home.pdfDecrypt.decrypting'));
-      const { invoke } = await tauriCorePromise;
-      const savedPath = await invoke('decrypt_pdf', {
-        inputPath: file.path,
-        password,
-        outputDir: await getOutputDir('PDF_Decrypt')
-      });
-      assertCurrent(operation);
-      shell.setProgress(100, t('home.pdfDecrypt.decrypting'));
-      shell.showSuccess(savedPath, 1);
-    } catch (error) {
-      if (!operation.silent && operation.isCurrent() && !/pdf-decrypt:cancelled/.test(String(error?.message || error))) {
-        const info = errorInfo(error);
-        reopenPassword = info.code === 'invalid-password';
-        if (info.code !== 'invalid-password' && info.code !== 'desktop-only') {
-          console.error('[PDF Decrypt] Error:', error);
+      if (openLazyTool && !await openLazyTool('pdf-decrypt')) return;
+      if (!visible()) shell.open();
+    } catch { shell.showToast(tr('retryOpenFailed')); return; }
+    if (!visible() || !add(files)) return;
+    const keys = new Set(files.map(decryptFileKey));
+    render();
+    requestRun(rows.filter(row => keys.has(decryptFileKey(row.file)) && row.status !== 'succeeded').map(row => row.id));
+  }
+  async function confirm(owner) {
+    if (operation || !shell.isOpenSession(owner) || disposed) return;
+    if (!isTauri) { shell.showToast(tr('desktopOnly')); return; }
+    let jobs, password = shell.getPassword();
+    try { jobs = prepareDecryptJobs(rows, requestedIds, password); }
+    catch (error) { shell.showToast(decryptErrorText(String(error.message).split(':')[1])); return; }
+    finally { password = ''; }
+    if (!jobs.length) { shell.hidePassword(); return; }
+    const active = { controller: new AbortController(), total: jobs.length, done: 0 };
+    operation = active;
+    for (const row of rows) row.password = '';
+    shell.hidePassword();
+    let retryFiles = [];
+    const task = center.begin({ label: tr('batchTask', { count: jobs.length }), tool: 'pdf-decrypt',
+      cancel, retry: () => retryFromHistory(retryFiles) });
+    notice = { key: 'batchProgress', params: { current: 0, total: jobs.length, name: '' } };
+    render();
+    try {
+      const results = await runDecryptBatch(jobs, {
+        signal: active.controller.signal,
+        prepare: async () => {
+          const directory = await getOutputDir('PDF_Decrypt');
+          if (typeof directory !== 'string' || !directory) throw new Error('pdf-decrypt:output-path');
+          return directory;
+        },
+        sizeOf: async file => {
+          if (!file.path) throw new Error('pdf-decrypt:invalid-pdf');
+          return Number(await invoke('get_file_size', { path: file.path }));
+        },
+        decrypt: (file, password, outputDir) => invoke('decrypt_pdf', { inputPath: file.path, password, outputDir }),
+        onUpdate: (result, done, total) => {
+          const row = rows.find(row => row.id === result.id);
+          if (row) Object.assign(row, { status: result.status, error: result.error, outputPath: result.outputPath });
+          active.done = done;
+          const params = { current: Math.min(done + (result.status === 'running' ? 1 : 0), total), total, name: row?.file.name || '' };
+          task.progress(done / total * 100, tr('batchProgress', params));
+          if (!active.controller.signal.aborted) notice = { key: 'batchProgress', params };
+          render();
         }
-        window.alert(t('common.errorOccurred', { error: info.message }));
+      });
+      const outputs = results.filter(row => row.status === 'succeeded').map(row => row.outputPath);
+      const failed = results.filter(row => row.status === 'failed').length;
+      const cancelled = results.filter(row => row.status === 'cancelled').length;
+      const ids = new Set(results.filter(row => row.status !== 'succeeded').map(row => row.id));
+      // Retry actions retain only source metadata, never rows, jobs or credentials.
+      retryFiles = rows.filter(row => ids.has(row.id)).map(row => ({ name: row.file.name, path: row.file.path, size: row.file.size || 0 }));
+      const params = { success: outputs.length, failed, cancelled };
+      notice = { key: 'batchSummary', params };
+      const message = tr('batchSummary', params);
+      if (failed || cancelled) task.fail(Object.assign(new Error(message), cancelled ? { name: 'AbortError' } : {}), { outputs });
+      else task.finish({ outputs, message });
+    } catch {
+      const selected = new Set(jobs.map(job => job.id));
+      const selectedRows = rows.filter(row => selected.has(row.id));
+      for (const row of selectedRows) if (row.status !== 'succeeded') {
+        row.status = active.controller.signal.aborted ? 'cancelled' : 'failed';
+        row.error = active.controller.signal.aborted ? '' : 'decryption-failed';
       }
+      retryFiles = selectedRows.filter(row => row.status !== 'succeeded').map(row => ({ name: row.file.name, path: row.file.path, size: row.file.size || 0 }));
+      const outputs = selectedRows.filter(row => row.outputPath).map(row => row.outputPath);
+      task.fail(new Error(tr('decryptFailed')), { outputs });
+      notice = { key: 'decryptFailed', error: true };
     } finally {
-      password = '\0'.repeat(password.length);
-      password = '';
-      if (activeOperation === operation) {
-        activeOperation = null;
-        shell.setProcessing(false);
-      }
+      clearDecryptJobs(jobs);
+      if (operation === active) operation = null;
+      render();
     }
-    if (reopenPassword && shell.isOpenSession(owner)) shell.showPassword();
   }
-
-  async function loadDemo(owner) {
-    if (!isDemo || shell.getFile()) return;
-    const bytes = new TextEncoder().encode('%PDF-1.4\n% ToolKnit PDF decrypt fixture\n%%EOF');
-    if (!shell.isOpenSession(owner)) return;
-    shell.setFileList([{
-      name: 'toolknit-pdf-decrypt-demo.pdf',
-      size: bytes.length,
-      arrayBuffer: async () => bytes.slice().buffer
-    }], owner);
-  }
-
-  shell.setActions({ confirm, afterOpen: loadDemo });
-
-  async function close() {
-    return shell.close();
-  }
-
+  shell.setActions({
+    selectFiles: add, getFiles: () => rows.map(row => row.file), renderFiles: view.render,
+    clearFiles, requestProcess: () => requestRun(), confirm,
+    afterOpen(owner) {
+      if (isDemo && !rows.length) shell.setFileList([{ name: 'toolknit-pdf-decrypt-demo.pdf', size: 64 }], owner);
+    }
+  });
+  applyTranslations();
+  scope.use(onLangChange(render));
+  scope.event(window, 'beforeunload', () => { void dispose(); }, { once: true });
   async function dispose() {
     if (disposed) return;
     disposed = true;
-    if (activeOperation) activeOperation.silent = true;
-    activeOperation = null;
+    operation?.controller.abort();
     await shell.dispose();
+    view.dispose(); scope.dispose();
   }
-
-  return { open: shell.open, close, dispose };
+  return { open: shell.open, close: shell.close, dispose };
 }
