@@ -83,7 +83,7 @@ assert.match(core, /no-text-layer/);
 assert.doesNotMatch(core, /document|window|@tauri-apps/);
 
 assert.match(styles, /html:root\[data-theme\] \.pdf-text-extract-v2/);
-assert.match(styles, /html:root\[data-theme\][\s\S]*--pdf-text-surface: #ffffff/);
+assert.match(styles, /html:root\[data-theme\] \.pdf-text-extract-v2\s*\{[^}]*--pdf-text-surface:\s*var\(--tk-on-accent\)/);
 assert.match(styles, /@media \(max-height: 520px\)/);
 assert.match(styles, /@media \(max-width: 980px\)/);
 

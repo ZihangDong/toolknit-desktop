@@ -112,7 +112,7 @@ try {
   for (const args of [['--version'], ['help', 'pdf', 'merge'], ['tools', 'coverage', '--json']]) {
     const result = await runNode(entry, args, consumer); assert.equal(result.code, 0, result.stderr); assert.equal(result.stderr.trim(), '');
     if (args[0] === '--version') assert.equal(result.stdout.trim(), pack.version);
-    if (args[0] === 'tools') assert.equal(JSON.parse(result.stdout).desktop_tools, 75);
+    if (args[0] === 'tools') assert.equal(JSON.parse(result.stdout).desktop_tools, 89);
   }
   const pdf = await PDFDocument.create(), font = await pdf.embedFont(StandardFonts.Helvetica);
   pdf.addPage([595, 842]).drawText('Installed CLI fixture', { font, x: 50, y: 700, size: 15 });

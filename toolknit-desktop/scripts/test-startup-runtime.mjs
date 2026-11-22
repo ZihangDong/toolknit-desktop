@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { createStartupRuntime } from '../src/app/startup-runtime.js';
 import { createFontSettingsRuntime } from '../src/app/font-settings-runtime.js';
+import viteConfig from '../vite.config.js';
 
 const deferred = () => {
   let resolve;
@@ -105,21 +106,38 @@ assert.equal(fontsSettled, true);
 settings.dispose();
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-const bootstrap = html.match(/<script data-tk-theme-bootstrap>([\s\S]*?)<\/script>/)?.[1];
-for (const theme of ['light', 'dark']) {
-  const root = { dataset: {} };
+const config = await viteConfig({ mode: 'production' });
+const plugin = config.plugins.find(({ name }) => name === 'toolknit-theme-bootstrap');
+const transformed = plugin.transformIndexHtml.handler(html);
+const bootstraps = [...transformed.matchAll(/<script data-tk-(appearance|theme)-bootstrap>([\s\S]*?)<\/script>/g)];
+assert.deepEqual(bootstraps.map(([, type]) => type), ['appearance', 'theme']);
+function loadBootstraps(search, theme) {
+  const attributes = new Map();
+  const root = {
+    dataset: {},
+    hasAttribute: key => attributes.has(key),
+    setAttribute: (key, value) => attributes.set(key, value),
+  };
   let watchdog;
-  const windowRef = { location: { search: '' }, setTimeout: fn => { watchdog = fn; return 1; } };
-  vm.runInNewContext(bootstrap, { window: windowRef, document: { documentElement: root },
-    localStorage: { getItem: () => theme }, URLSearchParams });
-  assert.equal(root.dataset.theme, theme);
+  const window = {
+    location: { search },
+    localStorage: { getItem: key => key === 'toolknit.theme.v3' ? theme : null },
+    setTimeout: fn => { watchdog = fn; return 1; },
+  };
+  for (const [, , script] of bootstraps) {
+    vm.runInNewContext(script, { window, document: { documentElement: root }, URLSearchParams });
+  }
+  return { root, attributes, watchdog };
+}
+for (const theme of ['light', 'dark']) {
+  const { root, attributes, watchdog } = loadBootstraps('', theme);
+  assert.equal(attributes.get('data-theme'), theme);
   assert.equal(root.dataset.tkStartup, 'loading');
   assert.equal(typeof watchdog, 'function', 'a failed main module still has a recovery path');
 }
-const picker = { dataset: {} };
-vm.runInNewContext(bootstrap, { window: { location: { search: '?screen-picker=1' } },
-  document: { documentElement: picker }, URLSearchParams });
-assert.equal(picker.dataset.tkStartup, undefined, 'screen capture must never display the home cover');
+const picker = loadBootstraps('?screen-picker=1', 'dark');
+assert.equal(picker.root.dataset.tkStartup, undefined, 'screen capture must never display the home cover');
+assert.equal(picker.attributes.has('data-theme'), false);
 for (const language of ['zh', 'en']) {
   const locale = JSON.parse(await readFile(new URL(`../src/locales/${language}.json`, import.meta.url)));
   assert.ok(locale.app.loading);

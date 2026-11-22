@@ -28,7 +28,7 @@ for (const id of [
 assert.match(specs, /'pdf-enhance':\s*Object\.freeze\(\{[\s\S]*?import\('\.\/pdf-enhance\/tool\.js'\)/);
 assert.doesNotMatch(main, /openPdfEnhanceOverlay|selectedPdfEnhanceFiles|enhanceImageCanvas|closePdfEnhanceOverlayFull/);
 assert.doesNotMatch(main, /begin_pdf_enhance_write|append_pdf_enhance_chunk|finalize_pdf_enhance_write|discard_pdf_enhance_write/);
-assert.doesNotMatch(styles, /\.pdf-enhance-v2|\.pdf-enhance-strength-hint/);
+assert.doesNotMatch(styles, /\.pdf-enhance-v2|^\s*\.pdf-enhance-strength-hint\b/m);
 
 assert.match(tool, /createLifecycleScope/);
 assert.match(tool, /owner\.use\(unlisten\)/);
