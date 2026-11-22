@@ -29,6 +29,9 @@ try {
     }
     if ((Get-Item -LiteralPath $archive).Length -gt 800MB) { throw 'Office kernel archive is too large.' }
     $pin = Get-Content -Raw -LiteralPath (Join-Path $root 'office-kernel/runtime.lock.json') | ConvertFrom-Json
+    if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne $pin.archiveSha256) {
+        throw 'Office kernel archive SHA-256 mismatch.'
+    }
     $zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path -LiteralPath $archive).Path)
     try {
         $manifestEntry = $zip.GetEntry('manifest.json')

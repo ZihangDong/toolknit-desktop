@@ -60,7 +60,7 @@ MCP/Agent 说明见：
 Set-Location toolknit-desktop\toolknit-desktop
 npm ci
 npm run build
-npm run tauri build
+npm run build:release-package
 npm run test:native-loader
 ```
 

@@ -207,6 +207,19 @@
     },
     "remaining": ["Physically disconnect removable media during a scan"]
   },
+  "reviewOfficeDesktop": {
+    "status": "passed",
+    "buildCommit": "48d805138d4062af6aebb6873c6269163367e9e0",
+    "installerSha256": "39a8c467375aa0098e45d5d9b1a31b5ff812a80a8764c856532b6de464d693b1",
+    "installedExecutableSha256": "6d067fb1c56974dc3ae3cf4aed7445cd5ee5ec32014022ae68153fab9f940993",
+    "kernelId": "toolknit-lo-26.2.5.2-cjk.7-dev",
+    "kernelArchiveSha256": "93854c98dbcfb646825a348486f65ef6043bfcaf683920ef9f1136ad1f17ab03",
+    "kernelFilesVerified": 4667,
+    "environment": "Disconnected Windows 11 Hyper-V guest with no system LibreOffice. The installed Office manifest and soffice.com matched the runtime lock.",
+    "verification": "Selected the Chinese fixture via the native picker and converted it from the installed Word to PDF page. The installed PDF editor rendered the Chinese title and body on page 4. qpdf found no stream or syntax errors. PDF.js independently extracted both Chinese text runs and verified all 71 pages. The original input hash matched. The guest reported missing Noto Sans SC.",
+    "inputSha256": "4dacc67bc12306cec0ef27be2fc7064ac7f380f71e37f3f4b9e0fc49b631cc05",
+    "pdfSha256": "bf63e9548ce5b0f81cbba3aef982c3f6877c48a4571aa80b11055eebe36d8cc7"
+  },
   "releaseGate": {
     "command": "npm run test:security-release",
     "status": "passed",

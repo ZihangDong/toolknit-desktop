@@ -127,7 +127,7 @@ npm run build:release-package
 
 打包脚本要求完整构建及原生测试回执、与实际 Writer 模块匹配的通用 PDF 回归。`office-kernel/runtime.lock.json` 固定清单与核心文件哈希；生成的大型运行时目录不提交。已有暂存目录必须先验证，脚本不会覆盖。桌面打包前使用 Node 校验全部文件并清理本地 QA 产生的 Python 缓存，发现其他未声明文件立即失败。
 
-Windows 正式入口为 `npm run build:release-package`。干净检出可使用已通过上文校验的内核 ZIP，ZIP 根目录包含 `manifest.json`、`runtime/` 和 `source/`。本机通过 `TOOLKNIT_OFFICE_KERNEL_ARCHIVE` 指定 ZIP。GitHub Release 工作流从仓库变量 `TOOLKNIT_OFFICE_KERNEL_URL` 指定的 HTTPS 地址下载同一内核。准备脚本先校验 ZIP 中的清单摘要与逐项大小，再核验全部文件哈希并安装到打包资源目录。更新内核时需同时更新固定清单与归档。
+Windows 正式入口为 `npm run build:release-package`。干净检出需要与 `runtime.lock.json` 中 `archiveSha256` 匹配的内核 ZIP，ZIP 根目录包含 `manifest.json`、`runtime/` 和 `source/`。本机通过 `TOOLKNIT_OFFICE_KERNEL_ARCHIVE` 指定该 ZIP。GitHub Release 和签名测试工作流从打包仓库的 Actions 变量 `TOOLKNIT_OFFICE_KERNEL_URL` 下载同一 ZIP，地址须为 runner 可直接下载的 HTTPS URL。准备脚本先校验归档摘要，再核验清单和全部文件，最后安装到打包资源目录。更新内核时需同时更新归档和锁定记录。
 
 安装后普通 exe 从自身旁的 `resources/office-kernel/runtime/program/soffice.com` 读取内核。CLI/MCP 在源码环境及常见桌面安装位置发现同一随包内核，使用相同固定清单校验。CLI npm 包只携带校验代码和清单，不重复携带大型内核。版本和验证记录见 [默认内核替换记录](deployment-cjk7-20261117.md)。
 

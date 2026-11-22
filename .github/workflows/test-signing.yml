@@ -64,6 +64,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare locked Office kernel
+        env:
+          TOOLKNIT_OFFICE_KERNEL_URL: ${{ vars.TOOLKNIT_OFFICE_KERNEL_URL }}
+        run: npm run prepare:release-office-kernel
+
       - name: Build frontend
         run: npm run build
 
@@ -96,7 +101,7 @@ jobs:
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml -- --test-threads=1
 
       - name: Build production-configured NSIS installer
-        run: npm run tauri -- build --bundles nsis -- --locked
+        run: npm run build:release-package -- --bundles nsis -- --locked
 
       - name: Prepare unsigned test artifact
         id: installer
