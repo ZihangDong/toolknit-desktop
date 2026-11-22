@@ -161,7 +161,20 @@
       "nativeTranscription": "Passed with synthetic WAV and WebM, including live PCM with automatic language detection, timestamps, job cancellation, duration limits and regression coverage for legacy transcription.",
       "physicalDevicePreflight": "Windows enumerated the K02BS capture endpoint and its USB device parent. The isolated app was opened at Meeting Recording & Minutes for the operator to start the physical recording."
     },
-    "remaining": ["Physical microphone permission, unplugging and recording in the background", "Live transcription timing from a microphone", "Segmented requests to a real AI provider with dedicated test credentials"]
+    "operatorMicrophoneCheck": "On a second Windows device, the operator reported that the recording played and the app displayed a disconnection notice when the microphone was unplugged. Windows build and microphone model were not reported.",
+    "navigationFix": {
+      "sourceCommit": "10125d2",
+      "installerSha256": "3ece89890964d30dfc820007323604cd580a7de6c862c5940e828d190b7715c5",
+      "installerBytes": 219054228,
+      "authenticode": "NotSigned",
+      "installedExecutableSha256": "c7b46cca2c61153981f9f651f394fc5a15f5799c675f26caf480ccc294928ff3",
+      "browserChecksPassed": 79,
+      "releaseScriptsPassed": 116,
+      "regression": "Before the fix, stopping a recording and immediately returning left the shared tool registry unable to open Disk Space Analysis. After the fix, Disk Space Analysis and Word to PDF opened after leaving a saved draft, including after a local draft write failure and retry. Reopening the meeting preserved the transcript and playable audio.",
+      "installedScope": "The unsigned x64 NSIS package replaced the existing 3.4.0 installation in the offline Windows 11 Hyper-V guest and launched to the tool library. The installed Office executable was present under resources/office-kernel/runtime/program. The release build verified 4667 files in the pinned Office kernel.",
+      "remaining": "Repeat the stop, return and tool navigation sequence with the new package on the operator's Windows device."
+    },
+    "remaining": ["Recording in the background and permission prompt behavior on a fresh microphone profile", "Live transcription timing from a microphone", "Segmented requests to a real AI provider with dedicated test credentials"]
   },
   "ocr": {
     "task": "TK-010-C",
