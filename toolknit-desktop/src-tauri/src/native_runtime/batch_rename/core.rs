@@ -2,7 +2,6 @@ use std::{
     collections::HashSet,
     fs,
     path::{Path, PathBuf},
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 #[derive(Clone, Debug)]
@@ -11,11 +10,11 @@ pub struct RenameEntry {
     pub new_name: String,
 }
 
-fn key(path: &Path) -> String {
+pub(super) fn key(path: &Path) -> String {
     path.to_string_lossy().to_lowercase()
 }
 
-fn valid_name(name: &str) -> bool {
+pub(super) fn valid_name(name: &str) -> bool {
     let stem = name.split('.').next().unwrap_or("").to_uppercase();
     let reserved = ["CON", "PRN", "AUX", "NUL", "CLOCK$"].contains(&stem.as_str())
         || (stem.starts_with("COM") || stem.starts_with("LPT"))
@@ -68,9 +67,27 @@ pub fn validate(entries: &[RenameEntry]) -> Result<Vec<(PathBuf, PathBuf)>, Stri
     Ok(plan)
 }
 
-// A hard link creates the target atomically with no replacement, even when another
-// application creates a conflicting filename after validation. All moves stay in one folder.
-fn move_without_replace(source: &Path, target: &Path) -> Result<(), String> {
+#[cfg(windows)]
+pub(super) fn move_without_replace(source: &Path, target: &Path) -> Result<(), String> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows::{
+        core::PCWSTR,
+        Win32::Storage::FileSystem::{MoveFileExW, MOVEFILE_WRITE_THROUGH},
+    };
+    let from: Vec<u16> = source.as_os_str().encode_wide().chain([0]).collect();
+    let to: Vec<u16> = target.as_os_str().encode_wide().chain([0]).collect();
+    unsafe {
+        MoveFileExW(
+            PCWSTR(from.as_ptr()),
+            PCWSTR(to.as_ptr()),
+            MOVEFILE_WRITE_THROUGH,
+        )
+    }
+    .map_err(|error| format!("{} → {}: {error}", source.display(), target.display()))
+}
+
+#[cfg(not(windows))]
+pub(super) fn move_without_replace(source: &Path, target: &Path) -> Result<(), String> {
     fs::hard_link(source, target)
         .map_err(|e| format!("{} → {}: {e}", source.display(), target.display()))?;
     if let Err(error) = fs::remove_file(source) {
@@ -80,50 +97,13 @@ fn move_without_replace(source: &Path, target: &Path) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(test)]
 pub fn execute(entries: &[RenameEntry]) -> Result<Vec<RenameEntry>, String> {
+    let folder = Path::new(&entries.first().ok_or("Empty batch")?.path)
+        .parent()
+        .unwrap();
     let plan = validate(entries)?;
-    let stamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_nanos();
-    let stages: Vec<PathBuf> = plan
-        .iter()
-        .enumerate()
-        .map(|(i, (source, _))| {
-            source.with_file_name(format!(
-                ".toolknit-rename-{}-{stamp}-{i}",
-                std::process::id()
-            ))
-        })
-        .collect();
-    let mut staged = 0;
-    for (i, (source, _)) in plan.iter().enumerate() {
-        if let Err(error) = move_without_replace(source, &stages[i]) {
-            let recovery = restore(&plan, &stages, staged);
-            return Err(format!("{error}{recovery}"));
-        }
-        staged += 1;
-    }
-    for (i, (_, target)) in plan.iter().enumerate() {
-        // Keep staging links until every destination is published, so rollback
-        // can restore a cycle (a→b, b→a) without losing either file.
-        if let Err(error) = fs::hard_link(&stages[i], target) {
-            let mut recovery = String::new();
-            for (_, published) in plan.iter().take(i) {
-                if let Err(e) = fs::remove_file(published) {
-                    recovery.push_str(&format!("; Cannot remove {}: {e}", published.display()));
-                }
-            }
-            recovery.push_str(&restore(&plan, &stages, staged));
-            return Err(format!(
-                "Cannot publish {}: {error}{recovery}",
-                target.display()
-            ));
-        }
-    }
-    for stage in &stages {
-        let _ = fs::remove_file(stage);
-    }
+    super::journal::run(folder, plan.clone(), false)?;
     Ok(plan
         .into_iter()
         .map(|(source, target)| RenameEntry {
@@ -133,22 +113,10 @@ pub fn execute(entries: &[RenameEntry]) -> Result<Vec<RenameEntry>, String> {
         .collect())
 }
 
-fn restore(plan: &[(PathBuf, PathBuf)], stages: &[PathBuf], count: usize) -> String {
-    let mut errors = String::new();
-    for i in (0..count).rev() {
-        if let Err(error) = move_without_replace(&stages[i], &plan[i].0) {
-            errors.push_str(&format!(
-                "; Recovery file retained at {}: {error}",
-                stages[i].display()
-            ));
-        }
-    }
-    errors
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
     fn fixture() -> PathBuf {
         let root = std::env::temp_dir().join(format!(
             "toolknit-rename-test-{}-{}",

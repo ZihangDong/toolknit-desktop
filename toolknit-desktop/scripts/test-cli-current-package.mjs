@@ -86,7 +86,7 @@ try {
   await writeFile(path.join(consumer, 'package.json'), JSON.stringify({ private: true, name: 'toolknit-current-consumer' }));
   run(process.execPath, [npmCli, 'install', '--ignore-scripts', '--no-audit', '--no-fund', '--registry=https://registry.npmjs.org', tarball], consumer, true);
   const dependencyTree = JSON.parse(run(process.execPath, [npmCli, 'ls', '--all', '--json'], consumer));
-  assert.ok(!dependencyTree.problems?.length, 'Installed dependency tree must be complete.');
+  assert.deepEqual(dependencyTree.problems ?? [], [], 'Installed dependency tree must be complete.');
   const audit = JSON.parse(run(process.execPath, [npmCli, 'audit', '--omit=dev', '--json', '--registry=https://registry.npmjs.org'], consumer));
   assert.equal(audit.metadata.vulnerabilities.total, 0, 'Audit the actual consumer install, not only the source lockfile.');
   run(process.execPath, [path.join(snapshot, 'scripts/test-office-archive-dependencies.mjs'), path.join(consumer, 'node_modules/@toolknit/cli')], consumer, true);

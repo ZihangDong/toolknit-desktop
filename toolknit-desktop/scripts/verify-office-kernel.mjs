@@ -4,7 +4,7 @@ import { validateBundledOffice } from '../cli/lib/bundled-office-runtime.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const pin = JSON.parse(await readFile(path.join(root, 'office-kernel/runtime.lock.json'), 'utf8'));
-const bundle = path.join(root, 'src-tauri/resources/office-kernel');
+const bundle = process.argv[2] ? path.resolve(process.argv[2]) : path.join(root, 'src-tauri/resources/office-kernel');
 const result = await validateBundledOffice(bundle, pin, true);
 const manifest = JSON.parse(await readFile(path.join(bundle, 'manifest.json'), 'utf8'));
 async function checkContents(directory) {

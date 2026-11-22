@@ -1,4 +1,5 @@
 mod core;
+mod journal;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::Manager;
@@ -64,69 +65,31 @@ fn rename_in_folder(
     preview: bool,
 ) -> Result<usize, String> {
     let plan: Vec<_> = entries.iter().map(core::RenameEntry::from).collect();
-    core::validate(&plan)?;
+    let plan = core::validate(&plan)?;
     if preview {
+        journal::preflight(&plan)?;
         return Ok(entries.len());
     }
-    std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
-    let journal = folder.join("batch-rename-undo.json");
-    // Reserve a writable journal before changing user files.
-    let pending = folder.join("batch-rename-pending.json");
-    let undo: Vec<_> = plan
-        .iter()
-        .map(|entry| {
-            let source = std::path::Path::new(&entry.path);
-            let (bytes, modified_ms) = fingerprint(&entry.path)?;
-            Ok(UndoEntry {
-                rename: Entry {
-                    path: source
-                        .with_file_name(&entry.new_name)
-                        .to_string_lossy()
-                        .into_owned(),
-                    new_name: source.file_name().unwrap().to_string_lossy().into_owned(),
-                },
-                bytes,
-                modified_ms,
-            })
-        })
-        .collect::<Result<Vec<_>, String>>()?;
-    use std::io::Write;
-    let data = serde_json::to_vec(&UndoJournal { entries: undo }).map_err(|e| e.to_string())?;
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&pending)
-        .map_err(|e| {
-            format!(
-                "Cannot create undo journal (check {}): {e}",
-                pending.display()
-            )
-        })?;
-    if let Err(error) = file.write_all(&data).and_then(|_| file.sync_all()) {
-        drop(file);
-        let _ = std::fs::remove_file(&pending);
-        return Err(error.to_string());
-    }
-    drop(file);
-    match core::execute(&plan) {
-        Ok(_) => {
-            // copy retains the recovery manifest if saving the undo slot fails.
-            std::fs::copy(&pending, &journal).map_err(|e| {
-                format!(
-                    "Renamed successfully; recovery manifest: {} ({e})",
-                    pending.display()
-                )
-            })?;
-            std::fs::remove_file(&pending).map_err(|e| e.to_string())?;
-            Ok(entries.len())
+    journal::run(folder, plan, false)?;
+    Ok(entries.len())
+}
+
+#[tauri::command]
+pub(crate) async fn recover_batch_rename(
+    app: tauri::AppHandle,
+    preview: bool,
+) -> Result<usize, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let _guard = LOCK.lock().map_err(|e| e.to_string())?;
+        let folder = app.path().app_data_dir().map_err(|e| e.to_string())?;
+        if preview {
+            journal::status(&folder)
+        } else {
+            journal::recover(&folder)
         }
-        Err(error) => {
-            if !error.contains("Recovery file retained") {
-                let _ = std::fs::remove_file(pending);
-            }
-            Err(error)
-        }
-    }
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -144,7 +107,7 @@ pub(crate) async fn undo_batch_rename(
 }
 
 fn undo_in_folder(folder: &std::path::Path, preview: bool) -> Result<usize, String> {
-    let journal = folder.join("batch-rename-undo.json");
+    let journal = folder.join(journal::UNDO);
     if !journal.exists() {
         return Ok(0);
     }
@@ -166,8 +129,7 @@ fn undo_in_folder(folder: &std::path::Path, preview: bool) -> Result<usize, Stri
             ));
         }
     }
-    core::execute(&plan)?;
-    std::fs::remove_file(journal).map_err(|e| e.to_string())?;
+    journal::run(folder, core::validate(&plan)?, true)?;
     Ok(plan.len())
 }
 

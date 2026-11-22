@@ -18,7 +18,7 @@ export function initProductivityTool({ overlay, isTauri = false, getOutputDir, r
   const renameForm = q('[data-rename-form]'), flowForm = q('[data-workflow-form]');
   const field = (form, name) => form.elements.namedItem(name);
   const button = action => q(`[data-action="${action}"]`);
-  let renameFiles = [], flowFiles = [], plan = [], tab = 'batch-rename', busyRename = false, undoCount = 0;
+  let renameFiles = [], flowFiles = [], plan = [], tab = 'batch-rename', busyRename = false, undoCount = 0, recoveryCount = 0, recoveryError = '';
   let customPresets = [], flowRunning = false, disposed = false, unlistenDrop;
   function close() { if (busyRename) return false; modal.close(); return true; }
   const modal = createModalSession({ root: overlay, background: overlay.ownerDocument.querySelector('.app'),
@@ -74,8 +74,10 @@ export function initProductivityTool({ overlay, isTauri = false, getOutputDir, r
     q('[data-rename-empty]').hidden = renameFiles.length > 0;
     q('[data-rename-summary]').textContent = error || (renameFiles.length ? local(`${renameFiles.length} 个文件，${count} 个名称将修改`, `${renameFiles.length} files, ${count} names will change`) : '');
     q('[data-rename-summary]').classList.toggle('productivity-error', !!error || plan.some(row => row.error));
-    button('rename').disabled = busyRename || !isTauri || !count || !!error || plan.some(row => row.error);
-    button('undo').disabled = busyRename || !isTauri || !undoCount;
+    button('rename').disabled = busyRename || !isTauri || !count || !!error || !!recoveryError || !!recoveryCount || plan.some(row => row.error);
+    button('undo').disabled = busyRename || !isTauri || !undoCount || !!recoveryError || !!recoveryCount;
+    button('recover-rename').hidden = !recoveryCount;
+    button('recover-rename').disabled = busyRename;
     for (const control of renameForm.elements) if (control.tagName !== 'BUTTON') control.disabled = busyRename;
     ['pick-rename', 'sort-rename', 'clear-rename'].forEach(name => { button(name).disabled = busyRename; });
   }
@@ -101,7 +103,28 @@ export function initProductivityTool({ overlay, isTauri = false, getOutputDir, r
   async function refreshUndo() {
     if (!isTauri) return;
     try { undoCount = await invoke('undo_batch_rename', { preview: true }); } catch { undoCount = 0; }
+    try {
+      recoveryCount = await invoke('recover_batch_rename', { preview: true });
+      recoveryError = '';
+    } catch (error) { recoveryError = String(error.message || error); }
+    if (!disposed && tab === 'batch-rename' && (recoveryCount || recoveryError)) {
+      message(recoveryError || tr('renameInterrupted'), true);
+    }
     if (!disposed) renderRename();
+  }
+  async function recoverRename() {
+    if (busyRename || !recoveryCount) return;
+    busyRename = true; renderRename();
+    try {
+      await invoke('recover_batch_rename', { preview: false });
+      await refreshUndo();
+      message(tr('renameRecovered'));
+    } catch (error) { message(error.message || error, true); }
+    finally { busyRename = false; if (!disposed) renderRename(); }
+  }
+  function renameFailure(error) {
+    const detail = String(error.message || error);
+    message(detail === 'batch-rename:requires-ntfs' ? tr('renameRequiresNtfs') : detail, true);
   }
   async function applyRename() {
     if (button('rename').disabled) return;
@@ -116,7 +139,7 @@ export function initProductivityTool({ overlay, isTauri = false, getOutputDir, r
       task.finish({ outputs }); renameFiles = [];
       message(local('重命名完成，可撤销最近一次操作。', 'Files renamed. You can undo the most recent batch.'));
       await refreshUndo();
-    } catch (error) { task.fail(error); message(error.message || error, true); }
+    } catch (error) { task.fail(error); await refreshUndo(); renameFailure(error); }
     finally { busyRename = false; if (!disposed) renderRename(); }
   }
   async function undo() {
@@ -127,7 +150,7 @@ export function initProductivityTool({ overlay, isTauri = false, getOutputDir, r
       const count = await invoke('undo_batch_rename', { preview: false }); task.finish();
       message(local(`已恢复 ${count} 个文件的原名称。`, `Restored ${count} original filenames.`));
       renameFiles = []; await refreshUndo();
-    } catch (error) { task.fail(error); message(error.message || error, true); }
+    } catch (error) { task.fail(error); await refreshUndo(); renameFailure(error); }
     finally { busyRename = false; if (!disposed) renderRename(); }
   }
   function renderTasks() {
@@ -248,6 +271,7 @@ export function initProductivityTool({ overlay, isTauri = false, getOutputDir, r
   }
   const handlers = {
     'pick-rename': () => pick('rename'), 'pick-flow': () => pick('flow'), rename: applyRename, undo,
+    'recover-rename': recoverRename,
     'sort-rename': () => { renameFiles.sort((a, b) => a.name.localeCompare(b.name, getLang() === 'zh' ? 'zh-CN' : 'en', { numeric: true })); renderRename(); },
     'clear-rename': () => { renameFiles = []; renderRename(); }, 'clear-flow': () => { flowFiles = []; renderFlow(); },
     'clear-tasks': () => taskCenter.clearFinished(), 'view-tasks': () => showTab('task-center'), 'run-flow': () => runFlow(), 'save-preset': savePreset,

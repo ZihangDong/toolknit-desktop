@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, open, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, open, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -39,7 +39,58 @@ const server = await createServer({ configFile: false, logLevel: 'error',
 let browser, page, production;
 try {
   await server.listen();
-  browser = await chromium.launch({ headless: true, channel: 'msedge', args: ['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream',`--use-file-for-fake-audio-capture=${wave}`] });
+  const launch = { headless: true, channel: 'msedge', args: ['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream',`--use-file-for-fake-audio-capture=${wave}`] };
+  browser = await chromium.launch(launch);
+  const profile = await mkdtemp(path.join(root, 'draft-profile-'));
+  const fixtureUrl = server.resolvedUrls.local[0] + 'scripts/fixtures/meeting.html?lang=en&native=1';
+  for (const session of ['record', 'restore']) {
+    const context = await chromium.launchPersistentContext(profile, launch);
+    try {
+      const draftPage = context.pages()[0];
+      await draftPage.goto(fixtureUrl);
+      const record = draftPage.locator('#meetingRecord');
+      await record.waitFor();
+      await draftPage.waitForFunction(() => !document.querySelector('#meetingRecord').disabled);
+      if (session === 'record') {
+        await draftPage.locator('#meetingTranscript').fill(text);
+        await draftPage.locator('#meetingName').fill('Persistent meeting');
+        await record.click();
+        await draftPage.waitForFunction(() => meetingTest.streams?.length && !document.querySelector('#meetingPause').disabled);
+        await draftPage.waitForTimeout(1200);
+        await draftPage.locator('#meetingStop').evaluate(button => {
+          button.click();
+          document.querySelector('[data-meeting-close]').click();
+        });
+        await draftPage.waitForFunction(() => document.querySelector('#meetingOverlay').inert);
+        check(true, 'Stop and immediate return saves the draft before the page closes');
+      } else {
+        check(await draftPage.locator('#meetingTranscript').inputValue() === text, 'transcript restored after browser process restart');
+        check(await draftPage.locator('#meetingName').inputValue() === 'Persistent meeting', 'meeting title restored after restart');
+        await draftPage.locator('#meetingAudio').evaluate(async audio => {
+          audio.muted = true;
+          await audio.play();
+        });
+        await draftPage.waitForFunction(() => document.querySelector('#meetingAudio').currentTime > 0);
+        check(true, 'restored recording plays after process restart');
+        await draftPage.evaluate(() => { meetingTest.failSave = true; });
+        await draftPage.locator('#meetingSaveAudio').click();
+        await draftPage.waitForFunction(() => meetingTest.center.list()[0]?.state === 'failed');
+        check(await draftPage.locator('#meetingAudio').isVisible(), 'unwritable export retains the recording');
+        await draftPage.evaluate(() => {
+          const put = IDBObjectStore.prototype.put;
+          IDBObjectStore.prototype.put = () => { throw new DOMException('Injected draft storage failure', 'QuotaExceededError'); };
+          meetingTest.restoreStore = () => { IDBObjectStore.prototype.put = put; };
+        });
+        await draftPage.locator('[data-meeting-close]').click();
+        await draftPage.waitForFunction(() => document.querySelector('#meetingStatus').textContent.includes('could not be saved'));
+        check(await draftPage.locator('#meetingTranscript').inputValue() === text, 'failed local write keeps the tool open with the original text');
+        await draftPage.evaluate(() => meetingTest.restoreStore());
+        await draftPage.locator('[data-meeting-close]').click();
+        await draftPage.waitForFunction(() => document.querySelector('#meetingOverlay').inert);
+        check(true, 'return succeeds after retrying local storage');
+      }
+    } finally { await context.close(); }
+  }
   async function fixture(theme = 'light', lang = 'en', native = false) {
     await page?.close(); page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
     page.on('pageerror', error => report.errors.push(error.message));

@@ -40,6 +40,7 @@ pub fn run() {
             workbench::folder_automation,
             workbench::launcher_settings,
             batch_rename::batch_rename_files,
+            batch_rename::recover_batch_rename,
             batch_rename::undo_batch_rename,
             quick_screenshot::quick_screenshot,
             quick_screenshot::quick_screenshot_image,

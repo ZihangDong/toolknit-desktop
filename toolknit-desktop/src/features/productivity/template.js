@@ -20,6 +20,7 @@ ${toolTopbarMarkup({ tag: 'ToolKnit · <span data-i18n="productivity.workspace">
         <label class="productivity-check"><input name="regex" type="checkbox"><span data-i18n="productivity.regex">使用正则表达式</span></label>
         <button class="productivity-primary" type="button" data-action="rename" disabled data-i18n="productivity.applyRename">应用重命名</button>
         <button type="button" data-action="undo" disabled data-i18n="productivity.undo">撤销上次重命名</button>
+        <button type="button" data-action="recover-rename" hidden data-i18n="productivity.recoverRename"></button>
       </form>
       <div class="productivity-preview"><div class="productivity-toolbar"><h2 data-i18n="productivity.preview">名称预览</h2><div><button type="button" data-action="sort-rename" data-i18n="productivity.sort">按名称排序</button><button type="button" data-action="clear-rename" data-i18n="productivity.clear">清空</button></div></div>
         <p class="productivity-inline" data-rename-summary role="status" aria-live="polite"></p>

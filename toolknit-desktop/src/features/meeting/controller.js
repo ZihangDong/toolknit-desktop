@@ -5,6 +5,7 @@ import { tauriCorePromise, tauriEventPromise, loadTauriDialog } from '../../plat
 import { writeUniqueBinaryFile } from '../../platform/binary-output.js';
 import { getLang, onLangChange, t } from '../../i18n.js';
 import { createMeetingRecorder } from './recorder.js';
+import { createMeetingDraftStore } from './draft.js';
 import { prepareLiveTranscription } from './live-transcription.js';
 import { MEETING_LIMITS, MEETING_MEDIA_EXTENSIONS, meetingClock, meetingError, meetingErrorCode, meetingFileName, meetingMessages,
   meetingTranscript, minutesMarkdown, parseMeetingMinutes, recordingExtension, validateMeetingFile,
@@ -20,6 +21,8 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
   let owner = null, operation = null, recorder = null, source = null, audioUrl = null, activeTab = 'transcript', disposed = false;
   let recording = { state: 'idle', elapsed: 0 }, notice = null, outputs = [], stale = false, sourceMismatch = false;
   let liveCapture = null, liveStatus = '', liveHasText = false;
+  const drafts = isTauri ? createMeetingDraftStore() : null;
+  let draftWrite = Promise.resolve(), draftTimer, draftBusy = false, leaveRequested = false, draftExists = false;
   const currentOwner = token => token && token === owner && !token.disposed;
   const current = op => operation === op && currentOwner(op?.owner) && !op.cancelled;
   const recordingBusy = () => recording.state !== 'idle';
@@ -29,7 +32,7 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
   function renderNotice() { q('Status').textContent = notice ? tr(notice.key, notice.params) : ''; q('Status').classList.toggle('is-error', !!notice?.error); }
   function render() {
     const busy = !!operation, finishing = liveStatus === 'finishing';
-    const locked = busy || recordingBusy() || finishing;
+    const locked = busy || recordingBusy() || finishing || draftBusy;
     q('RecordState').textContent = tr(`recordStates.${recording.state}`); q('Timer').textContent = meetingClock(recording.elapsed);
     for (const id of ['Name','Pick','Reset','Language']) q(id).disabled = locked;
     q('LiveOption').hidden = !isTauri;
@@ -109,6 +112,51 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
     q('Audio').hidden = !blob;
     if (blob) { audioUrl = URL.createObjectURL(blob); q('Audio').src = audioUrl; }
   }
+  function hasDraft() {
+    return drafts && (draftExists || source?.recorded || q('Name').value || q('Transcript').value || q('Minutes').value);
+  }
+  function persistDraft() {
+    clearTimeout(draftTimer);
+    const draft = {
+      audio: source?.recorded ? { blob: source.blob, name: source.name } : null,
+      title: q('Name').value,
+      transcript: q('Transcript').value,
+      minutes: q('Minutes').value,
+      elapsed: recording.elapsed,
+      language: q('Language').value,
+      stale, sourceMismatch
+    };
+    const save = draftWrite.then(() => drafts.save(draft)).then(() => { draftExists = true; });
+    draftWrite = save.catch(() => {});
+    return save;
+  }
+  function queueDraft() {
+    if (!hasDraft()) return;
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => {
+      const token = owner;
+      void persistDraft().catch(() => {
+        if (currentOwner(token)) setNotice('draftWriteFailed', {}, true);
+      });
+    }, 350);
+  }
+  async function finishLeaving() {
+    if (!leaveRequested || recordingBusy() || liveStatus === 'finishing' || draftBusy) return;
+    leaveRequested = false;
+    if (!hasDraft()) { close(true); return; }
+    draftBusy = true;
+    setNotice('draftSaving');
+    render();
+    try {
+      await persistDraft();
+      close(true);
+    } catch {
+      setNotice('draftWriteFailed', {}, true);
+    } finally {
+      draftBusy = false;
+      if (owner) render();
+    }
+  }
   function newRecorder(token) {
     return createMeetingRecorder({ ...recorderOptions,
       async beforeRecord(stream, signal) {
@@ -120,6 +168,7 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
               if (!currentOwner(token) || signal.aborted) return;
               liveStatus = status;
               render();
+              if (status !== 'finishing') void finishLeaving();
             },
             onText(line) {
               if (!currentOwner(token) || signal.aborted) return false;
@@ -130,10 +179,11 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
               const shouldFollow = !liveHasText || transcript.scrollHeight - transcript.scrollTop - transcript.clientHeight < 48;
               transcript.value = next;
               if (shouldFollow) transcript.scrollTop = transcript.scrollHeight;
-                if (!liveHasText) activeTab = 'transcript';
+              if (!liveHasText) activeTab = 'transcript';
               stale = !!q('Minutes').value;
               sourceMismatch = false;
               liveHasText = true;
+              if (source?.recorded && !recordingBusy()) queueDraft();
               render();
               return true;
             },
@@ -151,14 +201,21 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
         if (liveStatus && liveStatus !== 'unavailable') liveStatus = 'incomplete';
         report(error);
         render();
+        void finishLeaving();
       },
       onResult: value => {
         if (!currentOwner(token)) return;
         const name = `meeting-${new Date().toISOString().replace(/[:.]/g, '-')}.${recordingExtension(value.blob.type)}`;
-        source = { blob: value.blob, name, size: value.blob.size }; player(value.blob);
+        source = { blob: value.blob, name, size: value.blob.size, recorded: true }; player(value.blob);
         sourceMismatch = !liveHasText && !!q('Transcript').value.trim();
         recording = { state: 'idle', elapsed: value.elapsed }; render();
         setNotice(value.reason ? `recordEnded.${value.reason}` : 'recordReady');
+        if (drafts) {
+          if (!leaveRequested || liveStatus === 'finishing') void persistDraft().catch(() => {
+            if (currentOwner(token)) setNotice('draftWriteFailed', {}, true);
+          });
+          void finishLeaving();
+        }
       }
     });
   }
@@ -175,6 +232,7 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
       } else { source = { name: file.name, size: file.size, path: file.path, blob: file.path ? null : file }; player(source.blob); sourceMismatch = !!q('Transcript').value.trim(); }
       liveStatus = '';
       setNotice('imported', { name: file.name }); op.task.finish();
+      queueDraft();
     } catch (error) { op.task.fail(error); if (currentOwner(op.owner)) report(error); }
     finally { end(op); }
   }
@@ -243,6 +301,7 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
       q('Transcript').value = meetingTranscript(new TextDecoder().decode(Uint8Array.from(bytes)), subtitles ? 'transcript.srt' : 'transcript.txt', { timestamps: true });
       liveStatus = '';
       stale = !!q('Minutes').value; sourceMismatch = false; activeTab = 'transcript'; setNotice('transcribed'); op.task.finish({ outputs: op.outputs });
+      queueDraft();
     } catch (error) {
       const actual = op.cancelled ? meetingError('cancelled') : error;
       op.task.fail(actual, { outputs: op.outputs }); if (currentOwner(op.owner)) report(actual, 'transcription');
@@ -269,6 +328,7 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
       if (draft.length > MEETING_LIMITS.minutesChars) throw meetingError('minutes-large');
       q('Minutes').value = draft; activeTab = 'minutes'; stale = false;
       op.task.finish(); setNotice('generated');
+      queueDraft();
     } catch (error) {
       const actual = op.cancelled ? meetingError('cancelled') : error;
       op.task.fail(meetingError(meetingErrorCode(actual))); if (currentOwner(op.owner)) report(actual, 'ai');
@@ -295,19 +355,30 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
   for (const [id, fn] of [['Pick', pick], ['SaveAudio', saveAudio], ['Transcribe', transcribe], ['Generate', generate], ['Cancel', cancel],
     ['ExportText', () => exportText('transcript')], ['ExportMinutes', () => exportText('minutes')]]) scope.event(q(id), 'click', () => { void Promise.resolve().then(fn).catch(error => report(error)); });
   scope.event(q('Record'), 'click', () => {
-    if (operation || recordingBusy() || liveStatus === 'finishing') return;
+    if (operation || recordingBusy() || liveStatus === 'finishing' || draftBusy) return;
     liveStatus = ''; liveHasText = false;
     q('Audio').pause();
     void recorder?.start();
   });
   scope.event(q('Pause'), 'click', () => recorder?.pause()); scope.event(q('Stop'), 'click', () => recorder?.stop());
-  scope.event(q('Reset'), 'click', reset);
+  scope.event(q('Reset'), 'click', async () => {
+    if (operation || recordingBusy() || draftBusy) return;
+    clearTimeout(draftTimer);
+    if (drafts) {
+      draftBusy = true; render();
+      try { await draftWrite; await drafts.clear(); draftExists = false; }
+      catch { setNotice('draftWriteFailed', {}, true); return; }
+      finally { draftBusy = false; render(); }
+    }
+    reset();
+  });
   scope.event(q('JumpEditor'), 'click', () => { overlay.querySelector('.meeting-editor').scrollIntoView({ block: 'start' }); q(activeTab === 'transcript' ? 'Transcript' : 'Minutes').focus({ preventScroll: true }); });
   scope.event(q('JumpRecord'), 'click', () => { q('Title').scrollIntoView({ block: 'start' }); q(recordingBusy() ? 'Stop' : 'Record').focus({ preventScroll: true }); });
   scope.event(overlay.querySelector('[data-meeting-close]'), 'click', close);
   scope.event(q('FileInput'), 'change', () => { const file = q('FileInput').files?.[0]; q('FileInput').value = ''; if (file) void importFile(file); });
-  scope.event(q('Transcript'), 'input', () => { stale = !!q('Minutes').value; sourceMismatch = false; render(); });
-  scope.event(q('Minutes'), 'input', render);
+  scope.event(q('Transcript'), 'input', () => { stale = !!q('Minutes').value; sourceMismatch = false; render(); queueDraft(); });
+  for (const id of ['Name', 'Minutes', 'Language']) scope.event(q(id), 'change', queueDraft);
+  for (const id of ['Name', 'Minutes']) scope.event(q(id), 'input', queueDraft);
   scope.event(q('Copy'), 'click', async () => {
     try { await navigator.clipboard.writeText(q(activeTab === 'transcript' ? 'Transcript' : 'Minutes').value); setNotice('copied'); }
     catch { setNotice('error.copy', {}, true); }
@@ -323,14 +394,49 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
   });
   scope.use(onLangChange(translate)); scope.event(window, 'pagehide', () => close(true));
   function open() {
-    if (disposed || close() === false) return false;
+    if (disposed || owner) return false;
     owner = createLifecycleScope(); recorder = newRecorder(owner); modal.open(); reset(); translate(); refreshIcons();
+    draftExists = false;
     if (!isTauri) setNotice('browserMode');
+    else {
+      const token = owner;
+      draftBusy = true; render();
+      void drafts.load().then(draft => {
+        if (!currentOwner(token) || !draft) return;
+        draftExists = true;
+        q('Name').value = draft.title;
+        q('Transcript').value = draft.transcript;
+        q('Minutes').value = draft.minutes;
+        q('Language').value = draft.language;
+        stale = draft.stale;
+        sourceMismatch = draft.sourceMismatch;
+        recording.elapsed = draft.elapsed;
+        if (draft.audio?.blob instanceof Blob) {
+          source = { ...draft.audio, size: draft.audio.blob.size, recorded: true };
+          player(source.blob);
+        }
+        setNotice('draftRestored');
+      }).catch(() => {
+        if (currentOwner(token)) setNotice('draftReadFailed', {}, true);
+      }).finally(() => {
+        if (currentOwner(token)) { draftBusy = false; render(); }
+      });
+    }
   }
   function close(force = false) {
     // DOM click events are not a request to force-close an active microphone.
     const forced = force === true;
-    if (!forced && (recordingBusy() || operation?.committing)) { setNotice(recordingBusy() ? 'stopFirst' : 'saving'); return false; }
+    if (!forced && (draftBusy || operation?.committing)) return false;
+    if (!forced && recordingBusy() && recording.state !== 'stopping') { setNotice('stopFirst'); return false; }
+    if (!forced && drafts && (hasDraft() || recording.state === 'stopping' || liveStatus === 'finishing')) {
+      leaveRequested = true;
+      void finishLeaving();
+      return false;
+    }
+    if (!forced && recordingBusy()) { setNotice('stopFirst'); return false; }
+    clearTimeout(draftTimer);
+    leaveRequested = false;
+    draftBusy = false;
     if (operation && !operation.committing) {
       const pending = operation;
       void cancel(pending).catch(() => {}); pending.cancelled = true; pending.abort.abort();
@@ -344,6 +450,6 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
     q('Name').value = ''; q('Transcript').value = ''; q('Minutes').value = ''; q('Source').textContent = '';
   }
   translate(); refreshIcons();
-  return { open, close, importFile, get busy() { return !!operation || recordingBusy() || liveStatus === 'finishing'; },
+  return { open, close, importFile, get busy() { return !!operation || recordingBusy() || liveStatus === 'finishing' || draftBusy; },
     dispose() { if (disposed) return; close(true); disposed = true; scope.dispose(); } };
 }

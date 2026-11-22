@@ -1,6 +1,6 @@
 use super::*;
 #[path = "cleanup_guard.rs"]
-mod cleanup_guard;
+pub(super) mod cleanup_guard;
 #[path = "duplicate_files.rs"]
 pub(super) mod duplicate_files;
 

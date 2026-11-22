@@ -129,6 +129,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare locked Office kernel
+        env:
+          TOOLKNIT_OFFICE_KERNEL_URL: ${{ vars.TOOLKNIT_OFFICE_KERNEL_URL }}
+        run: npm run prepare:release-office-kernel
+
       - name: Build frontend
         run: npm run build
 
@@ -179,7 +184,7 @@ jobs:
         run: cargo test --locked
 
       - name: Build Tauri
-        run: npm run tauri build
+        run: npm run build:release-package
 
       - name: Generate installer checksum
         shell: pwsh
