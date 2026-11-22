@@ -42,7 +42,7 @@ try {
   const launch = { headless: true, channel: 'msedge', args: ['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream',`--use-file-for-fake-audio-capture=${wave}`] };
   browser = await chromium.launch(launch);
   const profile = await mkdtemp(path.join(root, 'draft-profile-'));
-  const fixtureUrl = server.resolvedUrls.local[0] + 'scripts/fixtures/meeting.html?lang=en&native=1';
+  const fixtureUrl = server.resolvedUrls.local[0] + 'scripts/fixtures/meeting.html?lang=en&native=1&registry=1';
   for (const session of ['record', 'restore']) {
     const context = await chromium.launchPersistentContext(profile, launch);
     try {
@@ -63,6 +63,8 @@ try {
         });
         await draftPage.waitForFunction(() => document.querySelector('#meetingOverlay').inert);
         check(true, 'Stop and immediate return saves the draft before the page closes');
+        check(await draftPage.evaluate(async () => !!await meetingTest.registry.open('disk-space')),
+          'disk analysis opens through the shared registry after leaving a stopped recording');
       } else {
         check(await draftPage.locator('#meetingTranscript').inputValue() === text, 'transcript restored after browser process restart');
         check(await draftPage.locator('#meetingName').inputValue() === 'Persistent meeting', 'meeting title restored after restart');
@@ -88,6 +90,12 @@ try {
         await draftPage.locator('[data-meeting-close]').click();
         await draftPage.waitForFunction(() => document.querySelector('#meetingOverlay').inert);
         check(true, 'return succeeds after retrying local storage');
+        check(await draftPage.evaluate(async () => !!await meetingTest.registry.open('word-to-pdf')),
+          'Word to PDF opens through the shared registry after retrying the meeting draft save');
+        await draftPage.evaluate(() => meetingTest.registry.open('meeting-notes'));
+        await draftPage.waitForFunction(() => !document.querySelector('#meetingRecord').disabled);
+        check(await draftPage.locator('#meetingTranscript').inputValue() === text &&
+          await draftPage.locator('#meetingAudio').isVisible(), 'switching tools preserves the saved transcript and recording');
       }
     } finally { await context.close(); }
   }

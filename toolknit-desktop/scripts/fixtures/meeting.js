@@ -1,5 +1,7 @@
 import markup from '../../src/features/meeting/template.js';
 import { initMeetingTool } from '../../src/features/meeting/tool.js';
+import { createLazyToolRegistry } from '../../src/app/lazy-tool-registry.js';
+import { LAZY_TOOL_SPECS } from '../../src/features/lazy-tools.js';
 import { createTaskCenter } from '../../src/app/task-center.js';
 import { applyTheme } from '../../src/app/theme-palette.js';
 import { setLangWithoutFade } from '../../src/i18n.js';
@@ -76,5 +78,13 @@ const controller = state.controller = initMeetingTool({ overlay: document.getEle
   }
 });
 state.lang = setLangWithoutFade; state.theme = mode => applyTheme(document.documentElement, { mode });
-controller.open();
+if (params.has('registry')) {
+  const { 'meeting-notes': meeting, 'disk-space': disk, 'word-to-pdf': word } = LAZY_TOOL_SPECS;
+  state.registry = createLazyToolRegistry({ specs: {
+    'meeting-notes': { ...meeting, load: async () => ({ initMeetingTool: () => controller }) },
+    'disk-space': disk,
+    'word-to-pdf': word
+  } });
+  await state.registry.open('meeting-notes');
+} else controller.open();
 if (params.has('sample')) { document.getElementById('meetingName').value = 'ToolKnit project review'; document.getElementById('meetingTranscript').value = text; document.getElementById('meetingTranscript').dispatchEvent(new Event('input')); }

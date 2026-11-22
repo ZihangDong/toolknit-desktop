@@ -424,6 +424,8 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
     }
   }
   function close(force = false) {
+    // The shared registry can close this instance again after a deferred return.
+    if (!owner) return true;
     // DOM click events are not a request to force-close an active microphone.
     const forced = force === true;
     if (!forced && (draftBusy || operation?.committing)) return false;
