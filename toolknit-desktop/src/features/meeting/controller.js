@@ -22,7 +22,8 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
   let recording = { state: 'idle', elapsed: 0 }, notice = null, outputs = [], stale = false, sourceMismatch = false;
   let liveCapture = null, liveStatus = '', liveHasText = false;
   const drafts = isTauri ? createMeetingDraftStore() : null;
-  let draftWrite = Promise.resolve(), draftTimer, draftBusy = false, leaveRequested = false, draftExists = false;
+  let draftWrite = Promise.resolve(), draftTimer, draftBusy = false, draftExists = false;
+  let leaveTask = null, resumeLeaving = null, allowReload = false;
   const currentOwner = token => token && token === owner && !token.disposed;
   const current = op => operation === op && currentOwner(op?.owner) && !op.cancelled;
   const recordingBusy = () => recording.state !== 'idle';
@@ -94,6 +95,7 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
       liveCapture = null;
       liveStatus = 'incomplete';
       render();
+      recordingSettled();
       return;
     }
     const op = target; if (!op || op.committing || op.cancelled) return;
@@ -140,22 +142,35 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
       });
     }, 350);
   }
-  async function finishLeaving() {
-    if (!leaveRequested || recordingBusy() || liveStatus === 'finishing' || draftBusy) return;
-    leaveRequested = false;
-    if (!hasDraft()) { close(true); return; }
-    draftBusy = true;
-    setNotice('draftSaving');
-    render();
-    try {
-      await persistDraft();
-      close(true);
-    } catch {
-      setNotice('draftWriteFailed', {}, true);
-    } finally {
-      draftBusy = false;
-      if (owner) render();
-    }
+  function recordingSettled() {
+    if (!recordingBusy() && liveStatus !== 'finishing') resumeLeaving?.();
+  }
+  function prepareToLeave() {
+    if (!owner) return true;
+    if (leaveTask) return leaveTask;
+    if (draftBusy || operation?.committing) return false;
+    if (recordingBusy() && recording.state !== 'stopping') { setNotice('stopFirst'); return false; }
+    const waitingForAudio = recordingBusy() || liveStatus === 'finishing';
+    if (!waitingForAudio && !hasDraft()) return true;
+    const token = owner;
+    leaveTask = (async () => {
+      if (waitingForAudio) await new Promise(resolve => { resumeLeaving = resolve; });
+      if (!currentOwner(token)) return false;
+      if (!hasDraft()) return true;
+      draftBusy = true;
+      setNotice('draftSaving');
+      render();
+      try {
+        await persistDraft();
+        return currentOwner(token);
+      } catch {
+        if (currentOwner(token)) setNotice('draftWriteFailed', {}, true);
+        return false;
+      } finally {
+        if (currentOwner(token)) { draftBusy = false; render(); }
+      }
+    })().finally(() => { leaveTask = null; resumeLeaving = null; });
+    return leaveTask;
   }
   function newRecorder(token) {
     return createMeetingRecorder({ ...recorderOptions,
@@ -168,7 +183,7 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
               if (!currentOwner(token) || signal.aborted) return;
               liveStatus = status;
               render();
-              if (status !== 'finishing') void finishLeaving();
+              recordingSettled();
             },
             onText(line) {
               if (!currentOwner(token) || signal.aborted) return false;
@@ -201,7 +216,7 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
         if (liveStatus && liveStatus !== 'unavailable') liveStatus = 'incomplete';
         report(error);
         render();
-        void finishLeaving();
+        recordingSettled();
       },
       onResult: value => {
         if (!currentOwner(token)) return;
@@ -211,11 +226,11 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
         recording = { state: 'idle', elapsed: value.elapsed }; render();
         setNotice(value.reason ? `recordEnded.${value.reason}` : 'recordReady');
         if (drafts) {
-          if (!leaveRequested || liveStatus === 'finishing') void persistDraft().catch(() => {
+          if (!leaveTask || liveStatus === 'finishing') void persistDraft().catch(() => {
             if (currentOwner(token)) setNotice('draftWriteFailed', {}, true);
           });
-          void finishLeaving();
         }
+        recordingSettled();
       }
     });
   }
@@ -392,7 +407,28 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
     const path = outputs[0]; if (!path) return;
     try { await invoke('open_path', { path }); } catch { setNotice('error.folder', {}, true); }
   });
-  scope.use(onLangChange(translate)); scope.event(window, 'pagehide', () => close(true));
+  scope.use(onLangChange(translate)); scope.event(window, 'pagehide', teardown);
+  if (drafts) {
+    scope.event(window, 'toolknit:tray-quit', event => { event.detail.ready = Promise.resolve(prepareToLeave()); });
+    let reloadTask = null;
+    const reload = () => {
+      reloadTask ??= Promise.resolve(prepareToLeave()).then(ready => {
+        if (!ready) return;
+        allowReload = true;
+        window.location.reload();
+      }).finally(() => { reloadTask = null; });
+    };
+    if (window.navigation) scope.event(window.navigation, 'navigate', event => {
+      if (!owner || allowReload || event.navigationType !== 'reload' || !event.cancelable) return;
+      event.preventDefault();
+      reload();
+    });
+    scope.event(window, 'keydown', event => {
+      if (!owner || (event.key !== 'F5' && !((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r'))) return;
+      event.preventDefault();
+      reload();
+    }, true);
+  }
   function open() {
     if (disposed || owner) return false;
     owner = createLifecycleScope(); recorder = newRecorder(owner); modal.open(); reset(); translate(); refreshIcons();
@@ -423,21 +459,15 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
       });
     }
   }
-  function close(force = false) {
-    // The shared registry can close this instance again after a deferred return.
+  function close() {
+    const ready = prepareToLeave();
+    if (typeof ready === 'boolean') return ready && teardown();
+    return ready.then(saved => saved && teardown());
+  }
+  function teardown() {
     if (!owner) return true;
-    // DOM click events are not a request to force-close an active microphone.
-    const forced = force === true;
-    if (!forced && (draftBusy || operation?.committing)) return false;
-    if (!forced && recordingBusy() && recording.state !== 'stopping') { setNotice('stopFirst'); return false; }
-    if (!forced && drafts && (hasDraft() || recording.state === 'stopping' || liveStatus === 'finishing')) {
-      leaveRequested = true;
-      void finishLeaving();
-      return false;
-    }
-    if (!forced && recordingBusy()) { setNotice('stopFirst'); return false; }
     clearTimeout(draftTimer);
-    leaveRequested = false;
+    resumeLeaving?.();
     draftBusy = false;
     if (operation && !operation.committing) {
       const pending = operation;
@@ -450,8 +480,9 @@ export function createMeetingController({ overlay, isTauri = false, getOutputDir
     player(null); source = null; outputs = [];
     recording = { state: 'idle', elapsed: 0 }; modal.close();
     q('Name').value = ''; q('Transcript').value = ''; q('Minutes').value = ''; q('Source').textContent = '';
+    return true;
   }
   translate(); refreshIcons();
   return { open, close, importFile, get busy() { return !!operation || recordingBusy() || liveStatus === 'finishing' || draftBusy; },
-    dispose() { if (disposed) return; close(true); disposed = true; scope.dispose(); } };
+    dispose() { if (disposed) return; teardown(); disposed = true; scope.dispose(); } };
 }

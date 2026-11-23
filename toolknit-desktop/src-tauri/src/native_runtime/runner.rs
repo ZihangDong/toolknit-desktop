@@ -36,6 +36,7 @@ pub fn run() {
         .manage(TeleprompterRecognitionState::default())
         .manage(MeetingRecognitionState::default())
         .invoke_handler(tauri::generate_handler![
+            complete_tray_quit,
             workbench::document_content_index,
             workbench::folder_automation,
             workbench::launcher_settings,
@@ -285,7 +286,7 @@ pub fn run() {
                         show_main_window(app);
                     }
                     "quit" => {
-                        app.exit(0);
+                        request_tray_quit(app);
                     }
                     "clipboard-toggle" => crate::clipboard_history::tray_toggle(app),
                     "autostart-toggle" => toggle_autostart_tray(app),
@@ -357,6 +358,36 @@ pub fn run() {
                 crate::clipboard_history::on_exit_requested(app, &api, code);
             }
         });
+}
+
+fn request_tray_quit(app: &tauri::AppHandle) {
+    let Some(window) = app.get_webview_window("main") else {
+        app.exit(0);
+        return;
+    };
+    // The webview owns the IndexedDB draft. Wait for its transaction before exiting.
+    if let Err(error) = window.eval(
+        "(() => {
+            const detail = { ready: Promise.resolve(true) };
+            window.dispatchEvent(new CustomEvent('toolknit:tray-quit', { detail }));
+            detail.ready.then(ready => window.__TAURI_INTERNALS__.invoke('complete_tray_quit', { ready }));
+        })()",
+    ) {
+        log::warn!("Unable to request tray exit: {error}");
+        show_main_window(app);
+    }
+}
+
+#[tauri::command]
+fn complete_tray_quit(window: tauri::WebviewWindow, ready: bool) {
+    if window.label() != "main" {
+        return;
+    }
+    if ready {
+        window.app_handle().exit(0);
+    } else {
+        show_main_window(window.app_handle());
+    }
 }
 
 pub(super) fn show_main_window(app: &tauri::AppHandle) {

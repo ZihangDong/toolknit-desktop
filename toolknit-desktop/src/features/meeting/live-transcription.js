@@ -8,6 +8,7 @@ export async function prepareLiveTranscription({ stream, invoke, language, onSta
   const audio = new AudioContext({ sampleRate: SAMPLE_RATE });
   let node, input, sessionId, timer, startupTimer;
   let disposed = false, finished = false, working = false, incomplete = false;
+  let submittedAudio = false;
   const queue = [];
 
   function stopNative(id) {
@@ -47,6 +48,7 @@ export async function prepareLiveTranscription({ stream, invoke, language, onSta
         const { offset, samples } = queue.shift();
         const payload = new Int16Array(Math.max(8000, samples.length));
         payload.set(samples);
+        submittedAudio = true;
         const text = await invoke('transcribe_meeting_segment', { sessionId, samples: Array.from(payload) });
         if (disposed) return;
         if (text?.trim()) {
@@ -58,7 +60,7 @@ export async function prepareLiveTranscription({ stream, invoke, language, onSta
           }
         }
       }
-      if (finished && !node) end(incomplete ? 'incomplete' : 'finished');
+      if (finished && !node) end(incomplete ? 'incomplete' : submittedAudio ? 'finished' : 'no-input');
     } catch {
       end('incomplete');
     } finally {

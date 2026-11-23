@@ -10,10 +10,12 @@ const require = createRequire(process.env.TOOLKNIT_TEST_MODULES ? path.join(proc
 const { chromium } = require('playwright'), run = promisify(execFile), root = path.resolve('tmp/meeting-browser');
 await mkdir(root, { recursive: true }); await mkdir(path.join(root, 'native-outputs'), { recursive: true });
 const speech = path.join(root, 'speech-original.wav'), wave = path.join(root, 'speech.wav');
+const quietWave = path.join(root, 'speech-quiet.wav');
 const script = "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; try {$s.SetOutputToWaveFile($env:TOOLKNIT_MEETING_SPEECH); $s.Speak('This is the ToolKnit meeting. Alice will send the report on Friday. We agreed to ship the patch. Budget approval is still pending.')} finally {$s.Dispose()}";
 await run('powershell.exe', ['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')], { windowsHide: true, env: { ...process.env, TOOLKNIT_MEETING_SPEECH: speech }, timeout: 30000 });
 const ffmpeg = await resolveFfmpeg();
 await run(ffmpeg, ['-hide_banner','-loglevel','error','-y','-i',speech,'-ar','48000','-ac','1','-c:a','pcm_s16le',wave], { windowsHide: true, timeout: 30000 });
+await run(ffmpeg, ['-hide_banner','-loglevel','error','-y','-i',wave,'-af','volume=-72dB','-c:a','pcm_s16le',quietWave], { windowsHide: true, timeout: 30000 });
 const text = 'Alice will send the report on Friday. We agreed to ship the patch. Budget approval is still pending.';
 await writeFile(path.join(root, 'transcript.txt'), text);
 const report = { checks: [], errors: [], audioFiles: [] }, check = (value, message) => { assert.ok(value, message); report.checks.push(message); };
@@ -36,7 +38,7 @@ const server = await createServer({ configFile: false, logLevel: 'error',
       } catch (error) { response.statusCode = 400; response.end(String(error.message)); }
     });
   } }] });
-let browser, page, production;
+let browser, quietBrowser, page, production;
 try {
   await server.listen();
   const launch = { headless: true, channel: 'msedge', args: ['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream',`--use-file-for-fake-audio-capture=${wave}`] };
@@ -83,22 +85,64 @@ try {
           IDBObjectStore.prototype.put = () => { throw new DOMException('Injected draft storage failure', 'QuotaExceededError'); };
           meetingTest.restoreStore = () => { IDBObjectStore.prototype.put = put; };
         });
-        await draftPage.locator('[data-meeting-close]').click();
+        check(!await draftPage.evaluate(async () => !!await meetingTest.registry.open('word-to-pdf')),
+          'failed draft save vetoes a direct tool switch');
         await draftPage.waitForFunction(() => document.querySelector('#meetingStatus').textContent.includes('could not be saved'));
-        check(await draftPage.locator('#meetingTranscript').inputValue() === text, 'failed local write keeps the tool open with the original text');
+        check(await draftPage.locator('#meetingTranscript').inputValue() === text &&
+          await draftPage.evaluate(() => meetingTest.registry.activeToolId === 'meeting-notes'),
+          'failed direct switch keeps the meeting and its text open');
+        const requestQuit = () => {
+          const detail = { ready: Promise.resolve(true) };
+          window.dispatchEvent(new CustomEvent('toolknit:tray-quit', { detail }));
+          return detail.ready;
+        };
+        check(!await draftPage.evaluate(requestQuit), 'failed draft save vetoes the native tray quit request');
+        await draftPage.evaluate(() => {
+          const title = document.getElementById('meetingName');
+          title.value = 'Last edit before reload';
+          title.dispatchEvent(new Event('input'));
+          window.location.reload();
+        });
+        await draftPage.waitForFunction(() => meetingTest.restoreStore &&
+          document.querySelector('#meetingStatus').textContent.includes('could not be saved'));
+        check(await draftPage.locator('#meetingName').inputValue() === 'Last edit before reload',
+          'failed reload preserves the unsaved title in the current document');
         await draftPage.evaluate(() => meetingTest.restoreStore());
-        await draftPage.locator('[data-meeting-close]').click();
-        await draftPage.waitForFunction(() => document.querySelector('#meetingOverlay').inert);
-        check(true, 'return succeeds after retrying local storage');
-        check(await draftPage.evaluate(async () => !!await meetingTest.registry.open('word-to-pdf')),
-          'Word to PDF opens through the shared registry after retrying the meeting draft save');
+        const reloaded = draftPage.waitForEvent('domcontentloaded');
+        await draftPage.evaluate(() => window.location.reload());
+        await reloaded;
+        await draftPage.waitForFunction(() => !document.querySelector('#meetingRecord').disabled);
+        check(await draftPage.locator('#meetingName').inputValue() === 'Last edit before reload',
+          'successful reload restores the last edit');
+        check(await draftPage.evaluate(async () => {
+          const title = document.getElementById('meetingName');
+          title.value = 'Last edit before switching tools';
+          title.dispatchEvent(new Event('input'));
+          return !!await meetingTest.registry.open('word-to-pdf');
+        }),
+          'a direct switch from the meeting opens Word to PDF on the first request');
         await draftPage.evaluate(() => meetingTest.registry.open('meeting-notes'));
         await draftPage.waitForFunction(() => !document.querySelector('#meetingRecord').disabled);
         check(await draftPage.locator('#meetingTranscript').inputValue() === text &&
-          await draftPage.locator('#meetingAudio').isVisible(), 'switching tools preserves the saved transcript and recording');
+          await draftPage.locator('#meetingName').inputValue() === 'Last edit before switching tools' &&
+          await draftPage.locator('#meetingAudio').isVisible(), 'switching tools saves the latest edit and keeps the transcript and recording');
+        await draftPage.evaluate(() => {
+          const title = document.getElementById('meetingName');
+          title.value = 'Last edit before tray quit';
+          title.dispatchEvent(new Event('input'));
+        });
+        check(await draftPage.evaluate(requestQuit), 'tray quit is allowed after committing the last edit');
       }
     } finally { await context.close(); }
   }
+  const restarted = await chromium.launchPersistentContext(profile, launch);
+  try {
+    const draftPage = restarted.pages()[0];
+    await draftPage.goto(fixtureUrl);
+    await draftPage.waitForFunction(() => !document.querySelector('#meetingRecord').disabled);
+    check(await draftPage.locator('#meetingName').inputValue() === 'Last edit before tray quit',
+      'the edit committed for tray quit survives process restart');
+  } finally { await restarted.close(); }
   async function fixture(theme = 'light', lang = 'en', native = false) {
     await page?.close(); page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
     page.on('pageerror', error => report.errors.push(error.message));
@@ -199,6 +243,21 @@ try {
   await page.locator('#meetingStop').click(); await idle();
   check(await page.evaluate(() => meetingTest.calls.some(call => call.command === 'stop_meeting_recognition') &&
     meetingTest.liveSegments.length === 2), 'stop flushes the final window and releases the native recognition session');
+  check(await page.locator('#meetingLiveStatus').textContent() === 'Live transcription ended.',
+    'ordinary input reports a normal transcription end');
+  quietBrowser = await chromium.launch({ ...launch, args: [...launch.args.slice(0, -1), `--use-file-for-fake-audio-capture=${quietWave}`] });
+  const quietPage = await quietBrowser.newPage();
+  await quietPage.goto(fixtureUrl);
+  await quietPage.locator('#meetingLive').check();
+  await quietPage.locator('#meetingRecord').click();
+  await quietPage.waitForFunction(() => !document.querySelector('#meetingPause').disabled);
+  await quietPage.waitForTimeout(8100);
+  await quietPage.locator('#meetingStop').click();
+  await quietPage.waitForFunction(() => document.querySelector('#meetingLiveStatus').textContent.includes('no usable audio'));
+  check(await quietPage.locator('#meetingAudio').isVisible() && await quietPage.locator('#meetingSaveAudio').isEnabled() &&
+    await quietPage.evaluate(() => !meetingTest.calls.some(call => call.command === 'transcribe_meeting_segment')),
+    'quiet recording sends no segment, shows the input warning, and keeps playable audio');
+  await quietBrowser.close(); quietBrowser = null;
   check(await page.locator('#meetingAudio').isVisible(), 'stopped recording has local playback');
   check(await page.evaluate(() => meetingTest.streams.every(stream => stream.getTracks().every(track => track.readyState === 'ended'))), 'stopping releases every microphone track');
   await page.evaluate(() => { meetingTest.failSave = true; }); await page.locator('#meetingSaveAudio').click(); await idle();
@@ -240,4 +299,4 @@ try {
   assert.deepEqual(report.errors, []); report.passed = true;
   console.log(`Meeting browser: ${report.checks.length} checks; real MediaRecorder/FFmpeg audio and production entry passed.`);
 } catch (error) { report.failure = String(error.stack || error); await page?.screenshot({ path: path.join(root,'failure.png') }).catch(() => {}); throw error; }
-finally { await writeFile(path.join(root,'report.json'), JSON.stringify(report,null,2)); await browser?.close(); await server.close(); await production?.close(); }
+finally { await writeFile(path.join(root,'report.json'), JSON.stringify(report,null,2)); await quietBrowser?.close(); await browser?.close(); await server.close(); await production?.close(); }

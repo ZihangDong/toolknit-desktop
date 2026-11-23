@@ -2298,6 +2298,7 @@
         "behind": "Transcription fell behind. Captured text is kept. You can transcribe the full recording afterward.",
         "finishing": "Transcribing the remaining audio…",
         "finished": "Live transcription ended.",
+        "no-input": "Live transcription detected no usable audio. Check the default microphone and input volume. Your recording is kept.",
         "unavailable": "Live transcription is unavailable. Check the local model and transcribe the full recording afterward.",
         "incomplete": "Live transcription is incomplete. Captured text is kept and the recording can be transcribed in full."
       },
@@ -2308,7 +2309,7 @@
       "draftSaving": "Saving the local meeting draft…",
       "draftRestored": "Local meeting draft restored.",
       "draftReadFailed": "The local meeting draft could not be opened.",
-      "draftWriteFailed": "The local draft could not be saved. Your meeting is still open. Try returning again to retry, or export its contents.",
+      "draftWriteFailed": "The local draft could not be saved. Your meeting is still open. Retry or export its contents.",
       "audioSaved": "Audio saved locally.",
       "downloaded": "Sent to your browser for download.",
       "exported": "Document saved locally.",
