@@ -179,7 +179,7 @@ const report = {
 
 if (process.argv.includes('--check')) {
   const failures = [];
-  if (report.desktopCatalog.count !== 89) failures.push(`expected 89 desktop tools, found ${report.desktopCatalog.count}`);
+  if (report.desktopCatalog.count !== 88) failures.push(`expected 88 desktop tools, found ${report.desktopCatalog.count}`);
   if (report.htmlContract.duplicateIds.length) failures.push(`duplicate HTML ids: ${report.htmlContract.duplicateIds.join(', ')}`);
   if (report.rust.commandAttributeCount !== 174) failures.push(`expected 174 Tauri command implementations, found ${report.rust.commandAttributeCount}`);
   if (report.rust.commandCount !== 173) failures.push(`expected 173 unique Tauri command names, found ${report.rust.commandCount}`);

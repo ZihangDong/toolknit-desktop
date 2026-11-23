@@ -62,6 +62,15 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm ci
 
+      - name: Configure native source tests
+        shell: pwsh
+        run: |
+          # The independently distributed Office kernel is verified during packaging.
+          $config = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          $resources = @($config.bundle.resources | Where-Object { $_ -ne 'resources/office-kernel/**/*' })
+          $overrides = @{ bundle = @{ resources = $resources } } | ConvertTo-Json -Depth 4 -Compress
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "TAURI_CONFIG=$overrides"
+
       - name: Build frontend
         run: npm run build
 

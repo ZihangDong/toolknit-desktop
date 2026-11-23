@@ -78,7 +78,7 @@ export const HELP_CONTENT = {
     title: '功能概览',
     html: `<div class="help-doc">
       <h2>ToolKnit 功能概览</h2>
-      <p>ToolKnit 3.4 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前开发版本提供 12 个分类、89 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 78 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
+      <p>ToolKnit 3.4 是一款<strong>本地优先</strong>的 Windows 多功能工具箱，当前开发版本提供 12 个分类、88 个桌面工具，并通过 CLI / MCP 向 IDE Agent 暴露 78 项能力。基础文件处理在本机完成；AI 工具仅在用户主动调用后向所选服务发送必要内容。</p>
       <p>当前为尚未发布的 V3.4 开发版本，新增统一主题布局、八套配色与自选主题色，壁纸独立开关，并优化设置页滚动和排列。正式安装包与 npm 仍以已发布的 V3.3 为准。</p>
 
       <h3>工具分类一览</h3>

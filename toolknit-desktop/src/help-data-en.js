@@ -75,7 +75,7 @@ export const HELP_CONTENT_EN = {
     title: 'Overview',
     html: `<div class="help-doc">
       <h2>ToolKnit Overview</h2>
-      <p>ToolKnit 3.4 is a <strong>local-first</strong> Windows toolbox. The development version has 89 desktop tools across 12 categories and exposes 78 capabilities to IDE Agents through CLI / MCP. Basic file processing stays local. AI tools send the necessary content to your selected provider when you invoke them.</p>
+      <p>ToolKnit 3.4 is a <strong>local-first</strong> Windows toolbox. The development version has 88 desktop tools across 12 categories and exposes 78 capabilities to IDE Agents through CLI / MCP. Basic file processing stays local. AI tools send the necessary content to your selected provider when you invoke them.</p>
       <p>This is an unreleased V3.4 development version with a shared theme layout, eight palettes, custom theme colors, independent wallpaper controls, and refined settings scrolling and order. Published installers and npm remain at V3.3.</p>
 
       <h3>Tool Categories</h3>

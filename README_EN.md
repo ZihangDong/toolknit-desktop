@@ -8,7 +8,7 @@
 
 **One toolbox for the little tasks scattered across your desktop.**
 
-89 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
+88 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
 
 [MIT source license and attribution](#source-license)
 
@@ -285,7 +285,7 @@ V3.3 exposes **78 CLI / MCP capabilities**, adding Word to PDF. npm 3.3.0 is als
 | File inspection | Read-only scanning, dependency checks and structured JSON results |
 
 Progress, cancellation and explicit errors are supported. Originals and existing outputs stay protected. Unicode paths, long paths and model downloads are improved.
-Window controls, clipboard monitoring and system cleanup remain desktop interactions. The V3.4 source includes 89 desktop tools and 78 CLI / MCP capabilities.
+Window controls, clipboard monitoring and system cleanup remain desktop interactions. The V3.4 source includes 88 desktop tools and 78 CLI / MCP capabilities.
 
 Use **`@toolknit/cli` 3.3.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for the 78 capabilities. Requires Node.js **22.13+**.
 
