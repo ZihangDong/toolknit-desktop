@@ -8,7 +8,6 @@ export const DESKTOP_COVERAGE = Object.freeze([
   entry('folder-automation', [], 'desktop-only', 'Local folder rules, monitoring and controls currently belong to the desktop session.'),
   entry('meeting-notes', [], 'desktop-only', 'Microphone recording, transcript review and minutes currently use the desktop workflow.'),
   entry('ocr-editor', [], 'desktop-only', 'Visual OCR boxes, pixel replacement and export require the desktop editor.'),
-  entry('pdf-object-remove', [], 'desktop-only', 'Per-object review and mandatory before/after preview have no CLI/MCP entry.'),
   entry('pdf-to-ppt', [], 'desktop-only', 'The new page-selection and image-slide workflow currently has no CLI/MCP entry.'),
   entry('quick-launcher', [], 'desktop-only', 'Personal launcher and interactive hotkeys belong to the desktop session.'),
   entry('subtitle-workbench', [], 'desktop-only', 'Interactive subtitle editing and preview currently have no CLI/MCP entry.'),

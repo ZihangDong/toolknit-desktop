@@ -4121,12 +4121,6 @@
       "note": "Visual OCR boxes, pixel replacement and export require the desktop editor."
     },
     {
-      "desktop": "pdf-object-remove",
-      "scope": "desktop-only",
-      "tools": [],
-      "note": "Per-object review and mandatory before/after preview have no CLI/MCP entry."
-    },
-    {
       "desktop": "pdf-to-ppt",
       "scope": "desktop-only",
       "tools": [],

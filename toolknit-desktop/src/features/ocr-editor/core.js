@@ -17,6 +17,7 @@ export function normalizeRegion(input, width, height) {
   const x = Number(input.x), y = Number(input.y), w = Number(input.width), h = Number(input.height), angle = Number(input.angle || 0);
   if (![x,y,w,h,angle].every(Number.isFinite) || w < 2 || h < 2 || x < 0 || y < 0 || x + w > width + .01 || y + h > height + .01 || Math.abs(angle) > 180) throw editError('geometry');
   const text = String(input.text ?? ''); if (text.length > OCR_EDIT_LIMITS.text) throw editError('text');
+  if (input.edited && !text.replace(/[\p{White_Space}\p{Default_Ignorable_Code_Point}]/gu, '')) throw editError('empty-replacement');
   const size = Number(input.size ?? h * .8); if (!Number.isFinite(size) || size < 4 || size > 600) throw editError('font');
   return { id: String(input.id || crypto.randomUUID()), original: String(input.original ?? text), x,y,width:w,height:h, angle,
     text, size, font: Object.hasOwn(EDIT_FONTS, input.font) ? input.font : 'sans', foreground: color(input.foreground, '#111111'), background: color(input.background, '#ffffff'), edited: !!input.edited };

@@ -24,7 +24,7 @@ const settle = () => page.waitForFunction(() => {
   const veil = document.querySelector('[data-tk-page-transition-veil]');
   return !veil || getComputedStyle(veil).visibility === 'hidden';
 });
-const newTools = ['batch-rename','clipboard-history','content-search','disk-space','document-compare','duplicate-file-cleanup','file-search','folder-automation','image-to-pdf','meeting-notes','ocr-editor','pdf-object-remove','pdf-to-ppt','pdf-to-scan','pdf-to-word','quick-launcher','quick-screenshot','subtitle-workbench','task-center','tool-workflows','word-to-pdf','xml-tools'];
+const newTools = ['batch-rename','clipboard-history','content-search','disk-space','document-compare','duplicate-file-cleanup','file-search','folder-automation','image-to-pdf','meeting-notes','ocr-editor','pdf-to-ppt','pdf-to-scan','pdf-to-word','quick-launcher','quick-screenshot','subtitle-workbench','task-center','tool-workflows','word-to-pdf','xml-tools'];
 const expandNewFeatures=async()=>{while(!await page.locator('#homeToolLoadMore').evaluate(node=>node.hidden))await page.locator('#homeToolLoadMoreButton').click();};
 const visibleTools = () => page.locator('#homeToolGrid [data-home-tool]').evaluateAll(nodes => nodes.map(node => node.dataset.homeTool).sort());
 const visibleReleaseGroups = () => page.locator('#homeToolGrid [data-release-version]').evaluateAll(nodes => nodes.map(node => node.dataset.releaseVersion));
@@ -55,13 +55,13 @@ const checkNewFeatures = async () => {
   await expandNewFeatures();
   assert.deepEqual(await visibleTools(), newTools);
   assert.deepEqual(await visibleReleaseGroups(), ['3.4', '3.3', '3.2'], 'release groups list newest first');
-  assert.deepEqual(await page.locator('#homeToolGrid [data-release-version="3.4"] [data-home-tool]').evaluateAll(nodes => nodes.map(node => node.dataset.homeTool)), ['pdf-object-remove','pdf-to-ppt','ocr-editor','subtitle-workbench','meeting-notes','quick-launcher','content-search','document-compare','folder-automation','batch-rename','task-center','tool-workflows','disk-space','xml-tools']);
+  assert.deepEqual(await page.locator('#homeToolGrid [data-release-version="3.4"] [data-home-tool]').evaluateAll(nodes => nodes.map(node => node.dataset.homeTool)), ['pdf-to-ppt','ocr-editor','subtitle-workbench','meeting-notes','quick-launcher','content-search','document-compare','folder-automation','batch-rename','task-center','tool-workflows','disk-space','xml-tools']);
   assert.deepEqual(await page.locator('#homeToolGrid [data-release-version="3.3"] [data-home-tool]').evaluateAll(nodes => nodes.map(node => node.dataset.homeTool)), ['word-to-pdf', 'file-search']);
   assert.deepEqual(await page.locator('#homeToolGrid [data-release-version="3.2"] [data-home-tool]').evaluateAll(nodes => nodes.map(node => node.dataset.homeTool)),
     ['pdf-to-word', 'image-to-pdf', 'pdf-to-scan', 'quick-screenshot', 'duplicate-file-cleanup', 'clipboard-history']);
   assert.deepEqual(await page.locator('#homeToolGrid .tool-result-release-heading h3').allTextContents(), ['V3.4', 'V3.3', 'V3.2']);
   const english = (await page.locator('html').getAttribute('lang') || '').startsWith('en');
-  assert.deepEqual(await page.locator('#homeToolGrid .tool-result-release-count').allTextContents(), english ? ['14 tools', '2 tools', '6 tools'] : ['14 项工具', '2 项工具', '6 项工具']);
+  assert.deepEqual(await page.locator('#homeToolGrid .tool-result-release-count').allTextContents(), english ? ['13 tools', '2 tools', '6 tools'] : ['13 项工具', '2 项工具', '6 项工具']);
   assert.equal(await chip.getAttribute('aria-pressed'), 'true');
   assert.equal(await chip.locator('svg').count(), 1, 'new category uses a rendered icon');
   assert.equal(await page.locator('#homeToolLoadMore').evaluate(node => node.hidden), true);
@@ -69,7 +69,8 @@ const checkNewFeatures = async () => {
   assert.equal(await clearSearch.isHidden(), true, 'empty search hides the clear action');
   await search.fill('PDF');
   assert.equal(await clearSearch.isVisible(), true, 'query exposes the clear action');
-  assert.deepEqual(await visibleTools(), ['content-search','image-to-pdf', 'pdf-object-remove', 'pdf-to-ppt', 'pdf-to-scan', 'pdf-to-word', 'tool-workflows', 'word-to-pdf']);
+  assert.deepEqual(await visibleTools(), ['content-search','image-to-pdf', 'pdf-to-ppt', 'pdf-to-scan', 'pdf-to-word', 'tool-workflows', 'word-to-pdf']);
+  assert.equal(await page.locator('[data-tool="pdf-object-remove"], [data-home-tool="pdf-object-remove"], [data-help-section="pdf-object-remove"]').count(), 0, 'PDF removal is absent from the released app');
   await search.fill('no-matching-tool-123');
   assert.equal(await page.locator('#homeToolGrid .tool-result-empty').count(), 1);
   await clearSearch.focus(); await page.keyboard.press('Enter');
@@ -310,7 +311,7 @@ try {
   await expandNewFeatures();
   assert.deepEqual(await page.locator('#homeToolGrid .tool-result-release-heading h3').allTextContents(), ['V3.4', 'V3.3', 'V3.2']);
   assert.deepEqual(await page.locator('#homeToolGrid .tool-result-release-subtitle').allTextContents(), ['Current version', 'Previous version', 'Previous version']);
-  assert.deepEqual(await page.locator('#homeToolGrid .tool-result-release-count').allTextContents(), ['14 tools', '2 tools', '6 tools']);
+  assert.deepEqual(await page.locator('#homeToolGrid .tool-result-release-count').allTextContents(), ['13 tools', '2 tools', '6 tools']);
   await page.locator('#homeCustomTools').click();
   assert.equal(await page.locator('#customToolsTitle').innerText(), 'Tools tailored to your work');
   await page.keyboard.press('Escape');

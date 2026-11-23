@@ -231,8 +231,7 @@
     "test:disk-space-native": "cargo test --manifest-path src-tauri/Cargo.toml disk_space --lib -- --test-threads=1",
     "test:disk-space-production": "node scripts/test-disk-space-production.mjs",
     "test:pdf-object-remove": "node scripts/test-pdf-object-remove.mjs && node scripts/test-pdf-inline-predictor.mjs && node scripts/test-pdf-inline-depths.mjs && node scripts/test-pdf-run-length.mjs && node scripts/test-pdf-lzw.mjs && node scripts/test-pdf-lzw-predictor.mjs && node scripts/test-pdf-content-predictor.mjs && node scripts/test-pdf-transparency-group.mjs && node scripts/test-pdf-transparency-backdrop.mjs && node scripts/test-pdf-stamp-popup.mjs && node scripts/test-pdf-stamp-states.mjs",
-    "test:pdf-object-remove-browser": "node scripts/test-pdf-object-remove-browser.mjs",
-    "test:pdf-object-remove-production": "node scripts/test-pdf-object-remove-production.mjs"
+    "test:pdf-object-remove-browser": "node scripts/test-pdf-object-remove-browser.mjs"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
