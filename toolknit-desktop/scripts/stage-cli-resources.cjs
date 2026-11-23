@@ -25,6 +25,8 @@ const guideFiles = [
   'CLI_CAPABILITIES.json',
   'agent-guide.zh-CN.md',
   'agent-guide.en.md',
+  'orcarouter.zh-CN.md',
+  'orcarouter.en.md',
   'ai-document-project-spec.md',
   'ai-document-project.schema.json'
 ];
@@ -45,6 +47,9 @@ const coreFiles = [
   'features/icon-generator/core.js',
   'core/image-resolution.js',
   'pdf-page-number-core.js',
+  'word-watermark-core.js',
+  'word-encryption-core.js',
+  'word-watermark-image.js',
   'features/pdf-crop/core.js',
   'features/pdf-text-extract/core.js',
   'features/pdf-text-extract/table-grid.js',
@@ -231,6 +236,9 @@ for (const fileName of fontFiles) {
 for (const fileName of ['LICENSE', 'NOTICE', 'LICENSES/Apache-2.0.txt', 'LICENSES/MIT.txt']) {
   copyFileAtomic(path.join(root, fileName), path.join(root, 'cli', fileName));
 }
-copyFileAtomic(path.join(root, 'src-tauri/resources/office/word-to-pdf.py'), path.join(root, 'cli/resources/office/word-to-pdf.py'));
+for (const name of ['word-to-pdf.py', 'word_layout.py', 'word_font_metrics.py', 'word_fields.py']) {
+  copyFileAtomic(path.join(root, 'src-tauri/resources/office', name), path.join(root, 'cli/resources/office', name));
+}
+copyFileAtomic(path.join(root, 'office-kernel/runtime.lock.json'), path.join(root, 'cli/resources/office/runtime.lock.json'));
 releaseStageLockOnce();
 console.log('Staged CLI runtime resources: qpdf, whisper binaries and legal notices, core modules, shared task contracts, guides, and fonts. FFmpeg is downloaded on demand by ToolKnit Desktop or resolved from PATH.');

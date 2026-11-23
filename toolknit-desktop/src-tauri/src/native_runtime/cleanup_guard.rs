@@ -128,7 +128,7 @@ fn fingerprint(metadata: &std::fs::Metadata, identity: Option<(u32, u64)>) -> Fi
     }
 }
 
-pub(super) fn file_identity(path: &Path) -> Result<Option<(u32, u64)>, String> {
+pub(in crate::native_runtime) fn file_identity(path: &Path) -> Result<Option<(u32, u64)>, String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};

@@ -1,0 +1,204 @@
+{
+  "task": "TK-009-C",
+  "auditedOn": "2026-11-20",
+  "timezone": "Asia/Shanghai",
+  "status": "first-version-complete",
+  "parentTaskComplete": false,
+  "defaultEnabled": false,
+  "desktopOption": "refreshFields",
+  "cliMcpOption": "refresh_fields",
+  "supported": {
+    "indexes": [
+      "com.sun.star.text.ContentIndex"
+    ],
+    "fields": [
+      "PageNumber",
+      "PageCount",
+      "GetReference",
+      "Chapter",
+      "ReferencePageGet",
+      "ReferencePageSet"
+    ]
+  },
+  "excluded": [
+    "DateTime",
+    "FileName",
+    "Author",
+    "GetExpression",
+    "database/DDE/external content",
+    "unknown field types",
+    "non-content indexes"
+  ],
+  "limits": {
+    "fields": 20000,
+    "indexes": 128,
+    "indexCharacters": 2097152,
+    "stabilizationPasses": 3
+  },
+  "importSettings": {
+    "UpdateDocMode": 0,
+    "MacroExecutionMode": 0,
+    "ReadOnly": true,
+    "interactionPrompts": "abort"
+  },
+  "unit": {
+    "script": "scripts/test-word-fields.py",
+    "passed": 10,
+    "legacyProfileTestsPassed": 6
+  },
+  "real": {
+    "groups": [
+      "nonboolean option rejected before conversion",
+      "CLI default keeps cached TOC and existing dynamic-field behavior",
+      "CLI opt-in rebuilds 70-entry multipage TOC; all TOC targets, internal refs, page counts and footers match actual PDF pages",
+      "ZIP batch carries opt-in per entry and retains successful refreshed output beside failed input",
+      "actual MCP server receives opt-in and returns per-file update summary",
+      "actual Rust transport forwards false/true and isolates failed documents",
+      "legacy DOC imports expose the same internal TOC/page/reference update contract",
+      "loopback external-data canary received zero requests across every conversion",
+      "original DOCX and ZIP SHA-256 unchanged"
+    ],
+    "outputs": [
+      {
+        "label": "CLI default",
+        "pageCount": 71,
+        "tocUpdated": false,
+        "sections": 70,
+        "targetPage": 71,
+        "footerChecks": 71,
+        "date": "2026-11-20"
+      },
+      {
+        "label": "CLI refreshed",
+        "pageCount": 72,
+        "tocUpdated": true,
+        "sections": 70,
+        "targetPage": 72,
+        "footerChecks": 72,
+        "date": "2026-11-20"
+      },
+      {
+        "label": "ZIP refreshed",
+        "pageCount": 72,
+        "tocUpdated": true,
+        "sections": 70,
+        "targetPage": 72,
+        "footerChecks": 72,
+        "date": "2026-11-20"
+      },
+      {
+        "label": "MCP refreshed",
+        "pageCount": 72,
+        "tocUpdated": true,
+        "sections": 70,
+        "targetPage": 72,
+        "footerChecks": 72,
+        "date": "2026-11-20"
+      },
+      {
+        "label": "native-default",
+        "pageCount": 71,
+        "tocUpdated": false,
+        "sections": 70,
+        "targetPage": 71,
+        "footerChecks": 71,
+        "date": "2026-11-20"
+      },
+      {
+        "label": "native-updated",
+        "pageCount": 72,
+        "tocUpdated": true,
+        "sections": 70,
+        "targetPage": 72,
+        "footerChecks": 72,
+        "date": "2026-11-20"
+      },
+      {
+        "label": "Legacy DOC refreshed",
+        "pageCount": 72,
+        "tocUpdated": true,
+        "sections": 70,
+        "targetPage": 72,
+        "footerChecks": 72,
+        "date": "2026-11-20"
+      }
+    ],
+    "externalCanaryRequests": 0,
+    "sourceUnchanged": true,
+    "zipUnchanged": true,
+    "verifiedFooterPages": 502,
+    "rustIntegrationTests": 1
+  },
+  "browser": {
+    "runs": [
+      {
+        "theme": "light",
+        "language": "zh",
+        "checks": 52
+      },
+      {
+        "theme": "light",
+        "language": "en",
+        "checks": 52
+      },
+      {
+        "theme": "dark",
+        "language": "zh",
+        "checks": 52
+      },
+      {
+        "theme": "dark",
+        "language": "en",
+        "checks": 52
+      }
+    ],
+    "widths": [
+      1440,
+      1024,
+      720,
+      390
+    ],
+    "screenshots": 16,
+    "pageErrors": [],
+    "nativeBoundary": "synthetic fixture; real backend verified separately"
+  },
+  "inspector": {
+    "findings": [],
+    "allowances": [
+      "button-fx",
+      "font-count",
+      "heavy-shadow",
+      "panel-void"
+    ],
+    "style": "achromatic-ledger",
+    "seed": 1986984968
+  },
+  "packaging": {
+    "newHelper": "resources/office/word_fields.py",
+    "includedAndMatchesSource": true,
+    "newDependencies": 0
+  },
+  "build": {
+    "passed": true,
+    "installerBuilt": false,
+    "knownWarnings": [
+      "launcher import placement",
+      "large chunks"
+    ]
+  },
+  "regression": [
+    "existing Word core",
+    "real process cancellation/timeout/descendant cleanup",
+    "ZIP core and real CLI/MCP/Rust acceptance",
+    "help center",
+    "generated CLI catalog",
+    "Git/watcher generated-artifact isolation",
+    "homepage/settings/light/dark/en"
+  ],
+  "remaining": [
+    "TK-009-C1: additional internal field/index types",
+    "TK-009-B1: installed Tauri/WebView2 controls/file chooser/drag-drop and installer lifecycle"
+  ],
+  "nextIndependentTask": "TK-009-D",
+  "artifactRun": "tmp/word-fields/run-3sCvp7"
+}

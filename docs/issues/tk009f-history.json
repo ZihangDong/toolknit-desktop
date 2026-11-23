@@ -1,0 +1,182 @@
+{
+  "task": "TK-009-F",
+  "date": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "first-version-complete",
+  "scope": "Desktop Task Center restores Word queues after restart; CLI/MCP persistence is outside this feature.",
+  "behavior": {
+    "restore": "Read-only probes; no automatic conversion; existing queues are protected.",
+    "retained": "Matching existing PDFs remain available, including when the source is missing.",
+    "retry": "Only unfinished or missing outputs are prepared; regenerate-all creates new files in the current output directory.",
+    "changes": "Explicitly accept a changed Word source; re-add a changed ZIP. Native conversion checks expected SHA-256 against actual input bytes.",
+    "privacy": "Allowlisted versioned metadata only. No passwords, watermark contents/images, PDF bytes, job IDs or invocation objects.",
+    "secrets": "Previously enabled watermark/encryption controls restore empty and require re-entry or explicit opt-out.",
+    "limits": "20 sources per task; 100 finished records; bounded paths; read-only file checks reject links/reparse points and oversized files.",
+    "legacy": "Old records without source metadata retain output locations but require selecting sources again.",
+    "storage": "Storage failure is visible. Clear removes metadata only.",
+    "interrupted": "Unfinished tasks become interrupted. Progress is saved as received; missing captured fingerprints use the current source during recovery, without a crash-atomic guarantee.",
+    "deleted": "No download cache or recovery of deleted source bytes."
+  },
+  "core": {
+    "passed": true,
+    "checks": [
+      "allowlisted source/ZIP/settings metadata excludes passwords, watermark contents, binary payloads and invocation IDs",
+      "per-file completion retains output fingerprints and pending entries separately",
+      "invalid versions, counts, paths, archive identities, traversal, duplicate sources and malformed hashes are rejected; unknown fields are dropped",
+      "restart restores an interrupted job without callbacks and returns detached recovery metadata",
+      "successful jobs remain regeneratable across restart; clearing history removes metadata only",
+      "legacy records keep output paths without invented sources; unavailable storage is reported without discarding the live task",
+      "real tracked invocation persists progress before completion, retains partial output metadata and clears passwords without automatic native replay"
+    ]
+  },
+  "real": {
+    "passed": true,
+    "groups": 8,
+    "checks": [
+      "real DOCX/ZIP conversions report source and output SHA-256; unchanged history probes match all three inputs/results",
+      "read-only probe distinguishes a lost output, changed source and same-size altered PDF without deleting retained results",
+      "missing output regenerates from its fingerprint-checked source into a new directory",
+      "old source fingerprints and a change after probing are rejected before rendering/publication",
+      "explicitly accepting the current version creates a new result and preserves the previous PDF",
+      "moved source retains its existing PDF; modified ZIP remains blocked until re-added",
+      "real native results survive task storage/restart with fingerprints and no replay callbacks",
+      "four retained/regenerated PDFs reopen independently with the expected Chinese text and page counts; retained originals keep their hashes"
+    ],
+    "outputs": [
+      {
+        "name": "initial-b",
+        "pages": 2,
+        "sha256": "30f4aca8004ed6885b7d028f3197874c65b9080e91f4103f03680c9eba27a8e0",
+        "expectedText": "ORIGINAL_B"
+      },
+      {
+        "name": "edited-zip-pdf",
+        "pages": 2,
+        "sha256": "189af60156dc19d664ce90788819224486d4d043a5f3d43d9be1086d78c32d1a",
+        "expectedText": "ORIGINAL_A"
+      },
+      {
+        "name": "regenerated-a",
+        "pages": 2,
+        "sha256": "8b5ba2157cc07225b2b2b3deb222ed2f0f40daf6d63afe089ee67be8dcf143c9",
+        "expectedText": "ORIGINAL_A"
+      },
+      {
+        "name": "accepted-b",
+        "pages": 2,
+        "sha256": "384a9f74aa78d885194f883dcbba59f58c235dc22e593b5dc83f5d1089cb5e10",
+        "expectedText": "CHANGED_B"
+      }
+    ]
+  },
+  "browser": {
+    "passed": true,
+    "themeLanguageRuns": 4,
+    "assertionsPerRun": 92,
+    "screenshots": 60,
+    "transport": "Isolated native transport fixture; real controller, storage-backed Task Center, PDF rendering, fonts and editor handoff.",
+    "recoveryAssertions": [
+      "history recipe restores through the actual Word controller",
+      "retained outputs stay available while missing output becomes pending",
+      "restoration never starts conversion automatically",
+      "restoration refuses to overwrite an existing queue",
+      "only missing output is regenerated and its source fingerprint is checked natively",
+      "changed sources block conversion until explicitly accepted",
+      "current-version confirmation replaces the expected source fingerprint",
+      "missing source still permits viewing a retained PDF",
+      "regenerating a missing source is blocked without inventing a download cache",
+      "changed ZIP requires re-adding the archive instead of silently selecting new entry contents",
+      "changed output is marked for a new conversion instead of trusted as the old result",
+      "protected history restores nonsecret settings and requires password/watermark re-entry",
+      "protected history cannot silently regenerate an unencrypted result",
+      "closing a history probe cannot populate a reopened queue",
+      "Task Center offers recovery after rebuilding its storage-backed instance",
+      "Task Center recovery navigates to the real Word queue and releases modal ownership",
+      "clearing task history removes metadata without a filesystem delete call"
+    ],
+    "errors": []
+  },
+  "production": {
+    "passed": true,
+    "checks": [
+      "production home opens lazy Task Center; two Word recipes have desktop-only recovery controls",
+      "unfinished records become interrupted; safe fingerprints survive while unrecognized secret fields are projected away",
+      "legacy records explain missing source metadata; working storage shows no warning",
+      "recoverability and interrupted status survive a second production reload",
+      "clear finished history removes persisted metadata",
+      "cleared records stay cleared after reload",
+      "production Task Center visibly reports task-storage failure"
+    ],
+    "errors": []
+  },
+  "regressions": {
+    "rust": {
+      "passed": 9,
+      "ignored": 7,
+      "failed": 0,
+      "notes": "Ignored real history integration ran separately through test-word-history-native.mjs."
+    },
+    "productivityBrowser": "Passed real image/PDF exports, ordering, presets, restart history, English and responsive checks.",
+    "wordNative": "Passed real DOC/DOCX Rust, CLI and MCP: Chinese text, header, table, A4 pagination, partial failure, original preservation, overwrite protection and hostile DOCX rejection.",
+    "encryptionNative": "8 real groups passed; 6 PDFs independently decrypted and inspected.",
+    "help": "79 visible sections / 89 desktop tools / 1795 static translation keys passed.",
+    "wordCore": true,
+    "productivityCore": true,
+    "productionBuild": true
+  },
+  "visual": {
+    "viewports": [
+      {
+        "width": 1440,
+        "horizontalOverflow": 0
+      },
+      {
+        "width": 1024,
+        "horizontalOverflow": 0
+      },
+      {
+        "width": 390,
+        "horizontalOverflow": 0
+      }
+    ],
+    "failCount": 0,
+    "warnings": [
+      {
+        "id": "font-count",
+        "message": "3 typefaces in use (ToolKnitBuiltinCnHeading, ToolKnitBuiltinEn, ToolKnitBuiltinEnHeading)."
+      },
+      {
+        "id": "tiny-text",
+        "message": "48% of the text is under 13px."
+      },
+      {
+        "id": "panel-void",
+        "message": "1 card(s) hold a blank band inside: 44px in \"本次处理完成\"."
+      }
+    ],
+    "existingAllowances": [
+      "gradient focus underline",
+      "floating modal heavy shadow"
+    ],
+    "note": "Existing bilingual heading/body fonts, secondary text sizes and hidden completion-modal spacing retained after screenshot review.",
+    "impeccableFindings": 0
+  },
+  "commands": [
+    "npm run test:word-history",
+    "npm run test:word-history-native",
+    "npm run build",
+    "npm run test:word-history-production",
+    "npm run test:word-to-pdf-browser-acceptance",
+    "node scripts/test-productivity-browser.mjs",
+    "cargo test --manifest-path src-tauri/Cargo.toml native_runtime::office::word:: --lib -- --test-threads=1",
+    "npm run test:word-encryption-native",
+    "npm run test:word-to-pdf-native",
+    "npm run test:productivity",
+    "npm run test:help"
+  ],
+  "remaining": [
+    "TK-009-F1: installed Tauri/WebView2 conversion, restart, recovery, changed/missing files, secret re-entry, cancellation and reveal end-to-end.",
+    "Real Git index still contains pre-existing untracked shared sources. Normal release security gate must run after authorized source tracking; no staging or installer publication was performed."
+  ],
+  "nextIndependent": "TK-006-B: segmented transcription, timestamps and long-transcript summary chunks."
+}

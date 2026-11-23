@@ -19,11 +19,9 @@ globalThis.window = {};
 const { HELP_CONTENT, HELP_CONTENT_EN } = await import('../src/help-data.js');
 
 const root = new URL('..', import.meta.url);
-const themeIndex = await readFile(new URL('src/styles/themes/index.css', root), 'utf8');
-const helpLight = await readFile(new URL('src/styles/themes/help-light.css', root), 'utf8');
-assert.match(themeIndex, /@import url\('\.\/help-light\.css'\)/, 'Shared document theme is loaded by the theme entry.');
-assert.match(helpLight, /html\[data-theme="light"\] \.help-overlay/, 'Help and legal colors stay scoped to light document pages.');
-assert.doesNotMatch(helpLight, /!important|z-index\s*:/, 'Document theme must not compete with modal ownership.');
+const themeIndex = await readFile(new URL('src/styles/index.css', root), 'utf8');
+const helpLight = await readFile(new URL('src/styles/pages/help.css', root), 'utf8');
+assert.match(helpLight, /html:root\[data-theme\] \.help-overlay/, 'Help and legal colors stay scoped to light document pages.');
 assert.doesNotMatch(helpLight, /\.help-back-btn:hover/, 'Help navigation uses the shared hover owner.');
 const indexHtml = await readAppMarkup(import.meta.url);
 const zh = JSON.parse(await readFile(new URL('src/locales/zh.json', root), 'utf8'));
@@ -84,6 +82,10 @@ for (const key of helpNavI18n) {
 }
 
 const toolToHelp = new Map([
+  ['quick-launcher','quick-launcher'],['content-search','content-search'],['document-compare','document-compare'],['subtitle-workbench','subtitle-workbench'],['folder-automation','folder-automation'],
+  ['batch-rename', 'batch-rename'],
+  ['task-center', 'task-center'],
+  ['tool-workflows', 'tool-workflows'],
   ['word-to-pdf', 'word-to-pdf'],
   ['file-search', 'file-search'],
   ['pdf-merge', 'pdf-merge'],
@@ -91,6 +93,7 @@ const toolToHelp = new Map([
   ['pdf-page-number', 'pdf-page-number'],
   ['pdf-crop', 'pdf-crop'],
   ['pdf-to-image', 'pdf-to-image'],
+  ['pdf-to-ppt', 'pdf-to-ppt'],
   ['pdf-to-scan', 'pdf-to-scan'],
   ['pdf-to-word', 'pdf-to-word'],
   ['pdf-text-markdown', 'pdf-text-markdown'],
@@ -124,6 +127,8 @@ const toolToHelp = new Map([
   ['video-frame', 'video-frame'],
   ['video-gif', 'video-gif'],
   ['transcription', 'transcription'],
+  ['ocr-editor', 'ocr-editor'],
+  ['meeting-notes', 'meeting-notes'],
   ['teleprompter', 'teleprompter'],
   ['text-stats', 'text-stats'],
   ['text-format', 'text-format'],
@@ -136,6 +141,7 @@ const toolToHelp = new Map([
   ['color-space-compare', 'color-space-compare'],
   ['typing-test', 'typing-test'],
   ['large-file-cleanup', 'large-file-cleanup'],
+  ['disk-space', 'disk-space'],
   ['duplicate-file-cleanup', 'duplicate-file-cleanup'],
   ['c-drive-cleanup', 'c-drive-cleanup'],
   ['hardware-overview', 'hardware-tools'],
@@ -150,6 +156,7 @@ const toolToHelp = new Map([
   ['image-color-replace', 'developer-tools'],
   ['hash-crypto', 'developer-tools'],
   ['json-tools', 'developer-tools'],
+  ['xml-tools', 'developer-tools'],
   ['base64', 'developer-tools'],
   ['url-codec', 'developer-tools'],
   ['uuid', 'developer-tools'],
@@ -162,7 +169,7 @@ const toolToHelp = new Map([
 
 toolToHelp.set('image-to-pdf', 'image-to-pdf');
 const desktopTools = unique(valuesForAttribute(indexHtml, 'data-tool'));
-assert.equal(desktopTools.length, 75, 'Current desktop catalog must contain exactly 75 unique tools.');
+assert.equal(desktopTools.length, 88, 'Current desktop catalog must contain exactly 88 unique tools.');
 for (const tool of desktopTools) {
   const section = toolToHelp.get(tool);
   assert.ok(section, `Desktop tool has no help mapping: ${tool}`);

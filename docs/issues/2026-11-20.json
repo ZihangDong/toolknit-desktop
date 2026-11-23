@@ -1,0 +1,630 @@
+{
+  "auditedOn": "2026-11-20",
+  "timezone": "Asia/Shanghai",
+  "sourceRepository": "ZihangDong/toolknit-desktop",
+  "localRemoteRepository": "hqyx2025/toolknit-desktop",
+  "localRemoteIsFork": true,
+  "localRemoteHasIssues": false,
+  "sourceApi": "https://api.github.com/repos/ZihangDong/toolknit-desktop/issues?state=all&per_page=100",
+  "pagination": "Fetched all pages until fewer than 100 items; pull requests excluded.",
+  "localHead": "b651dc08bd48ce9a2ac8ce6a612bb93276c1b747",
+  "localWorktreeHasExistingChanges": true,
+  "totalIssues": 46,
+  "openIssues": 17,
+  "closedIssues": 29,
+  "commentsReviewed": "All open issues with comments, plus closed issue 137; notes below are paraphrases.",
+  "maintainerNotes": [
+    {
+      "date": "2026-11-18",
+      "note": "作者表示正在寻找新的下载源；关闭状态不足以证明已恢复。",
+      "issue": 137,
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/137#issuecomment-6968319125"
+    },
+    {
+      "date": "2026-11-14",
+      "note": "作者预告后续版本可尝试；实际功能需核对版本并验收。",
+      "issue": 115,
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/115#issuecomment-6872818583"
+    },
+    {
+      "date": "2026-11-14",
+      "note": "作者表示文件搜索已经开发，其余优化后续推进。",
+      "issue": 125,
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/125#issuecomment-6869230626"
+    },
+    {
+      "date": "2026-10-12",
+      "note": "作者将批处理列入 4.0 规划；本地优先级独立维护。",
+      "issue": 86,
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/86#issuecomment-6117181784"
+    },
+    {
+      "date": "2026-10-28",
+      "note": "议题正文明确等待正式签名条件具备后启动菜单开发。",
+      "issue": 114,
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/114"
+    }
+  ],
+  "issues": [
+    {
+      "number": 138,
+      "title": "[Feature]: 可不能看加一个pdf转ppt的功能这个需求比较多",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/138",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-11-18T05:27:54Z",
+      "updatedAt": "2026-11-18T05:27:54Z",
+      "closedAt": null,
+      "commentCount": 0
+    },
+    {
+      "number": 137,
+      "title": "[Bug] 3.3.0 本地 OCR 模型无法下载：七彩云 CDN 对所有对象请求返回 503（换网络/换路径/换 TLS 栈均复现）",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/137",
+      "labels": [],
+      "createdAt": "2026-11-17T13:04:06Z",
+      "updatedAt": "2026-11-18T03:40:41Z",
+      "closedAt": "2026-11-18T03:40:41Z",
+      "commentCount": 1
+    },
+    {
+      "number": 136,
+      "title": "[Feature]: pdf转dwg",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/136",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-11-17T02:58:31Z",
+      "updatedAt": "2026-11-17T02:58:31Z",
+      "closedAt": null,
+      "commentCount": 0
+    },
+    {
+      "number": 125,
+      "title": "[Feature]: 希望祈求渴求：轻量化 Snipaste 式截图，并增加 Everything 式文件搜索与 SpaceSniffer 式磁盘空间分析",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/125",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-11-13T18:35:36Z",
+      "updatedAt": "2026-11-14T01:18:45Z",
+      "closedAt": null,
+      "commentCount": 1
+    },
+    {
+      "number": 124,
+      "title": "[Feature]:  ai清理驱动盘后，无法直接打开文件所在目录",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/124",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-11-10T06:26:24Z",
+      "updatedAt": "2026-11-10T07:54:49Z",
+      "closedAt": null,
+      "commentCount": 1
+    },
+    {
+      "number": 117,
+      "title": "[Feature]:  可以添加录音转写功能吗？",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/117",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-10-31T07:59:18Z",
+      "updatedAt": "2026-11-01T00:14:27Z",
+      "closedAt": null,
+      "commentCount": 1
+    },
+    {
+      "number": 116,
+      "title": "[Feature]: 请求添加word转pdf",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/116",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-10-30T15:20:54Z",
+      "updatedAt": "2026-10-30T15:24:29Z",
+      "closedAt": null,
+      "commentCount": 2
+    },
+    {
+      "number": 115,
+      "title": "[Feature] 图片/扫描件「OCR 改字」（本地离线，可付费）—— 解决图片转 PDF 后无文字层无法编辑的问题",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/115",
+      "labels": [],
+      "createdAt": "2026-10-30T07:43:36Z",
+      "updatedAt": "2026-11-14T06:05:11Z",
+      "closedAt": null,
+      "commentCount": 5
+    },
+    {
+      "number": 114,
+      "title": "[Feature]: Windows 文件右键快捷处理菜单与子菜单（待签名就绪后实施）",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/114",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-10-28T13:34:24Z",
+      "updatedAt": "2026-10-28T13:34:24Z",
+      "closedAt": null,
+      "commentCount": 0
+    },
+    {
+      "number": 103,
+      "title": "[Bug]: 屏幕取色",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/103",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-10-25T02:23:07Z",
+      "updatedAt": "2026-10-26T14:18:38Z",
+      "closedAt": "2026-10-26T14:18:38Z",
+      "commentCount": 1
+    },
+    {
+      "number": 98,
+      "title": "[Feature]: PDF拆分",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/98",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-10-22T08:05:47Z",
+      "updatedAt": "2026-10-22T13:56:55Z",
+      "closedAt": "2026-10-22T13:56:54Z",
+      "commentCount": 1
+    },
+    {
+      "number": 97,
+      "title": "[Feature]: hope add a feature to create a blank pdf file希望增加一个新建空白PDF文件的功能，然后可以往里面添加图片或文本",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/97",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-10-21T01:44:42Z",
+      "updatedAt": "2026-10-21T03:10:51Z",
+      "closedAt": "2026-10-21T03:10:51Z",
+      "commentCount": 1
+    },
+    {
+      "number": 96,
+      "title": "[Feature]: 希望新增「图片转 PDF」工具（多图合并 / A4 适配）",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/96",
+      "labels": [],
+      "createdAt": "2026-10-19T02:38:56Z",
+      "updatedAt": "2026-10-23T06:17:24Z",
+      "closedAt": "2026-10-23T06:17:24Z",
+      "commentCount": 2
+    },
+    {
+      "number": 94,
+      "title": "[Feature]: 希望支持MacOS客户端版本",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/94",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-10-15T07:51:02Z",
+      "updatedAt": "2026-10-15T08:25:55Z",
+      "closedAt": null,
+      "commentCount": 1
+    },
+    {
+      "number": 93,
+      "title": "[Bug]: 3.1版本 截图悬浮窗 应该添加右键直接退出 并且在工具页点击关闭需要等重启软件才消失",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/93",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-10-15T07:39:48Z",
+      "updatedAt": "2026-10-23T06:17:29Z",
+      "closedAt": "2026-10-23T06:17:29Z",
+      "commentCount": 0
+    },
+    {
+      "number": 86,
+      "title": "[Feature]: 希望新增PDF解密队列功能",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/86",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-10-12T02:17:05Z",
+      "updatedAt": "2026-10-12T03:25:22Z",
+      "closedAt": null,
+      "commentCount": 1
+    },
+    {
+      "number": 84,
+      "title": "[Feature]: 开机自启动按钮",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/84",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-10-09T10:35:34Z",
+      "updatedAt": "2026-10-10T08:53:31Z",
+      "closedAt": "2026-10-10T08:53:31Z",
+      "commentCount": 1
+    },
+    {
+      "number": 79,
+      "title": "[Feature]: 希望新增会议简记功能",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/79",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-10-08T09:10:35Z",
+      "updatedAt": "2026-10-09T03:03:43Z",
+      "closedAt": null,
+      "commentCount": 1
+    },
+    {
+      "number": 77,
+      "title": "图标大小",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/77",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-10-03T05:05:28Z",
+      "updatedAt": "2026-10-23T06:17:49Z",
+      "closedAt": "2026-10-23T06:17:49Z",
+      "commentCount": 2
+    },
+    {
+      "number": 76,
+      "title": "vsr_windows_gpu_vxxx.zip",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/76",
+      "labels": [],
+      "createdAt": "2026-09-28T04:24:09Z",
+      "updatedAt": "2026-09-28T08:10:08Z",
+      "closedAt": null,
+      "commentCount": 1
+    },
+    {
+      "number": 75,
+      "title": "[Feature]: 可以集成一下一些web样式组件吗",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/75",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-09-28T02:21:27Z",
+      "updatedAt": "2026-09-28T08:10:46Z",
+      "closedAt": null,
+      "commentCount": 1
+    },
+    {
+      "number": 72,
+      "title": "[Feature]: 希望增加文本型 PDF 转图片型 PDF 小工具",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/72",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-09-22T14:40:08Z",
+      "updatedAt": "2026-10-09T03:04:36Z",
+      "closedAt": "2026-10-09T03:04:36Z",
+      "commentCount": 4
+    },
+    {
+      "number": 53,
+      "title": "[Feature]: Optional OrcaRouter AI provider for ToolKnit Desktop",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/53",
+      "labels": [],
+      "createdAt": "2026-09-06T01:47:11Z",
+      "updatedAt": "2026-09-06T06:32:02Z",
+      "closedAt": null,
+      "commentCount": 1
+    },
+    {
+      "number": 52,
+      "title": "[Bug]: PDF压缩后大小不变",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/52",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-09-03T10:47:25Z",
+      "updatedAt": "2026-10-09T03:04:51Z",
+      "closedAt": "2026-10-09T03:04:51Z",
+      "commentCount": 2
+    },
+    {
+      "number": 51,
+      "title": "[Feature]: Hope to add PDF watermark removal function",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/51",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-09-03T03:21:49Z",
+      "updatedAt": "2026-10-09T03:12:35Z",
+      "closedAt": null,
+      "commentCount": 2
+    },
+    {
+      "number": 50,
+      "title": "[Feature]: 黑色背景和字体看起来好难受",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/50",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-09-01T09:25:17Z",
+      "updatedAt": "2026-09-02T06:51:29Z",
+      "closedAt": "2026-09-02T06:51:29Z",
+      "commentCount": 2
+    },
+    {
+      "number": 48,
+      "title": "[Feature]: 可以加一个xml文件的格式化功能，这个也是常用的",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/48",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-08-31T08:32:39Z",
+      "updatedAt": "2026-08-31T11:16:24Z",
+      "closedAt": null,
+      "commentCount": 1
+    },
+    {
+      "number": 40,
+      "title": "[Feature]: 桌面端能不能增加一个浅色模式",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/40",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-08-21T14:44:26Z",
+      "updatedAt": "2026-08-21T15:01:15Z",
+      "closedAt": "2026-08-21T15:01:15Z",
+      "commentCount": 2
+    },
+    {
+      "number": 39,
+      "title": "[Bug]: 离线识别模型下载不了",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/39",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-08-21T08:49:40Z",
+      "updatedAt": "2026-08-21T11:08:13Z",
+      "closedAt": "2026-08-21T11:08:13Z",
+      "commentCount": 1
+    },
+    {
+      "number": 38,
+      "title": "[Feature]: 可否将一些程序员常用的工具集成进来",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/38",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-08-21T07:58:30Z",
+      "updatedAt": "2026-08-24T15:26:42Z",
+      "closedAt": "2026-08-24T15:26:42Z",
+      "commentCount": 2
+    },
+    {
+      "number": 37,
+      "title": "[Bug]: 最新安装包下载 立即被卡巴斯基 删除了",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/37",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-08-19T08:00:41Z",
+      "updatedAt": "2026-08-19T16:03:42Z",
+      "closedAt": "2026-08-19T16:03:42Z",
+      "commentCount": 3
+    },
+    {
+      "number": 36,
+      "title": "[Bug]: 测试中文打字速度的时间流速异常",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/36",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-08-19T05:02:59Z",
+      "updatedAt": "2026-08-23T15:09:32Z",
+      "closedAt": "2026-08-23T15:09:32Z",
+      "commentCount": 2
+    },
+    {
+      "number": 35,
+      "title": "图片格式转换工具会把白底图片转换成黑底",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/35",
+      "labels": [],
+      "createdAt": "2026-08-19T01:47:16Z",
+      "updatedAt": "2026-09-02T06:51:11Z",
+      "closedAt": "2026-09-02T06:51:11Z",
+      "commentCount": 2
+    },
+    {
+      "number": 34,
+      "title": "桌面程序字体",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/34",
+      "labels": [],
+      "createdAt": "2026-08-18T14:20:04Z",
+      "updatedAt": "2026-08-21T08:17:39Z",
+      "closedAt": "2026-08-21T08:17:39Z",
+      "commentCount": 3
+    },
+    {
+      "number": 33,
+      "title": "[Bug]: 显卡与显示器功能报错",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/33",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-08-18T03:51:51Z",
+      "updatedAt": "2026-08-23T15:09:06Z",
+      "closedAt": "2026-08-23T15:09:06Z",
+      "commentCount": 2
+    },
+    {
+      "number": 32,
+      "title": "[Bug]: 自定义的API地址能不能支持下http",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/32",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-08-18T00:39:31Z",
+      "updatedAt": "2026-08-23T15:09:15Z",
+      "closedAt": "2026-08-23T15:09:15Z",
+      "commentCount": 2
+    },
+    {
+      "number": 31,
+      "title": "2.1版本规划内容",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/31",
+      "labels": [],
+      "createdAt": "2026-08-17T01:23:05Z",
+      "updatedAt": "2026-09-02T06:51:03Z",
+      "closedAt": "2026-09-02T06:51:03Z",
+      "commentCount": 0
+    },
+    {
+      "number": 24,
+      "title": "[Bug]: 打字速度测试模块bug和功能建议",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/24",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-08-13T10:25:31Z",
+      "updatedAt": "2026-08-14T00:52:14Z",
+      "closedAt": "2026-08-14T00:52:14Z",
+      "commentCount": 1
+    },
+    {
+      "number": 20,
+      "title": "CLI: pdf to-image 命令报 PROCESSING_FAILED（ReferenceError: runtimeOptions is not defined）",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/20",
+      "labels": [],
+      "createdAt": "2026-08-08T06:42:51Z",
+      "updatedAt": "2026-08-08T06:57:44Z",
+      "closedAt": "2026-08-08T06:57:43Z",
+      "commentCount": 2
+    },
+    {
+      "number": 19,
+      "title": "[Feature]: Minecraft材质包Java迁移基岩版辅助工具集",
+      "state": "open",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/19",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-08-08T06:02:54Z",
+      "updatedAt": "2026-08-08T06:02:54Z",
+      "closedAt": null,
+      "commentCount": 0
+    },
+    {
+      "number": 18,
+      "title": "[Bug]:",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/18",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-08-07T14:47:44Z",
+      "updatedAt": "2026-08-08T06:52:03Z",
+      "closedAt": "2026-08-08T06:52:03Z",
+      "commentCount": 2
+    },
+    {
+      "number": 15,
+      "title": "[Bug]: 打开应用会让我的鼠标在桌面有拖影的问题",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/15",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-08-06T04:59:17Z",
+      "updatedAt": "2026-08-06T12:54:55Z",
+      "closedAt": "2026-08-06T12:54:55Z",
+      "commentCount": 3
+    },
+    {
+      "number": 14,
+      "title": "[Bug]: 未限制单一实例启动",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/14",
+      "labels": [
+        "bug"
+      ],
+      "createdAt": "2026-08-05T04:13:13Z",
+      "updatedAt": "2026-08-06T02:30:20Z",
+      "closedAt": "2026-08-06T02:30:20Z",
+      "commentCount": 2
+    },
+    {
+      "number": 13,
+      "title": "[Feature]: 图标生成器",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/13",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-08-05T03:27:28Z",
+      "updatedAt": "2026-08-06T07:28:37Z",
+      "closedAt": "2026-08-06T07:28:37Z",
+      "commentCount": 3
+    },
+    {
+      "number": 2,
+      "title": "[Feature] 图片工具添加图片拼接功能",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/2",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-08-02T11:22:51Z",
+      "updatedAt": "2026-08-04T02:50:27Z",
+      "closedAt": "2026-08-04T02:50:27Z",
+      "commentCount": 1
+    },
+    {
+      "number": 1,
+      "title": "[Feature] 支持窗口圆角",
+      "state": "closed",
+      "url": "https://github.com/ZihangDong/toolknit-desktop/issues/1",
+      "labels": [
+        "enhancement"
+      ],
+      "createdAt": "2026-08-02T11:21:29Z",
+      "updatedAt": "2026-08-06T02:19:52Z",
+      "closedAt": "2026-08-06T02:19:52Z",
+      "commentCount": 2
+    }
+  ]
+}

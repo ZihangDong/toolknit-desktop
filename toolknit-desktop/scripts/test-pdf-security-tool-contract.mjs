@@ -59,12 +59,17 @@ assert.match(encrypt, /operation\.isCurrent\(\)/);
 assert.match(encrypt, /import ['"]\.\/pdf-security\.css['"]/);
 assert.doesNotMatch(encrypt, /\.addEventListener\(|\.innerHTML\s*=/);
 
-assert.match(decrypt, /assertPdfDecryptSelection/);
+const batch = await readFile(new URL('../src/features/pdf-security/decrypt-batch.js', import.meta.url), 'utf8');
+assert.match(batch, /assertPdfDecryptSelection/);
+assert.match(decrypt, /runDecryptBatch/);
+assert.match(decrypt, /center\.begin/);
+assert.match(decrypt, /multiple: true/);
 assert.match(decrypt, /invoke\('decrypt_pdf'/);
-assert.match(decrypt, /pdf-decrypt:desktop-only/);
+assert.match(decrypt, /if \(!isTauri\)/);
 assert.match(decrypt, /import\.meta\.env\.DEV[\s\S]{0,150}pdf-security-demo/);
-assert.match(decrypt, /operation\.isCurrent\(\)/);
-assert.match(decrypt, /if \(reopenPassword && shell\.isOpenSession\(owner\)\) shell\.showPassword\(\)/);
+assert.match(decrypt, /shell\.isOpenSession\(owner\)/);
+assert.match(decrypt, /active\.controller\.signal/);
+assert.match(decrypt, /clearDecryptJobs\(jobs\)/);
 assert.match(decrypt, /import ['"]\.\/pdf-security\.css['"]/);
 assert.doesNotMatch(decrypt, /\.addEventListener\(|\.innerHTML\s*=/);
 

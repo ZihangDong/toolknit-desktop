@@ -87,6 +87,16 @@ for (const file of publicFiles) {
 }
 const nativeResources = [];
 for (const file of config.bundle.resources) {
+  if (file === 'resources/office-kernel/**/*') {
+    for (const entry of await files('src-tauri/resources/office-kernel')) {
+      const info = await stat(path.join(root, entry));
+      // Python packages legitimately contain empty __init__.py files. The
+      // pinned manifest checks each byte, including these zero-length files.
+      assert.ok(info.isFile(), `Missing kernel resource: ${entry}`);
+      nativeResources.push({ file: entry, bytes: info.size });
+    }
+    continue;
+  }
   const info = await stat(path.resolve(root, 'src-tauri', file));
   assert.ok(info.isFile() && info.size > 0, `Missing bundle resource: ${file}`);
   nativeResources.push({ file, bytes: info.size });

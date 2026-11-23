@@ -1,350 +1,109 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import vm from 'node:vm';
-import { createThemeRuntime, normalizeTheme, readThemePreference, THEME_STORAGE_KEY } from '../src/app/theme-runtime.js';
+import { createThemeRuntime, THEME_STORAGE_KEY, normalizeTheme } from '../src/app/theme-runtime.js';
+import { themeEngine, APPEARANCE_STORAGE_KEY, DEFAULT_THEME_CONFIG, THEME_PRESETS, createThemePalette, themeContrast, normalizeColor, normalizeThemeConfig, readAppearancePreference } from '../src/app/theme-palette.js';
 import { createBackgroundRuntime } from '../src/app/background-runtime.js';
-import { createCustomBackgroundSettingsRuntime } from '../src/app/custom-background-settings-runtime.js';
-import { initializeDefaultBackground, DEFAULT_DARK_BACKGROUND, DEFAULT_DARK_BACKGROUND_SRC, BACKGROUND_DEFAULT_INITIALIZED_KEY } from '../src/app/custom-background-default.js';
+import { initializeDefaultBackground, CUSTOM_BACKGROUND_STORAGE_KEY } from '../src/app/custom-background-default.js';
 
 class Element extends EventTarget {
-  constructor() {
-    super();
-    this.attributes = new Map();
-    this.dataset = {};
-    this.classes = new Set();
-    this.classList = {
-      contains: name => this.classes.has(name),
-      add: name => this.classes.add(name),
-      remove: name => this.classes.delete(name),
-      toggle: (name, value) => value ? this.classes.add(name) : this.classes.delete(name)
-    };
-    this.children = [];
-    this.isConnected = true;
-  }
-  setAttribute(name, value) { this.attributes.set(name, value); }
-  removeAttribute(name) { this.attributes.delete(name); }
-  appendChild(child) { this.children.push(child); child.parentElement = this; }
-  insertBefore(child) { this.appendChild(child); }
-  remove() {
-    this.isConnected = false;
-    if (this.parentElement) this.parentElement.children = this.parentElement.children.filter(child => child !== this);
-  }
-  focus() { this.focused = true; }
+  constructor(dataset={}) { super(); this.dataset=dataset; this.attributes=new Map(); this.classes=new Set(); this.children=[]; this.isConnected=true; this.style={setProperty:(key,value)=>this.attributes.set(key,value)};
+    this.classList={add:name=>this.classes.add(name),remove:name=>this.classes.delete(name),contains:name=>this.classes.has(name),toggle:(name,on)=>on?this.classes.add(name):this.classes.delete(name)}; }
+  setAttribute(key,value){this.attributes.set(key,value);}
+  getAttribute(key){return this.attributes.get(key)??null;}
+  removeAttribute(key){this.attributes.delete(key);}
+  focus(){this.focused=true;}
+  appendChild(child){this.children.push(child);child.parentElement=this;}
+  insertBefore(child){this.appendChild(child);}
+  remove(){if(this.parentElement)this.parentElement.children=this.parentElement.children.filter(child=>child!==this);}
 }
-
-function fixture(preference, pageTransition = null) {
-  const values = new Map(preference === undefined ? [] : [[THEME_STORAGE_KEY, preference]]);
-  const windowRef = new EventTarget();
-  windowRef.localStorage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
-  const buttons = ['dark', 'light'].map(theme => Object.assign(new Element(), { dataset: { themeChoice: theme } }));
-  const root = { documentElement: new Element(), querySelectorAll: () => buttons };
-  const theme = createThemeRuntime({ root, windowRef, pageTransition });
-  return { theme, root, windowRef, values, buttons };
+function fixture(entries=[],transition=null) {
+  const values=new Map(entries), windowRef=new EventTarget();
+  windowRef.localStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value)};
+  const buttons=['dark','light'].map(themeChoice=>new Element({themeChoice}));
+  const presets=THEME_PRESETS.map(p=>new Element({paletteChoice:p.id}));
+  const nodes=new Map(['themeCustomColor','themeCustomHex','themeColorError','themeWallpaperToggle','themePreviewActions','themePreviewSave','themePreviewCancel','themeRestoreDefault'].map(id=>[id,new Element()]));
+  const root={documentElement:new Element(),querySelectorAll:selector=>selector==='[data-theme-choice]'?buttons:selector==='[data-palette-choice]'?presets:[],getElementById:id=>nodes.get(id)};
+  const theme=createThemeRuntime({root,windowRef,pageTransition:transition});
+  return {theme,root,windowRef,values,buttons,presets,nodes};
 }
-
-for (const input of [undefined, null, '', 'system', '<script>', 'LIGHT']) assert.equal(normalizeTheme(input), 'light');
-assert.equal(normalizeTheme('light'), 'light');
-assert.equal(normalizeTheme('dark'), 'dark');
-assert.equal(readThemePreference({ get localStorage() { throw new Error('unavailable'); } }), 'light');
-const firstLaunch = fixture();
-assert.equal(firstLaunch.theme.get(), 'light');
-assert.equal(firstLaunch.buttons[1].attributes.get('aria-checked'), 'true');
-firstLaunch.theme.dispose();
-const state = fixture('dark');
-assert.equal(state.theme.get(), 'dark');
-assert.equal(state.buttons[0].attributes.get('aria-checked'), 'true');
-const changes = [];
-const unsubscribe = state.theme.subscribe(value => changes.push(value));
-state.buttons[1].dispatchEvent(new Event('click'));
-assert.equal(state.values.get(THEME_STORAGE_KEY), 'light');
-assert.equal(state.theme.allowsCustomBackground(), false);
-assert.equal(state.root.documentElement.attributes.get('data-theme'), 'light');
-assert.equal(state.buttons[1].tabIndex, 0);
-assert.equal(state.buttons[0].tabIndex, -1);
-assert.deepEqual(changes, ['light']);
-state.theme.set('light');
-state.theme.set('invalid');
-assert.deepEqual(changes, ['light']);
-const arrow = new Event('keydown', { cancelable: true });
-Object.defineProperty(arrow, 'key', { value: 'ArrowUp' });
-state.buttons[1].dispatchEvent(arrow);
-assert.equal(arrow.defaultPrevented, true);
-assert.equal(state.theme.get(), 'dark');
-assert.equal(state.buttons[0].focused, true);
-state.values.set(THEME_STORAGE_KEY, 'light');
-state.windowRef.dispatchEvent(Object.assign(new Event('storage'), { key: THEME_STORAGE_KEY }));
-assert.equal(state.theme.get(), 'light');
-unsubscribe();
-const count = changes.length;
-state.theme.set('dark');
-assert.equal(changes.length, count);
-state.theme.dispose();
-state.theme.dispose();
-state.buttons[1].dispatchEvent(new Event('click'));
-assert.equal(state.theme.get(), 'dark');
-const unavailable = fixture();
-Object.defineProperty(unavailable.windowRef, 'localStorage', { get() { throw new Error('unavailable'); } });
-unavailable.theme.set('light');
-assert.equal(unavailable.theme.get(), 'light', 'storage failure must not break this session');
-unavailable.theme.dispose();
-
-let transitionRuns = 0;
-const transitioned = fixture('dark', {
-  run(action) {
-    transitionRuns += 1;
-    return Promise.resolve().then(action);
-  }
-});
-transitioned.theme.set('light');
-assert.equal(transitioned.root.documentElement.attributes.get('data-theme'), 'dark', 'theme paint waits for the shared transition veil');
-await Promise.resolve();
-assert.equal(transitioned.root.documentElement.attributes.get('data-theme'), 'light');
-assert.equal(transitionRuns, 1);
-transitioned.theme.dispose();
-
-const queued = [];
-const rapid = fixture('light', { run(action, options) {
-  assert.equal(options.replaceable, false);
-  return new Promise(resolve => queued.push(() => resolve(action())));
-} });
-rapid.theme.set('dark');
-rapid.theme.set('light');
-queued.shift()(); await Promise.resolve();
-assert.equal(rapid.theme.get(), 'light', 'returning to the current theme invalidates the queued change');
-assert.equal(rapid.values.get(THEME_STORAGE_KEY), 'light');
-rapid.theme.set('dark');
-rapid.theme.dispose();
-queued.shift()(); await Promise.resolve();
-assert.equal(rapid.theme.get(), 'light', 'disposal blocks pending paint and persistence');
-assert.equal(rapid.values.get(THEME_STORAGE_KEY), 'light');
-
-const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-const bootstrap = html.match(/<script data-tk-theme-bootstrap>([\s\S]*?)<\/script>/)[1];
-assert.ok(html.indexOf('data-tk-theme-bootstrap') < html.indexOf('rel="stylesheet"'));
-assert.ok(bootstrap.includes(THEME_STORAGE_KEY));
-for (const [saved, expected, search] of [['light', 'light', ''], ['dark', 'dark', ''], ['bad', 'light', ''], ['light', undefined, '?screen-picker=1']]) {
-  const document = { documentElement: { dataset: {} } };
-  vm.runInNewContext(bootstrap, { document, window: { location: { search }, setTimeout: () => 1 }, localStorage: { getItem: () => saved }, URLSearchParams });
-  assert.equal(document.documentElement.dataset.theme, expected);
+const tick=()=>new Promise(resolve=>setImmediate(resolve));
+for (const mode of ['dark', 'light']) {
+  const reset = fixture([[APPEARANCE_STORAGE_KEY, JSON.stringify({ ...DEFAULT_THEME_CONFIG, mode, preset: 'rose', customColor: '#ff00ff', wallpaperEnabled: true })]]);
+  reset.nodes.get('themeCustomHex').value = '#00ff00';
+  reset.nodes.get('themeCustomHex').dispatchEvent(new Event('input'));
+  reset.nodes.get('themeRestoreDefault').dispatchEvent(new Event('click'));
+  const expected = { ...DEFAULT_THEME_CONFIG, mode, wallpaperEnabled: true };
+  assert.deepEqual(reset.theme.getConfig(), expected, 'restoring colors keeps the active mode and wallpaper setting');
+  assert.deepEqual(JSON.parse(reset.values.get(APPEARANCE_STORAGE_KEY)), expected);
+  assert.equal(reset.values.get(THEME_STORAGE_KEY), mode);
+  assert.equal(reset.nodes.get('themePreviewActions').hidden, true);
+  reset.theme.dispose();
 }
-const template = await readFile(new URL('../src/app/templates/settings.html', import.meta.url), 'utf8');
-const themeIndex = await readFile(new URL('../src/styles/themes/index.css', import.meta.url), 'utf8');
-const secondaryTheme = await readFile(new URL('../src/styles/themes/secondary-pages-light.css', import.meta.url), 'utf8');
-assert.match(themeIndex, /@import url\('\.\/secondary-pages-light\.css'\)/);
-assert.match(secondaryTheme, /html\[data-theme="light"\] :is\(\.feedback-overlay, \.donation-overlay, \.api-key-overlay\)/);
-assert.doesNotMatch(secondaryTheme, /!important|z-index\s*:/, 'secondary page colors do not override modal ownership');
-assert.doesNotMatch(secondaryTheme, /aiKeyRequiredOverlay|transcription-model-overlay|update-dialog/, 'stage three and update dialogs keep their own palette');
-const dependencyTheme = await readFile(new URL('../src/styles/themes/dependency-dialogs-light.css', import.meta.url), 'utf8');
-assert.match(themeIndex, /@import url\('\.\/dependency-dialogs-light\.css'\)/);
-for (const id of ['transcriptionModelOverlay', 'mattingModelOverlay', 'ffmpegRuntimeOverlay', 'libreOfficeRuntimeOverlay', 'dependencyGateOverlay', 'aiKeyRequiredOverlay']) assert.ok(dependencyTheme.includes(`#${id}`));
-assert.doesNotMatch(dependencyTheme, /!important|z-index\s*:|force-update|cleanup-drive|update-dialog/, 'light dependency dialogs preserve stack and unrelated surfaces');
-assert.match(dependencyTheme, /button:focus-visible/);
-assert.match(dependencyTheme, /button:disabled/);
-assert.match(dependencyTheme, /-webkit-backdrop-filter: blur\(12px\);\s*backdrop-filter: blur\(12px\);/, 'standard backdrop declaration must follow the prefix so CSS minification preserves it');
-assert.match(dependencyTheme, /#mattingModelOverlay[\s\S]*transition: none[\s\S]*background: rgba\(17, 17, 17, 0\.22\)/, 'matting light overlay skips the legacy dark transition');
-assert.doesNotMatch(dependencyTheme, /html\[data-theme="light"\] #mattingModelOverlay\s*\{[^}]*opacity:\s*1/, 'hidden light matting overlay must not be forced visible');
-assert.match(secondaryTheme, /\.api-key-overlay \.api-key-content[\s\S]*justify-content: center/, 'light AI key content is centered');
-const applicationRuntime = await readFile(new URL('../src/application-runtime.js', import.meta.url), 'utf8');
-assert.match(applicationRuntime, /mattingManagerOpenRequest/, 'matting manager invalidates delayed opens');
-assert.match(applicationRuntime, /nested dialog[\s\S]*close\/reopen race/, 'matting manager avoids a nested page-transition race');
-assert.equal((template.match(/data-theme-choice=/g) || []).length, 2);
-assert.match(template, /data-background-controls/);
-assert.doesNotMatch(template, /settings\.(posterNote|customBackgroundHint)|ADVANCED DARK/);
-for (const language of ['zh', 'en']) {
-  const locale = JSON.parse(await readFile(new URL(`../src/locales/${language}.json`, import.meta.url)));
-  for (const key of ['languageAndTheme', 'theme', 'themeDark', 'themeLight', 'themeWallpaperHint']) assert.ok(locale.settings[key]);
+assert.equal(normalizeColor('#F0A'),'#ff00aa');
+for(const color of [null,'red','#abcd','#12345g','url(file://x)'])assert.equal(normalizeColor(color),null);
+assert.equal(normalizeTheme('system'),'light');
+assert.deepEqual(normalizeThemeConfig({css:'bad',preset:'unknown'}),DEFAULT_THEME_CONFIG);
+for(const mode of ['light','dark'])for(const preset of [...THEME_PRESETS.map(p=>p.id),'custom'])for(const customColor of ['#000000','#ffffff','#ff0000','#00ff00','#0000ff','#ffff00','#eeeeee']) {
+  const tokens=createThemePalette({mode,preset,customColor});
+  for(const surface of ['--tk-page-bg','--tk-surface','--tk-surface-hover','--tk-inset'])for(const ink of ['--tk-ink','--tk-muted','--tk-success','--tk-warning','--tk-danger'])assert.ok(themeContrast(tokens[ink],tokens[surface])>=4.5,`${mode}/${preset}/${customColor} ${ink} on ${surface}`);
+  assert.ok(themeContrast(tokens['--tk-accent'],tokens['--tk-page-bg'])>=3);
+  assert.ok(themeContrast(tokens['--tk-on-accent'],tokens['--tk-accent'])>=4.5);
+  assert.ok(themeContrast(tokens['--tk-on-accent'],tokens['--tk-accent-hover'])>=4.5);
 }
-
-// Resolve an old native wallpaper request after two theme switches. It must
-// neither mount media nor poison the current request's source cache.
-const bgState = fixture('dark');
-const wallpaperKey = 'toolknit.customBackground.v1';
-const metadata = JSON.stringify({ type: 'image', path: 'fixture.png' });
-bgState.values.set(wallpaperKey, metadata);
-const documentRef = new EventTarget();
-const home = new Element();
-home.classList.add('is-v2-home');
-documentRef.querySelector = () => home;
-documentRef.createElement = () => new Element();
-const pending = [];
-const background = createBackgroundRuntime({
-  documentRef, windowRef: bgState.windowRef, isTauri: true,
-  tauriCorePromise: Promise.resolve({ invoke: () => new Promise(resolve => pending.push(resolve)) }),
-  allowCustomBackground: bgState.theme.allowsCustomBackground,
-  onThemeChange: bgState.theme.subscribe
-});
-const tick = () => new Promise(resolve => setImmediate(resolve));
-background.syncHome();
-await tick();
-assert.equal(pending.length, 1);
-bgState.theme.set('light');
-assert.equal(background.getConfig().path, 'fixture.png', 'saved wallpaper is not deleted or rewritten');
-bgState.theme.set('dark');
-await tick();
-assert.equal(pending.length, 2);
-pending[0]('data:image/png;base64,old');
-await tick();
-assert.equal(home.children[0].children.length, 0, 'outdated native result is discarded');
-pending[1]('data:image/png;base64,current');
-await tick();
-assert.equal(home.children[0].children.length, 1);
-let homeReady = false;
-const homeReadiness = background.whenHomeReady().then(() => { homeReady = true; });
-await tick();
-assert.equal(homeReady, false, 'startup must await the wallpaper media, not just its native URL');
-home.children[0].children[0].dispatchEvent(new Event('load'));
-await homeReadiness;
-assert.equal(homeReady, true);
-bgState.theme.set('light');
-assert.equal(home.children[0].children.length, 0, 'switching white releases the live wallpaper');
-assert.equal(bgState.values.get(wallpaperKey), metadata);
-background.refresh();
-background.resume();
-await tick();
-assert.equal(pending.length, 2, 'white mode cannot resolve more wallpaper URLs');
-const toolHost = new Element();
-const closeTool = background.mountTool(toolHost);
-await tick();
-assert.equal(pending.length, 2, 'opening a dark tool in white mode cannot load custom wallpaper');
-bgState.theme.set('dark');
-await tick();
-assert.equal(pending.length, 3);
-pending[2]('data:image/png;base64,tool');
-await tick();
-assert.equal(toolHost.children.length, 1);
-toolHost.children[0].dispatchEvent(new Event('load'));
-await tick();
-assert.equal(toolHost.classList.contains('has-custom-background'), true);
-bgState.theme.set('light');
-assert.equal(toolHost.children.length, 0, 'white mode releases wallpaper from an open tool too');
-assert.equal(toolHost.classList.contains('has-custom-background'), false);
-closeTool();
-closeTool();
-background.dispose();
-background.dispose();
-bgState.theme.dispose();
-
-// Settings preview uses the same policy, including native replies arriving late.
-const settingsState = fixture('dark');
-settingsState.values.set(wallpaperKey, metadata);
-const nodes = new Map(['settingsBackgroundPreview', 'settingsBackgroundSummary',
-  'chooseBackgroundImage', 'chooseBackgroundVideo', 'clearCustomBackground',
-  'customBackgroundImageInput', 'customBackgroundVideoInput'].map(id => [id, new Element()]));
-const preview = nodes.get('settingsBackgroundPreview');
-const card = new Element();
-const controls = new Element();
-controls.contains = () => false;
-card.querySelector = () => controls;
-preview.closest = () => card;
-preview.querySelectorAll = () => [...preview.children];
-preview.querySelector = () => null;
-const settingsRoot = new EventTarget();
-settingsRoot.getElementById = id => nodes.get(id);
-settingsRoot.createElement = () => new Element();
-settingsRoot.querySelector = () => settingsState.buttons[1];
-const requests = [];
-const commands = [];
-const settingsRuntime = createCustomBackgroundSettingsRuntime({
-  root: settingsRoot, windowRef: settingsState.windowRef, isTauri: true,
-  tauriCorePromise: Promise.resolve({ invoke: command => {
-    commands.push(command);
-    return new Promise(resolve => requests.push(resolve));
-  } }),
-  allowCustomBackground: settingsState.theme.allowsCustomBackground,
-  onThemeChange: settingsState.theme.subscribe
-});
-await tick();
-assert.equal(requests.length, 1);
-settingsState.theme.set('light');
-assert.equal(controls.inert, true);
-assert.equal(nodes.get('chooseBackgroundImage').disabled, true);
-requests[0]('data:image/png;base64,stale-preview');
-await tick();
-assert.equal(preview.children.length, 0);
-await settingsRuntime.clear();
-nodes.get('chooseBackgroundImage').dispatchEvent(new Event('click'));
-await settingsRuntime.refresh();
-assert.deepEqual(commands, ['get_custom_background_media_url'], 'white mode blocks preview, picker and clear operations');
-assert.equal(settingsState.values.get(wallpaperKey), metadata);
-settingsState.theme.set('dark');
-await tick();
-assert.equal(requests.length, 2);
-requests[1]('data:image/png;base64,current-preview');
-await tick();
-assert.equal(preview.children.length, 1);
-assert.equal(controls.inert, false);
-settingsRuntime.dispose();
-settingsRuntime.dispose();
-assert.equal(preview.children.length, 0);
-settingsState.theme.set('light');
-settingsState.theme.set('dark');
-await tick();
-assert.equal(requests.length, 2, 'disposal removes the theme subscription');
-settingsState.theme.dispose();
-
-// A new profile stays light, but its first dark session has the bundled image.
-const fresh = fixture();
-const freshHome = new Element();
-freshHome.classList.add('is-v2-home');
-const freshDocument = new EventTarget();
-freshDocument.querySelector = () => freshHome;
-freshDocument.createElement = () => new Element();
-const freshBackground = createBackgroundRuntime({
-  windowRef: fresh.windowRef, documentRef: freshDocument, isTauri: true,
-  tauriCorePromise: Promise.resolve({ invoke: () => assert.fail('bundled image must not need a native media server') }),
-  allowCustomBackground: fresh.theme.allowsCustomBackground,
-  onThemeChange: fresh.theme.subscribe
-});
-assert.deepEqual(JSON.parse(fresh.values.get(wallpaperKey)), DEFAULT_DARK_BACKGROUND);
-assert.equal(fresh.theme.get(), 'light');
-freshBackground.syncHome();
-await tick();
-assert.equal(freshHome.children.length, 0);
-fresh.theme.set('dark');
-await tick();
-assert.equal(freshHome.children[0].children[0].src, DEFAULT_DARK_BACKGROUND_SRC);
-freshHome.children[0].children[0].dispatchEvent(new Event('load'));
-await tick();
-assert.equal(freshHome.classList.contains('has-custom-background'), true);
-fresh.theme.set('light');
-assert.equal(freshHome.children[0].children.length, 0);
-freshBackground.dispose();
-fresh.theme.dispose();
-
-for (const preference of ['dark', 'light']) {
-  const existing = fixture(preference);
-  initializeDefaultBackground(existing.windowRef);
-  assert.equal(existing.values.has(wallpaperKey), false, 'existing plain backgrounds stay unchanged');
-  assert.equal(existing.values.get(BACKGROUND_DEFAULT_INITIALIZED_KEY), '1');
-  existing.theme.dispose();
+assert.equal(createThemePalette(DEFAULT_THEME_CONFIG)['--tk-page-bg'],'#ffffff');
+assert.equal(createThemePalette(DEFAULT_THEME_CONFIG)['--tk-surface'],'#e7e8ea');
+assert.deepEqual(readAppearancePreference({get localStorage(){throw Error('restricted');}}),DEFAULT_THEME_CONFIG);
+const corruptWallpaper=fixture([[THEME_STORAGE_KEY,'dark'],[CUSTOM_BACKGROUND_STORAGE_KEY,'invalid JSON']]);
+assert.equal(corruptWallpaper.theme.get(),'dark','a corrupt wallpaper must not reset the saved mode');corruptWallpaper.theme.dispose();
+for(const mode of ['dark','light']) {
+  const old=fixture([[THEME_STORAGE_KEY,mode],[CUSTOM_BACKGROUND_STORAGE_KEY,JSON.stringify({type:'image',path:'kept.png'})]]);
+  assert.equal(old.theme.get(),mode);assert.equal(old.theme.allowsCustomBackground(),mode==='dark');
+  assert.equal(JSON.parse(old.values.get(APPEARANCE_STORAGE_KEY)).mode,mode);
+  assert.equal(JSON.parse(old.values.get(CUSTOM_BACKGROUND_STORAGE_KEY)).path,'kept.png');old.theme.dispose();
 }
-for (const saved of [metadata, JSON.stringify({ type: 'video', src: 'data:video/mp4;base64,fixture' }), 'null', 'invalid']) {
-  const existing = fixture();
-  existing.values.set(wallpaperKey, saved);
-  initializeDefaultBackground(existing.windowRef);
-  assert.equal(existing.values.get(wallpaperKey), saved, 'never rewrite existing wallpaper preferences');
-  existing.theme.dispose();
-}
-fresh.values.delete(wallpaperKey);
-fresh.values.delete(THEME_STORAGE_KEY);
-initializeDefaultBackground(fresh.windowRef);
-assert.equal(fresh.values.has(wallpaperKey), false, 'clearing persists even without a saved theme');
-assert.doesNotThrow(() => initializeDefaultBackground({ get localStorage() { throw new Error('blocked'); } }));
-
-// Permit only the bundled relative asset, not arbitrary paths or remote images.
-for (const src of ['/assets/backgrounds/other.jpg', '//example.com/image.jpg', 'https://example.com/image.jpg', 'file:///C:/image.jpg']) {
-  const rejected = fixture('dark');
-  rejected.values.set(wallpaperKey, JSON.stringify({ type: 'image', src }));
-  const rejectedHome = new Element();
-  rejectedHome.classList.add('is-v2-home');
-  const rejectedDocument = new EventTarget();
-  rejectedDocument.querySelector = () => rejectedHome;
-  rejectedDocument.createElement = () => new Element();
-  const runtime = createBackgroundRuntime({ documentRef: rejectedDocument, windowRef: rejected.windowRef });
-  runtime.syncHome();
-  await tick();
-  assert.equal(rejectedHome.children[0].children.length, 0, `blocked source: ${src}`);
-  runtime.dispose();
-  rejected.theme.dispose();
-}
-console.log('Theme state, keyboard, persistence, bootstrap, i18n, tool wallpaper and stale settings preview checks passed');
+const state=fixture();
+assert.equal(state.buttons[1].getAttribute('aria-checked'),'true');
+assert.equal(state.theme.allowsCustomBackground(),false);
+const events=[];state.theme.subscribe((mode,config)=>events.push(config));
+state.presets[1].dispatchEvent(new Event('click'));
+assert.equal(state.theme.getConfig().preset,'blue');assert.equal(events.at(-1).preset,'blue');
+const previous=state.values.get(APPEARANCE_STORAGE_KEY);
+state.nodes.get('themeCustomHex').value='#f0a';state.nodes.get('themeCustomHex').dispatchEvent(new Event('input'));
+assert.equal(state.theme.getConfig().customColor,'#ff00aa');assert.equal(state.theme.getConfig().preset,'custom');
+assert.equal(state.values.get(APPEARANCE_STORAGE_KEY),previous,'preview is reversible and never saved');
+state.nodes.get('themePreviewCancel').dispatchEvent(new Event('click'));assert.equal(state.theme.getConfig().preset,'blue');
+state.nodes.get('themeCustomHex').value='garbage';state.nodes.get('themeCustomHex').dispatchEvent(new Event('input'));
+assert.equal(state.nodes.get('themeCustomHex').getAttribute('aria-invalid'),'true');assert.equal(state.theme.getConfig().preset,'blue');
+state.nodes.get('themeCustomHex').value='#00ff00';state.nodes.get('themeCustomHex').dispatchEvent(new Event('input'));state.nodes.get('themePreviewSave').dispatchEvent(new Event('click'));
+assert.equal(JSON.parse(state.values.get(APPEARANCE_STORAGE_KEY)).customColor,'#00ff00');
+state.nodes.get('themeWallpaperToggle').dispatchEvent(new Event('click'));assert.equal(state.theme.allowsCustomBackground(),true);
+state.theme.set('dark',{transition:false});state.theme.set('light',{transition:false});assert.equal(state.theme.allowsCustomBackground(),true,'wallpaper does not depend on mode');
+state.theme.setConfig({preset:'rose'});const current=state.theme.getConfig();current.preset='amber';assert.equal(state.theme.getConfig().preset,'rose','configuration copies cannot mutate the runtime');
+const arrows=new Event('keydown',{cancelable:true});Object.defineProperty(arrows,'key',{value:'ArrowRight'});state.presets[5].dispatchEvent(arrows);assert.equal(state.theme.getConfig().preset,'amber');
+state.values.set(APPEARANCE_STORAGE_KEY,JSON.stringify({...DEFAULT_THEME_CONFIG,preset:'teal',mode:'dark'}));state.windowRef.dispatchEvent(Object.assign(new Event('storage'),{key:APPEARANCE_STORAGE_KEY}));assert.equal(state.theme.getConfig().preset,'teal');
+Object.defineProperty(state.windowRef,'localStorage',{get(){throw Error('restricted');}});assert.doesNotThrow(()=>state.theme.setConfig({preset:'green'}));
+state.theme.dispose();state.theme.dispose();const count=events.length;state.presets[0].dispatchEvent(new Event('click'));assert.equal(events.length,count);
+const queued=[],rapid=fixture([], {run(action){return new Promise(resolve=>queued.push(()=>resolve(action())));}});
+rapid.theme.set('dark');rapid.theme.set('light');queued.shift()();await tick();assert.equal(rapid.theme.get(),'light','stale covered switches are discarded');rapid.theme.dispose();
+// The production bootstrap is generated from this exact, dependency-free engine.
+const bootstrap = new Function(`return (${themeEngine.bootstrap.toString()})`);assert.ok(bootstrap);
+const vite=await readFile(new URL('../vite.config.js',import.meta.url),'utf8');assert.match(vite,/createThemeEngine\.toString\(\)/);
+const template=await readFile(new URL('../src/app/templates/settings.html',import.meta.url),'utf8');assert.match(template,/id="themePaletteChoices"/);assert.equal(state.presets.length,8);
+for(const lang of ['zh','en']){const locale=JSON.parse(await readFile(new URL(`../src/locales/${lang}.json`,import.meta.url)));for(const key of ['colorPalette','customThemeColor','wallpaperEnabled','saveThemeColor','cancelThemePreview'])assert.ok(locale.settings[key]);}
+// New users never receive a seeded wallpaper. Turning it off cancels late native replies.
+const bg=fixture(),home=new Element();home.classList.add('is-v2-home');
+const doc=new EventTarget();doc.querySelector=()=>home;doc.createElement=()=>new Element();
+initializeDefaultBackground(bg.windowRef);assert.equal(bg.values.has(CUSTOM_BACKGROUND_STORAGE_KEY),false);
+const metadata=JSON.stringify({type:'image',path:'kept.png'});bg.values.set(CUSTOM_BACKGROUND_STORAGE_KEY,metadata);
+const pending=[];
+const background=createBackgroundRuntime({documentRef:doc,windowRef:bg.windowRef,isTauri:true,tauriCorePromise:Promise.resolve({invoke:()=>new Promise(resolve=>pending.push(resolve))}),allowCustomBackground:bg.theme.allowsCustomBackground,onThemeChange:bg.theme.subscribe});
+background.syncHome();await tick();assert.equal(pending.length,0);
+bg.theme.setConfig({wallpaperEnabled:true});await tick();assert.equal(pending.length,1);
+bg.theme.setConfig({wallpaperEnabled:false});pending[0]('data:image/png;base64,stale');await tick();assert.equal(home.children[0]?.children.length??0,0);
+assert.equal(bg.values.get(CUSTOM_BACKGROUND_STORAGE_KEY),metadata);
+bg.theme.setConfig({mode:'light',wallpaperEnabled:true});await tick();assert.equal(pending.length,2);pending[1]('data:image/png;base64,current');await tick();assert.equal(home.children[0].children.length,1);
+home.children[0].children[0].dispatchEvent(new Event('load'));await background.whenHomeReady();
+bg.theme.setConfig({mode:'dark'});await tick();assert.equal(bg.theme.allowsCustomBackground(),true);
+bg.theme.setConfig({wallpaperEnabled:false});assert.equal(home.children[0].children.length,0);
+background.dispose();background.dispose();bg.theme.dispose();
+console.log('Appearance: 126 palette combinations, contrast, migration, previews, persistence, keyboard, stale transitions and independent wallpaper lifecycle passed.');

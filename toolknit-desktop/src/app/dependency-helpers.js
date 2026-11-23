@@ -75,6 +75,7 @@ export function createDependencyHelpers({ translate = key => key, getLanguage = 
   };
   const detectedRuntimeLabel = status => {
     if (!status?.installed) return '';
+    if (status.source === 'bundled') return getLanguage() === 'en' ? 'Included with the app' : '随应用内置';
     if (!isManagedRuntime(status)) return getLanguage() === 'en' ? 'Detected system dependency' : '已检测到系统依赖';
     const size = formatDependencyBytes(status.bytes);
     return size === '--'

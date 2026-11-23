@@ -39,3 +39,253 @@
 .audio-extract-feature .audio-extract-success { z-index: 3; }
 @media (max-width: 900px) { .audio-extract-feature .audio-extract-body { grid-template-columns: 1fr; overflow-y: auto; } .audio-extract-feature .audio-extract-v2-workspace { min-height: 0; } }
 @media (max-width: 560px) { .audio-extract-feature .audio-extract-body { padding: 16px; } .audio-extract-feature .audio-extract-format-selector { justify-items: stretch; } .audio-extract-feature .audio-convert-format-options { flex-wrap: wrap; } }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* The modular shell opts into pdf-tools-light for navigation, copy and actions. */
+html:root[data-theme] .feature-tool-overlay.audio-extract-feature-host {
+  /* The legacy host background is also important. */
+  background: var(--tk-page-bg) !important;
+}
+
+html:root[data-theme] .audio-extract-feature {
+  --extract-soft: var(--tk-inset);
+  --extract-hover: var(--tk-surface);
+}
+
+html:root[data-theme] .audio-extract-feature :is(.audio-extract-v2-poster, .audio-extract-v2-workspace) {
+  padding: 24px;
+  border-radius: 8px;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-v2-poster::before {
+  display: none;
+}
+
+html:root[data-theme] .audio-extract-feature .extract-hero-title {
+  font-size: 38px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+html:root[data-theme] .audio-extract-feature .pdf-merge-v2-steps {
+  flex-shrink: 0;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-v2-workspace {
+  grid-template-rows: auto minmax(min-content, 1fr) auto auto;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-v2-upload {
+  flex-wrap: wrap;
+}
+
+html:root[data-theme] .audio-extract-feature :is(.pdf-merge-v2-upload h2, .audio-extract-hero-top h2) {
+  color: var(--ink);
+  font-size: 26px;
+  line-height: 1.35;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-cta {
+  flex: 0 0 auto;
+  min-width: 172px;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 20px;
+  border-radius: 7px;
+  transform: none;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-cta:disabled {
+  opacity: 1;
+}
+
+html:root[data-theme] .audio-extract-feature :is(.audio-extract-hero-top, .audio-extract-info) {
+  min-width: 0;
+  border-radius: 8px;
+  border-color: var(--line);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-hero-top {
+  align-content: center;
+  min-height: 260px;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-v2-empty-icon {
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--tk-on-accent);
+  background: var(--ink);
+}
+
+html:root[data-theme] .audio-extract-feature :is(.audio-extract-hero-top p, .audio-extract-info-meta) {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-info {
+  align-content: start;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-info-main {
+  min-width: 0;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-info-name {
+  color: var(--ink);
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-info-icon {
+  border-color: var(--line);
+  border-radius: 7px;
+  background: var(--extract-soft);
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-info-icon svg {
+  color: var(--muted);
+}
+
+html:root[data-theme] .audio-extract-feature .audio-clip-file-remove {
+  border-color: var(--line);
+  border-radius: 7px;
+  color: var(--muted);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .audio-extract-feature .audio-clip-file-remove:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+  background: var(--extract-hover);
+}
+
+html:root[data-theme] .audio-extract-feature :is(.audio-extract-format-selector, .audio-extract-track-selector) {
+  min-width: 0;
+  border-color: var(--line);
+}
+
+html:root[data-theme] .audio-extract-feature :is(.audio-convert-format-label, .audio-extract-track-label) {
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-convert-format-options {
+  flex-wrap: wrap;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-convert-format-option {
+  min-width: 60px;
+  border-radius: 6px;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-convert-format-option:not(.active) {
+  border-color: var(--line);
+  color: var(--muted);
+  background: var(--extract-soft);
+}
+
+html:root[data-theme] .audio-extract-feature .audio-convert-format-option:not(.active):hover {
+  color: var(--ink);
+  background: var(--extract-hover);
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-track-select {
+  min-width: 0;
+  max-width: 100%;
+  border-radius: 7px;
+  text-overflow: ellipsis;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-extract-track-select option {
+  color: var(--ink);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .audio-extract-feature .pdf-merge-info-item {
+  border-radius: 7px;
+}
+
+html:root[data-theme] .audio-extract-feature [data-audio-extract-process] {
+  background: rgba(var(--tk-rgb-page), 0.96);
+}
+
+html:root[data-theme] .audio-extract-feature .audio-convert-process-bar {
+  background: var(--line);
+}
+
+html:root[data-theme] .audio-extract-feature .audio-convert-process-bar-fill {
+  background: var(--ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-convert-process-text {
+  color: var(--muted);
+}
+
+html:root[data-theme] .audio-extract-feature [data-audio-extract-success] {
+  background: rgba(var(--tk-rgb-ink), 0.44);
+}
+
+html:root[data-theme] .audio-extract-feature .audio-clip-success-dialog {
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+}
+
+html:root[data-theme] .audio-extract-feature :is(.audio-clip-success-meta, .audio-convert-success-value) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+html:root[data-theme] .audio-extract-feature .audio-convert-success-key {
+  flex-shrink: 0;
+}
+
+@media (max-width: 1180px) {
+  html:root[data-theme] .audio-extract-feature .audio-extract-body {
+    grid-template-columns: 280px minmax(0, 1fr);
+    padding: 18px 20px 24px;
+    gap: 18px;
+  }
+}
+
+@media (max-height: 760px) {
+  html:root[data-theme] .audio-extract-feature :is(.audio-extract-v2-poster, .audio-extract-v2-workspace) {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 980px) {
+  html:root[data-theme] .audio-extract-feature {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  html:root[data-theme] .audio-extract-feature .audio-extract-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: max-content;
+    align-content: start;
+    overflow: auto;
+  }
+
+  html:root[data-theme] .audio-extract-feature :is(.audio-extract-v2-poster, .audio-extract-v2-workspace) {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 560px) {
+  html:root[data-theme] .audio-extract-feature .audio-extract-body {
+    padding: 16px;
+  }
+
+  html:root[data-theme] .audio-extract-feature :is(.audio-extract-v2-poster, .audio-extract-v2-workspace, .audio-extract-info, .audio-extract-hero-top) {
+    padding: 16px;
+  }
+}

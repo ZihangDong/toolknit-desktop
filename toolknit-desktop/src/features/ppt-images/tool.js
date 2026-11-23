@@ -1,10 +1,10 @@
 import { applyTranslations } from '../../i18n.js';
 import '../../styles/components/ppt-workbench.css';
-import '../../styles/themes/ppt-tools-light.css';
+
 import { createPptImagesController } from './controller.js';
 import { pptImagesPageTemplate, pptImagesPortalTemplate } from './template.js';
 import './ppt-images.css';
-import './ppt-images-light.css';
+
 
 function createPortal() {
   const template = document.createElement('template');

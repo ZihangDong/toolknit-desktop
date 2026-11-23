@@ -1,0 +1,240 @@
+{
+  "task": "TK-009-E",
+  "date": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "first-version-complete",
+  "scope": {
+    "algorithm": "AES-256 R6 (qpdf AESv3)",
+    "defaultEnabled": false,
+    "password": {
+      "minUnicodeCharacters": 8,
+      "maxUtf8Bytes": 127,
+      "reject": [
+        "NUL",
+        "CR",
+        "LF",
+        "ill-formed UTF-16"
+      ],
+      "clearInputsWhenProcessingStarts": true,
+      "neverPersist": true,
+      "reentryRequiredForRetry": true,
+      "taskCenterAutomaticRetry": false
+    },
+    "maxPagesPerDocument": 200,
+    "maxPdfMiB": 150,
+    "permissions": [
+      "printing: none/low/full",
+      "copying",
+      "modifying",
+      "annotating",
+      "fillingForms",
+      "documentAssembly"
+    ],
+    "accessibilityAllowed": true,
+    "ownerPassword": "random, discarded",
+    "sequence": [
+      "Writer export",
+      "optional watermark",
+      "encrypt",
+      "password verification",
+      "publish"
+    ],
+    "cliMcp": true,
+    "cliCredentialTransport": "arguments-stdin only; nested secret values rejected from process arguments and request files",
+    "editorHandoff": "disabled for encrypted outputs; explicitly decrypt a copy first"
+  },
+  "core": {
+    "passed": true,
+    "groups": 7,
+    "checks": [
+      "Unicode character/UTF-8 byte limits, control characters, strict permission types and unsupported accessibility restriction",
+      "real qpdf output is AES-256 R6 with requested low-resolution print and no-copy restrictions",
+      "correct Unicode password opens the file; missing and wrong passwords fail",
+      "decryption preserves page count and paper sizes",
+      "page-limit failure and cancellation leave no encrypted partial and do not replace a temporary source",
+      "tracked native failures clear secret references, omit automatic retry and never persist raw engine diagnostics",
+      "cancelling queued encryption clears its password before an earlier task finishes"
+    ]
+  },
+  "real": {
+    "groups": 8,
+    "checks": [
+      "default-off CLI output remains a normal searchable PDF",
+      "actual CLI stdin composes internal field refresh, text watermark and AES-256; correct password recovers exact body/paper geometry and selected-page changes",
+      "ZIP partial batch publishes only encrypted successes; 201-page and damaged inputs expose no plain outputs",
+      "actual MCP accepts encryption and no-print permissions without returning credentials",
+      "page-limit and engine failures preserve an existing overwrite target and return stable secret-free errors",
+      "cancellation after first publication keeps exactly that verified encrypted PDF",
+      "real Rust/UNO/qpdf preserves encrypted-only publication, watermark/field composition, oversized failures and cancellation; progress/results omit passwords",
+      "original DOCX/ZIP hashes unchanged"
+    ],
+    "outputs": [
+      {
+        "name": "cli-watermark",
+        "encrypted": true,
+        "pages": 3,
+        "watermarkPages": [
+          1,
+          3
+        ],
+        "sha256": "e52aab34f0a9227288089ae5ea162cba2511561608b688f6ad870dd5c8ffef03"
+      },
+      {
+        "name": "cli-zip",
+        "encrypted": true,
+        "pages": 3,
+        "watermarkPages": [],
+        "sha256": "142b1ecdf3fddf016d9f7e97a67692ee6cdffc8cd2d46c6b56435d210bf0e580"
+      },
+      {
+        "name": "mcp",
+        "encrypted": true,
+        "pages": 3,
+        "watermarkPages": [],
+        "sha256": "c1a719a8f3f078630ee9a5fd3d6001e145c6e8245fc978abcb1bb22d81a08f1f"
+      },
+      {
+        "name": "cancel-kept",
+        "encrypted": true,
+        "pages": 3,
+        "watermarkPages": [],
+        "sha256": "e09b7087593badfa82d88b19111327da0c79e9792841baf5614fdc66f6e6d935"
+      },
+      {
+        "name": "rust-watermark",
+        "encrypted": true,
+        "pages": 3,
+        "watermarkPages": [
+          1,
+          3
+        ],
+        "sha256": "e5ae71170cee74cb3498143c3efd9998d732ed3a4292c569d245753a1834e756"
+      },
+      {
+        "name": "rust-cancel-kept",
+        "encrypted": true,
+        "pages": 3,
+        "watermarkPages": [],
+        "sha256": "90fcfd856b1ae0a6b25fdd03cbbbb317983ad1daf52c543a59dcb521d4974d9b"
+      }
+    ],
+    "sourceUnchanged": true,
+    "zipUnchanged": true,
+    "allPermissionFlags": {
+      "passed": true,
+      "checked": [
+        {
+          "name": "cli-watermark",
+          "permissionsVerified": true
+        },
+        {
+          "name": "cli-zip",
+          "permissionsVerified": true
+        },
+        {
+          "name": "mcp",
+          "permissionsVerified": true
+        },
+        {
+          "name": "cancel-kept",
+          "permissionsVerified": true
+        },
+        {
+          "name": "rust-watermark",
+          "permissionsVerified": true
+        },
+        {
+          "name": "rust-cancel-kept",
+          "permissionsVerified": true
+        }
+      ]
+    }
+  },
+  "browser": {
+    "passed": true,
+    "runs": [
+      {
+        "theme": "light",
+        "language": "zh",
+        "assertions": 75
+      },
+      {
+        "theme": "light",
+        "language": "en",
+        "assertions": 75
+      },
+      {
+        "theme": "dark",
+        "language": "zh",
+        "assertions": 75
+      },
+      {
+        "theme": "dark",
+        "language": "en",
+        "assertions": 75
+      }
+    ],
+    "screenshots": 44,
+    "pageErrors": [],
+    "console": []
+  },
+  "production": {
+    "passed": true,
+    "checks": [
+      "production home/lazy Word route",
+      "default off",
+      "masked password fields",
+      "no password in localStorage",
+      "printing/copying controls",
+      "exit/reopen clears password and opt-in"
+    ],
+    "errors": []
+  },
+  "regressions": {
+    "rustWord": {
+      "passed": 8,
+      "ignored": 6
+    },
+    "realWatermark": {
+      "groups": 8,
+      "pdfs": 7
+    },
+    "realInternalFields": {
+      "groups": 9,
+      "pdfs": 7,
+      "externalProbeRequests": 0
+    },
+    "pdfAes256Structure": true,
+    "wordProcessCancellationTimeout": true,
+    "taskCenter": true,
+    "help": true,
+    "artifactIsolation": true,
+    "productionBuild": true,
+    "cliPackage": {
+      "files": 2704
+    },
+    "changedUiDetectorFindings": 0
+  },
+  "securityAudit": {
+    "normalWorkingTreeGate": "not passed: new shared core files are untracked",
+    "sourceSnapshot": {
+      "temporaryGitIndex": true,
+      "checksPassed": 2188,
+      "realIndexModified": false
+    },
+    "releaseGateClaimedPassed": false
+  },
+  "limitations": [
+    "Reader permission enforcement depends on the viewer",
+    "JS/WebView string copies cannot be guaranteed erased from every heap",
+    "Packaged Tauri/WebView2 full native UI path remains TK-009-E1",
+    "Add new sources to Git and rerun the actual release security gate before release",
+    "No installer created or published"
+  ],
+  "artifacts": {
+    "realRun": "run-xVBBGd",
+    "directory": "toolknit-desktop/tmp/word-encryption",
+    "production": "toolknit-desktop/tmp/word-encryption-production",
+    "browser": "toolknit-desktop/tmp/word-pdf-browser-acceptance"
+  }
+}

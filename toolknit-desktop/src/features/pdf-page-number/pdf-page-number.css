@@ -1156,3 +1156,153 @@
     min-height: 480px;
   }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* Page-number-only controls. Shared surfaces belong to the PDF workbench. */
+html:root[data-theme] .pdf-page-number-v2 {
+  --pn-panel: var(--pc-panel);
+  --pn-panel-strong: var(--pc-panel-strong);
+  --pn-line: var(--pc-line);
+  --pn-line-strong: var(--pc-line-strong);
+  --pn-text: var(--pc-text);
+  --pn-muted: var(--pc-muted);
+  --pn-faint: var(--pc-faint);
+}
+
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-pages {
+  border-color: var(--pn-line);
+  background: var(--tk-page-bg);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-page-list, .pdf-page-number-settings-scroll, .pdf-page-number-canvas-scroll) {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-page-list, .pdf-page-number-settings-scroll, .pdf-page-number-canvas-scroll)::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-page-list.is-empty::before { color: var(--tk-muted); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-selection-meta span:first-child { color: var(--pn-muted); }
+
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-page-tools button, .pdf-page-number-preview-nav button, .pdf-page-number-zoom button, .pdf-page-number-page-actions button) {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-muted);
+}
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-page-tools button, .pdf-page-number-preview-nav button, .pdf-page-number-zoom button, .pdf-page-number-page-actions button):hover:not(:disabled) {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+}
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-page-tools .is-danger, .pdf-page-number-page-actions .pdf-page-number-delete):hover:not(:disabled) {
+  border-color: #d66a6a;
+  background: #f8d7d7;
+  color: var(--tk-danger);
+}
+
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-page-item {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-page-item:is(:hover, :focus-visible, .is-selected) {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-page-item.is-current {
+  border-color: var(--tk-accent);
+  box-shadow: inset 3px 0 0 #171717;
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-page-item.is-dragging {
+  border-color: var(--tk-accent);
+  background: var(--tk-surface-hover);
+  box-shadow: inset 0 2px 0 #171717;
+}
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-thumb-frame, .pdf-page-number-thumb-skeleton) { background: var(--tk-surface); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-thumb-error { color: var(--tk-muted); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-preview-dot {
+  background: var(--tk-border-strong);
+  box-shadow: 0 0 0 4px #f0f1f3;
+}
+
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-field > span, .pdf-page-number-color-field > span:first-child, .pdf-page-number-range-field b) { color: var(--tk-muted); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-range-field output { color: var(--tk-ink); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-field :is(select, input[type="text"], input[type="number"]) {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-field :is(select, input[type="text"], input[type="number"]):focus {
+  border-color: var(--tk-accent);
+  box-shadow: 0 0 0 3px rgba(17,17,17,.08);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-field .tool-custom-select-trigger {
+  min-height: 40px;
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-range-field input[type="range"] { accent-color: var(--tk-accent); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-position-grid { background: var(--tk-inset); }
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-position, .pdf-page-number-style, .pdf-page-number-output-modes label > span) {
+  border-color: var(--tk-border);
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+}
+html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-position, .pdf-page-number-style):is(:hover, .is-active):not(:disabled),
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-output-modes input:checked:not(:disabled) + span {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-position span { background: var(--tk-border-strong); box-shadow: none; }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-position:is(:hover, .is-active):not(:disabled) span { background: var(--tk-page-bg); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-position:disabled span { background: var(--tk-border-strong); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-style > span {
+  color: var(--tk-on-accent);
+  background: var(--tk-border-strong);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-style:is(:hover, .is-active):not(:disabled) > span {
+  color: var(--tk-ink);
+  background: var(--tk-page-bg);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-style .style-none,
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-style:is(:hover, .is-active):not(:disabled) .style-none {
+  color: inherit;
+  background: transparent;
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-style:disabled > span:not(.style-none) {
+  background: var(--tk-border);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-color-field > span:last-child {
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-color-field > span:has(input:disabled) {
+  border-color: var(--tk-border);
+  background: var(--tk-surface-hover);
+  color: var(--tk-muted);
+  cursor: not-allowed;
+}
+/* Keep the configured swatch value; only its disabled presentation is muted. */
+html:root[data-theme] .pdf-page-number-v2 input[type="color"]:disabled { opacity: .35; }
+html:root[data-theme] .pdf-page-number-v2 input[type="color"]:disabled::-webkit-color-swatch { background: var(--tk-border-strong); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-range-field:has(input:disabled) :is(b, output) { color: var(--tk-muted); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-range-field input:disabled { accent-color: var(--tk-border-strong); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-output-modes b { color: inherit; }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-output-modes input:checked:not(:disabled) + span b { color: var(--tk-on-accent); }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-output-modes input:disabled { cursor: not-allowed; }
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-setting-status {
+  border-left-color: var(--tk-accent);
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-setting-status.is-error {
+  border-left-color: #d66a6a;
+  background: var(--tk-inset);
+  color: var(--tk-danger);
+}
+html:root[data-theme] .pdf-page-number-v2 .pdf-page-number-export { min-height: 48px; }
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .pdf-page-number-v2 :is(.pdf-page-number-primary, .pdf-page-number-export) { transition: none; }
+}

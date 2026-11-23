@@ -40,8 +40,8 @@
   flex: 0 0 30px;
 }
 
-html[data-theme="light"] .icon-gen-v2 .audio-convert-file-size {
-  color: #65686f;
+html:root[data-theme] .icon-gen-v2 .audio-convert-file-size {
+  color: var(--tk-muted);
 }
 
 .icon-gen-v2 .pdf-merge-v2-files .audio-convert-file-thumb {

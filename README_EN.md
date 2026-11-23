@@ -2,13 +2,13 @@
 
 <img src="assets/readme/v3.1/01-hero.webp" alt="ToolKnit Desktop: a boy and his head-perched spider make everyday desktop work simpler" width="100%" />
 
-# ToolKnit Desktop 3.3
+# ToolKnit Desktop 3.4
 
-> V3.3 released November 15, 2026. Windows Desktop and npm CLI / MCP 3.3.0 are available. Author-owned source uses the MIT License.
+> V3.4 is in development and has not been released. Source version: 3.4.0. The current stable release remains V3.3, published November 15, 2026, including Desktop and npm CLI / MCP 3.3.0. Author-owned source uses the MIT License.
 
 **One toolbox for the little tasks scattered across your desktop.**
 
-75 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
+88 desktop tools · 12 categories · 78 CLI / MCP capabilities · Local first
 
 [MIT source license and attribution](#source-license)
 
@@ -37,11 +37,34 @@ Most need no account. Supported file tasks run locally in your browser. Network 
 ### Then bring it to your desktop
 
 V3.3 contains **75 desktop tools**. File search and Word to PDF are new, with improvements to local OCR, scanned PDF to Word and screenshots.
+
+Current V3.4 source adds **PDF to PPT**: export selected pages as image-based PPTX at 144, 200 or 300 DPI. Each page is one movable, replaceable picture; original text and tables are not individually editable. Cancellation and local saving are supported. The installer has not been released yet.
+
+**Meeting recorder & minutes** supports microphone recording, pause and resume, local playback, and saving. Desktop users can enable local Whisper transcription during recording and receive timestamped segments. Generate sends the current transcript and meeting name to the configured AI while audio stays local. Long transcripts up to 120,000 characters are processed in parts and combined into one draft with source quotes. Edit and export transcripts as TXT and minutes as Markdown.
+
+**Word to PDF** gains ZIP batch input in Desktop, CLI and MCP, with per-document origins, de-duplication and failed-entry retry in the desktop queue. Limits: 20 Word documents after expansion, 50 MiB per document/ZIP, bounded expansion and safe paths. See the [implementation and acceptance notes](toolknit-desktop/docs/WORD_TO_PDF.zh-CN.md).
+
+An optional **Refresh internal TOCs and fields** setting, off by default, updates TOCs, page numbers/counts, chapters and internal references, with skipped-type counts. Other fields and external data are not explicitly refreshed. CLI/MCP use `refresh_fields:true`.
+
+Optional **text/image watermarks during conversion** support CJK text, transparent PNG / JPEG, opacity, size, rotation and page ranges, with an A4 placement preview. CLI/MCP accept the same `watermark` settings. Body text stays searchable; failed items publish no PDF, and cancellation keeps completed results. Packaged WebView2 file selection and preview integration remain a pre-release check.
+
+Optionally **encrypt PDFs during conversion** with AES-256, an opening password and printing/copying/editing permissions, up to 200 pages per document. This composes with watermarks and internal refresh. CLI/MCP accept `encryption`; passwords apply to the current run and must be re-entered for retry. Failed items publish no plain intermediate PDF.
 Available installers are listed on the [Windows download page](https://toolknit.com/exe.html).
 Set an output folder and favorite your tools. Install models only when needed.
 Enable **one-click recording mode** for startup, clipboard monitoring and floating history. Press `Alt + Q` to capture.
 The home page groups **New features** by **V3.3 and V3.2**, newest first.
 See [Get started](#08--get-started) for installation requirements and instructions.
+
+### V3.4 development updates
+
+- Added a global quick launcher (`Ctrl+Shift+Space`, or `Ctrl+K` inside the app), local document content search, text comparison, an SRT/VTT subtitle workbench, and folder automation that preserves original files. [Usage guide (Chinese)](docs/WORKBENCH.zh-CN.md).
+- PDF Decrypt now supports up to 50 files per queue, shared or individual passwords, per-file results, stopping pending files, and retry through Task Center. Passwords apply to this run only and originals stay unchanged.
+- Added batch rename, Task Center, and reusable workflows. Rename supports live previews, sequences, dates, regular expressions, conflict checks, and undo for the most recent batch. Workflows combine images into a PDF or merge PDFs, optionally add page numbers, and save parameter presets. [Usage guide (Chinese)](docs/PRODUCTIVITY.zh-CN.md).
+- Task Center covers these new tools, Word to PDF, image conversion/compression, and batch audio/video conversion, with progress, cancellation, current-session retry, and local history. Supported native batch conversions run in sequence.
+- Restore Word history to the conversion page after restart. Source and output fingerprints retain valid PDFs and identify missing results. Confirm changed sources or re-add changed ZIPs; re-enter passwords and watermark contents. Clearing history removes metadata only. [Recovery details (Chinese)](toolknit-desktop/docs/WORD_TO_PDF.zh-CN.md).
+- Light and dark modes share one layout, with eight palettes, custom theme colors, preview, save, cancel, and reset.
+- Image and video wallpaper works independently of appearance; screenshot and file-search windows follow the selected palette.
+- Settings gains a responsive sidebar with a hidden scrollbar, one row of circular color choices, and a clearer order for appearance, storage, daily behavior, and AI/runtime settings.
 
 ### V3.3 highlights
 
@@ -262,7 +285,7 @@ V3.3 exposes **78 CLI / MCP capabilities**, adding Word to PDF. npm 3.3.0 is als
 | File inspection | Read-only scanning, dependency checks and structured JSON results |
 
 Progress, cancellation and explicit errors are supported. Originals and existing outputs stay protected. Unicode paths, long paths and model downloads are improved.
-Windows, clipboard monitoring and system cleanup remain desktop interactions. **The catalog has 78 interfaces and 75 desktop tools; these do not map one-to-one.**
+Window controls, clipboard monitoring and system cleanup remain desktop interactions. The V3.4 source includes 88 desktop tools and 78 CLI / MCP capabilities.
 
 Use **`@toolknit/cli` 3.3.0 or later**, independently of the desktop app. See the [complete catalog](toolknit-desktop/docs/CLI_CAPABILITIES.md) for the 78 capabilities. Requires Node.js **22.13+**.
 
@@ -289,6 +312,8 @@ toolknit --help
 Basic file capabilities do not require an AI key. AI workflows require `DEEPSEEK_API_KEY` or `TOOLKNIT_AI_API_KEY` in the CLI / MCP process environment, as specified by the command contract.
 
 [CLI / MCP contract](toolknit-desktop/docs/cli-agent.md) · [English Agent guide](toolknit-desktop/docs/agent-guide.en.md) · [中文 Agent 手册](toolknit-desktop/docs/agent-guide.zh-CN.md)
+
+[OrcaRouter custom configuration and verification](toolknit-desktop/docs/orcarouter.en.md): uses existing compatible settings; local protocol checks passed, while real authenticated generation awaits dedicated test credentials.
 
 </details>
 
@@ -347,7 +372,7 @@ File-size, page, pixel and batch limits vary by tool; support is not unlimited f
 ## Complete tool catalog
 
 <details>
-<summary><strong>Expand 75 desktop tools / 12 categories</strong></summary>
+<summary><strong>Expand the V3.3 release catalog of 75 desktop tools / 12 categories</strong></summary>
 
 | Category | Count | Tools |
 | --- | ---: | --- |

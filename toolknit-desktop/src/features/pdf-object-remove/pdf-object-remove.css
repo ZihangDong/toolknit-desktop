@@ -1,0 +1,37 @@
+.pdf-remove-tool {position:fixed;inset:0;z-index:200;display:none;flex-direction:column;background:var(--tk-page-bg);color:var(--tk-ink);}
+.pdf-remove-tool.visible {display:flex;}
+.pdf-remove-tool [hidden] {display:none!important;}
+.pdf-remove-layout {display:grid;grid-template-columns:330px minmax(0,1fr);gap:24px;padding:16px 28px 24px;flex:1;min-height:0;}
+.pdf-remove-controls {display:flex;flex-direction:column;gap:10px;overflow:auto;padding-right:8px;}
+.pdf-remove-controls>* {flex-shrink:0;}
+.pdf-remove-layout h1 {font-size:24px;line-height:1.35;margin:0;}
+.pdf-remove-layout h2 {font-size:17px;margin:0;}
+.pdf-remove-layout h3 {font-size:13px;font-weight:500;margin:0 0 8px;}
+.pdf-remove-muted {margin:0;color:var(--tk-muted);font-size:13px;line-height:1.65;overflow-wrap:anywhere;}
+.pdf-remove-layout label {font-size:13px;font-weight:600;}
+.pdf-remove-layout button {font:inherit;font-size:13px;background:var(--tk-inset);color:var(--tk-ink);border:1px solid var(--tk-border);border-radius:6px;min-height:38px;padding:9px 12px;cursor:pointer;}
+.pdf-remove-layout button[data-primary] {background:var(--tk-ink);color:var(--tk-page-bg);}
+.pdf-remove-layout button:disabled {opacity:.45;cursor:default;}
+.pdf-remove-layout button:focus-visible {outline:2px solid var(--tk-accent);outline-offset:2px;}
+.pdf-remove-layout input,.pdf-remove-layout select {box-sizing:border-box;width:100%;min-width:0;padding:9px 10px;border:1px solid var(--tk-border-strong);border-radius:4px;background-color:var(--tk-page-bg);color:var(--tk-ink);font:inherit;font-size:14px;}
+.pdf-remove-layout select[size] {min-height:180px;padding:4px;}
+.pdf-remove-layout select[size] option {padding:6px;}
+.pdf-remove-row {display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.pdf-remove-workspace {display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0;}
+.pdf-remove-toolbar {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.pdf-remove-check {display:flex;align-items:center;gap:7px;}
+.pdf-remove-zoom {display:flex;align-items:center;gap:7px;}
+.pdf-remove-layout .pdf-remove-zoom select {width:auto;}
+.pdf-remove-layout .pdf-remove-check input {width:18px;height:18px;}
+.pdf-remove-comparison {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;flex:1;min-height:0;}
+.pdf-remove-comparison>section {display:flex;flex-direction:column;min-width:0;min-height:0;}
+.pdf-remove-sheet {flex:1;min-height:240px;overflow:auto;background:var(--tk-inset);padding:12px;}
+.pdf-remove-sheet canvas {display:block;width:100%;height:auto;background:white;}
+.pdf-remove-paper {position:relative;}
+#pdfRemoveDifference {position:absolute;box-sizing:border-box;border:2px solid #1769d2;pointer-events:none;}
+#pdfRemovePlaceholder {font-size:14px;line-height:1.7;color:var(--tk-muted);margin:10px;}
+#pdfRemoveStatus {font-size:13px;line-height:1.65;margin:0;overflow-wrap:anywhere;}
+#pdfRemoveStatus.is-error {color:var(--tk-danger);}
+.pdf-remove-mobile-link {display:none;}
+@media(max-width:1000px) {.pdf-remove-layout {grid-template-columns:290px minmax(0,1fr);gap:16px;padding-inline:20px;} .pdf-remove-comparison {grid-template-columns:1fr;overflow:auto;} .pdf-remove-sheet {min-height:260px;max-height:420px;}}
+@media(max-width:700px) {.pdf-remove-tool {overflow:auto;} .pdf-remove-layout {display:flex;flex-direction:column;min-height:auto;padding:16px;} .pdf-remove-controls {overflow:visible;padding:0;} .pdf-remove-workspace {min-height:800px;} .pdf-remove-comparison {overflow:visible;flex:none;} .pdf-remove-sheet {height:330px;flex:none;} .pdf-remove-mobile-link {display:inline-flex;}}

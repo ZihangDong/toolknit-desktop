@@ -580,3 +580,250 @@
 @media (prefers-reduced-motion: reduce) {
   .pdf-crop-primary, .pdf-crop-export { transition: none; }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-kicker, .pdf-crop-filmstrip-head, .pdf-crop-current-bar) {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-page-nav button, .pdf-crop-zoom button, .pdf-crop-current-bar button, .pdf-crop-file-card button) {
+  border-color: var(--tk-border);
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-page-nav button, .pdf-crop-zoom button, .pdf-crop-current-bar button, .pdf-crop-file-card button):hover:not(:disabled) {
+  border-color: var(--tk-border);
+  color: var(--tk-ink);
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-page-nav button, .pdf-crop-zoom button, .pdf-crop-current-bar button, .pdf-crop-file-card button):disabled {
+  border-color: var(--tk-border);
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+  opacity: 0.65;
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-export-secondary {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-export-secondary:hover:not(:disabled) {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+  color: var(--tk-ink);
+  box-shadow: none;
+  transform: none;
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-selection {
+  border-color: var(--tk-accent);
+  box-shadow: 0 0 0 9999px rgba(17, 17, 17, 0.22), 0 0 0 1px rgba(17, 17, 17, 0.14);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-interaction-layer.is-unset .pdf-crop-selection {
+  border-color: rgba(var(--tk-rgb-ink), 0.72);
+  box-shadow: none;
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-handle {
+  border-color: var(--tk-accent);
+  background: var(--tk-page-bg);
+  box-shadow: 0 1px 5px rgba(17, 17, 17, 0.2);
+}
+
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-size-badge, .pdf-crop-draw-hint) {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-filmstrip-head b {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-filmstrip-head small {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-filmstrip {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-filmstrip.is-empty::before {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-filmstrip, .pdf-crop-settings-scroll, .pdf-crop-canvas-scroll)::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-page-thumb {
+  border-color: var(--tk-border);
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-page-thumb:hover,
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-page-thumb.is-current {
+  border-color: var(--tk-border);
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-page-thumb.is-current {
+  box-shadow: inset 3px 0 0 #171717;
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-page-thumb-visual {
+  background: var(--tk-surface);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-page-thumb-box {
+  border-color: var(--tk-accent);
+  background: rgba(var(--tk-rgb-ink), 0.08);
+  box-shadow: 0 0 0 999px rgba(17, 17, 17, 0.16);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-page-thumb-copy b {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-page-thumb-copy small,
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-page-thumb.has-crop .pdf-crop-page-thumb-copy small {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-file-card {
+  border-bottom-color: var(--tk-border);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-file-icon {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-file-card strong {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-file-card small {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-scope button, .pdf-crop-output-modes label > span) {
+  border-color: var(--tk-border);
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-scope button:hover:not(:disabled),
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-output-modes input:not(:disabled) + span:hover,
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-scope button.is-active:not(:disabled),
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-output-modes input:checked:not(:disabled) + span {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-scope b, .pdf-crop-output-modes b) {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-scope button:hover:not(:disabled) b,
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-scope button.is-active:not(:disabled) b,
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-output-modes input:checked:not(:disabled) + span b {
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-scope-note {
+  border-left-color: var(--tk-accent);
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-margin-toolbar label,
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-margin-grid label,
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-field {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-margin-toolbar select, .pdf-crop-margin-grid input, .pdf-crop-field input) {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-margin-toolbar select, .pdf-crop-margin-grid input, .pdf-crop-field input):focus {
+  border-color: var(--tk-accent);
+  background: var(--tk-page-bg);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-margin-toolbar button {
+  border-color: var(--tk-border);
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-margin-toolbar button:hover:not(:disabled),
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-margin-toolbar button[aria-pressed="true"] {
+  border-color: var(--tk-accent);
+  color: var(--tk-on-accent);
+  background: var(--tk-accent);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-dimension-card {
+  border-color: var(--tk-border);
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-dimension-card strong {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-history-actions button, .pdf-crop-reframe) {
+  border-color: var(--tk-border);
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-history-actions button, .pdf-crop-reframe):hover:not(:disabled),
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-reframe[aria-pressed="true"] {
+  border-color: var(--tk-accent);
+  color: var(--tk-on-accent);
+  background: var(--tk-accent);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-reframe small {
+  color: inherit;
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-reset-all {
+  border-color: #e2b7b7;
+  color: #9d2222;
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-reset-all:hover:not(:disabled) {
+  border-color: #d66a6a;
+  color: #7f1818;
+  background: #f8d7d7;
+}
+
+html:root[data-theme] .pdf-crop-v2 .pdf-crop-security-note {
+  border-color: var(--tk-border);
+  color: var(--tk-muted);
+  background: var(--tk-inset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .pdf-crop-v2 :is(.pdf-crop-primary, .pdf-crop-export) {
+    transition: none;
+  }
+}

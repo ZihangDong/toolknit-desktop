@@ -1,5 +1,5 @@
 #duplicateFileCleanupOverlay { --dup-surface: #151617; --dup-muted: #a1a4a8; --dup-ink: #f2f3f4; --dup-input: #202224; --dup-curve-base: #3a3c3f; --dup-divider: #72767b; color: var(--dup-ink); }
-html[data-theme="light"] #duplicateFileCleanupOverlay { --dup-surface: #fff; --dup-muted: #60666c; --dup-ink: #202428; --dup-input: #f4f5f6; --dup-curve-base: #e3e5e7; --dup-divider: #e3e5e7; }
+html:root[data-theme] #duplicateFileCleanupOverlay { --dup-surface: var(--tk-page-bg); --dup-muted: var(--tk-muted); --dup-ink: var(--tk-ink); --dup-input: var(--tk-inset); --dup-curve-base: var(--tk-surface); --dup-divider: var(--tk-surface); }
 #duplicateFileCleanupOverlay .cleanup-large-files-body { position: relative; grid-template-columns: minmax(250px, 310px) minmax(0, 1fr); gap: 20px; }
 #duplicateFileCleanupOverlay :is(.cleanup-v2-side, .cleanup-v2-main) { border-radius: 8px; background: var(--dup-surface); box-shadow: none; }
 #duplicateFileCleanupOverlay .cleanup-v2-side { gap: 12px; padding: 22px; }
@@ -9,21 +9,17 @@ html[data-theme="light"] #duplicateFileCleanupOverlay { --dup-surface: #fff; --d
 #duplicateFileCleanupOverlay :is(.cleanup-v2-label, .cleanup-v2-path) { color: var(--dup-muted); }
 #duplicateFileCleanupOverlay .cleanup-v2-path { border-radius: 6px; background: var(--dup-input); }
 #duplicateFileCleanupOverlay :is(.cleanup-v2-btn, .cleanup-v2-scan-btn), #duplicateCleanupDialog .cleanup-v2-btn { border-radius: 999px; letter-spacing: 0; }
-#duplicateFileCleanupOverlay .cleanup-v2-btn { color: #fff; background: #202428; border-color: #202428; }
-#duplicateFileCleanupOverlay .cleanup-v2-btn:hover:not(:disabled) { color: #fff; background: #111315; border-color: #111315; transform: scale(1.02); }
-html[data-theme="dark"] #duplicateFileCleanupOverlay .cleanup-v2-btn { color: #202428; background: #f2f3f4; border-color: #f2f3f4; }
-html[data-theme="dark"] #duplicateFileCleanupOverlay .cleanup-v2-btn:hover:not(:disabled) { color: #111315; background: #fff; border-color: #fff; }
+#duplicateFileCleanupOverlay .cleanup-v2-btn { color: var(--tk-on-accent); background: var(--tk-accent); border-color: var(--tk-accent); }
+#duplicateFileCleanupOverlay .cleanup-v2-btn:hover:not(:disabled) { color: var(--tk-on-accent); background: var(--tk-accent-hover); border-color: var(--tk-accent-hover); transform: scale(1.02); }
 #duplicateFileCleanupOverlay .cleanup-v2-scan-btn { flex-shrink: 0; border-radius: 999px; color: var(--dup-surface); background: var(--dup-ink); border-color: var(--dup-ink); }
 #duplicateFileCleanupOverlay .cleanup-v2-scan-btn:hover { color: var(--dup-surface); background: var(--dup-ink); border-color: var(--dup-ink); }
 #duplicateFileCleanupOverlay .cleanup-v2-scan-btn:hover:not(:disabled) { transform: scale(1.02); }
 #duplicateFileCleanupOverlay :is(button, input):focus-visible { outline: none; box-shadow: inset 0 0 0 2px #758d9c; }
 #duplicateFileCleanupOverlay [hidden], #duplicateCleanupDialog [hidden] { display: none; }
 #duplicateFileCleanupOverlay .duplicate-check { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-#duplicateFileCleanupOverlay input[type="checkbox"] { appearance: none; width: 16px; height: 16px; margin: 0; border: 2px solid #202428; border-radius: 50%; background: transparent; position: relative; flex: 0 0 16px; }
-#duplicateFileCleanupOverlay input[type="checkbox"]::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: #202428; opacity: 0; transform: scale(.35); transition: opacity 160ms ease, transform 180ms ease; }
+#duplicateFileCleanupOverlay input[type="checkbox"] { appearance: none; width: 16px; height: 16px; margin: 0; border: 2px solid var(--tk-accent); border-radius: 50%; background: transparent; position: relative; flex: 0 0 16px; }
+#duplicateFileCleanupOverlay input[type="checkbox"]::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--tk-accent); opacity: 0; transform: scale(.35); transition: opacity 160ms ease, transform 180ms ease; }
 #duplicateFileCleanupOverlay input[type="checkbox"]:checked::after { opacity: 1; transform: scale(1); }
-html[data-theme="dark"] #duplicateFileCleanupOverlay input[type="checkbox"] { border-color: #f2f3f4; }
-html[data-theme="dark"] #duplicateFileCleanupOverlay input[type="checkbox"]::after { background: #f2f3f4; }
 #duplicateFileCleanupOverlay .duplicate-scope-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 #duplicateFileCleanupOverlay .duplicate-scope-actions .cleanup-v2-btn { flex: 1 1 132px; }
 #duplicateFileCleanupOverlay .duplicate-scope-actions [aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--dup-ink); }
@@ -71,7 +67,6 @@ html[data-theme="dark"] #duplicateFileCleanupOverlay input[type="checkbox"]::aft
 .duplicate-members.is-open { grid-template-rows: 1fr; margin: 0 0 14px; opacity: 1; pointer-events: auto; transform: translateY(0); }
 .duplicate-members-inner { min-height: 0; overflow: hidden; }
 .duplicate-members-body { padding: 20px; }
-html[data-theme="dark"] .duplicate-members { --dup-expanded-surface: #fff; --dup-expanded-ink: #17191b; --dup-expanded-muted: #565960; }
 .duplicate-members .duplicate-keeper { color: var(--dup-expanded-muted); }
 .duplicate-keeper { width: 100%; overflow-wrap: anywhere; font-size: 14px; line-height: 1.6; margin-bottom: 10px; }
 .duplicate-file { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; padding: 16px 0; align-items: start; }
@@ -95,14 +90,14 @@ html[data-theme="dark"] .duplicate-members { --dup-expanded-surface: #fff; --dup
 #duplicateRemove svg { width: 14px; height: 14px; }
 .duplicate-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 #duplicateCleanupDialog { --dup-surface: #151617; --dup-ink: #f2f3f4; }
-html[data-theme="light"] #duplicateCleanupDialog { --dup-surface: #fff; --dup-ink: #202428; color-scheme: light; }
+html:root[data-theme] #duplicateCleanupDialog { --dup-surface: var(--tk-page-bg); --dup-ink: var(--tk-ink); color-scheme: var(--tk-color-scheme); }
 #duplicateCleanupDialog .audio-convert-success-dialog { width: min(560px, calc(100vw - 40px)); max-width: none; border-radius: 8px; max-height: calc(100dvh - 40px); overflow: auto; text-align: left; align-items: stretch; color: var(--dup-ink); background: var(--dup-surface); border: 1px solid var(--line); }
 #duplicateCleanupDialog h2 { font-size: 20px; line-height: 1.4; margin: 0; }
 #duplicateDialogText { white-space: pre-line; font-size: 14px; line-height: 1.7; }
 #duplicateFailures { max-height: 220px; overflow: auto; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
-html[data-theme="light"] #duplicateCleanupDialog .cleanup-v2-btn { color: #202428; background: #f4f5f6; border-color: #d3d6da; }
+html:root[data-theme] #duplicateCleanupDialog .cleanup-v2-btn { color: var(--tk-ink); background: var(--tk-inset); border-color: var(--tk-border); }
 .duplicate-cleanup-layer { --dup-cover: #000; --dup-cover-ink: #fff; --dup-cover-muted: #bfc2c6; position: absolute; inset: 0; z-index: 2; overflow: auto; overscroll-behavior: contain; background: var(--dup-cover); color: var(--dup-cover-ink); opacity: 0; }
-html[data-theme="light"] .duplicate-cleanup-layer { --dup-cover: #fff; --dup-cover-ink: #000; --dup-cover-muted: #55595e; }
+html:root[data-theme] .duplicate-cleanup-layer { --dup-cover: var(--tk-page-bg); --dup-cover-ink: var(--tk-ink); --dup-cover-muted: var(--tk-muted); }
 #duplicateFileCleanupOverlay .cleanup-large-files-body.is-cleanup-active { overflow: hidden; }
 .duplicate-cleanup-layer.is-visible { opacity: 1; animation: duplicate-cover-in 240ms ease both; }
 .duplicate-cleanup-layer.is-leaving { animation: duplicate-cover-out 260ms ease both; pointer-events: none; }

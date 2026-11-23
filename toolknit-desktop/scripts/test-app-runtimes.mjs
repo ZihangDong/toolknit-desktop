@@ -481,36 +481,17 @@ assert.deepEqual(dispatchChromeClick(subpageTarget({ matches: selector => select
   { prevented: false, stopped: false }, 'subpage Back reaches its local handler, not the registered tool close');
 unbindTransitionChrome();
 
-const feedbackRoot = new FakeRoot([new FakeElement('feedbackOverlay'), new FakeElement('lightraysBg')]);
-let feedbackTheme = 'light';
-let themeListener;
-let backgroundsCreated = 0;
-let backgroundsDestroyed = 0;
-const feedbackRuntime = createHelpCenterRuntime({
-  root: feedbackRoot,
-  getTheme: () => feedbackTheme,
-  onThemeChange: listener => { themeListener = listener; return () => { themeListener = null; }; },
-  initLightRays: () => { backgroundsCreated++; return { destroy: () => { backgroundsDestroyed++; } }; }
-});
-await feedbackRuntime.openFeedbackOverlay();
-assert.equal(backgroundsCreated, 0, 'light feedback never starts the hidden WebGL effect');
-feedbackTheme = 'dark';
-themeListener();
-themeListener();
-assert.equal(backgroundsCreated, 1, 'dark feedback starts one effect');
-feedbackTheme = 'light';
-themeListener();
-assert.equal(backgroundsDestroyed, 1, 'switching to light releases the effect');
-await feedbackRuntime.closeFeedbackOverlay();
-feedbackTheme = 'dark';
-themeListener();
-assert.equal(backgroundsCreated, 1, 'a closed page does not restart its effect');
-await feedbackRuntime.openFeedbackOverlay();
-await feedbackRuntime.closeFeedbackOverlay();
-assert.equal(backgroundsDestroyed, 2);
-feedbackRuntime.dispose();
-feedbackRuntime.dispose();
-assert.equal(themeListener, null, 'disposal removes the theme subscription');
+for (const mode of ['light', 'dark']) {
+  const feedbackRoot = new FakeRoot([new FakeElement('feedbackOverlay'), new FakeElement('lightraysBg')]);
+  let backgroundsCreated = 0;
+  const feedbackRuntime = createHelpCenterRuntime({ root: feedbackRoot, getTheme: () => mode,
+    initLightRays: () => { backgroundsCreated++; return { destroy() {} }; } });
+  await feedbackRuntime.openFeedbackOverlay();
+  await feedbackRuntime.closeFeedbackOverlay();
+  await feedbackRuntime.openFeedbackOverlay();
+  assert.equal(backgroundsCreated, 0, 'the unified feedback surface never allocates a hidden WebGL effect');
+  feedbackRuntime.dispose(); feedbackRuntime.dispose();
+}
 
 const legalRoot = new FakeRoot(['legalOverlay', 'legalContentTitle', 'legalTopTag', 'legalContentBody']
   .map(id => new FakeElement(id)));

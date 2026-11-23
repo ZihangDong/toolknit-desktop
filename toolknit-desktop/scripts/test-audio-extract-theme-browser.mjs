@@ -72,7 +72,7 @@ try {
       if (rule.cssRules) walk(rule.cssRules);
     } };
     walk(sheet.cssRules); return invalid;
-  }, await readFile('src/styles/themes/audio-extract-light.css', 'utf8'));
+  }, await readFile('src/features/audio-extract/audio-extract.css', 'utf8'));
   assert.deepEqual(unscoped, [], 'extractor styles must not change dark mode or other tools');
   await screenshot('light-empty');
   await setTheme('dark');

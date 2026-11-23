@@ -64,3 +64,11 @@ ToolKnit's MIT license does not replace them.
 The new imageproc geometry dependency and its newly linked dependencies retain
 their original MIT, Apache-2.0, BSD and Zlib notices in
 LICENSES/Local-OCR-Dependencies.txt, included with the desktop application.
+
+The Windows desktop installer includes a patched LibreOffice runtime under
+resources/office-kernel. LibreOffice and its third-party components retain
+their original licenses, including MPL-2.0; see runtime/LICENSE.html,
+runtime/license.txt and runtime/NOTICE in that directory. The pinned upstream
+revision and all ToolKnit modifications accompany source/kernel.lock.json,
+source/patches and source/SOURCE.md. ToolKnit's MIT license does not replace
+these licenses. Runtime file hashes are pinned in office-kernel/runtime.lock.json.

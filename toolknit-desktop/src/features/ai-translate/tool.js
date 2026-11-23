@@ -17,7 +17,7 @@ import {
 import { TEXT_STATS_LIMITS } from '../../text-stats-core.js';
 import '../ai-text/ai-text-shared.css';
 import './ai-translate.css';
-import './ai-translate-light.css';
+
 
 const EMPTY_SOURCE = Object.freeze({ type: 'manual', name: '', bytes: 0, kind: '' });
 const REQUEST_TIMEOUT_MS = AI_PROVIDER_LIMITS.maxTimeoutMs;

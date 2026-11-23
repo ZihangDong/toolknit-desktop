@@ -7,7 +7,7 @@ const require=createRequire(process.env.TOOLKNIT_TEST_MODULES?path.join(process.
 const {chromium}=require('playwright');
 const settings=await readFile('src/app/templates/settings.html','utf8'),managers=await readFile('src/app/templates/dependency-managers.html','utf8');
 await mkdir('tmp/local-ocr-browser',{recursive:true});
-await writeFile('tmp/local-ocr-manager.html',`<!doctype html><html><head><link rel="stylesheet" href="/src/styles/index.css"><link rel="stylesheet" href="/src/styles/themes/index.css"></head><body>${settings}${managers}<script type="module">
+await writeFile('tmp/local-ocr-manager.html',`<!doctype html><html><head><link rel="stylesheet" href="/src/styles/index.css"></head><body>${settings}${managers}<script type="module">
 import {createLocalOcrSettings} from '/src/app/local-ocr-runtime.js';import {createLocalOcrRuntime} from '/src/platform/local-ocr-runtime.js';import zh from '/src/locales/zh.json';import en from '/src/locales/en.json';
 const dict=window.__theme==='light'?zh:en;const translate=key=>key.split('.').reduce((v,k)=>v?.[k],dict)||key;
 document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=translate(el.dataset.i18n));document.getElementById('settingsOverlay').classList.add('visible');document.getElementById('settingsOverlay').inert=false;

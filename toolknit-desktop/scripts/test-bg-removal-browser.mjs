@@ -13,7 +13,7 @@ await mkdir(output, { recursive: true });
 const html = `<!doctype html><html data-tk-auxiliary><head>
 <link rel="stylesheet" href="/src/styles/index.css">
 <link rel="stylesheet" href="/src/tool-custom-select.css">
-<link rel="stylesheet" href="/src/styles/themes/index.css">
+
 </head><body><div id="bgRemovalOverlay"></div><script type="module">
 import { mockIPC, mockWindows } from '/node_modules/@tauri-apps/api/mocks.js';
 mockWindows('main');
@@ -44,7 +44,7 @@ window.mountTool = () => {
 };
 window.mountTool(); window.ready = true;
 </script></body></html>`;
-const entry = ['/src/styles/index.css', '/src/tool-custom-select.css', '/src/styles/themes/index.css']
+const entry = ['/src/styles/index.css', '/src/tool-custom-select.css', '/src/styles/index.css']
   .map(file => `import '${file}';`).join('\n')
   + html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
 const bundle = await build({configFile:false, logLevel:'error',

@@ -145,7 +145,7 @@ pub(crate) fn probe_libreoffice_detailed(
     let version = text
         .lines()
         .map(str::trim)
-        .find(|line| line.starts_with("LibreOffice "))
+        .find(|line| line.starts_with("LibreOffice ") || line.starts_with("LibreOfficeDev "))
         .map(|line| line.chars().take(160).collect())
         .ok_or_else(|| "libreoffice-runtime:version".to_string())?;
     Ok(LibreOfficeRuntimeInfo {

@@ -1,6 +1,6 @@
 {
   "name": "@toolknit/cli",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "license": "MIT",
   "description": "Local-first file processing CLI and MCP server for ToolKnit",
   "type": "module",

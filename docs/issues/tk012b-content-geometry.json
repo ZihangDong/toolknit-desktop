@@ -1,0 +1,37 @@
+{
+  "task": "TK-012-B-G",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "complete",
+  "parentTaskComplete": false,
+  "supported": {
+    "contexts": ["page drawing stream", "Form drawing stream"],
+    "filters": ["FlateDecode", "LZWDecode"],
+    "optionalOuterFilters": ["ASCIIHexDecode", "ASCII85Decode"],
+    "lzwEarlyChange": [0, 1],
+    "colors": [1, 2, 3, 4],
+    "png": { "predictors": [10, 11, 12, 13, 14, 15], "bitsPerComponent": [1, 2, 4, 8, 16] },
+    "tiff": { "predictor": 2, "bitsPerComponent": [1, 2, 4, 8], "requiresWholeByteRows": true }
+  },
+  "tests": {
+    "byteComparisonProfiles": 1287,
+    "baselineProfiles": 63,
+    "explicitGeometryProfiles": 1224,
+    "pdfFixturePages": 7,
+    "popplerPageComparisons": 14,
+    "pdfjsPageComparisons": 14,
+    "qpdfEditedOutputs": 1,
+    "edgeChecks": 371,
+    "fullObjectRemovalRegression": "passed",
+    "productionBuildAndEntry": "passed",
+    "malformedPageStreamPreservedDuringAdjacentPageEdit": true
+  },
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-content-predictor/report.json",
+    "toolknit-desktop/tmp/pdf-content-geometry-regression.log",
+    "toolknit-desktop/tmp/pdf-content-geometry-browser.log",
+    "toolknit-desktop/tmp/pdf-content-geometry-build.log",
+    "toolknit-desktop/tmp/pdf-content-geometry-production.log"
+  ],
+  "nativeUiAcceptance": false
+}

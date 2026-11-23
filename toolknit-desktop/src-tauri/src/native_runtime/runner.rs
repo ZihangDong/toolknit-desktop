@@ -23,20 +23,32 @@ pub fn run() {
         })
         .manage(WindowCornerRadiusState::default())
         .manage(AutostartState::default())
+        .manage(workbench::FolderState::default())
+        .manage(workbench::LauncherState::default())
         .manage(quick_screenshot::ScreenshotState::default())
         .manage(file_search::FileSearchState::default())
         .manage(platform::auxiliary_windows::Registry::default())
         .manage(local_translation::TranslationState::default())
         .manage(local_ocr::OcrState::default())
+        .manage(disk_space::DiskSpaceState::default())
         .manage(crate::clipboard_history::ClipboardHistoryState::default())
         .manage(onnx_segmenter::MattingState::default())
         .manage(TeleprompterRecognitionState::default())
+        .manage(MeetingRecognitionState::default())
         .invoke_handler(tauri::generate_handler![
+            complete_tray_quit,
+            workbench::document_content_index,
+            workbench::folder_automation,
+            workbench::launcher_settings,
+            batch_rename::batch_rename_files,
+            batch_rename::recover_batch_rename,
+            batch_rename::undo_batch_rename,
             quick_screenshot::quick_screenshot,
             quick_screenshot::quick_screenshot_image,
             file_search::file_search,
             local_translation::local_translation,
             local_ocr::runtime::local_ocr,
+            disk_space::disk_space,
             crate::clipboard_history::clipboard_history,
             crate::clipboard_history::copy_sensitive_text,
             open_url,
@@ -79,6 +91,11 @@ pub fn run() {
             delete_transcription_model,
             download_transcription_model,
             transcribe_media,
+            transcribe_meeting_media,
+            cancel_meeting_transcription,
+            start_meeting_recognition,
+            transcribe_meeting_segment,
+            stop_meeting_recognition,
             convert_audio_batch,
             cancel_convert,
             cancel_video_preview,
@@ -176,6 +193,8 @@ pub fn run() {
             office::discard_ppt_to_image_preview,
             office::convert_excel_to_pdf,
             office::convert_word_to_pdf,
+            office::inspect_word_zip,
+            office::inspect_word_history,
             office::cancel_word_to_pdf,
             convert_video_batch,
             set_tray_lang,
@@ -267,7 +286,7 @@ pub fn run() {
                         show_main_window(app);
                     }
                     "quit" => {
-                        app.exit(0);
+                        request_tray_quit(app);
                     }
                     "clipboard-toggle" => crate::clipboard_history::tray_toggle(app),
                     "autostart-toggle" => toggle_autostart_tray(app),
@@ -322,6 +341,7 @@ pub fn run() {
 
             quick_screenshot::initialize(app.handle());
             file_search::initialize(app.handle());
+            workbench::bootstrap(app.handle());
             Ok(())
         })
         .build(context)
@@ -329,13 +349,45 @@ pub fn run() {
         .run(|app, event| {
             if matches!(event, tauri::RunEvent::Exit) {
                 file_search::shutdown(app);
+                workbench::shutdown(app);
                 local_translation::shutdown(app);
                 local_ocr::shutdown(app);
+                disk_space::shutdown(app);
             }
             if let tauri::RunEvent::ExitRequested { api, code, .. } = event {
                 crate::clipboard_history::on_exit_requested(app, &api, code);
             }
         });
+}
+
+fn request_tray_quit(app: &tauri::AppHandle) {
+    let Some(window) = app.get_webview_window("main") else {
+        app.exit(0);
+        return;
+    };
+    // The webview owns the IndexedDB draft. Wait for its transaction before exiting.
+    if let Err(error) = window.eval(
+        "(() => {
+            const detail = { ready: Promise.resolve(true) };
+            window.dispatchEvent(new CustomEvent('toolknit:tray-quit', { detail }));
+            detail.ready.then(ready => window.__TAURI_INTERNALS__.invoke('complete_tray_quit', { ready }));
+        })()",
+    ) {
+        log::warn!("Unable to request tray exit: {error}");
+        show_main_window(app);
+    }
+}
+
+#[tauri::command]
+fn complete_tray_quit(window: tauri::WebviewWindow, ready: bool) {
+    if window.label() != "main" {
+        return;
+    }
+    if ready {
+        window.app_handle().exit(0);
+    } else {
+        show_main_window(window.app_handle());
+    }
 }
 
 pub(super) fn show_main_window(app: &tauri::AppHandle) {

@@ -1,6 +1,6 @@
 [package]
 name = "toolknit-desktop"
-version = "3.3.0"
+version = "3.4.0"
 description = "ToolKnit Desktop App"
 license = "MIT"
 edition = "2021"

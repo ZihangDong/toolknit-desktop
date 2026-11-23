@@ -1,13 +1,18 @@
 import { defineConfig } from "vite";
 import { fileURLToPath } from 'node:url';
 import { pdfjsAssets } from './scripts/lib/pdfjs-assets.mjs';
+import { createThemeEngine } from './src/app/theme-palette.js';
 
 const desktopRoot = fileURLToPath(new URL('.', import.meta.url)).replaceAll('\\', '/');
 const generatedPaths = ['cli/lib/core', 'cli/lib/shared', 'tmp', 'output', '.cache', '.codex-build']
   .map(directory => desktopRoot + directory + '/**');
 
 export default defineConfig(async ({ mode }) => ({
-  plugins: [pdfjsAssets()],
+  plugins: [pdfjsAssets(), {
+    name: 'toolknit-theme-bootstrap',
+    transformIndexHtml: { order: 'pre', handler: html => html.replace('<!-- toolknit-appearance-bootstrap -->',
+      `<script data-tk-appearance-bootstrap>(${createThemeEngine.toString()})().bootstrap(document, window);</script>`) }
+  }],
   clearScreen: false,
   server: {
     // Tauri's Windows WebView resolves the trusted development origin as

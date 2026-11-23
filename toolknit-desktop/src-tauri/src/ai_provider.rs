@@ -329,7 +329,7 @@ async fn request_impl(
     }
 
     let client = reqwest::Client::builder()
-        .user_agent("ToolKnit/3.3.0 local-ai-provider")
+        .user_agent("ToolKnit/3.4.0 local-ai-provider")
         .connect_timeout(std::time::Duration::from_secs(8))
         .timeout(std::time::Duration::from_millis(
             request.timeout_ms.unwrap_or(45_000),
@@ -422,6 +422,26 @@ pub fn cancel_private_ai_completion(request_id: String) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn orcarouter_documented_chat_envelope_uses_existing_transport() {
+        let mut request = test_request();
+        request.url = "https://api.orcarouter.ai/v1/chat/completions".into();
+        request.model = "openai/gpt-4o-mini".into();
+        request.max_tokens = Some(1024);
+        request.temperature = Some(0.1);
+        let endpoint = validate_native_request(&request).unwrap();
+        assert_eq!(endpoint.host_str(), Some("api.orcarouter.ai"));
+        assert_eq!(endpoint.path(), "/v1/chat/completions");
+        let body = request_body(&request, &endpoint);
+        assert_eq!(body["model"], "openai/gpt-4o-mini");
+        assert_eq!(body["stream"], false);
+        assert_eq!(body["max_tokens"], 1024);
+        assert_eq!(body["temperature"], 0.1);
+        assert!(body.get("reasoning_effort").is_none());
+        assert!(body.get("apiKey").is_none());
+        assert!(body.get("requestId").is_none());
+    }
 
     #[test]
     fn multimodal_messages_are_bounded_and_local_images_only() {

@@ -34,10 +34,11 @@ export async function checkUpdateDialogTheme(browser, url, output) {
         assert.equal(await dialog.evaluate(node => node.matches(':modal')), true);
         assert.equal(await dialog.locator('[data-update-current]').textContent(), currentTag);
         assert.equal(await dialog.locator('[data-update-latest]').textContent(), latestTag);
-        assert.equal(await dialog.locator('button').count(), 1, 'Only download is available');
+        assert.equal(await dialog.locator('button').count(), 2, 'Download and close are available');
+        assert.ok(await dialog.locator('[data-update-close]').getAttribute('aria-label'), 'Close has an accessible label');
         assert.equal(await dialog.locator('.update-dialog-symbol svg').evaluate(node => getComputedStyle(node).color),
           theme === 'light' ? 'rgb(17, 17, 17)' : 'rgb(255, 255, 255)', 'Rocket follows the monochrome theme');
-        assert.equal(await dialog.locator('button').evaluate(node => getComputedStyle(node).outlineStyle), 'none', 'Automatic focus has no outline');
+        assert.equal(await dialog.locator('[data-update-download]').evaluate(node => getComputedStyle(node).outlineStyle), 'none', 'Automatic focus has no outline');
         assert.equal(await dialog.locator('.update-dialog-symbol svg').evaluate(node => getComputedStyle(node).animationName), 'none', 'Reduced motion disables the loop');
         await page.emulateMedia({ reducedMotion: 'no-preference' });
         const rocket = dialog.locator('.update-dialog-symbol svg');
@@ -71,11 +72,13 @@ export async function checkUpdateDialogTheme(browser, url, output) {
           await page.screenshot({ path: path.join(output, `${theme}-${language}-${width}x${height}.png`) });
         }
         await page.keyboard.press('Escape');
-        assert.equal(await dialog.evaluate(node => node.open), true, 'Escape cannot dismiss');
+        assert.equal(await dialog.evaluate(node => node.open), false, 'Escape dismisses the update');
+        await page.locator('#checkVersionUpdateBtn').click();
+        await dialog.waitFor({ state: 'visible' });
         await page.mouse.click(2, 2);
         assert.equal(await dialog.evaluate(node => node.open), true, 'Backdrop cannot dismiss');
         await page.keyboard.press('Tab');
-        assert.equal(await page.evaluate(() => document.activeElement?.hasAttribute('data-update-download')), true);
+        assert.equal(await page.evaluate(() => document.activeElement?.hasAttribute('data-update-close')), true);
         await page.keyboard.press('Shift+Tab');
         assert.equal(await page.evaluate(() => document.activeElement?.hasAttribute('data-update-download')), true);
         await page.locator('#settingsBack').evaluate(node => node.focus());
@@ -87,11 +90,15 @@ export async function checkUpdateDialogTheme(browser, url, output) {
         await page.evaluate(() => { window.open = () => null; });
         await dialog.locator('[data-update-download]').click();
         await page.waitForFunction(() => document.querySelector('.update-dialog-status').textContent.length > 0);
-        assert.equal(await dialog.evaluate(node => node.open), true, 'Opening the download page does not unlock');
+        assert.equal(await dialog.evaluate(node => node.open), true, 'Opening the download page keeps the prompt visible');
         assert.ok(await dialog.locator('.update-dialog-status').textContent());
+        await dialog.locator('[data-update-close]').click();
+        assert.equal(await dialog.evaluate(node => node.open), false, 'X dismisses the update');
+        assert.equal(await page.locator('body').evaluate(node => node.classList.contains('update-dialog-open')), false, 'Closing releases the page');
+        await page.locator('#settingsBack').click();
       } finally { await context.close(); }
     }
   }
   assert.deepEqual(errors, []);
-  return 'Update modal: four theme/language combinations, four viewports, focus lock, Escape/backdrop, repeated check and download';
+  return 'Update modal: four theme/language combinations, four viewports, keyboard navigation, Escape/X dismissal, focus recovery, repeated check and download';
 }

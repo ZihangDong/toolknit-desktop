@@ -1,12 +1,12 @@
 import { applyTranslations } from '../../i18n.js';
 import '../../styles/components/ppt-workbench.css';
-import '../../styles/themes/ppt-tools-light.css';
+
 import { pptCompressPageTemplate, pptCompressPortalTemplate, pptOutlinePageTemplate, pptOutlinePortalTemplate, pptTextPageTemplate, pptTextPortalTemplate } from './template.js';
 import { createPptCompressController } from './compress-controller.js';
 import { createPptOutlineController } from './outline-controller.js';
 import { createPptTextController } from './text-controller.js';
 import './ppt-workflows.css';
-import './ppt-workflows-light.css';
+
 
 function createPortal(markup) {
   const template = document.createElement('template');

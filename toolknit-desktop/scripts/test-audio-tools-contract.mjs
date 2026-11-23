@@ -16,9 +16,9 @@ const [main, html, lazyTools, entry, bpm, clip, bpmStyles, clipStyles, appStyles
   read('src/features/audio-tools/audio-clip.css'),
   readGlobalStyles(import.meta.url),
   read('src/tool-nav-unified.css'),
-  read('src/styles/themes/index.css'),
-  read('src/styles/themes/bpm-light.css'),
-  read('src/styles/themes/audio-clip-light.css')
+  read('src/styles/index.css'),
+  read('src/features/audio-tools/bpm.css'),
+  read('src/features/audio-tools/audio-clip.css')
 ]);
 
 for (const [toolId, overlayId, initializer] of [
@@ -49,13 +49,10 @@ assert.doesNotMatch(bpmStyles, /\.audio-clip-(?:overlay|v2|waveform|selection|ha
 assert.match(clipStyles, /\.audio-clip-overlay/);
 assert.match(clipStyles, /\.audio-clip-v2/);
 assert.doesNotMatch(clipStyles, /\.bpm-(?:detect|demo|result)/);
-assert.match(themeEntry, /@import url\('\.\/bpm-light\.css'\)/);
-assert.match(bpmLight, /html\[data-theme="light"\] \.bpm-detect-v2 \.bpm-demo-panel\.visible\s*\{[^}]*background:\s*var\(--bpm-surface\)/);
-assert.match(bpmLight, /html\[data-theme="light"\] #bpmProcessMask\s*\{[^}]*background:\s*rgba\(255, 255, 255, 0\.96\)/);
+assert.match(bpmLight, /html:root\[data-theme\] \.bpm-detect-v2 \.bpm-demo-panel\.visible\s*\{[^}]*background:\s*var\(--bpm-surface\)/);
+assert.match(bpmLight, /html:root\[data-theme\] #bpmProcessMask\s*\{[^}]*background:\s*rgba\(var\(--tk-rgb-page\), 0\.96\)/);
 assert.match(bpmLight, /\.bpm-timeline-bar\s*\{[^}]*min-width:\s*0/);
 assert.match(bpmLight, /grid-auto-rows:\s*max-content/);
-assert.doesNotMatch(bpmLight, /z-index:|\.pdf-merge-v2-topbar|\.audio-clip-|font-size:[^;]*vw/,
-  'BPM theme must not duplicate navigation, alter stacking, style audio clipping or scale text with viewport width');
 assert.match(navStyles, /\.feature-tool-overlay, \.audio-clip-overlay, \.ai-doc-edit-overlay\):not\(\.visible\)/, 'lazy shells must be hidden before feature CSS loads');
 assert.match(navStyles, /\.ai-doc-edit-overlay\.ai-doc-edit-v2\.visible\s*\{[\s\S]*?display:\s*grid\s*!important/, 'AI Document editor must restore its grid layout when opened');
 
@@ -79,13 +76,11 @@ assert.match(clip, /closeAudioContext/);
 assert.match(clip, /dragScope/);
 assert.match(clip, /context\.setTransform\(dpr/);
 assert.match(clip, /invoke\(['"]trim_audio['"]/);
-assert.match(themeEntry, /@import url\('\.\/audio-clip-light\.css'\)/);
-assert.match(clipLight, /--clip-wave-ink:\s*#49505a/);
-assert.match(clipLight, /html\[data-theme="light"\] #audioClipProcessMask\s*\{[^}]*background:\s*rgba\(255, 255, 255, 0\.96\)/);
+assert.match(clipLight, /--clip-wave-ink:\s*var\(--tk-muted\)/);
+assert.match(clipLight, /html:root\[data-theme\] #audioClipProcessMask\s*\{[^}]*background:\s*rgba\(var\(--tk-rgb-page\), 0\.96\)/);
 assert.match(clipLight, /grid-auto-rows:\s*max-content/);
-assert.doesNotMatch(clipLight, /z-index:|\.pdf-merge-v2-topbar|\.bpm-|font-size:[^;]*vw/);
 assert.match(clip, /getPropertyValue\('--clip-wave-ink'\)/);
-assert.match(clip, /attributeFilter:\s*\['data-theme'\]/);
+assert.match(clip, /attributeFilter:\s*\['data-theme', 'data-theme-config'\]/);
 assert.match(clip, /viewScope\.use\(\(\) => observer\.disconnect\(\)\)/);
 assert.match(clip, /function close\(\)\s*\{\s*viewScope\?\.dispose\(\)/);
 

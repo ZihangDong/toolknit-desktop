@@ -1,0 +1,424 @@
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* Large-file cleanup owns its review surface. The common PDF shell owns navigation. */
+#largeFileCleanupOverlay {
+  --cleanup-surface: var(--tk-accent);
+  --cleanup-soft: var(--tk-accent);
+  --cleanup-muted: var(--tk-muted);
+  --cleanup-border: var(--tk-border-strong);
+}
+#largeFileCleanupOverlay :is(h1, h2, h3, button, label, span) { letter-spacing: 0; }
+#largeFileCleanupOverlay .cleanup-v2-title { font-size: 30px; line-height: 1.3; }
+#largeFileCleanupOverlay .cleanup-v2-main-title h2 { font-size: 22px; line-height: 1.3; }
+#largeFileCleanupOverlay :is(.cleanup-v2-side, .cleanup-v2-main) {
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--cleanup-surface);
+  border: 0;
+}
+#largeFileCleanupOverlay .cleanup-v2-side { padding: 20px; border-right: 1px solid var(--cleanup-border); }
+#largeFileCleanupOverlay .cleanup-v2-main { grid-template-rows: auto auto auto auto minmax(180px, 1fr); padding: 20px; gap: 12px; }
+#largeFileCleanupOverlay .cleanup-large-files-body { gap: 0; }
+#largeFileCleanupOverlay :is(.cleanup-v2-btn, .cleanup-large-files-action, .cleanup-v2-scan-btn, .cleanup-large-files-chip) {
+  border-radius: 8px;
+  white-space: normal;
+  min-height: 38px;
+  padding: 8px 12px;
+}
+#largeFileCleanupOverlay .cleanup-large-files-folder-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+#largeFileCleanupOverlay .cleanup-large-files-scan-actions { display: flex; gap: 8px; margin-top: 16px; flex-shrink: 0; }
+#largeFileCleanupOverlay .cleanup-v2-scan-btn { margin-top: 0; flex: 1; }
+#largeFileCleanupOverlay [hidden] { display: none; }
+#largeFileCleanupOverlay .cleanup-large-files-safety-note { border-left: 3px solid #c9a952; padding-left: 12px; }
+#largeFileCleanupOverlay .cleanup-large-files-safety-note strong { color: var(--ink); font-size: 13px; }
+#largeFileCleanupOverlay .cleanup-large-files-safety-note p { margin: 5px 0 0; color: var(--cleanup-muted); font-size: 12px; line-height: 1.65; }
+#largeFileCleanupOverlay .cleanup-large-files-ai-card { background: var(--cleanup-soft); border-radius: 8px; }
+#largeFileCleanupOverlay .cleanup-large-files-ai-orb { width: 34px; height: 34px; border-radius: 6px; }
+#largeFileCleanupOverlay .cleanup-large-files-filters { display: flex; flex-wrap: wrap; gap: 12px; }
+#largeFileCleanupOverlay .cleanup-large-files-filters label { display: grid; gap: 6px; min-width: 120px; flex: 1; color: var(--cleanup-muted); font-size: 12px; }
+#largeFileCleanupOverlay .cleanup-large-files-search { flex: 2; }
+#largeFileCleanupOverlay .cleanup-large-files-filters :is(input, .tool-custom-select-trigger) {
+  width: 100%; min-height: 38px; border: 1px solid var(--cleanup-border); border-radius: 8px;
+  padding: 8px 12px; color: var(--ink); background: var(--cleanup-soft); font: inherit;
+}
+#largeFileCleanupOverlay .cleanup-large-files-scan-stats { margin: 0; font-size: 12px; line-height: 1.6; color: var(--cleanup-muted); overflow-wrap: anywhere; }
+#largeFileCleanupOverlay .cleanup-large-files-open-file {
+  max-width: 100%; padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; font: inherit;
+}
+#largeFileCleanupOverlay .cleanup-large-files-open-file:hover { text-decoration: underline; }
+#largeFileCleanupOverlay .cleanup-large-files-list-wrap { border-radius: 8px; }
+#largeFileCleanupOverlay .cleanup-large-files-list-wrap:has(.cleanup-large-files-empty) .cleanup-large-files-table { height: 100%; }
+#largeFileCleanupOverlay .cleanup-large-files-table .cleanup-large-files-reason { text-align: left; }
+#largeFileCleanupOverlay .cleanup-large-files-check { border-radius: 50%; }
+#largeFileCleanupOverlay .cleanup-large-files-summary-item { border-radius: 6px; }
+#largeFileCleanupOverlay .cleanup-large-files-empty { display: flex; align-items: center; justify-content: center; flex-direction: column; min-height: 240px; gap: 16px; }
+#largeFileCleanupOverlay .cleanup-large-files-empty p { margin: 0; white-space: normal; }
+#largeFileCleanupOverlay .cleanup-large-files-empty-icon {
+  display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--white); color: var(--black);
+}
+#largeFileCleanupOverlay .cleanup-large-files-empty-icon svg { width: 28px; height: 28px; }
+#largeFileCleanupOverlay :is(button, input):focus-visible { outline: 2px solid var(--line); outline-offset: 2px; }
+#largeFileCleanupOverlay input:focus-visible { outline: none; border-color: var(--ink); }
+#largeFileCleanupSuccessOverlay .audio-convert-success-dialog { width: min(560px, calc(100vw - 40px)); max-width: none; max-height: calc(100dvh - 40px); overflow-y: auto; }
+#largeFileCleanupSuccessOverlay :is(.audio-convert-success-meta, .audio-convert-success-key, .audio-convert-success-value, .audio-convert-success-btn) {
+  white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; -webkit-line-clamp: unset;
+}
+#largeFileCleanupSuccessOverlay .audio-convert-success-row { align-items: flex-start; }
+#largeFileCleanupSuccessOverlay .audio-convert-success-key { flex: 0 0 38%; }
+#largeFileCleanupSuccessOverlay .audio-convert-success-btn { min-height: 44px; height: auto; }
+#largeFileCleanupDriveRootOverlay .ffmpeg-overlay-content { max-height: calc(100dvh - 48px); overflow-y: auto; width: min(600px, calc(100vw - 40px)); }
+#largeFileCleanupDriveRootOverlay .ffmpeg-overlay-desc { white-space: pre-line; line-height: 1.65; text-align: left; }
+#largeFileCleanupDriveRootOverlay .cleanup-drive-root-ack { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.6; text-align: left; }
+#largeFileCleanupDriveRootOverlay .cleanup-drive-root-ack input { flex-shrink: 0; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--tk-accent); }
+#largeFileCleanupDriveRootOverlay button:disabled { opacity: .45; cursor: not-allowed; }
+
+html:root[data-theme] #largeFileCleanupOverlay {
+  --cleanup-surface: var(--tk-page-bg);
+  --cleanup-soft: var(--tk-inset);
+  --cleanup-muted: var(--tk-muted);
+  --cleanup-border: var(--tk-border);
+}
+html:root[data-theme] #largeFileCleanupOverlay :is(.cleanup-v2-label, .cleanup-v2-hint, .cleanup-v2-threshold-row em,
+  .cleanup-large-files-ai-kicker, .cleanup-large-files-ai-copy p, .cleanup-large-files-item-sub, .cleanup-large-files-reason,
+  .cleanup-large-files-summary, .cleanup-large-files-summary-item > span, .cleanup-large-files-summary-empty) { color: var(--cleanup-muted); }
+html:root[data-theme] #largeFileCleanupOverlay :is(.cleanup-v2-path, .cleanup-large-files-ai-copy h3,
+  .cleanup-large-files-item-main, .cleanup-large-files-reason-line b, .cleanup-large-files-ai-label,
+  .cleanup-large-files-summary-item strong, .cleanup-large-files-table) { color: var(--ink); }
+html:root[data-theme] #largeFileCleanupOverlay :is(.cleanup-v2-path, .cleanup-large-files-summary-item,
+  .cleanup-large-files-ai-points span, .cleanup-v2-threshold-row input) { background: var(--cleanup-soft); border-color: var(--cleanup-border); color: var(--ink); }
+html:root[data-theme] #largeFileCleanupOverlay :is(.cleanup-v2-btn, .cleanup-large-files-action, .cleanup-large-files-chip) {
+  background: var(--cleanup-soft); color: var(--ink); border-color: var(--cleanup-border);
+}
+html:root[data-theme] #largeFileCleanupOverlay :is(.cleanup-v2-btn, .cleanup-large-files-action, .cleanup-large-files-chip):hover:not(:disabled) { background: var(--tk-surface); color: var(--ink); }
+html:root[data-theme] #largeFileCleanupOverlay :is(.cleanup-v2-scan-btn, .cleanup-large-files-ai-action, .cleanup-large-files-chip.is-active),
+html:root[data-theme] #largeFileCleanupOverlay :is(.cleanup-v2-scan-btn, .cleanup-large-files-ai-action, .cleanup-large-files-chip.is-active):hover:not(:disabled) {
+  background: var(--tk-accent); border-color: var(--tk-accent); color: var(--tk-on-accent);
+}
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-action-danger,
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-action-danger:hover:not(:disabled) { background: var(--tk-inset); color: var(--tk-danger); border-color: #e8b5b1; }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-ai-card[data-state="need-key"] .cleanup-large-files-ai-action { background: #fbf3de; color: #715200; border-color: #d1bb78; }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-list-wrap { background: var(--tk-page-bg); }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-table th { background: var(--tk-inset); color: var(--tk-muted); }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-table :is(th, td) { border-bottom-color: var(--tk-border); }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-table tbody tr:hover { background: var(--tk-inset); }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-table tbody tr.is-selected { background: var(--tk-inset); }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-size-sort-trigger { color: var(--tk-muted); }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-check { background: var(--tk-page-bg); border-color: var(--tk-border-strong); }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-check:is(:checked, :indeterminate) { background: var(--tk-accent); border-color: var(--tk-accent); }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-check:is(:checked, :indeterminate)::after { background: var(--tk-page-bg); }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-risk-low { background: var(--tk-inset); color: #24663d; }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-risk-medium { background: #faf0d9; color: #75540c; }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-risk-high { background: var(--tk-inset); color: #a5251f; }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-ai-progress-bar { background: var(--tk-surface-hover); }
+html:root[data-theme] #largeFileCleanupOverlay .cleanup-large-files-ai-progress-bar i { background: var(--tk-accent); }
+html:root[data-theme] .cleanup-large-files-context-menu { background: var(--tk-page-bg); border-color: var(--tk-border); color: var(--tk-ink); }
+html:root[data-theme] .cleanup-large-files-context-menu :is(.cleanup-large-files-context-item, .cleanup-large-files-context-title) { color: var(--tk-muted); }
+html:root[data-theme] .cleanup-large-files-context-menu :is(.cleanup-large-files-context-item:hover, .cleanup-large-files-context-icon) { background: var(--tk-inset); color: var(--tk-ink); }
+html:root[data-theme] :is(#largeFileCleanupDriveRootOverlay, #largeFileCleanupSuccessOverlay) { color: var(--tk-ink); color-scheme: var(--tk-color-scheme); }
+html:root[data-theme] #largeFileCleanupDriveRootOverlay .ffmpeg-overlay-content { background: var(--tk-page-bg); color: var(--tk-ink); border-color: var(--tk-border); }
+html:root[data-theme] #largeFileCleanupDriveRootOverlay .ffmpeg-overlay-title { color: var(--tk-ink); }
+html:root[data-theme] #largeFileCleanupDriveRootOverlay :is(.ffmpeg-overlay-desc, .cleanup-drive-root-tips span, .cleanup-drive-root-ack) { color: var(--tk-muted); }
+html:root[data-theme] #largeFileCleanupDriveRootOverlay .ffmpeg-overlay-cancel { background: var(--tk-inset); color: var(--tk-ink); border-color: var(--tk-border); }
+html:root[data-theme] #largeFileCleanupDriveRootOverlay .ffmpeg-overlay-confirm { background: var(--tk-accent); color: var(--tk-on-accent); }
+html:root[data-theme] #largeFileCleanupSuccessOverlay .audio-convert-success-dialog { background: var(--tk-page-bg); border-color: var(--tk-border); }
+html:root[data-theme] #largeFileCleanupSuccessOverlay :is(.audio-convert-success-title, .audio-convert-success-value, .cleanup-large-files-success-failures strong) { color: var(--tk-ink); }
+html:root[data-theme] #largeFileCleanupSuccessOverlay :is(.audio-convert-success-meta, .audio-convert-success-key, .cleanup-large-files-success-failures) { color: var(--tk-muted); }
+
+@media (max-width: 1100px), (max-height: 700px) {
+  #largeFileCleanupOverlay .cleanup-large-files-body { overflow-y: auto; grid-template-columns: minmax(280px, 330px) minmax(0, 1fr); }
+  #largeFileCleanupOverlay .cleanup-v2-main { overflow: visible; min-height: 480px; }
+  #largeFileCleanupOverlay .cleanup-v2-side { overflow-y: auto; }
+  #largeFileCleanupOverlay .cleanup-v2-side-scroll { overflow: visible; flex: none; }
+}
+@media (max-width: 760px) {
+  #largeFileCleanupOverlay .cleanup-large-files-body { display: flex; flex-direction: column; }
+  #largeFileCleanupOverlay :is(.cleanup-v2-side, .cleanup-v2-main) { overflow: visible; flex: none; }
+  #largeFileCleanupOverlay .cleanup-v2-side { border-right: 0; border-bottom: 1px solid var(--cleanup-border); }
+  #largeFileCleanupOverlay .cleanup-large-files-list-wrap { max-height: 500px; }
+}
+html:root[data-theme] #cDriveCleanupOverlay {
+  --c-drive-ink: var(--tk-ink);
+  --c-drive-muted: var(--tk-muted);
+  --c-drive-quiet: var(--tk-muted);
+  --c-drive-line: var(--tk-border);
+  --c-drive-line-strong: var(--tk-border);
+  --c-drive-soft: var(--tk-inset);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--c-drive-ink);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-body {
+  gap: 0;
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay :is(.c-drive-cleanup-side, .c-drive-cleanup-main) {
+  border: 0;
+  border-radius: 0;
+  background: var(--tk-page-bg);
+  box-shadow: none;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-side {
+  border-right: 1px solid var(--c-drive-line);
+}
+
+@media (max-width: 980px) {
+  html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-side {
+    border-right: 0;
+    border-bottom: 1px solid var(--c-drive-line);
+  }
+}
+
+html:root[data-theme] #cDriveCleanupOverlay :is(.pdf-merge-v2-poster-kicker, .cleanup-v2-title, .pdf-merge-v2-subtitle) {
+  color: var(--c-drive-ink);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .pdf-merge-v2-poster-kicker {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .cleanup-v2-title {
+  letter-spacing: 0;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .pdf-merge-v2-subtitle {
+  color: var(--c-drive-muted);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .cleanup-v2-side-head {
+  border-bottom-color: var(--c-drive-line);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-option {
+  border-color: var(--c-drive-line-strong);
+  background: var(--c-drive-soft);
+  color: var(--c-drive-ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-option:hover {
+  border-color: var(--tk-border-strong);
+  background: var(--tk-surface);
+  box-shadow: none;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-option[aria-checked="true"] {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-option-name {
+  color: var(--c-drive-ink);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-option-size {
+  color: var(--c-drive-muted);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-option[aria-checked="true"] :is(.c-drive-cleanup-option-name, .c-drive-cleanup-option-size) {
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-option-size b {
+  color: inherit;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-spinner {
+  border-color: var(--tk-border);
+  border-top-color: var(--tk-accent);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-option[aria-checked="true"] .c-drive-cleanup-spinner {
+  border-color: rgba(var(--tk-rgb-page), 0.32);
+  border-top-color: var(--tk-inset);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay :is(.c-drive-cleanup-risk-low, .c-drive-cleanup-risk-medium, .c-drive-cleanup-risk-high) {
+  border-width: 1px;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-risk-low {
+  border-color: #b9dec3;
+  background: var(--tk-inset);
+  color: #24663d;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-risk-medium {
+  border-color: #e5d19b;
+  background: #faf0d9;
+  color: #75540c;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-risk-high {
+  border-color: #e8b5b1;
+  background: var(--tk-inset);
+  color: #a5251f;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-tips {
+  border-top-color: var(--c-drive-line);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-tips-head {
+  color: var(--c-drive-ink);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-tips-head svg {
+  color: #24663d;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-tips-list li {
+  color: var(--c-drive-muted);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-tips-list li::before {
+  background: var(--tk-border);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay :is(.c-drive-cleanup-explain, .c-drive-cleanup-protected, .c-drive-cleanup-how) {
+  border-color: var(--c-drive-line);
+  background: var(--tk-page-bg);
+  box-shadow: none;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay :is(.c-drive-cleanup-explain-title, .c-drive-cleanup-protected h3, .c-drive-cleanup-how h3) {
+  color: var(--c-drive-ink);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay :is(.c-drive-cleanup-explain-body, .c-drive-cleanup-protected-desc, .c-drive-cleanup-how-steps p) {
+  color: var(--c-drive-muted);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-explain-item {
+  border-color: var(--c-drive-line);
+  background: var(--c-drive-soft);
+  color: var(--c-drive-muted);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-explain-warn {
+  border-color: #e8b5b1;
+  background: var(--tk-inset);
+  color: #a5251f;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .pdf-merge-v2-section-kicker {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-protected-list li {
+  color: var(--c-drive-muted);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-protected-list li::before {
+  background: #5aa779;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-how-steps li {
+  border-color: var(--c-drive-line);
+  background: var(--tk-inset);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-how-step {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-how-steps strong {
+  color: var(--c-drive-ink);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-footer {
+  border-top: 1px solid var(--c-drive-line);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-confirm {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-confirm:hover:not(:disabled) {
+  background: var(--tk-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] #cDriveCleanupOverlay .c-drive-cleanup-confirm:disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-surface-hover);
+  color: var(--tk-muted);
+  opacity: 1;
+}
+
+html:root[data-theme] :is(#cDriveCleanupAdminMask, #cDriveCleanupConfirmMask) {
+  color-scheme: var(--tk-color-scheme);
+  background: rgba(var(--tk-rgb-ink), 0.38);
+}
+
+html:root[data-theme] :is(#cDriveCleanupAdminMask, #cDriveCleanupConfirmMask) .c-drive-cleanup-dialog {
+  border-color: var(--tk-border);
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+  box-shadow: 0 24px 70px rgba(17, 17, 17, 0.2);
+}
+
+html:root[data-theme] :is(#cDriveCleanupAdminMask, #cDriveCleanupConfirmMask) .c-drive-cleanup-dialog-icon {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(#cDriveCleanupAdminMask, #cDriveCleanupConfirmMask) .c-drive-cleanup-dialog h3 {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] :is(#cDriveCleanupAdminMask, #cDriveCleanupConfirmMask) .c-drive-cleanup-dialog-body,
+html:root[data-theme] #cDriveCleanupAdminMask .c-drive-cleanup-admin-manual {
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] #cDriveCleanupConfirmMask .c-drive-cleanup-dialog-tier {
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] #cDriveCleanupConfirmMask .c-drive-cleanup-dialog-list span {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-muted);
+}
+
+html:root[data-theme] :is(#cDriveCleanupAdminMask, #cDriveCleanupConfirmMask) .c-drive-cleanup-dialog-cancel {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-ink);
+}
+
+html:root[data-theme] #cDriveCleanupAdminMask .c-drive-cleanup-dialog-primary {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] #cDriveCleanupConfirmMask .c-drive-cleanup-dialog-danger {
+  border-color: #e8b5b1;
+  background: var(--tk-inset);
+  color: var(--tk-danger);
+}
+
+html:root[data-theme] #cDriveCleanupConfirmMask .c-drive-cleanup-dialog-danger:disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-inset);
+  color: var(--tk-danger);
+  opacity: 1;
+}
+
+html:root[data-theme] #cDriveCleanupConfirmMask .c-drive-cleanup-dialog-warn {
+  border-color: #e8b5b1;
+  background: var(--tk-inset);
+  color: #a5251f;
+}

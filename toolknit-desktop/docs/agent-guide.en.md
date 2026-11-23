@@ -1,6 +1,6 @@
 # ToolKnit AI Agent Quick Guide
 
-This branch develops V3.3 (3.3.0, unreleased) using the released V3.2 capability baseline. npm installation below installs stable 3.2.0; a CLI/MCP built from this source reports development version 3.3.0.
+This branch develops V3.4 (3.4.0, unreleased) using the released V3.3 capability baseline. npm installation below installs stable 3.3.0; a CLI/MCP built from this source reports development version 3.4.0.
 
 This guide helps users connect ToolKnit to Trae, Cursor, or another MCP-capable IDE so an AI Agent can safely process local PDFs, convert them into images or stitched long images, extract embedded PPTX image assets and text, convert audio and video, and generate polished multi-page AI documents and editable AI tables.
 
@@ -27,7 +27,7 @@ C:\Users\<your-user-name>\AppData\Roaming\npm\node_modules\@toolknit\cli\toolkni
 
 Local PDF, image, audio/video, text, and non-AI PPT tools do not need an AI key. AI documents, AI tables, PPT text AI organization, AI PPT outline generation, AI PPT draft/PPTX generation, and transcription with `refine` require a real `DEEPSEEK_API_KEY` (or `TOOLKNIT_AI_API_KEY`) in the IDE's MCP environment/secret settings; restart the IDE after setting it. Never place the key in an Agent message, document brief, output path, or filename. CLI/MCP does not read the credential stored by ToolKnit Desktop.
 
-Unreleased V3.3 source exposes 78 ToolKnit tools (published npm 3.2.0 has 77) and requires Node.js >=22.13.0. Install it independently of the desktop app. See the [complete capability catalog](CLI_CAPABILITIES.md) or run `toolknit tools list --json`; the following list describes the existing tools.
+Unreleased V3.4 source exposes 78 ToolKnit tools (published npm 3.3.0 has 78) and requires Node.js >=22.13.0. Install it independently of the desktop app. See the [complete capability catalog](CLI_CAPABILITIES.md) or run `toolknit tools list --json`; the following list describes the existing tools.
 
 - `toolknit_pdf_inspect` inspects page counts, sizes, and page-by-page details.
 - `toolknit_pdf_merge` merges multiple local PDFs in order into one file.
@@ -530,7 +530,15 @@ PDF encryption and decryption require a password. Do not paste passwords into Ag
 
 Ask the Agent to inspect the file path first. The most common causes are a missing input path, an existing output file, or a password-protected PDF. Run `toolknit doctor` to verify the qpdf engine used by compression and decryption.
 
-## Word to PDF (unreleased V3.3)
+## Word to PDF (added in V3.3)
+
+V3.4 optionally accepts `encryption` with a required `password` and optional `permissions`. The opening password needs at least 8 Unicode characters and at most 127 UTF-8 bytes, without NUL/CR/LF. Local AES-256 supports up to 200 pages / 150 MiB per document and composes with ZIP, watermarks and internal refresh. Permissions include `printing:false|"lowResolution"|"highResolution"`, `copying`, `modifying`, `annotating`, `fillingForms` and `documentAssembly`; all default to allowed and accessibility stays enabled. Only verified encrypted files are published; successful files return `encrypted:true`. Failed/cancelled items expose no plain intermediates, and completed results survive. CLI requests containing passwords must arrive through a controlled `--arguments-stdin` pipe; nested command-line `--encryption` and JSON argument files are rejected. MCP uses in-memory arguments. Never log credentials. Task Center omits credential-bearing automatic retry: return to the Word tool and re-enter the password. Encrypted results cannot go directly to the editor; explicitly save a copy with PDF Decrypt first.
+
+V3.4 optionally accepts a `watermark` object, also available through an off-by-default desktop checkbox. Text: `{"type":"text","text":"Internal DRAFT","pages":"1,3-5","opacity":0.2,"angle":45,"width":60}`. For images use `type:"image"` and a local `image_path` (PNG / JPEG, up to 4 MiB and four million pixels). Text is capped at 80 Unicode characters with embedded Noto Sans SC; unsupported glyphs fail explicitly. Blank pages means all; each converted document is checked against its actual page count, with out-of-range items failing without publishing a PDF. Successful files return `watermark_pages`. The A4 layer is uniformly fitted and centered on each output page while body text stays searchable. The preview shows placement without body content. Cancellation keeps previously published stamped PDFs; plain intermediates stay private. Pass nested objects through `run ... --arguments-file request.json --json` or MCP, optionally alongside `refresh_fields` and ZIP input. Check the finished PDF. Tiling, free positioning and colored text are outside this first version.
+
+V3.4 development accepts explicit boolean `refresh_fields:true`, off by default. It updates only internal content TOCs, page numbers/counts, chapters and internal references, returning per-file `field_update` counts and stabilization status. External/DDE/database data, dates and unknown fields are not explicitly refreshed. Rebuilding a TOC can change pagination: check targets against body pages. Off adds no refresh pass but does not freeze dynamic fields computed by the importer. Retry with false after an update failure; do not substitute global update commands. CLI uses `--refresh-fields true` for DOC/DOCX/ZIP, including batches. Published npm 3.3.0 does not include this extension.
+
+V3.4 development adds ZIP batches: include ZIP paths in `input_paths` with `output_dir`, optionally mixed with DOC/DOCX. Limits: 20 Word documents after expansion, 50 MiB per document/ZIP, 1,000 entries and 200 MiB per archive; selected ZIP documents and compressed input cache are each capped at 200 MiB per call. Nested ZIPs, encrypted entries, links, duplicate/unsafe paths and ZIP64 are excluded. Each result retains the original ZIP `input_path`, `archive_entry` and `source_name`. Same-name outputs remain separate; bad items do not discard completed PDFs. Published npm 3.3.0 does not include this ZIP extension.
 
 `toolknit_word_to_pdf` uses local LibreOffice Writer with UNO/Python. Pass `input_path` and `output_path` for one document, or `input_paths` and `output_dir` for a batch. Supports up to 20 DOC/DOCX files, 50 MiB each. Batch responses report each file; completed outputs survive failures and cancellation. Originals stay unchanged and existing outputs are not overwritten by default. Encrypted documents and DOCX active content are unsupported. Check fonts, headers, tables and pagination; complex layouts may differ from Word.
 

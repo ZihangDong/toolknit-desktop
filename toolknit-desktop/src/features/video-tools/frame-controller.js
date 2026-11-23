@@ -260,7 +260,7 @@ export function createVideoFrameController({
     const wasProcessing = processing;
     processing = false;
     setProgress(0, undefined, false);
-    if (isTauri && wasProcessing) void tauriCorePromise.then(({ invoke }) => invoke('cancel_convert')).catch(() => {});
+    if (isTauri && wasProcessing) void tauriCorePromise.then(({ invoke }) => invoke('cancel_convert', { toolknitTaskTool: 'video-frame' })).catch(() => {});
   }
 
   function bindActions() {

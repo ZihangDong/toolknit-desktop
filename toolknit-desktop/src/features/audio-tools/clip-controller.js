@@ -218,7 +218,7 @@ export function createAudioClipController({
     if (audioClipExportBtn) { audioClipExportBtn.disabled = false; audioClipExportBtn.style.opacity = ''; }
     audioClipProcessMask?.classList.remove('visible');
     if (audioClipProcessBarFill) audioClipProcessBarFill.style.width = '0%';
-    if (wasExporting && isTauri) tauriCore.then(({ invoke }) => invoke('cancel_convert')).catch(() => {});
+    if (wasExporting && isTauri) tauriCore.then(({ invoke }) => invoke('cancel_convert', { toolknitTaskTool: 'audio-clip' })).catch(() => {});
   }
 
   function resetState() {
@@ -562,7 +562,7 @@ export function createAudioClipController({
     // Canvas pixels do not follow CSS theme or layout changes automatically.
     if (window?.MutationObserver && document.documentElement) {
       const observer = new window.MutationObserver(scheduleRedraw);
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-theme-config'] });
       viewScope.use(() => observer.disconnect());
     }
     if (window?.ResizeObserver && audioClipCanvas) {

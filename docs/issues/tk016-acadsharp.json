@@ -1,0 +1,223 @@
+{
+  "task": "TK-016-A",
+  "scope": "programmatic-library-acceptance",
+  "sourceRun": "run-TuXlnt",
+  "engine": "ACadSharp 3.8.35 net8.0",
+  "assemblySha256": "cd8483970935022574cfec6e8b4981388aee1b2e00679329b2c612e90da74db3",
+  "cases": [
+    {
+      "scenario": "paper-mm",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "model-mm-100",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "paper-inch",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 1,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "model-metres-100",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 6,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "rotation-90",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "nonzero-crop",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "user-unit-two",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "affine-transform",
+      "page": 1,
+      "entities": 1,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "cubic-spline",
+      "page": 1,
+      "entities": 1,
+      "editedType": "SPLINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "unicode-text",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "unicode-rotation-90",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "mixed-glyph-widths",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "compressed-text",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "expanded-text",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "serif-cap-height",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "synthetic-floor-plan",
+      "page": 1,
+      "entities": 10,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "multiple-container-pages",
+      "page": 1,
+      "entities": 1200,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "multiple-pages",
+      "page": 1,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    },
+    {
+      "scenario": "multiple-pages",
+      "page": 2,
+      "entities": 2,
+      "editedType": "LINE",
+      "notifications": 0,
+      "units": 4,
+      "originalPreserved": true,
+      "fontAssetsPreserved": true,
+      "status": "read-edit-save-reopen-passed"
+    }
+  ],
+  "status": "programmatic-read-edit-save-reopen-passed",
+  "textLayout": "portable-font-cap-height-width-factor",
+  "fontSha256": "afa0d43789047c9a52861f7d69bc8ff4dce74621e19ea266cd8d656ddc7f9c79",
+  "interactiveCadAcceptance": "not-tested",
+  "productionPdfDrawings": "not-available"
+}

@@ -10,8 +10,8 @@ const [html, main, lazyTools, tool, styles, featureStyles, themeIndex, calculato
   readFile(new URL('../src/features/timestamp-calculator/tool.js', import.meta.url), 'utf8'),
   readGlobalStyles(import.meta.url),
   readFile(new URL('../src/features/timestamp-calculator/timestamp-calculator.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/styles/themes/index.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/styles/themes/calculator-tools-light.css', import.meta.url), 'utf8')
+  readFile(new URL('../src/styles/index.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/styles/components/calculator-form.css', import.meta.url), 'utf8')
 ]);
 
 for (const id of [
@@ -38,8 +38,7 @@ assert.doesNotMatch(tool, /localStorage|sessionStorage/);
 assert.doesNotMatch(styles, /\.ts-calc|\.timestamp-calc/);
 assert.match(featureStyles, /\.timestamp-calc-v2-workspace/);
 assert.match(featureStyles, /\.ts-calc-result-card/);
-assert.match(themeIndex, /@import url\('\.\/calculator-tools-light\.css'\);/);
-assert.match(calculatorLightStyles, /html\[data-theme="light"\][\s\S]*\.timestamp-calc-v2/);
+assert.match(calculatorLightStyles, /html:root\[data-theme\][\s\S]*\.timestamp-calc-v2/);
 assert.match(calculatorLightStyles, /ts-calc-current-row/);
 
 console.log('Timestamp calculator feature contract passed');

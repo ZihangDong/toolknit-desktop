@@ -1,0 +1,171 @@
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* Shared by the two lazy developer workbenches; never affects other shells. */
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) {
+  --dev-ink: var(--tk-ink);
+  --dev-muted: var(--tk-muted);
+  --dev-line: var(--tk-border);
+  --dev-line-strong: var(--tk-border);
+  --dev-soft: var(--tk-inset);
+  --dev-hover: var(--tk-surface);
+  --ink: var(--dev-ink);
+  --muted: var(--dev-muted);
+  --line: var(--dev-line);
+  --line-strong: var(--dev-line-strong);
+  --tk-nav-bg: var(--tk-page-bg);
+  --tk-nav-support-bg: var(--tk-accent);
+  --tk-nav-support-ink: var(--tk-on-accent);
+  background: var(--tk-page-bg);
+  color: var(--dev-ink);
+  color-scheme: var(--tk-color-scheme);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell)::after,
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) .tool-page-v2-bg {
+  display: none;
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.tool-page-v2-rail, .developer-toolbox-workspace, .crypto-workspace) {
+  border-color: var(--dev-line);
+  background: var(--tk-page-bg);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) .tool-page-v2-rail {
+  background: var(--dev-soft);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) .tool-page-v2-rail h1 {
+  color: var(--dev-ink);
+  font-size: 36px;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.tool-page-v2-rail-kicker, .tool-page-v2-rail > p, .tool-page-v2-rail-note span, .tool-page-v2-rail-note strong, .tool-page-v2-steps small) {
+  color: var(--dev-muted);
+  letter-spacing: 0;
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) .tool-page-v2-rail-note {
+  border-color: var(--dev-line);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) .tool-page-v2-steps > div {
+  color: var(--dev-muted);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) .tool-page-v2-steps strong {
+  color: var(--dev-ink);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) .tool-page-v2-steps b {
+  background: var(--tk-page-bg);
+  border-color: var(--dev-line-strong);
+  color: var(--dev-muted);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) .tool-page-v2-steps .is-active b {
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-panel, .crypto-panel) {
+  background: transparent;
+  border-color: var(--dev-line);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-heading h1, .crypto-workspace-head h1) {
+  color: var(--dev-ink);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-heading p, .crypto-workspace-head p, .developer-toolbox-heading span:first-child, .developer-toolbox-nav-label, .developer-toolbox-mode-label, .crypto-workspace-head > div > span, .crypto-sidebar-head span, .crypto-nav-group) {
+  color: var(--dev-muted);
+  letter-spacing: 0;
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-nav, .crypto-sidebar) nav button {
+  background: var(--tk-page-bg);
+  border-color: var(--dev-line);
+  color: var(--dev-ink);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-nav, .crypto-sidebar) nav button:hover {
+  background: var(--dev-hover);
+  color: var(--dev-ink);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-panel, .crypto-panel) button {
+  background: var(--dev-soft);
+  border-color: var(--dev-line-strong);
+  color: var(--dev-ink);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-panel, .crypto-panel) button:where(:hover:not(:disabled, .is-primary, .is-active)) {
+  background: var(--dev-hover);
+  color: var(--dev-ink);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-panel, .crypto-panel, .developer-toolbox-nav nav, .crypto-sidebar nav) button:is(.is-primary, .is-active) {
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-panel, .crypto-panel) button:disabled {
+  background: var(--tk-inset);
+  border-color: var(--dev-line);
+  color: var(--dev-muted);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-panel, .crypto-panel) :is(textarea, input, pre) {
+  background: var(--tk-page-bg);
+  border-color: var(--dev-line-strong);
+  color: var(--dev-ink);
+  caret-color: var(--dev-ink);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-panel, .crypto-panel) :is(textarea[readonly], pre) {
+  background: var(--dev-soft);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(input, textarea)::placeholder {
+  color: var(--tk-muted);
+  opacity: 1;
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-panel, .crypto-panel) :is(input, textarea):focus {
+  border-color: var(--tk-accent);
+  box-shadow: inset 0 0 0 1px #171717;
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) button:focus-visible {
+  outline: 2px solid var(--tk-accent);
+  outline-offset: 3px;
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-select-menu, .crypto-select-menu) {
+  background: var(--tk-page-bg);
+  border-color: var(--dev-line);
+  box-shadow: 0 8px 24px #17171720;
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-select-menu, .crypto-select-menu) button {
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) :is(.developer-toolbox-select-menu, .crypto-select-menu) button:is(.is-selected, :hover, :focus-visible) {
+  background: var(--dev-hover);
+  color: var(--dev-ink);
+}
+
+html:root[data-theme] :is(.developer-toolbox-shell, .crypto-shell) * {
+  scrollbar-color: var(--tk-muted) transparent;
+  scrollbar-width: thin;
+}

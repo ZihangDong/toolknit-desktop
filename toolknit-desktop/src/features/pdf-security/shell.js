@@ -29,7 +29,8 @@ export function createPdfSecurityShell({
   initStandardToolPlasma = () => null,
   disposeStandardToolPlasma = instance => instance,
   isBusy = () => false,
-  allowBrowserDrop = false
+  allowBrowserDrop = false,
+  multiple = false
 } = {}) {
   const isEncrypt = kind === 'encrypt';
   const prefix = isEncrypt ? 'pdfEncrypt' : 'pdfDecrypt';
@@ -243,6 +244,12 @@ export function createPdfSecurityShell({
   }
 
   function renderFiles() {
+    if (multiple && actions.renderFiles) {
+      selectedFile = actions.getFiles?.()[0] || null;
+      updateProcessButton();
+      actions.renderFiles();
+      return;
+    }
     filesElement.replaceChildren();
     filesElement.classList.toggle('has-files', Boolean(selectedFile));
     if (selectedFile) {
@@ -275,6 +282,11 @@ export function createPdfSecurityShell({
     const files = Array.from(fileList || []);
     if (!isOpenSession(owner) || !files.length || isBusy()
       || passwordDialog.classList.contains('visible')) return false;
+    if (multiple && actions.selectFiles) {
+      if (actions.selectFiles(files) === false) return false;
+      renderFiles();
+      return true;
+    }
     if (files.length !== 1) {
       window.alert(t(`${textBase}.singleFileOnly`));
       return false;
@@ -303,15 +315,14 @@ export function createPdfSecurityShell({
     try {
       const { open } = await import('@tauri-apps/plugin-dialog');
       const selected = await open({
-        multiple: false,
+        multiple,
         filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
       });
-      if (!isOpenSession(owner) || typeof selected !== 'string') return;
-      setFileList([{
-        name: selected.split(/[\\/]/).pop() || selected,
-        path: selected,
-        size: 0
-      }], owner);
+      if (!isOpenSession(owner) || !selected) return;
+      const paths = Array.isArray(selected) ? selected : [selected];
+      setFileList(paths.map(path => ({
+        name: path.split(/[\\/]/).pop() || path, path, size: 0
+      })), owner);
     } catch (error) {
       if (isOpenSession(owner)) console.error(`[PDF ${isEncrypt ? 'Encrypt' : 'Decrypt'}] file selection failed:`, error);
     }
@@ -330,7 +341,7 @@ export function createPdfSecurityShell({
         else if (payload.type === 'drop') {
           hideDropZone();
           const files = Array.from(payload.paths || [])
-            .filter(path => path.toLowerCase().endsWith('.pdf'))
+            .filter(path => multiple || path.toLowerCase().endsWith('.pdf'))
             .map(path => ({ name: path.split(/[\\/]/).pop() || path, path, size: 0 }));
           if (files.length) setFileList(files, owner);
         }
@@ -420,6 +431,7 @@ export function createPdfSecurityShell({
     setProcessing(false);
     hidePassword();
     hideSuccess();
+    actions.clearFiles?.();
     selectedFile = null;
     savedPath = '';
     successResult = null;
@@ -448,7 +460,7 @@ export function createPdfSecurityShell({
     event.stopPropagation();
     clearFile();
   });
-  listen(processButton, 'click', showPassword);
+  listen(processButton, 'click', () => actions.requestProcess ? actions.requestProcess() : showPassword());
   listen(passwordCancel, 'click', () => hidePassword({ focusProcess: true }));
   listen(passwordConfirm, 'click', () => { void actions.confirm?.(session); });
   eyeButtons.forEach(button => {
@@ -512,6 +524,7 @@ export function createPdfSecurityShell({
     hidePassword,
     isOpenSession,
     open,
+    renderFiles,
     setActions,
     setFileList,
     setProcessing,

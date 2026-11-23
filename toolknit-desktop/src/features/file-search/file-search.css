@@ -1,5 +1,5 @@
 .fs-tool{--fs-surface:#24252a;--fs-text:#f3f3f4;--fs-muted:#b4b5bd;--fs-soft:#303137;--fs-line:#3b3c43;background:var(--fs-surface);color:var(--fs-text)}
-html[data-theme=light] .fs-tool{--fs-surface:#fff;--fs-text:#17181c;--fs-muted:#696c74;--fs-soft:#f4f5f7;--fs-line:#e9eaee}
+html:root[data-theme] .fs-tool{--fs-surface:var(--tk-page-bg);--fs-text:var(--tk-ink);--fs-muted:var(--tk-muted);--fs-soft:var(--tk-inset);--fs-line:var(--tk-border)}
 .fs-tool[aria-hidden=true]{display:none}.fs-tool.visible{display:flex;flex-direction:column}.fs-tool [hidden]{display:none!important}
 .fs-workbench{width:100%;max-width:1280px;margin:0 auto;padding:26px 32px;min-height:0;flex:1;display:flex;flex-direction:column;gap:18px;overflow:auto}
 .fs-heading{display:flex;align-items:center;justify-content:space-between;gap:20px}.fs-heading h1{font-size:26px;line-height:1.3;margin:0}.fs-heading p{font-size:13px;color:var(--fs-muted);margin:8px 0 0}

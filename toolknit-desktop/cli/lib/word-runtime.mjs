@@ -13,6 +13,9 @@ import {
 import { resolveLibreOfficeRuntime } from './ppt-render-runtime.mjs';
 import { ToolKnitError, throwIfAborted } from './errors.mjs';
 import { runDocumentWorker } from './document-worker.mjs';
+import { prepareWordBatchInputs } from './word-zip.mjs';
+import { prepareWordWatermark, applyWordWatermark } from './word-watermark.mjs';
+import { prepareWordEncryption, applyWordEncryption } from './word-encryption.mjs';
 
 let running = 0;
 export function runWordDriver(
@@ -30,6 +33,7 @@ export function runWordDriver(
       stdio: ['ignore', 'pipe', 'ignore'],
       env: {
         ...process.env,
+        PYTHONDONTWRITEBYTECODE: '1',
         SAL_USE_VCLPLUGIN: 'svp',
         SAL_DISABLE_PRINTERLIST: '1',
       },
@@ -69,7 +73,8 @@ export function runWordDriver(
       signal?.removeEventListener('abort', abort);
     };
     child.stdout.on('data', (chunk) => {
-      text += chunk.toString('utf8').slice(0, 4096 - text.length);
+      // Per-font notices from a 20-file batch can exceed a short status line.
+      text += chunk.toString('utf8').slice(0, Math.max(0, 8 * 1024 * 1024 - text.length));
     });
     child.once('error', () => {
       cleanup();
@@ -155,7 +160,7 @@ async function convertOne(
       path.dirname(renderer.command),
       process.platform === 'win32' ? 'python.exe' : 'python3',
     );
-    await runWordDriver(
+    const driverStatus = await runWordDriver(
       python,
       [
         driver,
@@ -163,10 +168,14 @@ async function convertOne(
         source,
         pdf,
         path.join(directory, 'profile'),
+        ...(options.refreshFields ? ['--refresh-fields'] : []),
       ],
       options,
     );
-    const result = await readInputFile(pdf, {
+    if (options.refreshFields && (driverStatus.fieldUpdate?.enabled !== true || driverStatus.fieldUpdate?.stabilized !== true))
+      throw new ToolKnitError('PROCESSING_FAILED', 'word-render:field-update-failed');
+    const watermarkPages = await applyWordWatermark(pdf, options.watermark, options);
+    let result = await readInputFile(pdf, {
       extensions: ['.pdf'],
       maxBytes: 150 * 1024 * 1024,
       signal: options.signal,
@@ -176,6 +185,8 @@ async function convertOne(
       { bytes: result.bytes },
       options,
     );
+    const encrypted = await applyWordEncryption(pdf, options.encryption, options);
+    if (encrypted) result = await readInputFile(pdf, { extensions: ['.pdf'], maxBytes: 150 * 1024 * 1024, signal: options.signal });
     const output = await writeOutputFile(outputPath, result.bytes, {
       prepared,
       signal: options.signal,
@@ -186,6 +197,10 @@ async function convertOne(
       bytes: result.size,
       page_count: info.page_count,
       status: 'success',
+      font_notices: driverStatus.fontNotices || [],
+      ...(encrypted ? { encrypted: true } : {}),
+      ...(watermarkPages ? { watermark_pages: watermarkPages } : {}),
+      ...(driverStatus.fieldUpdate ? { field_update: driverStatus.fieldUpdate } : {}),
     };
   } finally {
     await rm(directory, {
@@ -211,26 +226,31 @@ async function convertBatch(inputs, batchDir, options, renderer) {
   const prepared = [];
   try {
     await mkdir(inputsDir, { recursive: true });
-    for (const [index, inputPath] of inputs.entries()) {
+    for (const [index, descriptor] of inputs.entries()) {
+      const inputPath = descriptor.path;
       throwIfAborted(options.signal);
       options.reportProgress?.(
         5 + (20 * index) / inputs.length,
         `Preparing Word file ${index + 1}/${inputs.length}.`,
       );
-      const stem = path.parse(inputPath).name.slice(0, 100) || 'document';
+      const stem = path.parse(descriptor.sourceName).name.slice(0, 100) || 'document';
       let name = `${stem}.pdf`;
       let suffix = 1;
       while (used.has(name.toLowerCase())) name = `${stem}_${suffix++}.pdf`;
       used.add(name.toLowerCase());
       const item = {
         index,
-        inputPath,
-        sourceName: path.basename(inputPath),
+        inputPath: descriptor.inputPath,
+        origin: { input_path: descriptor.inputPath, source_name: descriptor.sourceName,
+          ...(descriptor.archiveEntry ? { archive_entry: descriptor.archiveEntry } : {}) },
+        sourceName: descriptor.sourceName,
         source: null,
         destination: path.join(batchDir, name),
-        prepareError: null,
+        renderDestination: path.join(workDir, `${index}.pdf`),
+        prepareError: descriptor.prepareError || null,
       };
       try {
+        if (item.prepareError) { prepared.push(item); continue; }
         const input = await readInputFile(inputPath, {
           extensions: ['.doc', '.docx'],
           maxBytes: 50 * 1024 * 1024,
@@ -241,7 +261,6 @@ async function convertBatch(inputs, batchDir, options, renderer) {
           `${index}${path.extname(inputPath).toLowerCase()}`,
         );
         await writeFile(staged, input.bytes, { flag: 'wx', mode: 0o600 });
-        item.sourceName = input.name;
         item.source = staged;
       } catch (error) {
         if (options.signal?.aborted) throw error;
@@ -254,25 +273,57 @@ async function convertBatch(inputs, batchDir, options, renderer) {
     await writeFile(
       manifestPath,
       JSON.stringify({
-        items: convertible.map(({ index, source, destination }) => ({
+        items: convertible.map(({ index, source, renderDestination }) => ({
           index,
           source,
-          destination,
+          destination: renderDestination,
+          refreshFields: options.refreshFields === true,
         })),
       }),
       { encoding: 'utf8', flag: 'wx', mode: 0o600 },
     );
     let driverError = null;
+    const published = new Map();
+    async function publishAvailable() {
+      if (options.signal?.aborted) return;
+      let statuses;
+      try { statuses = JSON.parse(await readFile(statusPath, 'utf8')).files || []; } catch { return; }
+      for (const status of statuses) {
+        if (options.signal?.aborted) return;
+        const item = prepared.find(candidate => candidate.index === status.index);
+        if (!item?.source || published.has(item.index) || status.status !== 'success') continue;
+        try {
+          if (options.refreshFields && (status.fieldUpdate?.enabled !== true || status.fieldUpdate?.stabilized !== true))
+            throw new ToolKnitError('PROCESSING_FAILED', 'word-render:field-update-failed');
+          const watermarkPages = await applyWordWatermark(item.renderDestination, options.watermark, options);
+          let pdf = await readInputFile(item.renderDestination, { extensions: ['.pdf'], maxBytes: 150 * 1024 * 1024, signal: options.signal });
+          const info = await runDocumentWorker('pdf_validate', { bytes: pdf.bytes }, options);
+          const encrypted = await applyWordEncryption(item.renderDestination, options.encryption, options);
+          if (encrypted) pdf = await readInputFile(item.renderDestination, { extensions: ['.pdf'], maxBytes: 150 * 1024 * 1024, signal: options.signal });
+          await writeOutputFile(item.destination, pdf.bytes, { signal: options.signal });
+          published.set(item.index, { ...item.origin, output_path: item.destination, bytes: pdf.size, page_count: info.page_count,
+            status: 'success', font_notices: status.fontNotices || [], ...(encrypted ? { encrypted: true } : {}),
+            ...(status.fieldUpdate ? { field_update: status.fieldUpdate } : {}), ...(watermarkPages ? { watermark_pages: watermarkPages } : {}) });
+          options.reportProgress?.(25 + 70 * published.size / prepared.length, `Saved Word file ${published.size}/${prepared.length}.`);
+        } catch (error) {
+          if (options.signal?.aborted) return;
+          const reason = /word-render:([a-z-]+)/.exec(error.message)?.[1] || 'render-failed';
+          published.set(item.index, { ...item.origin, status: 'failed', error: { code: error.code || 'PROCESSING_FAILED', message: `word-render:${reason}` } });
+        }
+      }
+    }
     if (convertible.length) {
-      try {
-        await runWordDriver(
+      let finished = false;
+      const driverWork = runWordDriver(
           python,
           [driver, renderer.command, '--manifest', manifestPath, path.join(workDir, 'profile'), statusPath],
           options,
-        );
-      } catch (error) {
-        driverError = error;
-      }
+        ).catch(error => { driverError = error; }).finally(() => { finished = true; });
+      // Publish each complete, validated item while Writer continues the batch.
+      // Cancellation can then retain already stamped results without exposing plain intermediates.
+      do { await publishAvailable(); if (!finished) await new Promise(resolve => setTimeout(resolve, 100)); } while (!finished);
+      await driverWork;
+      await publishAvailable();
     }
     let statusItems = [];
     try {
@@ -283,10 +334,14 @@ async function convertBatch(inputs, batchDir, options, renderer) {
     }
     const results = [];
     for (const item of prepared) {
+      if (published.has(item.index)) { results.push(published.get(item.index)); continue; }
+      if (options.signal?.aborted) {
+        results.push({ ...item.origin, status: 'cancelled', error: { code: 'CANCELLED', message: 'word-render:cancelled' } }); continue;
+      }
       throwIfAborted(driverError?.code === 'CANCELLED' ? undefined : options.signal);
       if (item.prepareError) {
         results.push({
-          input_path: item.inputPath,
+          ...item.origin,
           status: 'failed',
           error: {
             code:
@@ -299,33 +354,11 @@ async function convertBatch(inputs, batchDir, options, renderer) {
         continue;
       }
       const status = statusItems.find((candidate) => candidate.index === item.index);
-      if (status?.status === 'success') {
-        try {
-          const pdf = await readInputFile(item.destination, {
-            extensions: ['.pdf'],
-            maxBytes: 150 * 1024 * 1024,
-            signal: options.signal,
-          });
-          const info = await runDocumentWorker(
-            'pdf_validate',
-            { bytes: pdf.bytes },
-            options,
-          );
-          results.push({
-            input_path: item.inputPath,
-            output_path: item.destination,
-            bytes: pdf.size,
-            page_count: info.page_count,
-            status: 'success',
-          });
-          continue;
-        } catch {
-          // Treat a missing, truncated or unparsable PDF as a failed item.
-        }
-      }
-      const code = status?.code || (driverError?.code === 'CANCELLED' ? 'cancelled' : 'render-failed');
+      const fieldUpdateFailed = options.refreshFields && (status?.fieldUpdate?.enabled !== true || status?.fieldUpdate?.stabilized !== true);
+      const code = status?.code || (driverError?.code === 'CANCELLED' ? 'cancelled' : fieldUpdateFailed ? 'field-update-failed' : 'render-failed');
+      if (fieldUpdateFailed) await rm(item.destination, { force: true });
       results.push({
-        input_path: item.inputPath,
+        ...item.origin,
         status: driverError?.code === 'CANCELLED' && !status ? 'cancelled' : 'failed',
         error: {
           code: driverError?.code || 'PROCESSING_FAILED',
@@ -341,8 +374,36 @@ async function convertBatch(inputs, batchDir, options, renderer) {
   }
 }
 
+function fontWarnings(files) {
+  return [
+    'Missing fonts are replaced with available open-source families where possible. Commercial font licenses or embedding restrictions may affect PDF generation; verify your license and check the output layout.',
+    ...files.flatMap(file => (file.font_notices || []).map(notice => {
+      const prefix = `${file.source_name || path.basename(file.input_path)}: `;
+      if (notice.code === 'font-check-unavailable' || notice.code === 'font-check-incomplete')
+        return prefix + 'Font checks were unavailable or incomplete. Verify fonts in the generated PDF.';
+      if (notice.code === 'font-replacement-failed') return prefix + `Could not replace "${notice.font}". Install a suitable open-source font or change the source document.`;
+      const reason = notice.code === 'embedding-restricted' ? 'embedding restricted' : 'missing';
+      return prefix + (notice.replacement
+        ? `"${notice.font}" (${reason}) was replaced with open-source font "${notice.replacement}". Check pagination and line breaks.`
+        : `"${notice.font}" (${reason}) has no suitable available open-source replacement. Install one or change the source document; PDF text or layout may differ.`);
+    })),
+  ];
+}
+
+function fieldWarnings(files, enabled) {
+  if (!enabled) return ['Internal TOCs and fields are not explicitly refreshed; the import/layout engine may recalculate dynamic fields.'];
+  return ['Requested internal TOC, page and reference updates only; dates, external data and unknown fields are not explicitly refreshed.',
+    ...files.filter(file => file.field_update?.enabled).map(file => {
+      const summary = file.field_update;
+      return `${file.source_name || path.basename(file.input_path)}: updated ${summary.indexes} internal TOC(s) and ${summary.fields} field(s); skipped ${summary.skippedFields} other field(s) and ${summary.skippedIndexes} index(es).`;
+    })];
+}
+
 export async function word_to_pdf(args, options = {}) {
   throwIfAborted(options.signal);
+  if (args.refresh_fields !== undefined && typeof args.refresh_fields !== 'boolean')
+    throw new ToolKnitError('INVALID_ARGUMENT', 'refresh_fields must be a boolean.');
+  options = { ...options, refreshFields: args.refresh_fields === true };
   const batch = Array.isArray(args.input_paths);
   if (
     batch
@@ -357,6 +418,7 @@ export async function word_to_pdf(args, options = {}) {
       'Use input_path/output_path, or input_paths/output_dir for a batch.',
     );
   const inputs = batch ? args.input_paths : [args.input_path];
+  if (!batch && /\.zip$/i.test(args.input_path)) throw new ToolKnitError('INVALID_ARGUMENT', 'ZIP input requires input_paths and output_dir.');
   if (!inputs.length || inputs.length > 20)
     throw new ToolKnitError('INVALID_ARGUMENT', 'Select 1–20 Word files.');
   if (running >= 2)
@@ -365,7 +427,11 @@ export async function word_to_pdf(args, options = {}) {
       'Two Word jobs are running. Retry later.',
     );
   running++;
+  let preparedInputs;
   try {
+    options.encryption = await prepareWordEncryption(args.encryption);
+    options.watermark = await prepareWordWatermark(args.watermark, options);
+    if (batch) preparedInputs = await prepareWordBatchInputs(inputs, options);
     const renderer = await resolveLibreOfficeRuntime();
     throwIfAborted(options.signal);
     if (!renderer.available)
@@ -384,7 +450,7 @@ export async function word_to_pdf(args, options = {}) {
     const used = new Set();
     try {
       if (batch) {
-        files.push(...await convertBatch(inputs, batchDir, options, renderer));
+        files.push(...await convertBatch(preparedInputs.sources, batchDir, options, renderer));
         const outputs = files.filter((row) => row.status === 'success');
         return {
           tool: 'word.to-pdf',
@@ -392,8 +458,8 @@ export async function word_to_pdf(args, options = {}) {
           files,
           outputs,
           output_dir: batchDir,
-          warnings: [
-            'Uses one isolated LibreOffice Writer session for batch conversion. Missing fonts and complex layouts may differ. Macros and external updates are disabled; fields are not explicitly refreshed.',
+          warnings: [...fontWarnings(files), ...fieldWarnings(files, options.refreshFields), ...(preparedInputs.skipped ? [`Skipped ${preparedInputs.skipped} non-Word archive entries; nested ZIPs are not expanded.`] : []),
+            'Uses one isolated LibreOffice Writer session for batch conversion. Missing fonts and complex layouts may differ. Macros and external updates are disabled.',
           ],
         };
       }
@@ -449,8 +515,8 @@ export async function word_to_pdf(args, options = {}) {
               output_path: outputs[0].output_path,
               page_count: outputs[0].page_count,
             }),
-        warnings: [
-          'Uses LibreOffice Writer. Missing fonts and complex layouts may differ. Macros and external updates are disabled; fields are not explicitly refreshed.',
+        warnings: [...fontWarnings(files), ...fieldWarnings(files, options.refreshFields),
+          'Uses LibreOffice Writer. Missing fonts and complex layouts may differ. Macros and external updates are disabled.',
         ],
       };
     } finally {
@@ -461,6 +527,7 @@ export async function word_to_pdf(args, options = {}) {
       }
     }
   } finally {
-    running--;
+    if (options.encryption) options.encryption.password = '';
+    try { await preparedInputs?.dispose(); } finally { running--; }
   }
 }

@@ -820,3 +820,126 @@
       }
 
       /* ===== End Typing Test ===== */
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* Navigation and the poster inherit the shared tool-page theme. */
+html:root[data-theme] .typing-test-v2 {
+  --typing-surface: var(--tk-page-bg);
+  --typing-soft: var(--tk-inset);
+  --typing-hover: var(--tk-surface);
+  --typing-pending: var(--tk-border-strong);
+  --typing-error: var(--tk-danger);
+  --typing-error-bg: var(--tk-inset);
+}
+
+html:root[data-theme] .typing-test-v2 :is(.typing-test-settings, .typing-test-area, .typing-test-result) {
+  background: var(--typing-surface);
+  border-color: var(--line);
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .typing-test-v2 :is(.typing-test-setting-label, .typing-test-stat-label, .typing-test-result-label) {
+  color: var(--muted);
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-setting-label :is(i, svg) {
+  color: var(--ink);
+  background: var(--typing-soft);
+  border-color: var(--line-strong);
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-option {
+  color: var(--ink);
+  background: var(--typing-soft);
+  border-color: var(--line-strong);
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-option:hover:not(.active) {
+  color: var(--ink);
+  background: var(--typing-hover);
+  border-color: var(--muted);
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-option.active,
+html:root[data-theme] .typing-test-v2 .typing-test-start-btn,
+html:root[data-theme] .typing-test-v2 .typing-test-start-btn:hover {
+  color: var(--typing-surface);
+  background: var(--ink);
+  border-color: var(--ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-reset-btn,
+html:root[data-theme] .typing-test-v2 .typing-test-reset-btn:hover {
+  color: var(--ink);
+  background: var(--typing-soft);
+  border-color: var(--line-strong);
+}
+
+html:root[data-theme] .typing-test-v2 :is(.typing-test-stat, .typing-test-result-item, .typing-test-text-wrap) {
+  background: var(--typing-soft);
+  border-color: var(--line);
+}
+
+html:root[data-theme] .typing-test-v2 :is(.typing-test-stat-value, .typing-test-result-value, .typing-test-result-title) {
+  color: var(--ink);
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-stat-value.warning {
+  color: var(--typing-error);
+  text-shadow: none;
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-text-wrap {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-text-wrap:focus-within {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-text-wrap::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-hint {
+  color: var(--muted);
+  background: var(--typing-surface);
+  border-color: var(--line-strong);
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-text {
+  color: var(--typing-pending);
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-segment {
+  background: transparent;
+  border-color: transparent;
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-char.current,
+html:root[data-theme] .typing-test-v2 .typing-test-text.segmented-mode .typing-test-char.current {
+  color: var(--typing-surface);
+  background: var(--ink);
+  box-shadow: none;
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-char.correct {
+  color: var(--ink);
+  animation: none;
+}
+
+html:root[data-theme] .typing-test-v2 :is(.typing-test-char.wrong, .typing-test-char.extra) {
+  color: var(--typing-error);
+  background: var(--typing-error-bg);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-shadow: none;
+  opacity: 1;
+}
+
+html:root[data-theme] .typing-test-v2 .typing-test-extra-segment {
+  opacity: 1;
+}

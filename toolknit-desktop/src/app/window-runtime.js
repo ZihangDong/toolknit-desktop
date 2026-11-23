@@ -91,9 +91,9 @@ export function createWindowRuntime({
         }
         const { invoke } = await tauriCorePromise;
         if (scope.disposed) return;
-        // Read the latest theme/radius after pending native calls.
+        // Read the latest radius and frame state after pending native calls.
         const radius = requestedRadius ?? pixels(read());
-        const shadow = getTheme() === 'light' && !frameMaximized;
+        const shadow = !frameMaximized;
         const surface = `${radius}:${shadow}`;
         if (surface !== appliedSurface) {
           await invoke('set_window_corner_radius', { radius, shadow });

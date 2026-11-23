@@ -493,3 +493,265 @@
           font-size: clamp(22px, 2vw, 28px);
         }
       }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* AI polish owns a two-panel workflow; the shared shell supplies the palette. */
+html:root[data-theme] .ai-polish-v2 {
+  --ai-polish-surface: var(--tk-page-bg);
+  --ai-polish-soft: var(--tk-inset);
+  --ai-polish-hover: var(--tk-surface);
+  --ai-polish-scrollbar: var(--tk-muted);
+}
+
+html:root[data-theme] .ai-polish-v2 :is(
+  .ai-polish-v2-input-card,
+  .ai-polish-v2-result-card
+) {
+  border-color: var(--line);
+  background: var(--ai-polish-surface);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-card-head h2 {
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-card-head p {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-polish-v2 .pdf-merge-v2-step p {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-source {
+  border-color: var(--line);
+  background: var(--ai-polish-soft);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-source > :is(svg, i) {
+  border-color: var(--line-strong);
+  background: var(--ai-polish-surface);
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-source strong {
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-source span {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-source-mark {
+  border-color: var(--line-strong);
+  background: var(--ai-polish-surface);
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-drop-card {
+  border-color: var(--line-strong);
+  background: var(--ai-polish-soft);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-drop-card span {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-drop-card p {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-polish-v2 :is(
+  .ai-polish-v2-drop-card.is-dragging,
+  .drag-over .ai-polish-v2-drop-card
+) {
+  border-color: var(--ink);
+  background: var(--ai-polish-hover);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-select-btn {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-select-btn :is(span, svg) {
+  color: inherit;
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-select-btn:hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-select-btn:active {
+  transform: translateY(0);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-textarea {
+  border-color: var(--line-strong);
+  background: var(--ai-polish-surface);
+  color: var(--ink);
+  caret-color: var(--ink);
+  scrollbar-color: var(--ai-polish-scrollbar) transparent;
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-textarea::placeholder {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-textarea:focus {
+  border-color: var(--ink);
+  background: var(--ai-polish-surface);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+html:root[data-theme] .ai-polish-v2 :is(
+  .ai-polish-v2-textarea,
+  .ai-polish-polished,
+  .ai-polish-direction-list
+)::-webkit-scrollbar-thumb {
+  background: var(--ai-polish-scrollbar);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-start-btn:not(.disabled) {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-start-btn:not(.disabled):hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-v2-start-btn.disabled {
+  border-color: var(--tk-border);
+  background: var(--tk-surface-hover);
+  color: var(--muted);
+  box-shadow: none;
+  opacity: 1;
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-right-empty {
+  border-color: var(--line-strong);
+  background: var(--ai-polish-soft);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-empty-icon-wrap {
+  border-color: var(--line-strong);
+  background: var(--ai-polish-surface);
+  animation-name: aiPolishEmptyPulseLight;
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-empty-icon {
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-right-empty p {
+  color: var(--muted);
+}
+
+@keyframes aiPolishEmptyPulseLight {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(17, 17, 17, 0.12);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(17, 17, 17, 0);
+    transform: scale(1.05);
+  }
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-directions-title {
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-direction-btn {
+  border-color: var(--line);
+  background: var(--ai-polish-soft);
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-direction-btn::before {
+  background: var(--ink);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-direction-btn:hover {
+  border-color: var(--line-strong);
+  background: var(--ai-polish-hover);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-direction-btn-name {
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-direction-btn-desc {
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-direction-cancel {
+  border-color: var(--line-strong);
+  background: var(--ai-polish-soft);
+  color: var(--muted);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-direction-cancel:hover {
+  border-color: var(--line-strong);
+  background: var(--ai-polish-hover);
+  color: var(--ink);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-polished {
+  border-color: var(--line-strong);
+  background: var(--ai-polish-surface);
+  color: var(--ink);
+  scrollbar-color: var(--ai-polish-scrollbar) transparent;
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-copy-fab {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--tk-on-accent);
+  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.14);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-copy-fab:hover {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+
+html:root[data-theme] .ai-polish-v2 .ai-polish-copy-fab.copied {
+  border-color: #b8ddc4;
+  background: var(--tk-inset);
+  color: #166534;
+}
+
+html:root[data-theme] .ai-polish-v2.is-reading-file .ai-polish-v2-workspace {
+  opacity: 0.58;
+}
+
+html:root[data-theme] #aiPolishMask {
+  background: rgba(var(--tk-rgb-page), 0.96);
+}
+
+html:root[data-theme] #aiPolishMask .audio-convert-process-text {
+  color: var(--tk-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .ai-polish-v2 :is(
+    .ai-polish-empty-icon-wrap,
+    .ai-polish-empty-icon,
+    .ai-polish-directions,
+    .ai-polish-result
+  ) {
+    animation: none;
+  }
+}

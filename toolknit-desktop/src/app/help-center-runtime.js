@@ -12,9 +12,6 @@ export function createHelpCenterRuntime({
   getHelpContent = () => ({}),
   getLegalContent = () => ({}),
   escapeHtml = value => String(value ?? ''),
-  initLightRays,
-  getTheme = () => 'dark',
-  onThemeChange = () => () => {},
   settingsOverlay,
   settingsContent,
   pageTransition = null,
@@ -41,7 +38,6 @@ export function createHelpCenterRuntime({
   const feedbackBack = byId('feedbackBack');
   const feedbackSettings = byId('feedbackV2Settings');
   const feedbackBtn = byId('feedbackBtn');
-  const lightraysBg = byId('lightraysBg');
   const legalOverlay = byId('legalOverlay');
   const legalBackBtn = byId('legalBackBtn');
   const legalNav = byId('legalNav');
@@ -51,7 +47,6 @@ export function createHelpCenterRuntime({
   const marqueeTrack = byId('marqueeTrack');
 
   let helpSearchCache = null;
-  let lightraysInstance = null;
   let subpageReturnTarget = null;
   let background = null;
   let session = null;
@@ -107,8 +102,7 @@ export function createHelpCenterRuntime({
   function hideFeedbackOverlay() {
     moveFocusOutOfHiddenRegion(feedbackOverlay);
     feedbackOverlay?.classList.remove('visible');
-    lightraysInstance?.destroy?.();
-    lightraysInstance = null;
+
   }
 
   function hideLegalOverlay() {
@@ -165,27 +159,11 @@ export function createHelpCenterRuntime({
     });
   }
 
-  function syncFeedbackBackground() {
-    if (getTheme() === 'light' || !feedbackOverlay?.classList.contains('visible')) {
-      lightraysInstance?.destroy?.();
-      lightraysInstance = null;
-      return;
-    }
-    if (lightraysBg && !lightraysInstance && typeof initLightRays === 'function') {
-      lightraysInstance = initLightRays(lightraysBg, {
-        raysOrigin: 'top-center', raysColor: '#ffffff', raysSpeed: 0.6,
-        lightSpread: 0.6, rayLength: 3, followMouse: true, mouseInfluence: 0.1,
-        noiseAmount: 0, distortion: 0, pulsating: false, fadeDistance: 1, saturation: 1
-      });
-    }
-  }
-  scope.use(onThemeChange(syncFeedbackBackground));
 
   function openFeedbackOverlay(source = null) {
     return runTransition(() => {
       if (!feedbackOverlay) return;
       beginSubpageNavigation(feedbackOverlay, source, closeFeedbackOverlay);
-      syncFeedbackBackground();
     });
   }
 
@@ -353,8 +331,7 @@ export function createHelpCenterRuntime({
     closeLegalOverlay,
     dispose: () => {
       releasePage(false);
-      lightraysInstance?.destroy?.();
-      lightraysInstance = null;
+
       scope.dispose();
     },
     openFeedbackOverlay,

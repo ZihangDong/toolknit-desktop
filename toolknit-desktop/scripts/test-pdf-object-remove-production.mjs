@@ -1,0 +1,87 @@
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { mkdir,readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { PDFDocument } from 'pdf-lib';
+import { preview } from 'vite';
+import { analyzeRemovalPdf } from '../src/features/pdf-object-remove/processor.js';
+const require=createRequire(process.env.TOOLKNIT_TEST_MODULES?path.join(process.env.TOOLKNIT_TEST_MODULES,'package.json'):import.meta.url),{chromium}=require('playwright');await mkdir('tmp/pdf-object-remove-production',{recursive:true});
+const server=await preview({configFile:false,preview:{host:'127.0.0.1',port:0,open:false}}),browser=await chromium.launch({headless:true,channel:'msedge'}),page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(20000);
+try{
+ await page.goto(server.resolvedUrls.local[0]);await page.waitForFunction(()=>!document.documentElement.dataset.tkStartup&&document.querySelector('#homeCustomTools')&&!document.querySelector('.app').inert);
+ await page.locator('#homeToolSearch').fill('水印');await page.locator('#homeToolGrid [data-home-tool="pdf-object-remove"]').click();await page.waitForFunction(()=>document.getElementById('pdfRemoveOverlay')?.classList.contains('visible')&&!document.getElementById('pdfRemoveOverlay').inert);
+ await page.locator('#pdfRemoveFileInput').setInputFiles(path.resolve('tmp/pdf-content-predictor/source.pdf'));
+ await page.waitForFunction(()=>document.getElementById('pdfRemoveObjects').options.length>0&&!document.getElementById('pdfRemoveInspect').disabled);
+ const objects=page.locator('#pdfRemoveObjects'),mark=objects.locator('option').filter({hasText:'PREDICTED CONTENT MARK'});
+ assert.equal(await mark.count(),1);
+ await objects.selectOption(await mark.getAttribute('value'));
+ await page.locator('#pdfRemoveMatch').click();
+ await page.locator('#pdfRemovePage').selectOption('6');
+ await page.waitForFunction(()=>!document.getElementById('pdfRemoveObjects').disabled);
+ await objects.selectOption(await mark.getAttribute('value'));
+ await page.locator('#pdfRemoveMark').click();
+ await page.locator('#pdfRemovePreview').click();
+ await page.waitForFunction(()=>!document.getElementById('pdfRemoveExport').disabled);
+ assert.ok(await page.locator('#pdfRemoveDifference').isVisible());
+ const pending=page.waitForEvent('download');await page.locator('#pdfRemoveExport').click();const download=await pending,target=path.resolve('tmp/pdf-object-remove-production',download.suggestedFilename());await download.saveAs(target);
+ const {summary}=await analyzeRemovalPdf(await readFile(target));
+ assert.equal(summary.pageCount,7);
+ assert.ok(summary.pages.every(sheet=>!sheet.reason));
+ assert.ok(!summary.candidates.some(item=>item.label==='PREDICTED CONTENT MARK'));
+ assert.equal(summary.candidates.filter(item=>item.label==='Predictor retained body').length,7);
+ assert.ok(summary.candidates.some(item=>item.label==='Form retained body'));
+ await page.screenshot({path:'tmp/pdf-object-remove-production/production-tool.png'});
+ const returnHome=async()=>{
+  await page.waitForFunction(()=>document.getElementById('pdfRemoveCancel').hidden);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(()=>document.getElementById('pdfRemoveOverlay').inert&&!document.querySelector('.app').inert);
+ };
+ await returnHome();
+ const openFixture=async file=>{
+  await page.reload();
+  await page.waitForFunction(()=>!document.documentElement.dataset.tkStartup&&document.querySelector('#homeCustomTools')&&!document.querySelector('.app').inert);
+  await page.locator('#homeToolSearch').fill('水印');
+  await page.locator('#homeToolGrid [data-home-tool="pdf-object-remove"]').click();
+  await page.waitForFunction(()=>document.getElementById('pdfRemoveOverlay')?.classList.contains('visible')&&!document.getElementById('pdfRemoveOverlay').inert);
+  await page.locator('#pdfRemoveFileInput').setInputFiles(path.resolve(file));
+  await page.waitForFunction(()=>document.getElementById('pdfRemoveObjects').options.length>0 ||
+   document.getElementById('pdfRemoveStatus').classList.contains('is-error'));
+ };
+ await openFixture('tmp/pdf-transparency-group-ordinary/source.pdf');
+ const group=objects.locator('option').filter({hasText:'BACKDROP DRAFT'});
+ assert.equal(await group.count(),2,await page.locator('#pdfRemoveStatus').textContent());
+ await objects.selectOption(await group.first().getAttribute('value'));
+ await page.locator('#pdfRemoveMatch').click();
+ assert.ok((await page.locator('#pdfRemoveSelection').textContent()).includes('1'));
+ await page.locator('#pdfRemovePreview').click();
+ await page.waitForFunction(()=>!document.getElementById('pdfRemoveExport').disabled);
+ assert.ok(await page.locator('#pdfRemoveDifference').isVisible());
+ const groupPending=page.waitForEvent('download');
+ await page.locator('#pdfRemoveExport').click();
+ const groupDownload=await groupPending,groupPath=path.resolve('tmp/pdf-object-remove-production',groupDownload.suggestedFilename());
+ await groupDownload.saveAs(groupPath);
+ const groupResult=await analyzeRemovalPdf(await readFile(groupPath));
+ assert.deepEqual(groupResult.candidates.filter(item=>item.label==='BACKDROP DRAFT').map(item=>item.pageIndex),[0,1,2]);
+ assert.equal(groupResult.candidates.filter(item=>item.label==='Backdrop group body').length,4);
+ await returnHome();
+ for(const [fixture,expectedCount,expectedAnnots] of [['popup',1,[1,3]],['states',2,[1,1,2,2,2]]]){
+  await openFixture(`tmp/pdf-stamp-${fixture}/source.pdf`);
+  const stamp=objects.locator('option').filter({hasText:/图章注释|Stamp annotation/i});
+  assert.equal(await stamp.count(),1,await page.locator('#pdfRemoveStatus').textContent());
+  await objects.selectOption(await stamp.getAttribute('value'));
+  await page.locator('#pdfRemoveMatch').click();
+  assert.ok((await page.locator('#pdfRemoveSelection').textContent()).includes(String(expectedCount)));
+  await page.locator('#pdfRemovePreview').click();
+  await page.waitForFunction(()=>!document.getElementById('pdfRemoveExport').disabled);
+  assert.ok(await page.locator('#pdfRemoveDifference').isVisible());
+  const pendingStamp=page.waitForEvent('download');
+  await page.locator('#pdfRemoveExport').click();
+  const stampDownload=await pendingStamp,stampPath=path.resolve('tmp/pdf-object-remove-production',`stamp-${fixture}-removed.pdf`);
+  await stampDownload.saveAs(stampPath);
+  const result=await PDFDocument.load(await readFile(stampPath));
+  assert.deepEqual(result.getPages().map(sheet=>sheet.node.Annots().size()),expectedAnnots);
+  await returnHome();
+ }
+ assert.deepEqual(errors,[]);
+ console.log('PDF object removal production passed: home entry, predicted streams, non-isolated groups, popup and stateful stamps, download and home return.');
+}finally{await browser.close();await server.close();}

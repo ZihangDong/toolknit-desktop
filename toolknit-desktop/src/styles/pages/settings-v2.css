@@ -241,3 +241,288 @@
   }
 }
 
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .settings-overlay.v2-settings {
+  --ink: var(--tk-page-ink);
+  --muted: var(--tk-page-muted);
+  --quiet: var(--tk-muted);
+  --line: var(--tk-border);
+  --line-strong: var(--tk-border);
+  --settings-light-panel-radius: 32px;
+  --settings-light-control-radius: 999px;
+  color-scheme: var(--tk-color-scheme);
+  color: var(--tk-page-ink);
+  background: var(--tk-page-bg);
+}
+
+html:root[data-theme] .settings-overlay.v2-settings::before {
+  display: none;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-content {
+  background-color: var(--tk-page-bg);
+  background-image:
+    linear-gradient(90deg, rgba(var(--tk-rgb-ink), 0.025) 1px, transparent 1px),
+    linear-gradient(rgba(var(--tk-rgb-ink), 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-shell {
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 0;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-layout {
+  width: min(1480px, 100%);
+  grid-template-columns: 280px minmax(0, 1fr);
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 24px;
+  margin: 0 auto;
+  padding: 24px 28px 32px;
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-layout::-webkit-scrollbar-thumb { background: var(--tk-muted); }
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-poster, .settings-v2-card) {
+  --ink: var(--tk-home-card-ink);
+  --muted: var(--tk-home-card-muted);
+  --quiet: var(--tk-home-card-muted);
+  --line: var(--tk-border);
+  --line-strong: var(--tk-border);
+  color-scheme: var(--tk-color-scheme);
+  color: var(--ink);
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster {
+  position: sticky;
+  top: 0;
+  min-height: 0;
+  max-height: calc(100dvh - 124px);
+  padding: 28px;
+  border-radius: var(--settings-light-panel-radius);
+  background: var(--tk-home-card-bg);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tk-muted) transparent;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster::before,
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-index, .settings-v2-footnote) { display: none; }
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-kicker { color: var(--muted); letter-spacing: 0; }
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster h1 {
+  margin: 14px 0 12px;
+  line-height: 1.3;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster p {
+  max-width: none;
+  color: var(--muted);
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-meta {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-color: var(--line);
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-meta div {
+  color: var(--muted);
+  gap: 10px;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-meta strong {
+  color: var(--ink);
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-list { gap: 10px; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-list span {
+  max-width: 100%;
+  border: 0;
+  color: var(--ink);
+  background: transparent;
+  letter-spacing: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-list > span {
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: var(--settings-light-control-radius);
+  background: var(--tk-page-bg);
+}
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-list > span > span { min-width: 0; padding: 0; border-radius: 0; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-list svg { flex: 0 0 14px; }
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-grid { gap: 16px; }
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-card {
+  padding: 22px;
+  border-radius: var(--settings-light-panel-radius);
+  background: var(--tk-home-card-bg);
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-card.span-4 { grid-column: span 4; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-card.span-6 { grid-column: span 6; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-card.span-12 { grid-column: 1 / -1; }
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-head { margin-bottom: 16px; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-head h2 {
+  margin: 0;
+  line-height: 1.4;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-hint, .settings-theme-hint, .settings-v2-toggle-copy span, .settings-v2-background-summary, .settings-v2-background-preview-copy, .settings-v2-font-slot-copy span, .settings-v2-font-slot.is-custom .settings-v2-font-slot-copy span) {
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-sound-style-label, .settings-v2-radius-value) { letter-spacing: 0; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-theme-options { border-color: var(--line); }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-row { margin-top: 0; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-path {
+  flex-basis: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-choice-row { margin-top: 0; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-choice-row.settings-row { padding: 0; border: 0; }
+html:root[data-theme] .settings-overlay.v2-settings .lang-options .settings-v2-choice { flex: 1 1 0; min-width: 0; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-sound-style-options { margin-top: 9px; }
+
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-btn, .settings-v2-choice, .settings-v2-icon-btn, .settings-v2-link-card, .settings-v2-radius-input) {
+  border: 0;
+  border-radius: var(--settings-light-control-radius);
+  color: var(--ink);
+  background: var(--tk-page-bg);
+  box-shadow: none;
+  transform: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+  transition: background-color 150ms ease, color 150ms ease;
+  letter-spacing: 0;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-btn, .settings-v2-choice) {
+  max-width: 100%;
+  min-height: 38px;
+  padding: 8px 14px;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+/* Chinese glyphs must use the Chinese font's line metrics, not Latin fallback metrics. */
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-btn, .settings-v2-choice, .settings-v2-link-card, .settings-v2-poster-list):lang(zh) {
+  font-family: var(--tk-font-ui-cn), var(--tk-font-ui-en), "Segoe UI Symbol", sans-serif;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-btn, .settings-v2-choice, .settings-v2-link-card) span { min-width: 0; }
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-btn, .settings-v2-icon-btn, .settings-v2-link-card) svg { flex-shrink: 0; color: inherit; }
+
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-btn, .settings-v2-choice, .settings-v2-icon-btn, .settings-v2-link-card):hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--tk-home-icon-bg);
+  box-shadow: none;
+  transform: none;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-btn-primary, .settings-v2-choice.active, .settings-v2-btn.is-recording) {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-btn-primary, .settings-v2-choice.active, .settings-v2-btn.is-recording):is(:hover, :focus-visible, :active) {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  box-shadow: none;
+  transform: none;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-card :is(button, input):focus-visible {
+  outline: 2px solid var(--tk-border-strong);
+  outline-offset: 3px;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-card :is(button, input):disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-card [hidden] { display: none; }
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-toggle-row { flex-wrap: nowrap; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-toggle-copy { flex: 1 1 auto; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-switch {
+  flex: 0 0 58px;
+  border: 0;
+  background: var(--tk-border-strong);
+}
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-switch::before { top: 4px; left: 4px; background: var(--tk-page-bg); }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-switch:is(.active, [aria-pressed="true"]) { background: var(--tk-accent); }
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-font-slot { border-color: var(--line); }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-radius-input:disabled { background: var(--tk-surface-hover); }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-link-card { min-height: 48px; padding: 12px 14px; }
+
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-background-preview {
+  border: 0;
+  border-radius: var(--settings-light-panel-radius);
+  background: var(--tk-page-bg);
+}
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-background-preview-grid { display: none; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-background-actions { margin-top: 12px; }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-background-import {
+  border: 0;
+  border-radius: var(--settings-light-panel-radius);
+  background: var(--tk-page-bg);
+}
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-background-import-label { color: var(--ink); }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-background-import-track,
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-background-import-track::-webkit-progress-bar { background: var(--line); }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-background-import-track::-webkit-progress-value { background: var(--ink); }
+html:root[data-theme] .settings-overlay.v2-settings .settings-v2-background-import-track::-moz-progress-bar { background: var(--ink); }
+
+@media (max-width: 1200px) {
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-card.span-4 { grid-column: span 6; }
+}
+
+@media (max-width: 980px) {
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-layout { grid-template-columns: minmax(0, 1fr); }
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster { position: static; max-height: none; }
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-poster-list { display: flex; flex-wrap: wrap; }
+}
+
+@media (max-width: 720px) {
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-layout { padding: 24px 16px 32px; }
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-card:is(.span-4, .span-6, .span-12) { grid-column: 1 / -1; }
+}
+
+@media (max-width: 480px) {
+  html:root[data-theme] .settings-overlay.v2-settings :is(.settings-v2-card, .settings-v2-poster) { padding: 22px; }
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-font-slot { flex-wrap: wrap; }
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-link-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-card :is(button, input),
+  html:root[data-theme] .settings-overlay.v2-settings .settings-v2-switch::before { transition: none; }
+}

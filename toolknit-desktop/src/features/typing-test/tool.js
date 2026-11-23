@@ -10,7 +10,7 @@ import {
   normalizeTypingValue
 } from './core.js';
 import './typing-test.css';
-import './typing-test-light.css';
+
 
 const WORD_POOLS = createTypingWordPools(typingWordsData);
 

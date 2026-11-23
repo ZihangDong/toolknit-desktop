@@ -1,5 +1,5 @@
 .pdf-scan { --scan-ink: #f4f4f4; --scan-muted: #aaa; --scan-line: #363638; --scan-field: #222225; }
-html[data-theme="light"] .pdf-scan { --scan-ink: #171717; --scan-muted: #626262; --scan-line: #d4d4d4; --scan-field: #fff; }
+html:root[data-theme] .pdf-scan { --scan-ink: var(--tk-ink); --scan-muted: var(--tk-muted); --scan-line: var(--tk-border); --scan-field: var(--tk-page-bg); }
 .pdf-scan [hidden] { display: none; }
 .pdf-scan .pdf-workbench-body[hidden] { display: none; }
 .pdf-scan #pdfScanUpload { flex: 1; min-height: 0; overflow: auto; }
@@ -32,11 +32,11 @@ html[data-theme="light"] .pdf-scan { --scan-ink: #171717; --scan-muted: #626262;
 .pdf-scan .pdf-editor-tool { height: auto; min-height: 36px; font-size: 12px; white-space: normal; }
 .pdf-scan .pdf-editor-tool[aria-pressed="true"] { outline: 1px solid var(--scan-ink); outline-offset: -1px; }
 .pdf-scan input[type="text"], #pdfScanPassword { width: 100%; min-width: 0; height: 38px; padding: 8px 10px; border: 1px solid var(--scan-line, #444); border-radius: 6px; color: var(--scan-ink, #fff); background: var(--scan-field, #222); font: inherit; box-sizing: border-box; }
-html[data-theme="light"] #pdfScanPassword { background: #fff; color: #171717; border-color: #ccc; color-scheme: light; }
+html:root[data-theme] #pdfScanPassword { background: var(--tk-page-bg); color: var(--tk-ink); border-color: var(--tk-border); color-scheme: var(--tk-color-scheme); }
 .pdf-scan input::placeholder { color: var(--scan-muted); }
 .pdf-scan input:focus-visible, .pdf-scan summary:focus-visible { outline: 2px solid var(--scan-ink); outline-offset: -2px; }
-html[data-theme="light"] .pdf-scan #pdfScanRange:focus,
-html[data-theme="light"] .pdf-scan #pdfScanRange:focus-visible { outline: 2px solid #171717; outline-offset: -2px; box-shadow: none; }
+html:root[data-theme] .pdf-scan #pdfScanRange:focus,
+html:root[data-theme] .pdf-scan #pdfScanRange:focus-visible { outline: 2px solid var(--tk-accent); outline-offset: -2px; box-shadow: none; }
 .pdf-scan-range { display: flex; gap: 6px; }
 .pdf-scan-range button { flex-shrink: 0; }
 .pdf-scan details { border-block: 1px solid var(--scan-line); padding: 12px 0; }
@@ -51,7 +51,7 @@ html[data-theme="light"] .pdf-scan #pdfScanRange:focus-visible { outline: 2px so
 .pdf-scan .pdf-workbench-body { transition: grid-template-columns 0.25s ease; }
 #pdfScanUploadStatus, #pdfScanStatus { overflow-wrap: anywhere; }
 #pdfScanUploadStatus.is-error, #pdfScanStatus.is-error { color: #ff9d9d; }
-html[data-theme="light"] #pdfScanUploadStatus.is-error, html[data-theme="light"] #pdfScanStatus.is-error { color: #a51f1f; }
+html:root[data-theme] #pdfScanUploadStatus.is-error, html:root[data-theme] #pdfScanStatus.is-error { color: var(--tk-danger); }
 @media (max-width: 980px) {
   .pdf-scan.is-expanded .pdf-workbench-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(520px, 1fr) auto; }
   .pdf-scan.is-expanded .pdf-editor-page-sidebar { display: none; }

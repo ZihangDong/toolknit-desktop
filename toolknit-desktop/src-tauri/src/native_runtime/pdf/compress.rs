@@ -91,11 +91,21 @@ fn pdf_compress_cancelled() -> Result<(), String> {
     }
 }
 
-pub(super) async fn run_compress_qpdf(
+pub(in crate::native_runtime) async fn run_compress_qpdf(
     qpdf_path: &std::path::Path,
     args: &[std::ffi::OsString],
 ) -> Result<std::process::Output, String> {
+    run_conversion_qpdf_with_stdin(qpdf_path, args, None, true).await
+}
+
+pub(in crate::native_runtime) async fn run_conversion_qpdf_with_stdin(
+    qpdf_path: &std::path::Path,
+    args: &[std::ffi::OsString],
+    input: Option<&[u8]>,
+    capture_stdout: bool,
+) -> Result<std::process::Output, String> {
     use tokio::process::Command;
+    use tokio::io::AsyncWriteExt;
 
     pdf_compress_cancelled()?;
     let arguments: Vec<std::ffi::OsString> = args.iter().map(|argument| {
@@ -106,14 +116,14 @@ pub(super) async fn run_compress_qpdf(
     command
         .args(&arguments)
         .kill_on_drop(true)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::piped())
+        .stdin(if input.is_some() { std::process::Stdio::piped() } else { std::process::Stdio::null() })
+        .stdout(if capture_stdout { std::process::Stdio::piped() } else { std::process::Stdio::null() })
         .stderr(std::process::Stdio::piped());
     #[cfg(target_os = "windows")]
     {
         command.creation_flags(0x08000000);
     }
-    let child = command
+    let mut child = command
         .spawn()
         .map_err(|_| "pdf-compress:compression-failed".to_string())?;
     let child_id = child.id().unwrap_or(0);
@@ -125,7 +135,13 @@ pub(super) async fn run_compress_qpdf(
     }
     let result = tokio::time::timeout(
         std::time::Duration::from_secs(QPDF_PROCESS_TIMEOUT_SECS),
-        child.wait_with_output(),
+        async {
+            if let Some(bytes) = input {
+                let mut stdin = child.stdin.take().ok_or_else(|| std::io::Error::other("missing stdin"))?;
+                stdin.write_all(bytes).await?; stdin.shutdown().await?;
+            }
+            child.wait_with_output().await
+        },
     )
     .await;
     if child_id != 0 {

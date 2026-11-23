@@ -329,7 +329,7 @@ export function createVideoGifController({
     operationId += 1;
     processing = false;
     setProgress(0, undefined, false);
-    if (isTauri) void tauriCorePromise.then(({ invoke }) => invoke('cancel_convert')).catch(() => {});
+    if (isTauri) void tauriCorePromise.then(({ invoke }) => invoke('cancel_convert', { toolknitTaskTool: 'video-gif' })).catch(() => {});
   }
 
   function bindActions() {

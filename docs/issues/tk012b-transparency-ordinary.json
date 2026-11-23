@@ -1,0 +1,37 @@
+{
+  "task": "TK-012-B-L",
+  "auditedOn": "2026-11-22",
+  "timezone": "Asia/Shanghai",
+  "status": "complete",
+  "parentTaskComplete": false,
+  "scope": {
+    "isolated": false,
+    "knockout": false,
+    "colorSpace": "inherited; no explicit CS",
+    "callerCompositing": "default state outside other transparency groups",
+    "exactMatching": "within selected Form occurrence"
+  },
+  "tests": {
+    "sharedOccurrences": 4,
+    "selectedCallsEdited": 2,
+    "eligibilityProfiles": 11,
+    "popplerReferencePages": 3,
+    "pdfjsReferencePages": 3,
+    "muPdfReferencePages": 3,
+    "pdfjsIsolationControlPages": 3,
+    "muPdfIsolationControlPages": 3,
+    "qpdfOutputs": 1,
+    "edgeChecks": 432,
+    "fullObjectRemovalRegression": "passed",
+    "productionBuildAndEntry": "passed",
+    "newNsisPackageTested": false
+  },
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-transparency-group-ordinary/report.json",
+    "toolknit-desktop/tmp/pdf-ordinary-mupdf.json",
+    "toolknit-desktop/tmp/pdf-ordinary-regression.log",
+    "toolknit-desktop/tmp/pdf-ordinary-browser.log",
+    "toolknit-desktop/tmp/pdf-ordinary-build.log",
+    "toolknit-desktop/tmp/pdf-ordinary-production.log"
+  ]
+}

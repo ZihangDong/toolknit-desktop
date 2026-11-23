@@ -1,0 +1,268 @@
+diff --git a/sw/qa/extras/ooxmlimport/data/character-spacing-absent.docx b/sw/qa/extras/ooxmlimport/data/character-spacing-absent.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..5bc359c71166e84ba847822faf72d816cfe6f451
+GIT binary patch
+literal 1503
+zcmWIWW@Zs#U|`??V#SyYYYvv5K$Za$1A{P-j&{z^D@n~Oi4UnPNG*=ltH{k+JMpyN
+zVFMAD`lFw=dC5d5v`i{Fn9QkjiaqA0d1vVUC$Fb{d%yE#b|Y6##4Y3Ww3O|q=awgR
+z&&=VOyJw}erooGh90}{68>?2nTe^VhU_&>f^-lLmr}xFa6`qt}7NEX7=u&gg67??*
+zr9Ki7l1bkJe#~&6>aaf1rS!H*x!3UkgDI=dNN&oXU(nF2{iyQz_2aUVvYsC+OwPs5
+zZJ9FXYCuHz?Sy?>LzcJAI@#Q=Hap`W+sbujXHK1GRe#qjuNK|>NVcew^}OC!$<2Xk
+zuX@ur{j+^`>YN2n*yGmumxKDGI)5D9yIQ}CU0SUEt%6Rg<*)y;&!2o|DgE*BA9nys
+zNX`Ch{%S2Sgftl$7`TCSd{JsnvA!ON>^*PIcgTQ;?ZIl7dzn#eEdiJHI96(Fv2PGE
+zUz;K4b!hQ+b!KK)o}O*>_0wK|%S<a<E})*y8sf^?v!*0#Q`CW__PO5<Bsr}vD4WKj
+zBeF2}mGRjbpS)z$<s;2<L=2Wa;h*DfIq6`8g}<3Un>f$17`C&vr?j&k-QINP<A=-x
+zw^HT`30Q?Pz83fYe<M#q&C^{yzb)ri;Un#dsXVhLHMDbgtuEhvLg&M>XRF0$i=+B#
+zr_tWR)j;3K0evL{q|5V*QuHBSOUX|z%>^a}P#S=G^B@=4o8g)}cjw8uq}<h0dZYE3
+z(Q9_@(Y3n1BHzD#Q?mH*z>xF5_`hAXx|=JKl*IQmt<rE@V1CfbUTeqK>30QLHhv2`
+ze{gY=DCezZ`yQ>abk8W7=wfE0Ib+6SPcI{3y;)rX7oVRNxU|T!KXXdp?A>yK?@oVG
+zxV)V)I=Cdv@l_7%qIl(h$?b^+Z08T!h<*9<xK$<P++K~@R=p><>}D%PE6k3{t1`_;
+z^`sj=tKl)A=e_~4Ak34<-gE79%sXTt;JQAk(qCqmL+F$iQCmmLhHQQT&3PMhmN&*8
+z604dxukrQ|h8RX^v7CDu|1##)?X{aV?{Cv**~G)sT~A6bP`dkY-^1JQ*B@0+xAVBN
+zNxh|Q{(;Y>(fw1^OeGE+n8Z+PYW7E<X>H4gR}5~ynsgF&y*(i*dFj=+B$efBm09np
+z?|*sJJ#t;kMA=Vk{wUU-x}3J7=R#iJr5kcHWCL0q+d?)c70!BGvhV)7!d=IH3O)aC
+z@ptJGv7f4!Z8PWBWFFmJ^qT?I(?6mc)9ZkqosR73;?$Co%)InsP@KB<IPx7*0D9Uf
+zE#Fc6*aWBYc@F#z2|2S5_#76vc>DCZr>E=xpFO=i<?Asm>&eZZQydgs{jAsW&FlaD
+zlFch>fryc?)sIC79zD-vjh3FYLQrAj-GkR|C2pOzBazeSW24D7@#{jj4(xh$&Qx})
+za#v6G$zMrlLZ@#K{t@|q_CNLjZ$>5&2HXV^(A8kDq!C16DVER;K+m5L?F<Y{8nu9F
+z8!5M<Yedfi2#pNDLJ?nvKsO0Jogqwm3Nr~g)uC%gk1>SyTg*_0Aje;TH!B-R2`dmf
+L0lnDH0^$Jxb-p-X
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/data/character-spacing-invalid.docx b/sw/qa/extras/ooxmlimport/data/character-spacing-invalid.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..76c8c274b4a1692a2b0ebeae6ab6026f015d00f2
+GIT binary patch
+literal 1543
+zcmWIWW@Zs#U|`??V#SyYYYvv5K$Za$1A{P-j&{z^D@n~Oi4UnPNG*=ltH{k+JMpyN
+zVFMAD`lFw=dC5d5v`i{Fn9QkjiaqA0d1vVUC$Fb{d%yE#b|Y6##4Y3Ww3O|q=awgR
+z&&=VOyJw}erooGh90}{68>?2nTe^VhU_&>f^-lLmr}xFa6`qt}7NEX7=u&gg67??*
+zr9Ki7l1bkJe#~&6>aaf1rS!H*x!3UkgDI=dNN&oXU(nF2{iyQz_2aUVvYsC+OwPs5
+zZJ9FXYCuHz?Sy?>LzcJAI@#Q=Hap`W+sbujXHK1GRe#qjuNK|>NVcew^}OC!$<2Xk
+zuX@ur{j+^`>YN2n*yGmumxKDGI)5D9yIQ}CU0SUEt%6Rg<*)y;&!2o|DgE*BA9nys
+zNX`Ch{%S2Sgftl$7`TCSd{JsnvA!ON>^*PIcgTQ;?ZIl7dzn#eEdiJHI96(Fv2PGE
+zUz;K4b!hQ+b!KK)o}O*>_0wK|%S<a<E})*y8sf^?v!*0#Q`CW__PO5<Bsr}vD4WKj
+zBeF2}mGRjbpS)z$<s;2<L=2Wa;h*DfIq6`8g}<3Un>f$17`C&vr?j&k-QINP<A=-x
+zw^HT`30Q?Pz83fYe<M#q&C^{yzb)ri;Un#dsXVhLHMDbgtuEhvLg&M>XRF0$i=+B#
+zr_tWR)j;3K0evL{q|5V*QuHBSOUX|z%>^a}P#S=G^B@=4o8g)}cjw8uq}<h0dZYE3
+z(Q9_@(Y3n1BHzD#Q?mH*z>xF5_`hAXx|=JKl*IQmt<rE@V1CfbUTeqK>30QLHhv2`
+ze{gY=DCezZ`yQ>abk8W7=wfE0Ib+6SPcI{3y;)rX7oVRNxU|T!KXXdp?A>yK?@oVG
+zxV)V)I=Cdv@l_7%qIl(h$?b^+Z08T!h<*9<xK$<P++K~@R=p><>}D%PE6k3{t1`_;
+z^`sj=tKl)A=e_~4Ak34<-gE79%sXTt;JQAk(qCqmL+F$iQCmmLhHQQT&3PMhmN&*8
+z604dxukrQ|h8RX^v7CDu|1##)?X{aV?{Cv**~G)sT~A6bP`dkY-^1JQ*B@0+xAVBN
+zNxh|Q{(;Y>(fw1^OeGE+n8Z+PYW7E<X>H4gR}5~ynsgF&y*(i*dFj=+B$efBm09np
+z?|*sJJ#t;kMA=Vk{wUU-x}3J7=R#iJr5kcHWCL0q+d?)c70!BGvhV)7!d=IH3O)aC
+z@ptJGv7f4!Z8PWBWFFmJ^qT?I(-oexCoThe_B^tui&INVGV{`lL2>HZcQA|DkO!Er
+zU)-y>?aX<)%9-=YwBXtN0&%9h6TIDoZhm|JdQO#0+P&mum;H4gI%dr-Xu5uwq0!>>
+zrjND<-@g7-)RNG*CqZx-%l?#tS<7opiry=8#~v_y#~JqB>{v$S(yp=zZg+O)U+lWK
+z_}*i^T_#g~(qz}F?&CdNy=I4@&D2WQqi>eX=Pj0>(;B<9rM4!)^S~qd^p(EzcYFvH
+zYqIeF`2X}D_5g22CJ_eQ1s2eEV6dbSL}4ku&<#M(#}Mrd3`-idfO!BZSEFl0&ngIw
+z48Xz@U&cW<2|Ya`OnM442|0D5Ye$b+g!Ws^P=_GLbAUH18%PN&5IO<9xSj>X0|37E
+BO+Wwu
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/data/character-spacing-kana.docx b/sw/qa/extras/ooxmlimport/data/character-spacing-kana.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..896d0ce6113e992cf6422193b93622e22192f0dd
+GIT binary patch
+literal 1554
+zcmWIWW@Zs#U|`??V#SyYYYvv5K$Za$1A{P-j&{z^D@n~Oi4UnPNG*=ltH{k+JMpyN
+zVFMAD`lFw=dC5d5v`i{Fn9QkjiaqA0d1vVUC$Fb{d%yE#b|Y6##4Y3Ww3O|q=awgR
+z&&=VOyJw}erooGh90}{68>?2nTe^VhU_&>f^-lLmr}xFa6`qt}7NEX7=u&gg67??*
+zr9Ki7l1bkJe#~&6>aaf1rS!H*x!3UkgDI=dNN&oXU(nF2{iyQz_2aUVvYsC+OwPs5
+zZJ9FXYCuHz?Sy?>LzcJAI@#Q=Hap`W+sbujXHK1GRe#qjuNK|>NVcew^}OC!$<2Xk
+zuX@ur{j+^`>YN2n*yGmumxKDGI)5D9yIQ}CU0SUEt%6Rg<*)y;&!2o|DgE*BA9nys
+zNX`Ch{%S2Sgftl$7`TCSd{JsnvA!ON>^*PIcgTQ;?ZIl7dzn#eEdiJHI96(Fv2PGE
+zUz;K4b!hQ+b!KK)o}O*>_0wK|%S<a<E})*y8sf^?v!*0#Q`CW__PO5<Bsr}vD4WKj
+zBeF2}mGRjbpS)z$<s;2<L=2Wa;h*DfIq6`8g}<3Un>f$17`C&vr?j&k-QINP<A=-x
+zw^HT`30Q?Pz83fYe<M#q&C^{yzb)ri;Un#dsXVhLHMDbgtuEhvLg&M>XRF0$i=+B#
+zr_tWR)j;3K0evL{q|5V*QuHBSOUX|z%>^a}P#S=G^B@=4o8g)}cjw8uq}<h0dZYE3
+z(Q9_@(Y3n1BHzD#Q?mH*z>xF5_`hAXx|=JKl*IQmt<rE@V1CfbUTeqK>30QLHhv2`
+ze{gY=DCezZ`yQ>abk8W7=wfE0Ib+6SPcI{3y;)rX7oVRNxU|T!KXXdp?A>yK?@oVG
+zxV)V)I=Cdv@l_7%qIl(h$?b^+Z08T!h<*9<xK$<P++K~@R=p><>}D%PE6k3{t1`_;
+z^`sj=tKl)A=e_~4Ak34<-gE79%sXTt;JQAk(qCqmL+F$iQCmmLhHQQT&3PMhmN&*8
+z604dxukrQ|h8RX^v7CDu|1##)?X{aV?{Cv**~G)sT~A6bP`dkY-^1JQ*B@0+xAVBN
+zNxh|Q{(;Y>(fw1^OeGE+n8Z+PYW7E<X>H4gR}5~ynsgF&y*(i*dFj=+B$efBm09np
+z?|*sJJ#t;kMA=Vk{wUU-x}3J7=R#iJr5kcHWCL0q+d?)c70!BGvhV)7!d=IH3O)aC
+z@ptJGv7f4!Z8PWBWFFmJ^qT?I(@XDoYi<O3_8zjQi&INVGV{`lL2>HZchK*M0gp?)
+z>ZiHB4>vf4UKVwFv>|3f1OJAg&1<LJnE3YYq5HyqGVY(BWiGp1uKUm}Yj#1?@52m@
+z7N<9TR6Y3o`02aKEX7Y)yA4!-C^lcVdAoRGb-PXp<Lw>l5qED(EPgsw>z1Qb;ro3q
+z+Ex8kox5LL3Nf1bHB<LvqD0@uN5?)aKclUcre2#r!}^2H8!gp0k9obDbhc*B-xq87
+zTXe5|-J_>Hyfb^^CJH{XIr=~Qvwna#Ba;XN?y?K$Q7~B22%@l*WatK<XK9Fb28Jb#
+zTEOgpl)=$8qURcfMh0LxiZ2hLn}nV;5hgu_nS`8B(Y2#TGD7<;W~f7uqddTyl?|kX
+O6$qVxUfjh3;sF2$KUKH@
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/data/character-spacing-none.docx b/sw/qa/extras/ooxmlimport/data/character-spacing-none.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..b8e0cabfa494b80b7bb7f0ad07eff381c77a350e
+GIT binary patch
+literal 1539
+zcmWIWW@Zs#U|`??V#SyYYYvv5K$Za$1A{P-j&{z^D@n~Oi4UnPNG*=ltH{k+JMpyN
+zVFMAD`lFw=dC5d5v`i{Fn9QkjiaqA0d1vVUC$Fb{d%yE#b|Y6##4Y3Ww3O|q=awgR
+z&&=VOyJw}erooGh90}{68>?2nTe^VhU_&>f^-lLmr}xFa6`qt}7NEX7=u&gg67??*
+zr9Ki7l1bkJe#~&6>aaf1rS!H*x!3UkgDI=dNN&oXU(nF2{iyQz_2aUVvYsC+OwPs5
+zZJ9FXYCuHz?Sy?>LzcJAI@#Q=Hap`W+sbujXHK1GRe#qjuNK|>NVcew^}OC!$<2Xk
+zuX@ur{j+^`>YN2n*yGmumxKDGI)5D9yIQ}CU0SUEt%6Rg<*)y;&!2o|DgE*BA9nys
+zNX`Ch{%S2Sgftl$7`TCSd{JsnvA!ON>^*PIcgTQ;?ZIl7dzn#eEdiJHI96(Fv2PGE
+zUz;K4b!hQ+b!KK)o}O*>_0wK|%S<a<E})*y8sf^?v!*0#Q`CW__PO5<Bsr}vD4WKj
+zBeF2}mGRjbpS)z$<s;2<L=2Wa;h*DfIq6`8g}<3Un>f$17`C&vr?j&k-QINP<A=-x
+zw^HT`30Q?Pz83fYe<M#q&C^{yzb)ri;Un#dsXVhLHMDbgtuEhvLg&M>XRF0$i=+B#
+zr_tWR)j;3K0evL{q|5V*QuHBSOUX|z%>^a}P#S=G^B@=4o8g)}cjw8uq}<h0dZYE3
+z(Q9_@(Y3n1BHzD#Q?mH*z>xF5_`hAXx|=JKl*IQmt<rE@V1CfbUTeqK>30QLHhv2`
+ze{gY=DCezZ`yQ>abk8W7=wfE0Ib+6SPcI{3y;)rX7oVRNxU|T!KXXdp?A>yK?@oVG
+zxV)V)I=Cdv@l_7%qIl(h$?b^+Z08T!h<*9<xK$<P++K~@R=p><>}D%PE6k3{t1`_;
+z^`sj=tKl)A=e_~4Ak34<-gE79%sXTt;JQAk(qCqmL+F$iQCmmLhHQQT&3PMhmN&*8
+z604dxukrQ|h8RX^v7CDu|1##)?X{aV?{Cv**~G)sT~A6bP`dkY-^1JQ*B@0+xAVBN
+zNxh|Q{(;Y>(fw1^OeGE+n8Z+PYW7E<X>H4gR}5~ynsgF&y*(i*dFj=+B$efBm09np
+z?|*sJJ#t;kMA=Vk{wUU-x}3J7=R#iJr5kcHWCL0q+d?)c70!BGvhV)7!d=IH3O)aC
+z@ptJGv7f4!Z8PWBWFFmJ^qT?I)4krT0*ip2J&Ek;;?$Co%)InsP@KB<ZOl7tz~fTy
+z`rzJ)w*o9}Pk9)v$})d5wwyV_rV^ykY4P{BR`9XIcdK{2{If#!j%Tj0--kL01%dQP
+zvwf;R{{F17b~JF0+rSarWN&0~{<59a&hHaj^%A7Nv#hR`PTsO7$kp0I`Q6>nEsMUd
+z*uJA%&sTMFq<eO!{NaKgQS-LtM(bD1nEPdS;=AVV4XdYY=r7md6#FT(-y`={Wyfcc
+zc>QPf0p5&EA`G|-E1=K7U`Zp0!cugh8-SjNA=()jmNaSs(?3#<M%Rd*O%NIxfCVSM
+wOoMI`dRj!7^b}?ia>_*4jvlKB?YEer4ndCN0B=?{kP=oPbOL&DH4BIb07@rB$p8QV
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/data/character-spacing-punctuation.docx b/sw/qa/extras/ooxmlimport/data/character-spacing-punctuation.docx
+new file mode 100644
+index 0000000000000000000000000000000000000000..0d471a0fb00e870ee5e8c330e57a14fdff56a0df
+GIT binary patch
+literal 1543
+zcmWIWW@Zs#U|`??V#SyYYYvv5K$Za$1A{P-j&{z^D@n~Oi4UnPNG*=ltH{k+JMpyN
+zVFMAD`lFw=dC5d5v`i{Fn9QkjiaqA0d1vVUC$Fb{d%yE#b|Y6##4Y3Ww3O|q=awgR
+z&&=VOyJw}erooGh90}{68>?2nTe^VhU_&>f^-lLmr}xFa6`qt}7NEX7=u&gg67??*
+zr9Ki7l1bkJe#~&6>aaf1rS!H*x!3UkgDI=dNN&oXU(nF2{iyQz_2aUVvYsC+OwPs5
+zZJ9FXYCuHz?Sy?>LzcJAI@#Q=Hap`W+sbujXHK1GRe#qjuNK|>NVcew^}OC!$<2Xk
+zuX@ur{j+^`>YN2n*yGmumxKDGI)5D9yIQ}CU0SUEt%6Rg<*)y;&!2o|DgE*BA9nys
+zNX`Ch{%S2Sgftl$7`TCSd{JsnvA!ON>^*PIcgTQ;?ZIl7dzn#eEdiJHI96(Fv2PGE
+zUz;K4b!hQ+b!KK)o}O*>_0wK|%S<a<E})*y8sf^?v!*0#Q`CW__PO5<Bsr}vD4WKj
+zBeF2}mGRjbpS)z$<s;2<L=2Wa;h*DfIq6`8g}<3Un>f$17`C&vr?j&k-QINP<A=-x
+zw^HT`30Q?Pz83fYe<M#q&C^{yzb)ri;Un#dsXVhLHMDbgtuEhvLg&M>XRF0$i=+B#
+zr_tWR)j;3K0evL{q|5V*QuHBSOUX|z%>^a}P#S=G^B@=4o8g)}cjw8uq}<h0dZYE3
+z(Q9_@(Y3n1BHzD#Q?mH*z>xF5_`hAXx|=JKl*IQmt<rE@V1CfbUTeqK>30QLHhv2`
+ze{gY=DCezZ`yQ>abk8W7=wfE0Ib+6SPcI{3y;)rX7oVRNxU|T!KXXdp?A>yK?@oVG
+zxV)V)I=Cdv@l_7%qIl(h$?b^+Z08T!h<*9<xK$<P++K~@R=p><>}D%PE6k3{t1`_;
+z^`sj=tKl)A=e_~4Ak34<-gE79%sXTt;JQAk(qCqmL+F$iQCmmLhHQQT&3PMhmN&*8
+z604dxukrQ|h8RX^v7CDu|1##)?X{aV?{Cv**~G)sT~A6bP`dkY-^1JQ*B@0+xAVBN
+zNxh|Q{(;Y>(fw1^OeGE+n8Z+PYW7E<X>H4gR}5~ynsgF&y*(i*dFj=+B$efBm09np
+z?|*sJJ#t;kMA=Vk{wUU-x}3J7=R#iJr5kcHWCL0q+d?)c70!BGvhV)7!d=IH3O)aC
+z@ptJGv7f4!Z8PWBWFFmJ^qT?I(;bJ-eOU(d?0IBQ7pIn#Wagz8gW}Y+Z)4tJ10I)p
+z*9Z4bybWM!d&<LTC7$t{vE|GWHkBZSnLGae)(Sp$cyINNmtUg2cTB#eHs`@t0|$k3
+zn{sM=KYafCv8W}XZ%=~YGM4(3f?3OJO^V)6Xw^%Q{?4+xS~_{lo*-9i59N1vUAHXy
+zzT*0hZarVs$&vG~3EgjdXd8A%LhjU_MM-6s*0=3sPEQQiOq72gA(XPx_xG32$8P4o
+z_-lBivg^G5XZrweMkWyk+yxfUcVMuj5kz4rzR(Ro&&Lq$3=B&ewSaj5DOaOwM9(S+
+zjSRrT6JN$bHwisGB20P;GYL6$qH9NwS%mgm%ut6Q$8&%;D;r1&D-b#Xy||tQ!~+1H
+Cm{D>7
+
+literal 0
+HcmV?d00001
+
+diff --git a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+index bc4a0409b3a547dc774858cdc29f61afa40bf8c2..e32b69215339488c78c23940320249b5c2debd80 100644
+--- a/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
++++ b/sw/qa/extras/ooxmlimport/ooxmlimport.cxx
+@@ -25,6 +25,8 @@
+ #include <com/sun/star/drawing/EnhancedCustomShapeAdjustmentValue.hpp>
+ #include <com/sun/star/drawing/PolyPolygonBezierCoords.hpp>
+ #include <com/sun/star/lang/XServiceInfo.hpp>
++#include <com/sun/star/lang/XMultiServiceFactory.hpp>
++#include <com/sun/star/text/CharacterCompressionType.hpp>
+ #include <com/sun/star/style/BreakType.hpp>
+ #include <com/sun/star/style/DropCapFormat.hpp>
+ #include <com/sun/star/style/XStyleFamiliesSupplier.hpp>
+@@ -76,6 +78,33 @@ public:
+     }
+ };
+ 
++CPPUNIT_TEST_FIXTURE(Test, testCharacterSpacingControlImport)
++{
++    struct Case
++    {
++        const char* pFile;
++        sal_Int16 nExpected;
++    };
++    // Import compressed, uncompressed and absent settings consecutively to
++    // detect accidental sharing of typography between documents.
++    const Case aCases[] = {
++        { "character-spacing-punctuation.docx", text::CharacterCompressionType::PUNCTUATION_ONLY },
++        { "character-spacing-none.docx", text::CharacterCompressionType::NONE },
++        { "character-spacing-kana.docx", text::CharacterCompressionType::PUNCTUATION_AND_KANA },
++        { "character-spacing-absent.docx", text::CharacterCompressionType::NONE },
++        { "character-spacing-invalid.docx", text::CharacterCompressionType::NONE },
++    };
++    for (const auto& rCase : aCases)
++    {
++        createSwDoc(rCase.pFile);
++        uno::Reference<lang::XMultiServiceFactory> xFactory(mxComponent, uno::UNO_QUERY_THROW);
++        uno::Reference<beans::XPropertySet> xSettings(
++            xFactory->createInstance(u"com.sun.star.document.Settings"_ustr), uno::UNO_QUERY_THROW);
++        CPPUNIT_ASSERT_EQUAL_MESSAGE(rCase.pFile, rCase.nExpected,
++                                    getProperty<sal_Int16>(xSettings, u"CharacterCompressionType"_ustr));
++    }
++}
++
+ CPPUNIT_TEST_FIXTURE(Test, testImageHyperlink)
+ {
+     createSwDoc("image-hyperlink.docx");
+diff --git a/sw/source/writerfilter/dmapper/SettingsTable.cxx b/sw/source/writerfilter/dmapper/SettingsTable.cxx
+index 64f8eba21b1365f8e902c61800415aed5f52b0d8..659b2c3aa8c8c82a45414c8a095edd00e1ffe012 100644
+--- a/sw/source/writerfilter/dmapper/SettingsTable.cxx
++++ b/sw/source/writerfilter/dmapper/SettingsTable.cxx
+@@ -27,6 +27,7 @@
+ #include <rtl/ustring.hxx>
+ #include <sfx2/zoomitem.hxx>
+ #include <com/sun/star/text/ParagraphHyphenationKeepType.hpp>
++#include <com/sun/star/text/CharacterCompressionType.hpp>
+ #include <com/sun/star/text/XDependentTextField.hpp>
+ #include <com/sun/star/text/XTextFieldsSupplier.hpp>
+ #include <com/sun/star/lang/XMultiServiceFactory.hpp>
+@@ -240,8 +241,13 @@ void SettingsTable::lcl_sprm(Sprm& rSprm)
+     case NS_ooxml::LN_CT_Settings_noPunctuationKerning: //  92526;
+     break;
+     case NS_ooxml::LN_CT_Settings_characterSpacingControl: //  92527;
+-     // doNotCompress, compressPunctuation, compressPunctuationAndJapaneseKana
+-    break;
++        if (sStringValue == "doNotCompress")
++            m_oCharacterCompressionType = text::CharacterCompressionType::NONE;
++        else if (sStringValue == "compressPunctuation")
++            m_oCharacterCompressionType = text::CharacterCompressionType::PUNCTUATION_ONLY;
++        else if (sStringValue == "compressPunctuationAndJapaneseKana")
++            m_oCharacterCompressionType = text::CharacterCompressionType::PUNCTUATION_AND_KANA;
++        break;
+     case NS_ooxml::LN_CT_Settings_doNotIncludeSubdocsInStats: //  92554; // Do Not Include Content in Text Boxes, Footnotes, and Endnotes in Document Statistics)
+     break;
+     case NS_ooxml::LN_CT_Settings_decimalSymbol: //  92562;
+@@ -623,6 +629,12 @@ void SettingsTable::ApplyProperties(rtl::Reference<SwXTextDocument> const& xDoc)
+         throw uno::RuntimeException();
+     rtl::Reference<SwXDocumentSettings> xDocumentSettings(xDoc->createDocumentSettings());
+ 
++    // This is document typography, not a paragraph default. Preserve an
++    // explicit value without changing RTF or documents that omit the setting.
++    if (m_oCharacterCompressionType)
++        xDocumentSettings->setPropertyValue(u"CharacterCompressionType"_ustr,
++                                           uno::Any(*m_oCharacterCompressionType));
++
+     // Shared between DOCX and RTF, unconditional flags.
+     xDocumentSettings->setPropertyValue(u"TableRowKeep"_ustr, uno::Any(true));
+     xDocumentSettings->setPropertyValue(u"AddVerticalFrameOffsets"_ustr, uno::Any(true));
+diff --git a/sw/source/writerfilter/dmapper/SettingsTable.hxx b/sw/source/writerfilter/dmapper/SettingsTable.hxx
+index bcefc3a03858c6ba70ead1b34ebafdee953004cd..d738d3ce86176094340f281da5e68d7a60ea9f0d 100644
+--- a/sw/source/writerfilter/dmapper/SettingsTable.hxx
++++ b/sw/source/writerfilter/dmapper/SettingsTable.hxx
+@@ -134,6 +134,7 @@ private:
+     Id m_nView;
+     bool m_bEvenAndOddHeaders;
+     bool m_bUsePrinterMetrics;
++    std::optional<sal_Int16> m_oCharacterCompressionType;
+     bool embedTrueTypeFonts;
+     bool embedSystemFonts;
+     bool m_bDoNotUseHTMLParagraphAutoSpacing;

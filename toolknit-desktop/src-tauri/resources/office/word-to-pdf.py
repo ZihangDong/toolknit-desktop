@@ -1,4 +1,5 @@
 """Shared desktop/CLI Writer driver. Only stable JSON status is emitted."""
+from contextlib import contextmanager
 import json
 import hashlib
 import os
@@ -10,6 +11,10 @@ import time
 import uuid
 import zipfile
 import xml.etree.ElementTree as ET
+
+from word_layout import apply_docx_layout_compatibility, docx_import_source
+from word_font_metrics import substitute_document_fonts
+from word_fields import refresh_internal_fields, FieldUpdateError
 
 MAX_INPUT = 50 * 1024 * 1024
 MAX_EXPANDED = 200 * 1024 * 1024
@@ -200,26 +205,77 @@ def start_writer(soffice, profile):
             time.sleep(0.1)
 
 
-def convert_with_writer(desktop, source, destination, uno, AbortPrompts):
+def stop_writer(office, desktop):
+    try:
+        desktop.terminate()
+    except Exception:
+        pass
+    try:
+        office.wait(timeout=3)
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(office.pid), "/T", "/F"],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=0x08000000)
+        else:
+            office.kill()
+        office.wait(timeout=3)
+
+
+@contextmanager
+def writer_session(soffice, profile):
+    prepare_profile(profile)
+    restore_extensions(soffice, profile)
+    office, desktop = start_writer(soffice, profile)
+    try:
+        remember_extensions(soffice, profile)
+        yield desktop
+    finally:
+        stop_writer(office, desktop)
+
+
+def convert_with_writer(desktop, source, destination, uno, AbortPrompts, refresh_fields=False, field_update=None):
+    if not isinstance(refresh_fields, bool):
+        raise WordError("invalid-options")
     inspect_word(source)
+    with docx_import_source(source) as import_source:
+        notices = export_imported_document(desktop, import_source, source, destination, uno, AbortPrompts, refresh_fields, field_update)
+    validate_pdf(destination)
+    return notices
+
+
+def export_imported_document(desktop, import_source, source, destination, uno, AbortPrompts, refresh_fields=False, field_update=None):
     handler = AbortPrompts()
-    document = desktop.loadComponentFromURL(uno.systemPathToFileUrl(os.path.abspath(source)), "_blank", 0,
+    document = desktop.loadComponentFromURL(uno.systemPathToFileUrl(os.path.abspath(import_source)), "_blank", 0,
         (prop(uno, "Hidden", True), prop(uno, "ReadOnly", True), prop(uno, "MacroExecutionMode", 0),
+         prop(uno, "DocumentBaseURL", uno.systemPathToFileUrl(os.path.abspath(source))),
          prop(uno, "UpdateDocMode", 0), prop(uno, "InteractionHandler", handler)))
     if document is None:
         raise WordError("password-or-invalid-document" if handler.prompted else "invalid-document")
     try:
         if not document.supportsService("com.sun.star.text.TextDocument"):
             raise WordError("invalid-document")
-        # Preserve cached fields and never refresh external/DDE data.
+        notices = substitute_document_fonts(document)
+        apply_docx_layout_compatibility(document, source, uno)
+        if refresh_fields:
+            try:
+                summary = refresh_internal_fields(document)
+            except FieldUpdateError as error:
+                raise WordError(str(error)) from None
+            if field_update is not None:
+                field_update.update(summary)
+        # No blanket document/field refresh. External/DDE updates stay disabled.
         document.storeToURL(uno.systemPathToFileUrl(os.path.abspath(destination)),
             (prop(uno, "FilterName", "writer_pdf_Export"), prop(uno, "Overwrite", False),
              prop(uno, "FilterData", uno.Any("[]com.sun.star.beans.PropertyValue", (prop(uno, "ExportBookmarks", True), prop(uno, "ExportFormFields", False))))))
+        return notices
     finally:
         try:
             document.close(True)
         except Exception:
             pass
+
+
+def validate_pdf(destination):
     if not os.path.isfile(destination):
         raise WordError("render-failed")
     size = os.path.getsize(destination)
@@ -244,83 +300,54 @@ def write_batch_status(status_path, files):
     os.replace(temporary, status_path)
 
 
+def convert_batch_item(desktop, item, uno, AbortPrompts):
+    row = {"index": int(item["index"]), "status": "failed", "code": "render-failed"}
+    destination = item["destination"]
+    try:
+        os.makedirs(os.path.dirname(destination), exist_ok=True)
+        try:
+            os.remove(destination)
+        except FileNotFoundError:
+            pass
+        refresh_fields = item.get("refreshFields", False)
+        summary = {}
+        notices = convert_with_writer(desktop, item["source"], destination, uno, AbortPrompts, refresh_fields, summary)
+        return {"index": row["index"], "status": "success", "code": None, "fontNotices": notices,
+                **({"fieldUpdate": summary} if refresh_fields else {})}
+    except WordError as error:
+        row["code"] = str(error)
+    except Exception:
+        pass  # Keep errors stable; do not expose document contents in status.
+    try:
+        os.remove(destination)
+    except OSError:
+        pass
+    return row
+
+
 def convert_batch(soffice, manifest_path, profile, status_path):
     import uno
     import unohelper
     AbortPrompts = make_abort_handler(uno, unohelper)
     with open(manifest_path, "r", encoding="utf-8") as f:
         items = json.load(f).get("items", [])
-    prepare_profile(profile)
-    restore_extensions(soffice, profile)
-    office, desktop = start_writer(soffice, profile)
-    remember_extensions(soffice, profile)
     results = []
-    try:
+    with writer_session(soffice, profile) as desktop:
         for item in items:
-            row = {"index": int(item["index"]), "status": "failed", "code": "render-failed"}
-            destination = item["destination"]
-            try:
-                os.makedirs(os.path.dirname(destination), exist_ok=True)
-                try:
-                    os.remove(destination)
-                except FileNotFoundError:
-                    pass
-                convert_with_writer(desktop, item["source"], destination, uno, AbortPrompts)
-                row = {"index": row["index"], "status": "success", "code": None}
-            except WordError as error:
-                row["code"] = str(error)
-                try:
-                    os.remove(destination)
-                except OSError:
-                    pass
-            except Exception:
-                row["code"] = "render-failed"
-                try:
-                    os.remove(destination)
-                except OSError:
-                    pass
-            results.append(row)
+            results.append(convert_batch_item(desktop, item, uno, AbortPrompts))
             write_batch_status(status_path, results)
-    finally:
-        try:
-            desktop.terminate()
-        except Exception:
-            pass
-        try:
-            office.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            if os.name == "nt":
-                subprocess.run(["taskkill", "/PID", str(office.pid), "/T", "/F"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=0x08000000)
-            else:
-                office.kill()
-            office.wait(timeout=3)
     return {"files": results}
 
 
-def convert(soffice, source, destination, profile):
+def convert(soffice, source, destination, profile, refresh_fields=False):
     inspect_word(source)
     import uno
     import unohelper
-    prepare_profile(profile)
-    restore_extensions(soffice, profile)
     AbortPrompts = make_abort_handler(uno, unohelper)
-    office, desktop = start_writer(soffice, profile)
-    remember_extensions(soffice, profile)
-    try:
-        convert_with_writer(desktop, source, destination, uno, AbortPrompts)
-    finally:
-        try:
-            desktop.terminate()
-        except Exception:
-            pass
-        try:
-            office.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            if os.name == "nt":
-                subprocess.run(["taskkill", "/PID", str(office.pid), "/T", "/F"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=0x08000000)
-            else:
-                office.kill()
-            office.wait(timeout=3)
+    with writer_session(soffice, profile) as desktop:
+        summary = {}
+        notices = convert_with_writer(desktop, source, destination, uno, AbortPrompts, refresh_fields, summary)
+        return {"fontNotices": notices, **({"fieldUpdate": summary} if refresh_fields else {})}
 
 
 if __name__ == "__main__":
@@ -328,9 +355,9 @@ if __name__ == "__main__":
         if len(sys.argv) == 6 and sys.argv[2] == "--manifest":
             result = convert_batch(sys.argv[1], sys.argv[3], sys.argv[4], sys.argv[5])
             print(json.dumps({"ok": True, **result}))
-        elif len(sys.argv) == 5:
-            convert(*sys.argv[1:])
-            print(json.dumps({"ok": True}))
+        elif len(sys.argv) == 5 or (len(sys.argv) == 6 and sys.argv[5] == "--refresh-fields"):
+            result = convert(*sys.argv[1:5], refresh_fields=len(sys.argv) == 6)
+            print(json.dumps({"ok": True, **result}))
         else:
             raise WordError("invalid-options")
     except Exception as error:

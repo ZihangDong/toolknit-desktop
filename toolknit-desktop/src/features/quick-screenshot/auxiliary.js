@@ -3,6 +3,7 @@ import { t, getLang, applyTranslations, setLangWithoutFade } from '../../i18n.js
 import { tauriCorePromise, getCurrentWindow } from '../../platform/tauri-runtime.js';
 import { createScreenshotRuntime } from '../../platform/screenshot-runtime.js';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
+import { applyTheme } from '../../app/theme-palette.js';
 import { createOutputRuntime } from '../../app/output-runtime.js';
 import { createModalSession } from '../../app/modal-runtime.js';
 import { createToastManager } from '../../app/toast-manager.js';
@@ -15,8 +16,8 @@ import '../../styles/tokens.css';
 import '../../styles/base.css';
 import '../../styles/pages/home-v2.css';
 import '../../styles/pages/settings-v2.css';
-import '../../styles/themes/home-light.css';
-import '../../styles/themes/secondary-pages-light.css';
+
+import '../../styles/pages/account-feedback.css';
 import '../../styles/components/tool-pages.css';
 import '../../styles/components/window-surface.css';
 import '../../styles/components/navigation.css';
@@ -44,7 +45,7 @@ const dialogRoot=q('Dialog');
 if(role==='history')lifecycle.event(root,'click',event=>{if(!controller&&event.target.closest('[data-shot-action="retry-history"],[data-shot-action="expand-history"]'))void boot();});
 const modal=createModalSession({root:dialogRoot,background:role==='history'?q('HistoryPanel'):role==='viewer'?q('Viewer'):q('Editor'),initialFocus:role==='history'?q('DialogCancel'):q('DialogOk'),onClose:()=>closeDialog()});
 function refresh(){applyTranslations();createIcons({icons});}
-function applyContext(next,updateController=true){context=next||{};document.documentElement.dataset.theme=context.theme==='light'?'light':'dark';setLangWithoutFade(context.lang==='en'?'en':'zh');refresh();if(updateController)controller?.contextChanged?.(context);}
+function applyContext(next,updateController=true){context=next||{};applyTheme(document.documentElement,context.appearance||{mode:context.theme});setLangWithoutFade(context.lang==='en'?'en':'zh');refresh();if(updateController)controller?.contextChanged?.(context);}
 function closeDialog(){modal.close();dialogAction=null;const dismiss=dialogDismiss;dialogDismiss=null;dismiss?.();}
 function showDialog(title,content,{onConfirm,onDismiss,confirmLabel,keepOpen=false,folder='',copyText='',iconOnly=false}={}){
   closeDialog();dialogAction=onConfirm;dialogDismiss=onDismiss;dialogPath=folder;q('DialogTitle').textContent=title;q('DialogContent').replaceChildren(content);
@@ -108,7 +109,7 @@ async function bootSession(revision,signal){
 }
 function boot(session){if(role==='capture'&&Number.isSafeInteger(session)&&(session===loadingSession||session===controller?.session))return bootQueue;const revision=++bootRevision;if(role==='capture'){requestedSession=Number.isSafeInteger(session)?session:null;captureBootAbort?.abort();captureBootAbort=new AbortController();}const signal=captureBootAbort?.signal;bootQueue=bootQueue.catch(()=>{}).then(()=>bootSession(revision,signal));return bootQueue;}
 async function bind(){
-  const handlers=role==='toast'?[]:[['screenshot-context-changed',async()=>{try{const data=await runtime.call('metadata');if(!disposed)applyContext(data.context);}catch{/* window is closing */}}]];
+  const handlers=[['screenshot-context-changed',async()=>{try{const data=await runtime.call('metadata');if(!disposed)applyContext(data.context);}catch{/* window is closing */}}]];
   if(role==='capture'){
     handlers.unshift(['screenshot-opened',boot],['screenshot-ended',session=>{if(Number.isSafeInteger(session)&&session!==(requestedSession??loadingSession??controller?.session))return;bootRevision++;captureBootAbort?.abort();loadingSession=requestedSession=null;controller?.dispose();controller=null;q('Desktop')?.removeAttribute('src');closeDialog();}]);
   }

@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "kernelId": "toolknit-lo-26.2.5.2-cjk.7-dev",
+  "upstream": {
+    "repository": "https://github.com/LibreOffice/core.git",
+    "tag": "libreoffice-26.2.5.2",
+    "commit": "cd7284b4cbbfeb507e630c1aac019f4157393acb"
+  },
+  "patches": [
+    {
+      "file": "patches/0001-docx-character-spacing-control.patch",
+      "sha256": "f336697596da97bce4d3b84628d1b6a586adbda3f43adfffe9be565326286aa7"
+    },
+    {
+      "file": "patches/0002-docx-punctuation-kerning.patch",
+      "sha256": "0a662700e54d6085cd320bc6599b6985a240d1a8be8fa0b8e846181deb42d93e"
+    },
+    {
+      "file": "patches/0003-docx-overflow-punctuation.patch",
+      "sha256": "308b25ae73312d3d2715d2f045b7153b353d93a1fe3967fab8ae70a57cfa09d9"
+    },
+    {
+      "file": "patches/0004-preserve-hanging-punctuation.patch",
+      "sha256": "4feb0af05f089ee00cfba87d8f5d29c6bf9449f63935262edb0f404328e75176"
+    },
+    {
+      "file": "patches/0005-word-chinese-punctuation-line-fit.patch",
+      "sha256": "de5e74a6e65a09027e6ae7ec874f5e3b10cc20efecbdcb2b96d30229de0afcd6"
+    },
+    {
+      "file": "patches/0006-independent-word-script-spacing.patch",
+      "sha256": "8567269155a6f0e07b2c7a78aec75e1c5a8751d595c6e4567aa19251db0d54b2"
+    },
+    {
+      "file": "patches/0007-table-grid-paragraph-spacing.patch",
+      "sha256": "8bfce653b4c6e31a327fc1b059d2271d8917e605a9e7ad28fd2a4254067315c5"
+    },
+    {
+      "file": "patches/0008-table-bracket-hanging-and-baseline.patch",
+      "sha256": "d7dc8646ff3b6a7238608a6407ac6c61ee0a00221289ab648b1f17ab2b016397"
+    },
+    {
+      "file": "patches/0009-accumulate-fractional-script-spacing.patch",
+      "sha256": "38647b6aa24c4e4f66970e28805cef31a50d81942cb0b2d7d2d2819b153ee82e"
+    },
+    {
+      "file": "patches/0010-keep-opening-quote-pair-on-line.patch",
+      "sha256": "f402917d1685427cebf488e2f9bfe275352c77dda4a8bbd17a71ca06d8bc0935"
+    },
+    {
+      "file": "patches/0011-retain-explicit-page-break-spacing.patch",
+      "sha256": "cbe4962cda47e99c26479df321b01400106674ddf82ddb916fb619c88d9eec8a"
+    },
+    {
+      "file": "patches/0012-measure-isolated-latin-word-spacing.patch",
+      "sha256": "d3ebb4e3f37c57b1ec1459279f79a761e4337924f9baf68710f4da7072229007"
+    },
+    {
+      "file": "patches/0013-word-hanging-and-space-context.patch",
+      "sha256": "e76f90de39da3ca263153eeafb6469947360688904873154dd413f7df7557e06"
+    },
+    {
+      "file": "patches/0014-preserve-auto-grid-font-baselines.patch",
+      "sha256": "3e69e279cb6d9e0c40754f12be4a67f4dcea72646314993dc8b41cbab2602c60"
+    },
+    {
+      "file": "patches/0015-prefer-natural-closing-punctuation-hanging.patch",
+      "sha256": "5c1f3af143f098ec2647138e2962e7cbf2d01e655da969d5c03c7d81a58688bb"
+    },
+    {
+      "file": "patches/0016-preserve-word-script-space-at-line-end.patch",
+      "sha256": "0b46cfdd3e2122b19f86f16315e7076d09011e3dd9d786f1070143743e27c4cb"
+    }
+  ],
+  "windowsBuildTools": [
+    {
+      "file": "make-4.2.1-msvc.exe",
+      "url": "https://dev-www.libreoffice.org/bin/cygwin/make-4.2.1-msvc.exe",
+      "sha256": "146d6f2b0ea57647b11b506a95048a7be73232e1feeeccbc1013651f992423d8"
+    },
+    {
+      "file": "pkgconf-2.4.3.exe",
+      "url": "https://dev-www.libreoffice.org/extern/pkgconf-2.4.3.exe",
+      "sha256": "791cd6dbc56f7268fbf9c4652d6634b0f5c59687ab4e504565e58245952edd41"
+    },
+    {
+      "file": "strawberry-perl-5.40.0.1-64bit-portable.zip",
+      "url": "https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54001_64bit_UCRT/strawberry-perl-5.40.0.1-64bit-portable.zip",
+      "sha256": "754f3e2a8e473dc68d1540c7802fb166a025f35ef18960c4564a31f8b5933907"
+    },
+    {
+      "file": "LLVM-20.1.8-win64.exe",
+      "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.8/LLVM-20.1.8-win64.exe",
+      "sha256": "3197846a2b19063687dd56e93e34cd941e3548d907f23a6131571321bdf9fe7b",
+      "clangClSha256": "57e32b1ea2456f12f97bf802453171bbff12d56b2c486b4eca0c75343c0cda2c"
+    }
+  ],
+  "cppunitTargets": [
+    "CppunitTest_sw_ooxmlimport"
+  ],
+  "cppunitTestNames": [
+    "testCharacterSpacingControlImport",
+    "testNoPunctuationKerningImport",
+    "testOverflowPunctuationImport",
+    "testWordChinesePunctuationCompression",
+    "testWordAutoSpacingImport",
+    "testTableIgnoredGridParagraphSpacing",
+    "testWordTableBracketHanging",
+    "testWordFractionalScriptSpacing",
+    "testWordOpeningQuoteLineFit",
+    "testWordPageBreakBeforeSpacing",
+    "testWordLatinWordSpaceMeasurement",
+    "testWordSpaceBalanceContext",
+    "testWordHangingHalfEmInside",
+    "testWordAutoGridBaseline",
+    "testWordClosingHangingPriority",
+    "testWordScriptSpaceLineEnd"
+  ],
+  "releaseGate": {
+    "status": "development",
+    "requireNativeImportTests": true,
+    "requireWordPdfLineAndGeometryRegression": true,
+    "requireAllThreeLocalSamples": true,
+    "visualFidelityApproved": false
+  }
+}

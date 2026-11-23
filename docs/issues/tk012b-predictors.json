@@ -1,0 +1,102 @@
+{
+  "task": "TK-012-B-A",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "first-version-complete",
+  "parentTaskComplete": false,
+  "supported": {
+    "pngPredictors": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "pngBitsPerComponent": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "tiffPredictor": 2,
+    "tiffBitsPerComponent": [
+      8
+    ],
+    "colorSpaces": [
+      "DeviceGray",
+      "DeviceRGB",
+      "DeviceCMYK"
+    ],
+    "filterChains": [
+      [
+        "FlateDecode"
+      ],
+      [
+        "ASCIIHexDecode",
+        "FlateDecode"
+      ],
+      [
+        "ASCII85Decode",
+        "FlateDecode"
+      ]
+    ],
+    "contexts": [
+      "page",
+      "nested shared Form invocation"
+    ]
+  },
+  "parameterPolicy": "direct dictionary or aligned filter array; null ASCII-stage parameters; exact image geometry; normalized aliases; reject duplicate/unknown keys",
+  "validation": "full zlib stream; exact encoded row length; PNG tags 0..4; same-stream unambiguous EI; predictor semantics included in exact-match fingerprint",
+  "limits": {
+    "streamBytes": 8388608,
+    "decodedBytes": 33554432,
+    "pngRowTagsCountedInBudget": true,
+    "asciiIntermediateCountedInBudget": true
+  },
+  "tests": {
+    "commands": [
+      "npm run test:pdf-object-remove",
+      "npm run test:pdf-object-remove-browser",
+      "npm run build",
+      "npm run test:pdf-object-remove-production"
+    ],
+    "existingCoreChecks": 107,
+    "predictorGroups": [
+      "Null, empty and identity parameters preserve existing Flate behavior",
+      "TIFF 8-bit and all six PNG predictors include row overhead in the decoding budget",
+      "Different prediction semantics never match solely because the compressed bytes and position match",
+      "Unknown, duplicate, malformed, mismatched and unsupported prediction parameters fail before decompression",
+      "Invalid PNG row tags, row lengths, zlib trailers and both stages of the decode budget are enforced",
+      "An invalid predictor preserves its page stream while a valid image on another page remains removable",
+      "Twenty-one TIFF/PNG and ASCII wrapping combinations preserve exact matching, body text and input bytes",
+      "PNG adaptive rows accept packed 1/2/4/8-bit Gray/RGB/CMYK samples and all five row tags",
+      "Predicted images in nested shared Forms remove only the selected invocations",
+      "Independent Poppler renders pass 99 page comparisons; qpdf accepts all 22 edited outputs"
+    ],
+    "filterVariants": 21,
+    "depthColorVariants": 12,
+    "popplerPagePixelComparisons": 99,
+    "qpdfEditedOutputs": 22,
+    "edgeChecks": 166,
+    "browserErrors": [],
+    "productionEntry": "actual home entry, bundled worker/assets, adaptive PNG in ASCII85+Flate, match, preview, PDF download, return home"
+  },
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-inline-predictor/report.json",
+    "toolknit-desktop/tmp/pdf-object-remove-browser/report.json",
+    "toolknit-desktop/tmp/pdf-inline-regression.log",
+    "toolknit-desktop/tmp/pdf-inline-build.log",
+    "toolknit-desktop/tmp/pdf-inline-production.log"
+  ],
+  "remaining": [
+    "TIFF non-8-bit samples",
+    "other filters and predictor-based page content streams",
+    "structured/transparency Form",
+    "linked or locked stamps",
+    "mixed text objects",
+    "formal installed Tauri/WebView2 UI acceptance (TK-012-C)"
+  ],
+  "nativeUiAcceptance": false,
+  "installerBuiltOrPublished": false
+}

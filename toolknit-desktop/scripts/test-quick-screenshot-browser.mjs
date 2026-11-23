@@ -316,7 +316,7 @@ try{
       await page.waitForFunction(()=>document.getElementById('shotBusy').hidden);
       const colors=await message.evaluate(el=>{const style=getComputedStyle(el.parentElement);return {background:style.backgroundColor,color:style.color};});
       assert.notEqual(colors.background,colors.color,'feedback remains readable in either theme');
-      if(theme==='dark')assert.equal(colors.background,'rgb(25, 25, 25)');
+      if(theme==='dark')assert.equal(colors.background,'rgb(37, 39, 44)');
       assert.ok(await page.locator('[data-shot-action="ai-extract"]').isEnabled(),'failure must restore the toolbar');
     };
     for(const [failure,key]of [
@@ -595,7 +595,7 @@ try{
     assert.equal(unfocusedSearch.outline,'none');assert.equal(unfocusedSearch.shadow,'none');assert.equal(unfocusedSearch.transition,'0s');assert.equal(unfocusedSearch.animation,'none');
     await shelf.page.locator('#shotHistorySearch').fill('no matching synthetic record');
     await shelf.page.locator('#shotHistoryEmpty').waitFor({state:'visible'});
-    assert.equal(await shelf.page.locator('#shotHistorySearchClear svg').evaluate(el=>getComputedStyle(el).color),theme==='light'?'rgb(17, 17, 17)':'rgb(245, 245, 245)');
+    assert.equal(await shelf.page.locator('#shotHistorySearchClear svg').evaluate(el=>getComputedStyle(el).color),theme==='light'?'rgb(25, 25, 25)':'rgb(243, 243, 244)');
     await shelf.page.locator('#shotHistorySearchClear').click();await shelf.page.waitForFunction(()=>document.querySelectorAll('.shot-history-item').length===7);
     assert.equal(await shelf.page.locator('#shotHistorySearch').inputValue(),'');
     assert.equal(await shelf.page.locator('#shotHistorySearchClear').isVisible(),false);
@@ -604,7 +604,7 @@ try{
     await shelf.page.waitForFunction(()=>document.querySelector('[data-tk-page-transition-veil]')?.classList.contains('is-active'));
     const veil=await shelf.page.locator('[data-tk-page-transition-veil]').evaluate(el=>({color:getComputedStyle(el).backgroundColor,rect:el.getBoundingClientRect().toJSON()}));
     const panelRect=await shelf.page.locator('#shotHistoryPanel').boundingBox();
-    assert.equal(veil.color,theme==='light'?'rgb(255, 255, 255)':'rgb(0, 0, 0)');
+    assert.equal(veil.color,theme==='light'?'rgb(255, 255, 255)':'rgb(20, 21, 24)');
     assert.equal(veil.rect.width,panelRect.width);assert.equal(veil.rect.height,panelRect.height);
     await shelf.page.waitForFunction(()=>document.getElementById('shotHistory').dataset.mode==='phrases'&&!document.getElementById('shotHistoryMode').disabled);
     await shelf.page.locator('#shotHistoryTitle').hover();await shelf.page.locator('#shotHistoryMode').hover();await settleTitle();
@@ -980,7 +980,7 @@ try{
     await feedback.page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='feedback-ready'));
     await feedback.page.locator('#shotDesktopToast').evaluate(el=>{for(const animation of el.getAnimations()){animation.pause();animation.currentTime=300;}});
     const toastStyle=await feedback.page.locator('#shotDesktopToast').evaluate(el=>({background:getComputedStyle(el).backgroundColor,radius:getComputedStyle(el).borderRadius,shadow:getComputedStyle(el).boxShadow}));
-    assert.equal(toastStyle.background,'rgb(255, 255, 255)');assert.equal(toastStyle.radius,'999px');assert.notEqual(toastStyle.shadow,'none');
+    assert.equal(toastStyle.background,theme==='dark'?'rgb(20, 21, 24)':'rgb(255, 255, 255)');assert.equal(toastStyle.radius,'999px');assert.notEqual(toastStyle.shadow,'none');
     assert.equal(await feedback.page.locator('button').count(),0);
     for(const selector of ['html','body','#screenshotRoot']){
       assert.equal(await feedback.page.locator(selector).evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)',`${selector} must be transparent behind the capsule`);
@@ -993,7 +993,7 @@ try{
     await feedback.page.evaluate(()=>window.__shotEmit('desktop-feedback',{revision:2,kind:'copied',lang:'zh'}));
     await feedback.page.waitForFunction(()=>window.__shotCalls.some(c=>c.args?.request?.action==='feedback-ready'&&c.args.request.revision===2));
     assert.equal(await feedback.page.locator('#shotDesktopToast').count(),1);
-    results.push(`desktop toast ${theme}: transparent body/corners, white capsule, alpha shadow, no controls, reusable feedback`);await feedback.context.close();
+    results.push(`desktop toast ${theme}: transparent body/corners, themed capsule, alpha shadow, no controls, reusable feedback`);await feedback.context.close();
   }
   assert.deepEqual(errors,[]);console.log(results.join('\n'));
 }finally{

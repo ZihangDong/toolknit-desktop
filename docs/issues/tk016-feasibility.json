@@ -1,0 +1,422 @@
+{
+  "task": "TK-016",
+  "scope": "research-only",
+  "runtime": {
+    "python": "3.12.14",
+    "reportlab": "4.4.9",
+    "pypdf": "6.21.4",
+    "pdfplumber": "0.11.9"
+  },
+  "fixture_count": 13,
+  "fixtures": {
+    "vector": {
+      "status": "readable",
+      "encrypted": false,
+      "counts": {
+        "lines": 1,
+        "rects": 0,
+        "curves": 0,
+        "images": 0,
+        "chars": 9
+      },
+      "has_paths": true,
+      "has_images": false,
+      "has_text": true,
+      "has_invisible_text_operator": false,
+      "media_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "crop_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "rotation": 0,
+      "user_unit": 1.0,
+      "optional_content_groups": 0,
+      "sha256": "3a4b4b686e037d66d8698c0dfd562cec90ce532a8b8e864242d2070c913bbd22"
+    },
+    "scan": {
+      "status": "readable",
+      "encrypted": false,
+      "counts": {
+        "lines": 0,
+        "rects": 0,
+        "curves": 0,
+        "images": 1,
+        "chars": 0
+      },
+      "has_paths": false,
+      "has_images": true,
+      "has_text": false,
+      "has_invisible_text_operator": false,
+      "media_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "crop_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "rotation": 0,
+      "user_unit": 1.0,
+      "optional_content_groups": 0,
+      "sha256": "ac5f77000c61f191938e4d1df6f3b2d87f502b89cd9d5074cd0a03399d8f3d4e"
+    },
+    "mixed": {
+      "status": "readable",
+      "encrypted": false,
+      "counts": {
+        "lines": 1,
+        "rects": 0,
+        "curves": 0,
+        "images": 1,
+        "chars": 0
+      },
+      "has_paths": true,
+      "has_images": true,
+      "has_text": false,
+      "has_invisible_text_operator": false,
+      "media_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "crop_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "rotation": 0,
+      "user_unit": 1.0,
+      "optional_content_groups": 0,
+      "sha256": "063d736064fef74b6171a2c05c1570520b13d693e38d088b1fa053c771a8445e"
+    },
+    "searchable-scan": {
+      "status": "readable",
+      "encrypted": false,
+      "counts": {
+        "lines": 0,
+        "rects": 0,
+        "curves": 0,
+        "images": 1,
+        "chars": 15
+      },
+      "has_paths": false,
+      "has_images": true,
+      "has_text": true,
+      "has_invisible_text_operator": true,
+      "media_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "crop_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "rotation": 0,
+      "user_unit": 1.0,
+      "optional_content_groups": 0,
+      "sha256": "1732a598386905a01748527d1f947c2261192ee4edd740139e0e161697d17c3b"
+    },
+    "curves-clipping": {
+      "status": "readable",
+      "encrypted": false,
+      "counts": {
+        "lines": 1,
+        "rects": 0,
+        "curves": 2,
+        "images": 0,
+        "chars": 0
+      },
+      "has_paths": true,
+      "has_images": false,
+      "has_text": false,
+      "has_invisible_text_operator": false,
+      "media_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "crop_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "rotation": 0,
+      "user_unit": 1.0,
+      "optional_content_groups": 0,
+      "sha256": "666bbda442fb59126fa011260b2c09d55f53a0ad7c67c48f4744949325cf6463"
+    },
+    "outline-like": {
+      "status": "readable",
+      "encrypted": false,
+      "counts": {
+        "lines": 0,
+        "rects": 1,
+        "curves": 0,
+        "images": 0,
+        "chars": 0
+      },
+      "has_paths": true,
+      "has_images": false,
+      "has_text": false,
+      "has_invisible_text_operator": false,
+      "media_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "crop_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "rotation": 0,
+      "user_unit": 1.0,
+      "optional_content_groups": 0,
+      "sha256": "e29dc965ef7adbf085885ac05755a63acefa2aee6a7c42bb6c99b3b23239f31f"
+    },
+    "blank": {
+      "status": "readable",
+      "encrypted": false,
+      "counts": {
+        "lines": 0,
+        "rects": 0,
+        "curves": 0,
+        "images": 0,
+        "chars": 0
+      },
+      "has_paths": false,
+      "has_images": false,
+      "has_text": false,
+      "has_invisible_text_operator": false,
+      "media_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "crop_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "rotation": 0,
+      "user_unit": 1.0,
+      "optional_content_groups": 0,
+      "sha256": "2c74acdd3da68f8f8bf9555de9a78f771ef263a6d93346a0c6544718f6214f23"
+    },
+    "rotated": {
+      "status": "readable",
+      "encrypted": false,
+      "counts": {
+        "lines": 1,
+        "rects": 0,
+        "curves": 0,
+        "images": 0,
+        "chars": 9
+      },
+      "has_paths": true,
+      "has_images": false,
+      "has_text": true,
+      "has_invisible_text_operator": false,
+      "media_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "crop_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "rotation": 90,
+      "user_unit": 1.0,
+      "optional_content_groups": 0,
+      "sha256": "21cec744e2320430925db272b1d4b5671180ce42dd5f3e6ab814859a801d0b55"
+    },
+    "cropped": {
+      "status": "readable",
+      "encrypted": false,
+      "counts": {
+        "lines": 1,
+        "rects": 0,
+        "curves": 0,
+        "images": 0,
+        "chars": 9
+      },
+      "has_paths": true,
+      "has_images": false,
+      "has_text": true,
+      "has_invisible_text_operator": false,
+      "media_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "crop_box": [
+        36.0,
+        24.0,
+        324.0,
+        216.0
+      ],
+      "rotation": 0,
+      "user_unit": 1.0,
+      "optional_content_groups": 0,
+      "sha256": "f7b06be4ea2ff8e9b382a2e053c90f77bb4624b297b3f242778846056f50b826"
+    },
+    "user-unit": {
+      "status": "readable",
+      "encrypted": false,
+      "counts": {
+        "lines": 1,
+        "rects": 0,
+        "curves": 0,
+        "images": 0,
+        "chars": 9
+      },
+      "has_paths": true,
+      "has_images": false,
+      "has_text": true,
+      "has_invisible_text_operator": false,
+      "media_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "crop_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "rotation": 0,
+      "user_unit": 2.0,
+      "optional_content_groups": 0,
+      "sha256": "75ade5bf11e1ffeb4f1a6809f109fad63bf51f6e760d04b72c1f5cb8adbe5bc5"
+    },
+    "encrypted": {
+      "encrypted": true,
+      "status": "password-required",
+      "sha256": "fe6a7e7aff86fccfba95b7c6892822e29d39cf51e6edf74f77eb3a325d440fad",
+      "correct_password_status": "readable"
+    },
+    "layers": {
+      "status": "readable",
+      "encrypted": false,
+      "counts": {
+        "lines": 1,
+        "rects": 0,
+        "curves": 0,
+        "images": 0,
+        "chars": 9
+      },
+      "has_paths": true,
+      "has_images": false,
+      "has_text": true,
+      "has_invisible_text_operator": false,
+      "media_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "crop_box": [
+        0.0,
+        0.0,
+        360.0,
+        240.0
+      ],
+      "rotation": 0,
+      "user_unit": 1.0,
+      "optional_content_groups": 1,
+      "sha256": "8156d62bbd8cd9acbe2e7515254455555d6e47fee30ee86de5c0071e642c26f8"
+    },
+    "malformed": {
+      "status": "invalid-pdf",
+      "sha256": "06b89fa6abea4ef3609e753f5c1a357596a277e4dd2756385974aa950e67426f"
+    }
+  },
+  "engine": {
+    "status": "not-production-ready",
+    "version": "dxf2dwg 0.14",
+    "cases": [
+      {
+        "source_dxf_version": "R12",
+        "target_dwg_version": "r2000",
+        "input_ezdxf_audit_errors": 0,
+        "write_exit_code": 0,
+        "write_error_diagnostics": false,
+        "dwg_signature": "AC1015",
+        "dwg_bytes": 2792,
+        "own_reader_exit_code": 0,
+        "own_reader_json_error": "Expecting value: line 396 column 25 (char 9472)",
+        "own_reader_line_count": 0,
+        "own_reader_text_count": 0,
+        "own_reader_units": null,
+        "read_exit_code": 0,
+        "status": "roundtrip-failed",
+        "independent_dxf_read_error": "ValueError: Invalid handle 0."
+      },
+      {
+        "source_dxf_version": "R2000",
+        "target_dwg_version": "r2000",
+        "input_ezdxf_audit_errors": 0,
+        "write_exit_code": 0,
+        "write_error_diagnostics": true,
+        "dwg_signature": "AC1015",
+        "dwg_bytes": 5246,
+        "own_reader_exit_code": 0,
+        "own_reader_line_count": 1,
+        "own_reader_text_count": 1,
+        "own_reader_units": 4,
+        "own_reader_line_length": 25.4,
+        "own_reader_text": "Scale 1:1",
+        "read_exit_code": 0,
+        "status": "roundtrip-failed",
+        "independent_dxf_read_error": "ValueError: Invalid handle 0."
+      }
+    ],
+    "executable_sha256": "83ec3ab0227dc203169fe42fa5d396f3f314e76446ad499b70aa9dadeab2aa61",
+    "local_archive_sha256": "1ad7e15344d20b3426c3435b078d82fb84b35062815946b2cca9c5fc9810fea8",
+    "reference_archive_sha256": "1ad7e15344d20b3426c3435b078d82fb84b35062815946b2cca9c5fc9810fea8",
+    "reference_archive_url": "https://github.com/LibreDWG/libredwg/releases/download/0.14/libredwg-0.14-win64.zip",
+    "dxf_validator": "ezdxf 1.4.3",
+    "direct_pdf_exit_code": 1,
+    "direct_pdf_created_output": false,
+    "independent_cad_open": "not-tested",
+    "scope": "one synthetic LINE and ASCII TEXT; same-engine DXF roundtrip only"
+  },
+  "limits": [
+    "synthetic inputs only",
+    "no production PDF classifier",
+    "no general PDF-to-DXF converter",
+    "no independent CAD DWG interoperability test",
+    "no commercial SDK trial or redistribution authorization",
+    "no desktop UI implemented"
+  ]
+}

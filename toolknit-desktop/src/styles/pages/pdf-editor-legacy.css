@@ -1384,3 +1384,145 @@
   z-index: 60000;
 }
 
+
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+/* Editor chrome only. Document text, masks, images and shape paints are not theme surfaces. */
+html:root[data-theme] .pdf-editor-v2 {
+  --line: var(--pc-line);
+  --line-strong: var(--pc-line-strong);
+  --ink: var(--pc-text);
+  --muted: var(--pc-muted);
+}
+
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-page-strip, .pdf-editor-tool-panel-scroll, .pdf-editor-canvas-scroll) {
+  scrollbar-color: var(--tk-muted) transparent;
+}
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-page-strip, .pdf-editor-tool-panel-scroll, .pdf-editor-canvas-scroll)::-webkit-scrollbar-thumb {
+  background: var(--tk-muted);
+}
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-filecard, .pdf-editor-tile) {
+  background: var(--pc-surface);
+  border-color: var(--pc-line);
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-filecard-icon {
+  background: var(--tk-page-bg);
+  color: var(--pc-muted);
+}
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-tool-section-label, .pdf-editor-pages-count, .pdf-editor-preview-mode, .pdf-editor-tile-error) {
+  color: var(--pc-muted);
+  letter-spacing: 0;
+}
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-empty h2, .pdf-editor-pages-head) { letter-spacing: 0; }
+
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-tool, .pdf-editor-pages-action, .pdf-editor-zoom-btn, .pdf-editor-zoom-value, .pdf-editor-edit-toggle, .pdf-merge-selection-btn-secondary, .pdf-editor-edit-modal-close) {
+  color: var(--pc-text);
+  background: var(--pc-surface);
+  border-color: var(--pc-line);
+  box-shadow: none;
+}
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-tool, .pdf-editor-pages-action, .pdf-editor-zoom-btn, .pdf-editor-zoom-value, .pdf-editor-edit-toggle, .pdf-merge-selection-btn-secondary, .pdf-editor-edit-modal-close):hover:not(:disabled) {
+  color: var(--pc-text);
+  background: var(--pc-surface-hover);
+  border-color: var(--pc-line-strong);
+  box-shadow: none;
+  transform: none;
+}
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-tool, .pdf-editor-edit-toggle).is-active:not(:disabled) {
+  color: var(--pc-accent-ink);
+  background: var(--pc-accent);
+  border-color: var(--pc-accent);
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tool-danger:not(:disabled) { color: var(--tk-danger); }
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tool-danger:hover:not(:disabled) {
+  background: var(--tk-surface);
+  border-color: #dba5a5;
+  color: var(--tk-danger);
+}
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-tool, .pdf-merge-selection-btn, .pdf-editor-zoom-btn, .pdf-editor-zoom-value) {
+  line-height: 1.25;
+}
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-tool, .pdf-merge-selection-btn) > span {
+  margin: 0;
+  padding: 0;
+  line-height: inherit;
+}
+
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tile:hover { border-color: var(--pc-line-strong); }
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tile.is-selected {
+  background: var(--tk-surface);
+  border-color: var(--tk-accent);
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tile-select {
+  background: var(--tk-page-bg);
+  border-color: var(--tk-border);
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tile.is-selected .pdf-editor-tile-select {
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
+  color: var(--tk-on-accent);
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tile-index {
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+  line-height: 1;
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tile-drag { color: var(--tk-muted); }
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tile-skeleton { background: var(--tk-surface-hover); }
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-tile-canvas { box-shadow: 0 3px 10px rgba(17, 17, 17, 0.1); }
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-text-layer.is-object-mode :is(.pdf-editor-text-segment, .pdf-editor-inserted-text, .pdf-editor-inserted-image-wrap):hover {
+  outline-color: var(--tk-accent);
+}
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-text-segment, .pdf-editor-inserted-text, .pdf-editor-inserted-image-wrap, .pdf-editor-inserted-shape).is-selected {
+  outline: 1.5px solid var(--tk-accent);
+  box-shadow: 0 0 0 3px #ffffff;
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-component-handle {
+  background: var(--tk-page-bg);
+  border-color: var(--tk-accent);
+  box-shadow: 0 0 0 1px #ffffff;
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-component-handle:hover { background: var(--tk-surface-hover); }
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-component-menu, .pdf-editor-shape-panel) {
+  background: var(--tk-page-bg);
+  border-color: var(--tk-border);
+  box-shadow: 0 5px 18px rgba(17, 17, 17, 0.12);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html:root[data-theme] .pdf-editor-v2 :is(.pdf-editor-component-menu button, .pdf-editor-shape-field) { color: var(--tk-ink); }
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-component-menu button:hover {
+  color: var(--tk-ink);
+  background: var(--tk-surface);
+  transform: none;
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-component-menu button:last-child { color: #a32c2c; }
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-component-menu button:last-child:hover { background: var(--tk-surface); }
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-shape-field input[type="color"] { border-color: var(--tk-border); }
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-shape-field input[type="range"] { accent-color: var(--tk-accent); }
+
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-edit-modal { background: rgba(var(--tk-rgb-ink), 0.18); }
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-edit-modal-card {
+  background: var(--tk-page-bg);
+  border-color: var(--tk-border);
+  box-shadow: 0 18px 50px rgba(17, 17, 17, 0.14);
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-edit-modal-original {
+  background: var(--tk-inset);
+  color: var(--tk-muted);
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-edit-modal-input {
+  background: var(--tk-page-bg);
+  color: var(--tk-ink);
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-edit-modal-input:focus {
+  border-color: var(--tk-accent);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+html:root[data-theme] .pdf-editor-v2 .pdf-editor-edit-security-note {
+  background: var(--tk-inset);
+  border-color: #edc1ba;
+  color: #8a3027;
+}
+html:root[data-theme] #pdfEditorProcessMask :is(.audio-convert-process-text, .pdf-editor-process-status strong) { color: var(--tk-ink); }

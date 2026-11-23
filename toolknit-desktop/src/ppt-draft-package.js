@@ -32,13 +32,13 @@ export function buildSlideXml(content, theme) {
 </p:sld>`;
 }
 
-export function buildPresentationXml(slideCount) {
+export function buildPresentationXml(slideCount, size = { cx: SLIDE_CX, cy: SLIDE_CY, type: 'wide' }) {
   const slideIds = Array.from({ length: slideCount }, (_, index) => `<p:sldId id="${256 + index}" r:id="rId${index + 2}"/>`).join('');
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
   <p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>
   <p:sldIdLst>${slideIds}</p:sldIdLst>
-  <p:sldSz cx="${SLIDE_CX}" cy="${SLIDE_CY}" type="wide"/>
+  <p:sldSz cx="${size.cx}" cy="${size.cy}" type="${size.type || 'custom'}"/>
   <p:notesSz cx="6858000" cy="9144000"/>
   <p:defaultTextStyle><a:defPPr><a:defRPr lang="zh-CN"/></a:defPPr></p:defaultTextStyle>
 </p:presentation>`;
@@ -98,11 +98,11 @@ export function docPropsCore(title) {
 </cp:coreProperties>`;
 }
 
-export function docPropsApp(slideCount) {
+export function docPropsApp(slideCount, format = 'On-screen Show (16:9)') {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
   <Application>ToolKnit Desktop</Application>
-  <PresentationFormat>On-screen Show (16:9)</PresentationFormat>
+  <PresentationFormat>${xmlEscape(format)}</PresentationFormat>
   <Slides>${slideCount}</Slides>
   <Notes>0</Notes>
   <HiddenSlides>0</HiddenSlides>

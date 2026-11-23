@@ -107,3 +107,27 @@
   .tk-empty-hero strong { font-size: 21px; }
   .tk-empty-hero-description { font-size: 12px; }
 }
+
+
+/* Shared appearance: geometry is identical for every palette and mode. */
+html:root[data-theme] .tk-empty-hero {
+  --tk-empty-hero-ink: var(--tk-ink);
+  --tk-empty-hero-muted: var(--tk-muted);
+  --tk-empty-hero-quiet: var(--tk-muted);
+  --tk-empty-hero-button-bg: var(--tk-accent);
+  --tk-empty-hero-button-ink: var(--tk-on-accent);
+  --tk-empty-hero-icon-bg: var(--tk-accent);
+  --tk-empty-hero-icon-ink: var(--tk-on-accent);
+  --tk-empty-hero-icon-line: var(--tk-accent);
+  background: rgba(var(--tk-rgb-page), 0.72);
+}
+
+html:root[data-theme] .tk-empty-hero:hover {
+  background: rgba(var(--tk-rgb-page), 0.9);
+}
+
+html:root[data-theme] .tk-empty-hero:hover em {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent);
+  color: var(--tk-on-accent);
+}

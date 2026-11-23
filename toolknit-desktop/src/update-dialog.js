@@ -9,12 +9,14 @@ export function initUpdateDialog({ openExternalUrl, refreshBackgroundRendering, 
   if (!dialog) return null;
   const scope = createLifecycleScope();
   const button = dialog.querySelector('[data-update-download]');
+  const closeButton = dialog.querySelector('[data-update-close]');
   let release = null;
   let status = 'idle';
   let busy = false;
   let returnFocus = null;
 
   function render() {
+    closeButton.setAttribute('aria-label', t('common.close'));
     if (!release) return;
     dialog.querySelector('[data-update-current]').textContent = `v${release.currentVersion}`;
     dialog.querySelector('[data-update-latest]').textContent = `v${release.version}`;
@@ -24,6 +26,16 @@ export function initUpdateDialog({ openExternalUrl, refreshBackgroundRendering, 
     const message = dialog.querySelector('.update-dialog-status');
     message.textContent = status === 'idle' ? '' : t(`updateDialog.${status}`);
     message.dataset.error = String(status === 'failed');
+  }
+
+  function close() {
+    if (dialog.open) dialog.close();
+    dialog.classList.remove('visible');
+    setModalInteractivity(dialog, false);
+    document.body.classList.remove('update-dialog-open');
+    refreshBackgroundRendering?.();
+    if (returnFocus?.isConnected && !returnFocus.closest('[inert], [aria-hidden="true"]')) returnFocus.focus({ preventScroll: true });
+    returnFocus = null;
   }
 
   function open(value) {
@@ -61,32 +73,38 @@ export function initUpdateDialog({ openExternalUrl, refreshBackgroundRendering, 
         busy = false;
         button.disabled = false;
         render();
-        button.focus({ preventScroll: true });
+        if (dialog.open) button.focus({ preventScroll: true });
       }
     }
   }
 
   scope.event(button, 'click', () => void download());
-  scope.event(dialog, 'cancel', event => event.preventDefault());
+  scope.event(closeButton, 'click', close);
+  scope.event(dialog, 'cancel', event => {
+    event.preventDefault();
+    close();
+  });
   scope.event(document, 'keydown', event => {
     if (!dialog.open) return;
-    if (event.key === 'Escape' || event.key === 'Tab') {
+    if (event.key === 'Escape') {
       event.preventDefault();
       event.stopImmediatePropagation();
-      (button.disabled ? dialog : button).focus({ preventScroll: true });
+      close();
+    } else if (event.key === 'Tab') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const items = [closeButton, button].filter(item => !item.disabled);
+      const index = items.indexOf(document.activeElement);
+      const next = index < 0 ? (event.shiftKey ? items.length - 1 : 0)
+        : (index + (event.shiftKey ? -1 : 1) + items.length) % items.length;
+      items[next].focus({ preventScroll: true });
     }
   }, true);
   scope.use(onLangChange(render));
   const dispose = () => {
     if (scope.disposed) return;
     scope.dispose();
-    if (dialog.open) dialog.close();
-    dialog.classList.remove('visible');
-    setModalInteractivity(dialog, false);
-    document.body.classList.remove('update-dialog-open');
-    refreshBackgroundRendering?.();
-    if (returnFocus?.isConnected && !returnFocus.closest('[inert], [aria-hidden="true"]')) returnFocus.focus({ preventScroll: true });
-    returnFocus = null;
+    close();
   };
   scope.event(window, 'pagehide', dispose);
   refreshIcons?.();

@@ -1,3 +1,4 @@
+import '../../styles/components/calculator-form.css';
 import { createLifecycleScope } from '../../app/tool-lifecycle.js';
 import { applyTranslations, onLangChange, t } from '../../i18n.js';
 import { BMI_INPUT_LIMITS, calculateBmi } from './core.js';

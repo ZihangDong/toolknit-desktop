@@ -1,0 +1,20 @@
+import { toolTopbarMarkup } from '../../shared/tool-page-shell.js';
+const tr = key => `data-i18n="home.ocrEditor.${key}"`;
+const button = (id,key,extra='') => `<button id="ocrEdit${id}" type="button" ${extra} ${tr(key)}></button>`;
+const field = (id,key,type='number',extra='') => `<label>${`<span ${tr(key)}></span>`}<input id="ocrEdit${id}" type="${type}" ${extra}></label>`;
+export default `<div id="ocrEditOverlay" class="ocr-edit-tool pdf-merge-overlay pdf-merge-v2 tool-page-v2-overlay" role="dialog" aria-modal="true" aria-labelledby="ocrEditTitle" aria-hidden="true" inert>
+${toolTopbarMarkup({ tag:'OCR EDIT · TOOL PAGE 3.4',closeAttr:'data-ocr-edit-close' })}
+<main class="ocr-edit-layout"><section class="ocr-edit-controls" aria-labelledby="ocrEditTitle"><h1 id="ocrEditTitle" ${tr('title')}></h1><p class="ocr-edit-muted" ${tr('intro')}></p>
+${button('Pick','pick','data-primary')}${button('JumpPreview','jumpPreview','class="ocr-edit-mobile-link"')}<p id="ocrEditStatus" role="status" aria-live="polite"></p>${button('Cancel','cancel','hidden')}
+<p id="ocrEditSource" class="ocr-edit-muted"></p><label for="ocrEditPage" ${tr('page')}></label><select id="ocrEditPage"></select>
+<div class="ocr-edit-row">${button('Recognize','recognize')}${button('Add','add')}</div><p class="ocr-edit-muted" ${tr('ocrHint')}></p>
+<label for="ocrEditRegions" ${tr('regions')}></label><select id="ocrEditRegions"></select><p id="ocrEditEmpty" class="ocr-edit-muted" ${tr('selectHint')}></p>
+<fieldset id="ocrEditFields"><legend ${tr('replacement')}></legend><label for="ocrEditText" ${tr('text')}></label><textarea id="ocrEditText" maxlength="2000" rows="3" spellcheck="false"></textarea>
+<label for="ocrEditFont" ${tr('font')}></label><select id="ocrEditFont"><option value="sans" ${tr('sans')}></option><option value="serif" ${tr('serif')}></option><option value="mono" ${tr('mono')}></option></select>
+<div class="ocr-edit-fields">${field('Size','size','number','min="4" max="600" step="0.1"')}${field('Angle','angle','number','min="-180" max="180" step="1"')}${field('Foreground','foreground','color')}${field('Background','background','color')}${field('X','x','number','min="0" step="0.1"')}${field('Y','y','number','min="0" step="0.1"')}${field('Width','width','number','min="2" step="0.1"')}${field('Height','height','number','min="2" step="0.1"')}</div>
+<p class="ocr-edit-muted" ${tr('geometryHint')}></p><div class="ocr-edit-row">${button('Apply','apply','data-primary')}${button('Restore','restore')}${button('Delete','delete')}</div></fieldset>
+<div class="ocr-edit-row">${button('Undo','undo')}${button('Redo','redo')}</div><p class="ocr-edit-muted" ${tr('limits')}></p></section>
+<section class="ocr-edit-workspace" aria-labelledby="ocrEditPreviewTitle"><div class="ocr-edit-toolbar"><h2 id="ocrEditPreviewTitle" ${tr('preview')}></h2><div class="ocr-edit-row">${button('JumpSettings','jumpSettings','class="ocr-edit-mobile-link"')}${button('Rotate','rotate')}<label class="ocr-edit-check"><input id="ocrEditCompare" type="checkbox"><span ${tr('compare')}></span></label><label><span ${tr('zoom')}></span><select id="ocrEditZoom"><option value="fit" ${tr('fit')}></option><option value="1">100%</option><option value="2">200%</option></select></label></div></div>
+<div id="ocrEditStage" class="ocr-edit-stage" tabindex="0"><p id="ocrEditPlaceholder" ${tr('empty')}></p><div id="ocrEditPaper" class="ocr-edit-paper" hidden><canvas id="ocrEditCanvas"></canvas><div id="ocrEditBoxes" class="ocr-edit-boxes"></div></div></div>
+<div class="ocr-edit-row ocr-edit-export">${button('Png','png')}${button('Pdf','pdf','data-primary')}${button('Folder','folder','hidden')}${button('Reset','reset')}<label class="ocr-edit-check ocr-edit-searchable"><input id="ocrEditSearchable" type="checkbox"><span ${tr('searchable')}></span></label></div><p id="ocrEditOutput" class="ocr-edit-muted"></p></section></main>
+<input id="ocrEditFileInput" type="file" accept=".png,.jpg,.jpeg,.webp,.bmp,.pdf" hidden></div>`;

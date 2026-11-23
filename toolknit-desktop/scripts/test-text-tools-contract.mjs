@@ -24,11 +24,11 @@ const [
   readFile(new URL('../src/features/lazy-tools.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/text-stats/tool.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/text-stats/text-stats.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/styles/themes/text-stats-light.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/styles/themes/index.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/features/text-stats/text-stats.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/styles/index.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/text-format/tool.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/features/text-format/text-format.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/styles/themes/text-format-light.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/features/text-format/text-format.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/shared/text-document-reader.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/shared/text-document-drop.js', import.meta.url), 'utf8')
 ]);
@@ -57,22 +57,20 @@ assert.match(statsStyles, /repeat\(auto-fit,\s*minmax\(118px,\s*1fr\)\)/,
   'compact result cards must adapt to the available column width');
 assert.match(statsStyles, /\.text-stats-v2-actions\s*\{[^}]*flex-wrap:\s*wrap/s,
   'compact text-stat actions must wrap instead of being clipped');
-assert.match(statsLightStyles, /html\[data-theme="light"\] \.text-stats-v2/);
+assert.match(statsLightStyles, /html:root\[data-theme\] \.text-stats-v2/);
 assert.match(statsLightStyles, /text-stats-v2-textarea/);
 assert.match(statsLightStyles, /text-stats-card/);
 assert.match(statsLightStyles, /is-reading-file/);
-assert.match(themeIndex, /@import url\('\.\/text-stats-light\.css'\);/);
 assert.match(formatTool, /createLifecycleScope/);
 assert.match(formatTool, /lifecycle\.invalidate\(\)/);
 assert.match(formatTool, /import '\.\/text-format\.css'/);
 assert.match(formatTool, /onLangChange\(\(\) => \{[\s\S]*clearTimeout\(copyTimer\)[\s\S]*copyButtonLabel = ''/);
 assert.match(formatStyles, /\.text-format-v2/);
-assert.match(formatLightStyles, /html\[data-theme="light"\] \.text-format-v2/);
+assert.match(formatLightStyles, /html:root\[data-theme\] \.text-format-v2/);
 assert.match(formatLightStyles, /text-format-v2-textarea/);
 assert.match(formatLightStyles, /text-format-v2-actions/);
 assert.match(formatLightStyles, /text-format-v2-toolbar/);
 assert.match(formatLightStyles, /is-reading-file/);
-assert.match(themeIndex, /@import url\('\.\/text-format-light\.css'\);/);
 
 assert.match(reader, /read_file_bytes_limited/);
 assert.match(reader, /maxBytes:\s*TEXT_STATS_LIMITS\.maxDocumentBytes/);

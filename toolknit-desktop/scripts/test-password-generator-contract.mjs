@@ -38,7 +38,7 @@ assert.match(tool, /clearSensitiveContent\(\)/);
 assert.match(tool, /if \(copyButton\) copyButton\.textContent = t\('home\.passwordGen\.copy'\)/);
 assert.match(tool, /dispose\(\)[\s\S]*lifecycle\.dispose\(\)/);
 assert.match(tool, /import '\.\/password-generator\.css'/);
-assert.match(tool, /import '\.\/password-generator-light\.css'/);
+assert.match(tool, /import '\.\/password-generator\.css'/);
 assert.match(tool, /import '\.\.\/\.\.\/styles\/components\/calculator-form\.css'/);
 assert.doesNotMatch(tool, /localStorage|sessionStorage/);
 assert.doesNotMatch(styles, /\.password-gen/);

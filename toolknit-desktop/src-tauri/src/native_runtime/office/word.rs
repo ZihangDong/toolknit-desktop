@@ -1,12 +1,59 @@
 use super::*;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use sha2::{Digest, Sha256};
+mod word_zip;
+pub(crate) use word_zip::*;
+#[path = "word/watermark.rs"]
+mod watermark;
+pub(crate) use watermark::WordWatermarkInput;
+#[path = "word/encryption.rs"]
+mod encryption;
+pub(crate) use encryption::WordEncryptionInput;
+#[path = "word/history.rs"]
+mod history;
+pub(crate) use history::*;
 
-const WORD_DRIVER: &str = include_str!("../../../resources/office/word-to-pdf.py");
+const WORD_SCRIPTS: &[(&str, &str)] = &[
+    (
+        "word-to-pdf.py",
+        include_str!("../../../resources/office/word-to-pdf.py"),
+    ),
+    (
+        "word_layout.py",
+        include_str!("../../../resources/office/word_layout.py"),
+    ),
+    (
+        "word_font_metrics.py",
+        include_str!("../../../resources/office/word_font_metrics.py"),
+    ),
+    ("word_fields.py", include_str!("../../../resources/office/word_fields.py")),
+];
 const WORD_MAX_BYTES: u64 = 50 * 1024 * 1024;
 const WORD_MAX_OUTPUT_BYTES: u64 = 150 * 1024 * 1024;
 static WORD_JOB: Mutex<Option<String>> = Mutex::new(None);
 static WORD_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub(crate) struct WordFontNotice {
+    code: String,
+    font: String,
+    replacement: String,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct WordFieldUpdate {
+    enabled: bool,
+    fields: u32,
+    indexes: u32,
+    skipped_fields: u32,
+    skipped_indexes: u32,
+    passes: u32,
+    stabilized: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pages: Option<u32>,
+}
 
 #[derive(Clone, Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,6 +65,16 @@ pub(crate) struct WordFileResult {
     page_count: usize,
     status: String,
     error: Option<String>,
+    font_notices: Vec<WordFontNotice>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    field_update: Option<WordFieldUpdate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    watermark_pages: Option<u32>,
+    encrypted: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    source_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    output_hash: Option<String>,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -55,13 +112,16 @@ fn word_work_dir(parent: &Path, prefix: &str) -> Result<PathBuf, String> {
 }
 
 fn inspect_word_path(value: &str) -> Result<PathBuf, String> {
+    inspect_word_input_path(value, false)
+}
+fn inspect_word_input_path(value: &str, archive: bool) -> Result<PathBuf, String> {
     let path = PathBuf::from(value);
     let extension = path
         .extension()
         .and_then(|s| s.to_str())
         .unwrap_or("")
         .to_ascii_lowercase();
-    if !matches!(extension.as_str(), "doc" | "docx") {
+    if !(if archive { extension == "zip" } else { matches!(extension.as_str(), "doc" | "docx") }) {
         return Err("word-render:invalid-extension".into());
     }
     if !path.is_absolute() || value.contains('\0') {
@@ -117,6 +177,10 @@ struct WordBatchStatusItem {
     index: usize,
     status: String,
     code: Option<String>,
+    #[serde(default, rename = "fontNotices")]
+    font_notices: Vec<WordFontNotice>,
+    #[serde(default, rename = "fieldUpdate")]
+    field_update: Option<WordFieldUpdate>,
 }
 
 #[derive(Debug, serde::Deserialize, Default)]
@@ -128,7 +192,7 @@ fn run_word_renderer_batch(
     runtime: &LibreOfficeRuntimeInfo,
     manifest: &Path,
     work: &Path,
-    mut on_done: impl FnMut(usize, Result<(), String>),
+    mut on_done: impl FnMut(usize, Result<(Vec<WordFontNotice>, Option<WordFieldUpdate>), String>),
 ) -> Result<(), String> {
     let soffice = runtime
         .command
@@ -142,7 +206,9 @@ fn run_word_renderer_batch(
         return Err("word-render:python-missing".into());
     }
     let script = work.join("word-to-pdf.py");
-    std::fs::write(&script, WORD_DRIVER).map_err(|_| "word-render:output-path")?;
+    for (name, source) in WORD_SCRIPTS {
+        std::fs::write(work.join(name), source).map_err(|_| "word-render:output-path")?;
+    }
     let status_path = work.join("status.json");
     let mut command = std::process::Command::new(&python);
     command
@@ -155,6 +221,7 @@ fn run_word_renderer_batch(
         .current_dir(python.parent().unwrap())
         .env("SAL_USE_VCLPLUGIN", "svp")
         .env("SAL_DISABLE_PRINTERLIST", "1")
+        .env("PYTHONDONTWRITEBYTECODE", "1")
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
@@ -187,7 +254,7 @@ fn run_word_renderer_batch(
                         continue;
                     }
                     if item.status == "success" {
-                        on_done(item.index, Ok(()));
+                        on_done(item.index, Ok((item.font_notices, item.field_update)));
                     } else {
                         on_done(
                             item.index,
@@ -216,8 +283,32 @@ fn run_word_renderer_batch(
     }
 }
 
+#[cfg(test)]
 fn convert_word_batch(
     input_paths: Vec<String>,
+    output_dir: String,
+    job_id: String,
+    progress: impl FnMut(serde_json::Value),
+) -> Result<WordBatchResult, String> {
+    convert_word_batch_with_archives(input_paths, Vec::new(), false, output_dir, job_id, progress)
+}
+fn convert_word_batch_with_archives(
+    input_paths: Vec<String>,
+    archive_inputs: Vec<WordArchiveInput>,
+    refresh_fields: bool,
+    output_dir: String,
+    job_id: String,
+    progress: impl FnMut(serde_json::Value),
+) -> Result<WordBatchResult, String> {
+    convert_word_batch_with_options(input_paths, archive_inputs, refresh_fields, None, None, Vec::new(), output_dir, job_id, progress)
+}
+fn convert_word_batch_with_options(
+    input_paths: Vec<String>,
+    archive_inputs: Vec<WordArchiveInput>,
+    refresh_fields: bool,
+    watermark: Option<WordWatermarkInput>,
+    encryption: Option<WordEncryptionInput>,
+    expected_hashes: Vec<WordExpectedHash>,
     output_dir: String,
     job_id: String,
     mut progress: impl FnMut(serde_json::Value),
@@ -225,6 +316,16 @@ fn convert_word_batch(
     if input_paths.is_empty() || input_paths.len() > 20 {
         return Err("word-render:invalid-file-count".into());
     }
+    if archive_inputs.len() > 20 { return Err("word-render:invalid-file-count".into()); }
+    let expected_hashes = history::expected_hashes(expected_hashes, &input_paths)?;
+    let mut archive_map = std::collections::HashMap::new();
+    for input in archive_inputs {
+        let identity = input.identity();
+        if !input_paths.contains(&identity) || archive_map.insert(identity, input).is_some() {
+            return Err("word-render:invalid-archive".into());
+        }
+    }
+    let mut archive_cache = word_zip::ArchiveCache::default();
     let output_parent =
         validate_image_output_dir(&output_dir).map_err(|_| "word-render:output-path")?;
     let runtime = resolve_libreoffice_runtime();
@@ -232,6 +333,8 @@ fn convert_word_batch(
         return Err("word-render:runtime-missing".into());
     }
     let work = WordWork(word_work_dir(&std::env::temp_dir(), "tk-word-batch")?);
+    let watermark = watermark.map(|value| watermark::PreparedWatermark::prepare(value, &work.0)).transpose()?;
+    let encryption = encryption.map(encryption::PreparedEncryption::prepare).transpose()?;
     let inputs_dir = work.0.join("inputs");
     let outputs_dir = work.0.join("outputs");
     std::fs::create_dir_all(&inputs_dir).map_err(|_| "word-render:output-path")?;
@@ -240,7 +343,8 @@ fn convert_word_batch(
     let mut manifest_items = Vec::new();
     let mut prepared = std::collections::BTreeSet::new();
     for (index, input) in input_paths.iter().enumerate() {
-        let name = Path::new(input)
+        let source_name = archive_map.get(input).map(|item| item.entry_name.as_str()).unwrap_or(input);
+        let name = Path::new(source_name)
             .file_name()
             .and_then(|s| s.to_str())
             .unwrap_or("document")
@@ -253,6 +357,12 @@ fn convert_word_batch(
             page_count: 0,
             status: "pending".into(),
             error: None,
+            font_notices: Vec::new(),
+            field_update: None,
+            watermark_pages: None,
+            encrypted: false,
+            source_hash: None,
+            output_hash: None,
         };
         if CANCEL_FLAG.load(Ordering::SeqCst) {
             row.status = "cancelled".into();
@@ -261,18 +371,26 @@ fn convert_word_batch(
             continue;
         }
         let result = (|| -> Result<(), String> {
-            let source = inspect_word_path(input)?;
             use std::io::Read;
-            let mut data = Vec::new();
-            std::fs::File::open(source)
+            let data = if let Some(archive) = archive_map.get(input) {
+                archive_cache.read(archive)?
+            } else {
+                let source = inspect_word_path(input)?;
+                let mut data = Vec::new();
+                std::fs::File::open(source)
                 .map_err(|_| "word-render:invalid-input")?
                 .take(WORD_MAX_BYTES + 1)
                 .read_to_end(&mut data)
                 .map_err(|_| "word-render:invalid-input")?;
+                data
+            };
             if data.len() as u64 > WORD_MAX_BYTES {
                 return Err("word-render:input-too-large".into());
             }
-            let extension = Path::new(input)
+            let source_hash = format!("{:x}", Sha256::digest(&data));
+            if expected_hashes.get(input).is_some_and(|expected| expected != &source_hash) { return Err("word-render:source-changed".into()); }
+            row.source_hash = Some(source_hash);
+            let extension = Path::new(source_name)
                 .extension()
                 .and_then(|value| value.to_str())
                 .unwrap_or("docx")
@@ -284,6 +402,7 @@ fn convert_word_batch(
                 "index": index,
                 "source": source_copy,
                 "destination": output_copy,
+                "refreshFields": refresh_fields,
             }));
             prepared.insert(index);
             Ok(())
@@ -315,8 +434,26 @@ fn convert_word_batch(
                 return;
             }
             let row = &mut files[index];
+            let mut protected_pages = None;
+            let result = result.and_then(|(notices, summary)| {
+                if refresh_fields && !summary.as_ref().is_some_and(|value| value.enabled && value.stabilized) {
+                    Err("word-render:field-update-failed".into())
+                } else { Ok((notices, summary)) }
+            });
+            let result = result.and_then(|data| {
+                if let Some(stamp) = &watermark {
+                    row.watermark_pages = Some(stamp.apply(&outputs_dir.join(format!("{}.pdf", index)))?);
+                }
+                if let Some(protection) = &encryption {
+                    protected_pages = Some(protection.apply(&outputs_dir.join(format!("{}.pdf", index)))?);
+                }
+                if CANCEL_FLAG.load(Ordering::SeqCst) { return Err("word-render:cancelled".into()); }
+                Ok(data)
+            });
             match result {
-                Ok(()) => {
+                Ok((notices, summary)) => {
+                    row.font_notices = notices;
+                    row.field_update = summary;
                     let pdf = outputs_dir.join(format!("{}.pdf", index));
                     let metadata = std::fs::metadata(&pdf).ok();
                     let bytes = if metadata
@@ -327,7 +464,7 @@ fn convert_word_batch(
                     } else {
                         Vec::new()
                     };
-                    let page_count = count_pdf_pages_rough(&bytes);
+                    let page_count = protected_pages.unwrap_or_else(|| count_pdf_pages_rough(&bytes));
                     if bytes.len() < 128
                         || !bytes.starts_with(b"%PDF-")
                         || !bytes.windows(5).rev().take(1024).any(|w| w == b"%%EOF")
@@ -346,6 +483,8 @@ fn convert_word_batch(
                             row.output_bytes = bytes.len() as u64;
                             row.page_count = page_count;
                             row.status = "success".into();
+                            row.encrypted = protected_pages.is_some();
+                            row.output_hash = Some(format!("{:x}", Sha256::digest(&bytes)));
                         } else {
                             let _ = std::fs::remove_dir_all(destination);
                             row.status = "failed".into();
@@ -357,10 +496,11 @@ fn convert_word_batch(
                     }
                 }
                 Err(error) => {
-                    row.status = "failed".into();
+                    row.status = if error == "word-render:cancelled" { "cancelled" } else { "failed" }.into();
                     row.error = Some(error);
                 }
             }
+            if row.status != "success" { row.watermark_pages = None; }
             progress(serde_json::json!({
                 "jobId": job_id,
                 "index": index,
@@ -413,6 +553,11 @@ fn convert_word_batch(
 pub(crate) async fn convert_word_to_pdf(
     app_handle: tauri::AppHandle,
     input_paths: Vec<String>,
+    archive_inputs: Option<Vec<WordArchiveInput>>,
+    refresh_fields: Option<bool>,
+    watermark: Option<WordWatermarkInput>,
+    encryption: Option<WordEncryptionInput>,
+    expected_hashes: Option<Vec<WordExpectedHash>>,
     output_dir: String,
     job_id: String,
 ) -> Result<WordBatchResult, String> {
@@ -431,7 +576,7 @@ pub(crate) async fn convert_word_to_pdf(
         // The worker owns both guards even if the waiting webview disappears.
         let _conversion = _conversion;
         let _job = _job;
-        convert_word_batch(input_paths, output_dir, job_id, |event| {
+        convert_word_batch_with_options(input_paths, archive_inputs.unwrap_or_default(), refresh_fields.unwrap_or(false), watermark, encryption, expected_hashes.unwrap_or_default(), output_dir, job_id, |event| {
             let _ = app_handle.emit("word-to-pdf-progress", event);
         })
     })
@@ -444,6 +589,8 @@ pub(crate) fn cancel_word_to_pdf(job_id: String) -> bool {
     let active = WORD_JOB.lock().unwrap_or_else(|p| p.into_inner());
     if active.as_ref() == Some(&job_id) {
         CANCEL_FLAG.store(true, Ordering::SeqCst);
+        let pid = CURRENT_CHILD_ID.load(Ordering::SeqCst);
+        if pid != 0 { terminate_conversion_process(pid); }
         true
     } else {
         false
@@ -463,6 +610,34 @@ mod tests {
         assert!(inspect_word_path("local.docx").is_err());
         assert!(inspect_word_path("C:/file.pdf").is_err());
         assert!(!cancel_word_to_pdf("unrelated".into()));
+    }
+    #[test]
+    #[ignore = "real LibreOffice internal TOC/field QA; use generated DOCX and explicit output directory"]
+    fn word_internal_fields_real_runtime_qa() {
+        let source = std::env::var("TOOLKNIT_WORD_FIELDS_SOURCE").unwrap();
+        let invalid = std::env::var("TOOLKNIT_WORD_FIELDS_INVALID").unwrap();
+        let output = std::env::var("TOOLKNIT_WORD_FIELDS_OUTPUT").unwrap();
+        let before = Path::new(&output).join("default");
+        let after = Path::new(&output).join("updated");
+        std::fs::create_dir(&before).unwrap();
+        std::fs::create_dir(&after).unwrap();
+        let _guard = begin_conversion().unwrap();
+        let default = convert_word_batch(vec![source.clone()], before.to_string_lossy().into_owned(), "field-default".into(), |_| {}).unwrap();
+        assert_eq!(default.files[0].status, "success");
+        assert!(default.files[0].field_update.is_none());
+        let updated = convert_word_batch_with_archives(vec![source, invalid], Vec::new(), true,
+            after.to_string_lossy().into_owned(), "field-update".into(), |_| {}).unwrap();
+        assert_eq!(updated.files[0].status, "success");
+        assert_eq!(updated.files[1].status, "failed");
+        let summary = updated.files[0].field_update.as_ref().unwrap();
+        assert!(summary.enabled && summary.stabilized);
+        // Generated fixture: outline TOC, two caption lists, XE index and TC TOC.
+        assert_eq!(summary.indexes, 5);
+        assert!(summary.fields >= 3 && summary.skipped_fields >= 1);
+        assert!(summary.passes <= 3);
+        std::fs::write(Path::new(&output).join("report.json"), serde_json::to_vec_pretty(&serde_json::json!({
+            "default": default, "updated": updated
+        })).unwrap()).unwrap();
     }
     #[test]
     #[ignore = "real LibreOffice integration, explicit fixture/output environment"]

@@ -46,3 +46,8 @@
 @import url('./legacy.css');
 @import url('./components/control-geometry.css');
 @import url('./pages/donation.css');
+
+@import url('./pages/home-weaving.css');
+@import url('./components/pdf-workbench.css');
+@import url('./components/ppt-workbench.css');
+@import url('./components/appearance-controls.css');

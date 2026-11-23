@@ -1,6 +1,5 @@
       import { createElement as createLucideElement, createIcons, icons } from 'lucide';
       import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
-      import { initLightRays } from './lightrays.js';
       import { initPlasma } from './plasma.js';
       import { getLang, setLang, applyTranslations, onLangChange, t } from './i18n.js';
       import { initUpdateDialog } from './update-dialog.js';
@@ -62,6 +61,8 @@
       import { createScreenPickerSettingsRuntime } from './app/screen-picker-settings-runtime.js';
       import { createCustomBackgroundSettingsRuntime } from './app/custom-background-settings-runtime.js';
       import { TaskRunner } from '../shared/task-runtime.mjs';
+      import { createQuickLauncher } from './features/workbench/launcher.js';
+      import { createWorkbenchBackgroundRuntime } from './app/workbench-background-runtime.js';
       // Keep custom tool menus, but preserve native editing menus in text fields.
       document.addEventListener('contextmenu', (e) => {
         if (import.meta.env.DEV) return;
@@ -663,7 +664,7 @@
       const versionUpdateStatus = document.getElementById('versionUpdateStatus');
       const checkVersionUpdateBtn = document.getElementById('checkVersionUpdateBtn');
       const openReleasePageBtn = document.getElementById('openReleasePageBtn');
-      const APP_VERSION_FALLBACK = '3.3.0';
+      const APP_VERSION_FALLBACK = '3.4.0';
       let updateDialogController = null;
       const updateRuntime = createUpdateRuntime({
         isTauri,
@@ -1467,9 +1468,6 @@
         getHelpContent,
         getLegalContent,
         escapeHtml,
-        initLightRays,
-        getTheme: themeRuntime.get,
-        onThemeChange: themeRuntime.subscribe,
         settingsOverlay,
         settingsContent,
         pageTransition,
@@ -1968,6 +1966,10 @@
         }
       });
       lazyFeatureRegistry.bind();
+      if (!isScreenPickerWindow && !document.documentElement.hasAttribute('data-tk-auxiliary')) {
+        createQuickLauncher({ isTauri, openTool: openAuxiliaryTool, getActivePage: currentNavigationPage, notify: message => window.showToast?.(message) });
+        createWorkbenchBackgroundRuntime({ isTauri });
+      }
       // Keep the global screen-picker shortcut available before the color
       // feature is opened for the first time. The heavy picker UI remains
       // lazy, while the sampled payload is replayed after the feature mounts.

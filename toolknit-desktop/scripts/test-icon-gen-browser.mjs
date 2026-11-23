@@ -17,7 +17,7 @@ const server = await createServer({
   plugins: [{ name: 'icon-gen-test-shell', configureServer(server) {
     server.middlewares.use('/icon-test', (_req, res) => {
       res.setHeader('Content-Type', 'text/html');
-      res.end('<!doctype html><html data-theme="light"><head><link rel="stylesheet" href="/src/styles/index.css"><link rel="stylesheet" href="/src/tool-page-v2-final.css"><link rel="stylesheet" href="/src/tool-nav-unified.css"><link rel="stylesheet" href="/src/styles/themes/index.css"></head><body><div class="pdf-merge-overlay pdf-merge-v2 icon-gen-v2 audio-convert-overlay" id="iconGenOverlay" aria-hidden="true"></div></body></html>');
+      res.end('<!doctype html><html data-theme="light"><head><link rel="stylesheet" href="/src/styles/index.css"><link rel="stylesheet" href="/src/tool-page-v2-final.css"><link rel="stylesheet" href="/src/tool-nav-unified.css"></head><body><div class="pdf-merge-overlay pdf-merge-v2 icon-gen-v2 audio-convert-overlay" id="iconGenOverlay" aria-hidden="true"></div></body></html>');
     });
   } }]
 });

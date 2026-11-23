@@ -1,0 +1,45 @@
+.meeting-tool { position: fixed; inset: 0; z-index: 200; display: none; flex-direction: column; background: var(--tk-page-bg); color: var(--tk-ink); }
+.meeting-tool.visible { display: flex; }
+.meeting-tool [hidden] { display: none !important; }
+.meeting-layout { display: grid; grid-template-columns: 350px minmax(0,1fr); gap: 28px; padding: 16px 28px 28px; flex: 1; min-height: 0; }
+.meeting-controls { display: flex; flex-direction: column; gap: 12px; overflow: auto; padding-right: 8px; }
+.meeting-controls > * { flex-shrink: 0; }
+.meeting-controls h1 { position: sticky; top: 0; z-index: 2; margin: 0; padding-bottom: 8px; background: var(--tk-page-bg); font-size: 28px; line-height: 1.3; }
+.meeting-controls h2, .meeting-editor h2 { margin: 0; font-size: 18px; }
+.meeting-tool label { font-size: 13px; font-weight: 600; }
+.meeting-muted { margin: 0; color: var(--tk-muted); font-size: 13px; line-height: 1.7; }
+.meeting-layout button { display: inline-flex; justify-content: center; align-items: center; gap: 7px; min-height: 40px; padding: 9px 14px; border: 1px solid var(--tk-border); border-radius: 8px; background: var(--tk-inset); color: var(--tk-ink); font: inherit; font-size: 13px; cursor: pointer; }
+.meeting-layout button svg { width: 17px; height: 17px; flex-shrink: 0; }
+.meeting-layout button[data-primary] { background: var(--tk-accent); color: var(--tk-on-accent); }
+.meeting-layout button:disabled { opacity: .45; cursor: default; }
+.meeting-layout button:focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 2px; }
+.meeting-tool input, .meeting-tool select, .meeting-tool textarea { box-sizing: border-box; width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--tk-border-strong); border-radius: 6px; background-color: var(--tk-page-bg); color: var(--tk-ink); font: inherit; font-size: 14px; }
+.meeting-tool textarea { resize: none; height: 100%; min-height: 180px; line-height: 1.8; }
+.meeting-record-status { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; background: var(--tk-inset); border-radius: 8px; font-size: 14px; }
+.meeting-record-status output { font-variant-numeric: tabular-nums; }
+.meeting-live-option { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+.meeting-tool .meeting-live-option input { width: 16px; height: 16px; flex: none; accent-color: var(--tk-accent); }
+.meeting-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.meeting-buttons button { flex: 1; }
+.meeting-source { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.meeting-tool audio { display: block; flex-shrink: 0; width: 100%; height: 40px; }
+.meeting-ai { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 8px 16px; padding-block: 8px; }
+.meeting-ai > p { grid-column: 1 / -1; }
+.meeting-mobile-link { display: none !important; }
+.meeting-editor { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+.meeting-editor-panel { flex: 1; min-height: 0; }
+.meeting-tabs { display: flex; gap: 8px; }
+.meeting-tabs button[aria-selected="true"] { background: var(--tk-surface); }
+.meeting-editor-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.meeting-status-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; min-height: 36px; }
+#meetingStatus { margin: 0; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+#meetingStatus.is-error { color: var(--tk-danger); }
+.meeting-progress { height: 5px; background: var(--tk-surface); border-radius: 5px; overflow: hidden; }
+.meeting-progress > div { height: 100%; background: var(--tk-accent); }
+.meeting-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+@media (max-width: 800px) {
+  .meeting-layout { grid-template-columns: minmax(0,1fr); overflow: auto; gap: 24px; padding: 12px 20px 24px; }
+  .meeting-controls { overflow: visible; padding-right: 0; }
+  .meeting-editor { min-height: 600px; }
+  .meeting-mobile-link { display: inline-flex !important; }
+}

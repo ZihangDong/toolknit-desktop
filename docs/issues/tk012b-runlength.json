@@ -1,0 +1,104 @@
+{
+  "task": "TK-012-B-C",
+  "auditedOn": "2026-11-21",
+  "timezone": "Asia/Shanghai",
+  "status": "runlength-first-version-complete",
+  "parentTaskComplete": false,
+  "supported": {
+    "contexts": [
+      "page content stream",
+      "nested shared Form invocation",
+      "inline image"
+    ],
+    "filterChains": [
+      [
+        "RunLengthDecode"
+      ],
+      [
+        "ASCIIHexDecode",
+        "RunLengthDecode"
+      ],
+      [
+        "ASCII85Decode",
+        "RunLengthDecode"
+      ]
+    ],
+    "inlineAliases": [
+      "RL",
+      "RunLengthDecode"
+    ],
+    "inlineBits": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "colorSpaces": [
+      "DeviceGray",
+      "DeviceRGB",
+      "DeviceCMYK"
+    ],
+    "parameters": "absent, null, or matching all-null filter array"
+  },
+  "validation": [
+    "scan all literal/repeat packets before allocating output",
+    "mandatory EOD",
+    "no trailing bytes in content/ASCII-decoded payload",
+    "binary inline EOD followed only by separator whitespace and EI",
+    "reject early ambiguous EI and stream splits",
+    "exact sample length and per-stage decoded budget"
+  ],
+  "limits": {
+    "perStageBytes": 8388608,
+    "totalDecodedBytes": 33554432
+  },
+  "tests": {
+    "existingCoreChecks": 107,
+    "existingPredictorGroups": 10,
+    "existingDepthGroups": 8,
+    "runLengthGroups": [
+      "Every literal/repeat control, embedded EOD-valued samples, empty input and packet boundaries match pdf-lib decoding",
+      "RunLength requires EOD, rejects truncated packets/trailing data and measures output before allocation",
+      "Page/Form streams support only bounded single RunLength or outer ASCII wrappers with aligned null parameters",
+      "Inline aliases use exact EOD/sample length, reject early EI/stream splits/parameters, and enforce the shared budget",
+      "RunLength page streams and both ASCII wrappers match three watermark occurrences and preserve searchable body text",
+      "Nested shared RunLength Forms isolate two selected invocations while retaining repeated and differently positioned calls",
+      "45 bit-depth/color/filter variants preserve exact matching, other images and input bytes",
+      "Trailing encoded bytes preserve the affected original page while a valid image on the next page remains removable",
+      "Poppler passes 186 page and PDF.js 92 first-page comparisons; qpdf accepts 47 edited outputs"
+    ],
+    "inlineVariants": 45,
+    "popplerPageComparisons": 186,
+    "pdfjsFirstPageComparisons": 92,
+    "qpdfEditedOutputs": 47,
+    "edgeChecks": 232,
+    "browserErrors": [],
+    "productionEntry": "actual home, ASCII85/RunLength inline samples, matching, preview, PDF download, home return"
+  },
+  "commands": [
+    "npm run test:pdf-object-remove",
+    "npm run test:pdf-object-remove-browser",
+    "npm run build",
+    "npm run test:pdf-object-remove-production"
+  ],
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-run-length/report.json",
+    "toolknit-desktop/tmp/pdf-run-length-regression.log",
+    "toolknit-desktop/tmp/pdf-run-length-browser.log",
+    "toolknit-desktop/tmp/pdf-run-length-build.log",
+    "toolknit-desktop/tmp/pdf-run-length-production.log"
+  ],
+  "remaining": [
+    "reverse or more-than-two-stage filter chains",
+    "non-null RunLength parameters",
+    "TIFF 16-bit reader differences",
+    "LZW and other filters",
+    "structured/transparency Form",
+    "linked/locked stamps",
+    "mixed text objects",
+    "formal installed Tauri/WebView2 UI (TK-012-C)"
+  ],
+  "nativeUiAcceptance": false,
+  "installerBuiltOrPublished": false
+}

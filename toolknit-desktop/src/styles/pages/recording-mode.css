@@ -52,12 +52,12 @@
 .recording-mode-dismiss-menu button:hover { background: #ffffff15; }
 .recording-mode-prompt :focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
 html[data-recording-mode-busy] :is(#autostartToggle, #screenshotHistoryToggle) { pointer-events: none; }
-html[data-theme="light"] .recording-mode-prompt { background: #fff; color: #111; border-color: #ddd; box-shadow: 0 12px 40px #0002; }
-html[data-theme="light"] .recording-mode-prompt p { color: #666; }
-html[data-theme="light"] .recording-mode-prompt .settings-v2-switch { border: 0; background: #9ca0a6; }
-html[data-theme="light"] .recording-mode-prompt .settings-v2-switch:is(.active, [aria-pressed="true"]) { background: #111; }
-html[data-theme="light"] .recording-mode-dismiss-menu { background: #fff; border-color: #ddd; }
-html[data-theme="light"] :is(.recording-mode-dismiss, .recording-mode-dismiss-menu button):hover { background: #eee; }
+html:root[data-theme] .recording-mode-prompt { background: var(--tk-page-bg); color: var(--tk-ink); border-color: var(--tk-border); box-shadow: 0 12px 40px #0002; }
+html:root[data-theme] .recording-mode-prompt p { color: var(--tk-muted); }
+html:root[data-theme] .recording-mode-prompt .settings-v2-switch { border: 0; background: var(--tk-border-strong); }
+html:root[data-theme] .recording-mode-prompt .settings-v2-switch:is(.active, [aria-pressed="true"]) { background: var(--tk-accent); }
+html:root[data-theme] .recording-mode-dismiss-menu { background: var(--tk-page-bg); border-color: var(--tk-border); }
+html:root[data-theme] :is(.recording-mode-dismiss, .recording-mode-dismiss-menu button):hover { background: var(--tk-inset); }
 @keyframes recording-prompt-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 780px) { .recording-mode-prompt { right: 20px; bottom: 20px; } }
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,21 @@
 use super::*;
 use crate::platform::dependency_download;
+#[path = "transcription/meeting.rs"]
+mod meeting;
+#[tauri::command]
+pub(super) fn cancel_meeting_transcription(job_id: String) -> Result<bool, String> {
+    meeting::cancel_meeting_transcription(job_id)
+}
+#[tauri::command]
+pub(super) async fn transcribe_meeting_media(
+    app_handle: tauri::AppHandle,
+    input_path: String,
+    output_dir: String,
+    language: String,
+    job_id: String,
+) -> Result<TranscriptionResult, String> {
+    meeting::transcribe_meeting_media(app_handle, input_path, output_dir, language, job_id).await
+}
 
 // ===== Offline transcription model management =====
 
@@ -151,10 +167,13 @@ pub(super) fn transcription_model_source(
 ) -> Result<String, String> {
     let source = source.unwrap_or("auto").trim().to_ascii_lowercase();
     match source.as_str() {
-        "official" | "china" | "auto" | "auto-china" | "auto-official" | "7caiyun" => {},
+        "official" | "china" | "auto" | "auto-china" | "auto-official" | "7caiyun" => {}
         _ => return Err("Unknown model download source".to_string()),
     }
-    Ok(dependency_download::resource_url(&format!("models/whisper/{}", model.file_name)))
+    Ok(dependency_download::resource_url(&format!(
+        "models/whisper/{}",
+        model.file_name
+    )))
 }
 
 #[cfg(test)]
@@ -164,11 +183,25 @@ mod download_source_tests {
     #[test]
     fn whisper_legacy_sources_resolve_to_the_pinned_origin() {
         for model in &TRANSCRIPTION_MODELS {
-            let expected = format!("{}/models/whisper/{}", dependency_download::RESOURCE_ORIGIN, model.file_name);
-            for source in [None, Some("auto"), Some("auto-china"), Some("auto-official"), Some("official"), Some("china"), Some("7caiyun")] {
+            let expected = format!(
+                "{}/models/whisper/{}",
+                dependency_download::RESOURCE_ORIGIN,
+                model.file_name
+            );
+            for source in [
+                None,
+                Some("auto"),
+                Some("auto-china"),
+                Some("auto-official"),
+                Some("official"),
+                Some("china"),
+                Some("7caiyun"),
+            ] {
                 assert_eq!(transcription_model_source(model, source).unwrap(), expected);
             }
-            assert!(transcription_model_source(model, Some("https://example.invalid/model")).is_err());
+            assert!(
+                transcription_model_source(model, Some("https://example.invalid/model")).is_err()
+            );
         }
     }
 }
@@ -302,6 +335,14 @@ pub(super) async fn start_teleprompter_recognition(
     state: tauri::State<'_, TeleprompterRecognitionState>,
     language: String,
 ) -> Result<String, String> {
+    start_live_recognition(&state, language, "teleprompter").await
+}
+
+async fn start_live_recognition(
+    state: &TeleprompterRecognitionState,
+    language: String,
+    purpose: &str,
+) -> Result<String, String> {
     let language = teleprompter_recognition_language(&language)?;
     let config = read_transcription_model_config();
     let model_id = config
@@ -312,17 +353,13 @@ pub(super) async fn start_teleprompter_recognition(
         installed_model_file(model)?.ok_or("transcription:model-not-installed".to_string())?;
     let whisper_library =
         get_whisper_library_path().map_err(|_| "teleprompter:engine-unavailable".to_string())?;
-    let generation = state
-        .generation
-        .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
-        .saturating_add(1);
     let numeric_id = state
         .next_session_id
         .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
         .saturating_add(1);
-    let session_id = format!("teleprompter-{}-{}", std::process::id(), numeric_id);
+    let session_id = format!("{}-{}-{}", purpose, std::process::id(), numeric_id);
 
-    {
+    let generation = {
         let mut current = state
             .session
             .lock()
@@ -330,7 +367,8 @@ pub(super) async fn start_teleprompter_recognition(
         if let Some(existing) = current.take() {
             cancel_teleprompter_session(&existing);
         }
-    }
+        state.generation.fetch_add(1, Ordering::SeqCst) + 1
+    };
 
     let whisper = tokio::task::spawn_blocking(move || {
         teleprompter_whisper::WhisperSession::load(&whisper_library, &model_path)
@@ -338,15 +376,14 @@ pub(super) async fn start_teleprompter_recognition(
     .await
     .map_err(|_| "teleprompter:model-load-failed".to_string())??;
 
-    if state.generation.load(std::sync::atomic::Ordering::SeqCst) != generation {
-        return Err("teleprompter:stopped".to_string());
-    }
-
     let cancelled = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let mut current = state
         .session
         .lock()
         .map_err(|_| "teleprompter:state-unavailable".to_string())?;
+    if state.generation.load(Ordering::SeqCst) != generation {
+        return Err("teleprompter:stopped".to_string());
+    }
     *current = Some(TeleprompterRecognitionSession {
         id: session_id.clone(),
         model_id,
@@ -360,6 +397,15 @@ pub(super) async fn start_teleprompter_recognition(
 #[tauri::command]
 pub(super) async fn transcribe_teleprompter_audio(
     state: tauri::State<'_, TeleprompterRecognitionState>,
+    session_id: String,
+    samples: Vec<i16>,
+    prompt: Option<String>,
+) -> Result<TeleprompterRecognitionResult, String> {
+    transcribe_live_audio(&state, session_id, samples, prompt).await
+}
+
+async fn transcribe_live_audio(
+    state: &TeleprompterRecognitionState,
     session_id: String,
     samples: Vec<i16>,
     prompt: Option<String>,
@@ -425,6 +471,13 @@ pub(super) fn stop_teleprompter_recognition(
     state: tauri::State<'_, TeleprompterRecognitionState>,
     session_id: String,
 ) -> Result<(), String> {
+    stop_live_recognition(&state, &session_id)
+}
+
+fn stop_live_recognition(
+    state: &TeleprompterRecognitionState,
+    session_id: &str,
+) -> Result<(), String> {
     let mut current = state
         .session
         .lock()
@@ -441,6 +494,35 @@ pub(super) fn stop_teleprompter_recognition(
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     }
     Ok(())
+}
+
+#[derive(Default)]
+pub(super) struct MeetingRecognitionState(TeleprompterRecognitionState);
+
+#[tauri::command]
+pub(super) async fn start_meeting_recognition(
+    state: tauri::State<'_, MeetingRecognitionState>,
+    language: String,
+) -> Result<String, String> {
+    start_live_recognition(&state.0, language, "meeting-live").await
+}
+
+#[tauri::command]
+pub(super) async fn transcribe_meeting_segment(
+    state: tauri::State<'_, MeetingRecognitionState>,
+    session_id: String,
+    samples: Vec<i16>,
+) -> Result<String, String> {
+    let result = transcribe_live_audio(&state.0, session_id, samples, None).await?;
+    Ok(result.text)
+}
+
+#[tauri::command]
+pub(super) fn stop_meeting_recognition(
+    state: tauri::State<'_, MeetingRecognitionState>,
+    session_id: String,
+) -> Result<(), String> {
+    stop_live_recognition(&state.0, &session_id)
 }
 
 #[tauri::command]
@@ -525,7 +607,7 @@ pub(super) async fn download_transcription_model(
 
     let partial = target.with_extension("bin.part");
     let client = reqwest::Client::builder()
-        .user_agent("ToolKnit/3.3.0 offline-model-manager")
+        .user_agent("ToolKnit/3.4.0 offline-model-manager")
         .https_only(true)
         .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(std::time::Duration::from_secs(12))
@@ -537,7 +619,9 @@ pub(super) async fn download_transcription_model(
         .trim()
         .to_ascii_lowercase();
     let candidates: Vec<&str> = match requested_source.as_str() {
-        "auto" | "auto-china" | "auto-official" | "official" | "china" | "7caiyun" => vec!["7caiyun"],
+        "auto" | "auto-china" | "auto-official" | "official" | "china" | "7caiyun" => {
+            vec!["7caiyun"]
+        }
         _ => return Err("Unknown model download source".to_string()),
     };
     let mut last_error = None;
@@ -1112,8 +1196,27 @@ pub(super) async fn transcribe_media(
     output_dir: String,
     language: String,
 ) -> Result<TranscriptionResult, String> {
+    transcribe_media_inner(app_handle, input_path, output_dir, language, None).await
+}
+
+async fn transcribe_media_inner(
+    app_handle: tauri::AppHandle,
+    input_path: String,
+    output_dir: String,
+    language: String,
+    meeting_id: Option<String>,
+) -> Result<TranscriptionResult, String> {
     let _conversion_guard = begin_conversion()?;
+    let meeting = meeting_id.map(meeting::MeetingGuard::begin).transpose()?;
+    if let Some(owner) = &meeting {
+        owner.job.check()?;
+    }
     let input = transcription_input_path(&input_path)?;
+    if meeting.is_some()
+        && std::fs::metadata(&input).map_err(|_| "meeting:file")?.len() > 512 * 1024 * 1024
+    {
+        return Err("meeting:file-large".into());
+    }
     let output_dir = transcription_output_dir(&output_dir)?;
     let language = transcription_language(&language)?;
     let config = read_transcription_model_config();
@@ -1133,15 +1236,22 @@ pub(super) async fn transcribe_media(
     let temp_path = temp_dir.path();
     let whisper_model = stage_whisper_model(&model_path, temp_path)?;
     let wav = temp_path.join("input.wav");
-    let _ = app_handle.emit(
-        "transcription-progress",
-        TranscriptionProgress {
-            phase: "preparing".to_string(),
-            progress: 5,
-        },
-    );
+    let emit = |phase: &str, progress: u8| {
+        if let Some(owner) = &meeting {
+            owner.job.emit(&app_handle, phase, progress);
+        } else {
+            let _ = app_handle.emit(
+                "transcription-progress",
+                TranscriptionProgress {
+                    phase: phase.into(),
+                    progress,
+                },
+            );
+        }
+    };
+    emit("preparing", 5);
 
-    let ffmpeg_args = vec![
+    let mut ffmpeg_args = vec![
         std::ffi::OsString::from("-hide_banner"),
         std::ffi::OsString::from("-nostdin"),
         std::ffi::OsString::from("-y"),
@@ -1156,19 +1266,27 @@ pub(super) async fn transcribe_media(
         std::ffi::OsString::from("16000"),
         std::ffi::OsString::from("-c:a"),
         std::ffi::OsString::from("pcm_s16le"),
+    ];
+    if meeting.is_some() {
+        ffmpeg_args.extend(["-t", "7201", "-map_metadata", "-1"].map(std::ffi::OsString::from));
+    }
+    ffmpeg_args.extend([
         std::ffi::OsString::from("-f"),
         std::ffi::OsString::from("wav"),
         wav.as_os_str().to_os_string(),
-    ];
-    let prepared = run_transcription_command(&ffmpeg, &ffmpeg_args)
-        .await
-        .map_err(|error| {
-            if error == "transcription:engine-failed" {
-                "transcription:prepare-failed".to_string()
-            } else {
-                error
-            }
-        })?;
+    ]);
+    let prepared = if let Some(owner) = &meeting {
+        meeting::run_owned(&ffmpeg, &ffmpeg_args, &owner.job).await
+    } else {
+        run_transcription_command(&ffmpeg, &ffmpeg_args).await
+    }
+    .map_err(|error| {
+        if error == "transcription:engine-failed" {
+            "transcription:prepare-failed".to_string()
+        } else {
+            error
+        }
+    })?;
     if let Some(error) = transcription_prepare_error(
         prepared.status.success(),
         wav.is_file(),
@@ -1176,13 +1294,12 @@ pub(super) async fn transcribe_media(
     ) {
         return Err(error.to_string());
     }
-    let _ = app_handle.emit(
-        "transcription-progress",
-        TranscriptionProgress {
-            phase: "transcribing".to_string(),
-            progress: 15,
-        },
-    );
+    if meeting.is_some()
+        && std::fs::metadata(&wav).map_err(|_| "meeting:file")?.len() > 7200 * 16000 * 2 + 1024
+    {
+        return Err("meeting:duration-limit".into());
+    }
+    emit("transcribing", 15);
     let whisper_args = vec![
         std::ffi::OsString::from("-m"),
         whisper_model.as_os_str().to_os_string(),
@@ -1198,7 +1315,11 @@ pub(super) async fn transcribe_media(
         std::ffi::OsString::from("-of"),
         temp_path.join("transcript").as_os_str().to_os_string(),
     ];
-    let transcribed = run_transcription_command(&whisper, &whisper_args).await?;
+    let transcribed = if let Some(owner) = &meeting {
+        meeting::run_owned(&whisper, &whisper_args, &owner.job).await?
+    } else {
+        run_transcription_command(&whisper, &whisper_args).await?
+    };
     if let Some(error) = transcription_engine_error(
         transcribed.status.success(),
         temp_path.join("transcript.json").is_file()
@@ -1208,24 +1329,15 @@ pub(super) async fn transcribe_media(
     ) {
         return Err(error.to_string());
     }
-    let _ = app_handle.emit(
-        "transcription-progress",
-        TranscriptionProgress {
-            phase: "publishing".to_string(),
-            progress: 95,
-        },
-    );
+    if let Some(owner) = &meeting {
+        owner.job.commit()?;
+    }
+    emit("publishing", 95);
     simplify_transcription_outputs(temp_path)?;
     let stem = transcription_output_stem(&input);
     let published = publish_transcription_outputs(temp_path, &output_dir, &stem);
     let (raw_json_path, raw_srt_path, raw_txt_path) = published?;
-    let _ = app_handle.emit(
-        "transcription-progress",
-        TranscriptionProgress {
-            phase: "complete".to_string(),
-            progress: 100,
-        },
-    );
+    emit("complete", 100);
     Ok(TranscriptionResult {
         model_id: model.id.to_string(),
         raw_json_path: raw_json_path.to_string_lossy().into_owned(),

@@ -1,0 +1,64 @@
+.disk-space-tool {position:fixed;inset:0;z-index:200;display:none;flex-direction:column;background:var(--tk-page-bg);color:var(--tk-ink);}
+.disk-space-tool.visible {display:flex;}
+.disk-space-tool [hidden] {display:none!important;}
+.disk-space-layout {padding:16px 28px 28px;overflow:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;}
+.disk-space-layout>* {flex-shrink:0;}
+.disk-space-header {display:flex;gap:16px;align-items:center;justify-content:space-between;}
+.disk-space-layout h1 {font-size:26px;line-height:1.3;margin:0 0 6px;}
+.disk-space-layout h2 {font-size:16px;margin:0;}
+.disk-space-muted {font-size:13px;line-height:1.6;color:var(--tk-muted);margin:0;overflow-wrap:anywhere;}
+.disk-space-actions {display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.disk-space-layout button {font:inherit;font-size:13px;color:var(--tk-ink);background:var(--tk-inset);border:1px solid var(--tk-border);border-radius:6px;min-height:36px;padding:8px 12px;cursor:pointer;}
+.disk-space-layout button[data-primary] {background:var(--tk-ink);color:var(--tk-page-bg);}
+.disk-space-layout button:disabled {opacity:.45;cursor:default;}
+.disk-space-layout button:focus-visible {outline:2px solid var(--tk-accent);outline-offset:2px;}
+.disk-space-status {display:flex;flex-direction:column;gap:6px;}
+.disk-space-status p {margin:0;font-size:13px;line-height:1.5;overflow-wrap:anywhere;}
+#diskSpaceStatus.is-error {color:var(--tk-danger);}
+#diskSpaceRemovalWarning {color:var(--tk-warning);}
+.disk-space-totals {display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:16px;margin:0 0 18px;}
+.disk-space-totals>div {display:flex;flex-direction:column;gap:6px;min-width:0;}
+.disk-space-totals span {font-size:13px;color:var(--tk-muted);}
+.disk-space-totals strong {font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+.disk-space-issues {margin-bottom:14px;padding:12px;background:var(--tk-inset);font-size:13px;}
+.disk-space-issues summary {cursor:pointer;line-height:1.6;}
+.disk-space-issues ul {margin:10px 0 0;padding-left:20px;max-height:170px;overflow:auto;}
+.disk-space-issues li {line-height:1.7;overflow-wrap:anywhere;}
+.disk-space-location {display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin-bottom:18px;}
+.disk-space-location>.disk-space-actions {margin-left:auto;}
+.disk-space-location nav {display:flex;flex-wrap:wrap;gap:6px;min-width:0;}
+.disk-space-location nav button {max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.disk-space-location nav button[aria-current] {background:var(--tk-surface);font-weight:600;}
+.disk-space-body {display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:24px;}
+.disk-space-section-heading {display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+.disk-space-map-panel,.disk-space-list-panel {min-width:0;}
+.disk-space-map {position:relative;height:360px;margin:10px 0;background:var(--tk-inset);overflow:hidden;}
+#diskSpaceTiles {position:absolute;inset:0;}
+.disk-space-layout .disk-space-tile {position:absolute;box-sizing:border-box;border:1px solid var(--tk-page-bg);border-radius:0;min-height:0;min-width:0;padding:8px;background:color-mix(in srgb,#2173aa 10%,var(--tk-surface));display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;overflow:hidden;}
+.disk-space-layout .disk-space-tile:nth-child(3n+2) {background:color-mix(in srgb,#2173aa 17%,var(--tk-surface));}
+.disk-space-layout .disk-space-tile:nth-child(3n) {background:color-mix(in srgb,#2173aa 24%,var(--tk-surface));}
+.disk-space-layout .disk-space-tile[aria-pressed=true] {outline:2px solid #2173aa;outline-offset:-3px;}
+.disk-space-tile span {display:block;max-width:100%;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font-size:13px;}
+.disk-space-tile span:last-child {font-size:12px;color:var(--tk-ink);}
+.disk-space-layout .disk-space-tile.is-small {padding:0;}
+.disk-space-tile.is-small span {display:none;}
+#diskSpaceMapEmpty {padding:24px;max-width:400px;font-size:14px;line-height:1.6;color:var(--tk-muted);}
+.disk-space-table-scroll {height:394px;overflow:auto;}
+.disk-space-list-panel table {width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;}
+.disk-space-list-panel th {font-weight:500;color:var(--tk-muted);font-size:12px;text-align:left;position:sticky;top:0;background:var(--tk-page-bg);z-index:1;}
+.disk-space-list-panel th,.disk-space-list-panel td {padding:10px 6px;border-bottom:1px solid var(--tk-border);}
+.disk-space-list-panel th:first-child {width:54%;}
+.disk-space-list-panel th:nth-child(2) {width:28%;}
+.disk-space-list-panel th:last-child {width:18%;}
+.disk-space-list-panel th:not(:first-child),.disk-space-list-panel td:not(:first-child) {text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+.disk-space-layout .disk-space-name {border:0;padding:0;min-height:32px;background:transparent;display:block;width:100%;text-align:left;overflow:hidden;}
+.disk-space-name span {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.disk-space-name span:last-child {font-size:11px;color:var(--tk-muted);}
+.disk-space-list-panel tr.is-selected td {background:var(--tk-inset);}
+.disk-space-pagination {display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px;}
+.disk-space-selection {display:flex;gap:14px;justify-content:space-between;align-items:center;padding-top:16px;margin-top:16px;border-top:1px solid var(--tk-border);}
+.disk-space-selection>div:first-child {min-width:0;}
+#diskSpaceSelectedName {font-size:14px;font-weight:600;margin:0 0 5px;overflow-wrap:anywhere;}
+.disk-space-empty {display:flex;flex-direction:column;justify-content:center;gap:12px;min-height:330px;max-width:720px;}
+@media(max-width:1050px) {.disk-space-body {grid-template-columns:1fr;} .disk-space-map {height:320px;} .disk-space-table-scroll {height:350px;}}
+@media(max-width:600px) {.disk-space-layout {padding:16px;} .disk-space-header,.disk-space-selection {align-items:flex-start;flex-direction:column;} .disk-space-totals {grid-template-columns:1fr 1fr;} .disk-space-totals strong {font-size:22px;} .disk-space-map {height:300px;} .disk-space-location {flex-direction:column;} .disk-space-location>.disk-space-actions {margin-left:0;} .disk-space-location nav button {max-width:210px;} .disk-space-list-panel th:first-child {width:49%;} .disk-space-list-panel th:nth-child(2) {width:31%;} .disk-space-list-panel th:last-child {width:20%;}}

@@ -61,11 +61,11 @@ assert.equal(parentDirectoryFromPath('C:\\Users\\test\\Downloads\\ToolKnit\\背�
 assert.equal(parentDirectoryFromPath('/home/test/ToolKnit/背景移除/result.png'), '/home/test/ToolKnit/背景移除');
 
 const css = await readFile(new URL('../src/features/bg-removal/bg-removal.css', import.meta.url), 'utf8');
-const lightCss = await readFile(new URL('../src/styles/themes/bg-removal-light.css', import.meta.url), 'utf8');
+const lightCss = await readFile(new URL('../src/features/bg-removal/bg-removal.css', import.meta.url), 'utf8');
 assert.match(css, /\.bg-removal-overlay \[hidden\]\s*\{[^}]*display:\s*none\s*!important/s);
 assert.match(css, /max-width:\s*839px/);
 assert.match(css, /\.is-compare[\s\S]*\.bg-removal-canvas-original/);
-assert.match(lightCss, /@media \(max-width:\s*839px\)[\s\S]*\.bg-removal-params-button\s*\{[^}]*background:\s*#f5f6f7;[^}]*color:\s*#171717;/,
+assert.match(lightCss, /@media \(max-width:\s*839px\)[\s\S]*\.bg-removal-params-button\s*\{[^}]*background:\s*var\(--tk-inset\);[^}]*color:\s*var\(--tk-ink\);/,
   'the compact parameter drawer trigger must remain visible in light mode');
 
 const ui = await readFile(new URL('../src/features/bg-removal/tool.js', import.meta.url), 'utf8');

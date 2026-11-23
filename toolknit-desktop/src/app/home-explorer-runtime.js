@@ -7,6 +7,19 @@ const PAGE_SIZE = 12;
 // Keep the release attached to each card so new-feature discovery remains
 // browsable after the current release is no longer the newest one.
 const NEW_FEATURE_VERSIONS = new Map([
+  ['disk-space', '3.4'],
+  ['ocr-editor', '3.4'],
+  ['meeting-notes', '3.4'],
+  ['pdf-to-ppt', '3.4'],
+  ['xml-tools', '3.4'],
+  ['quick-launcher', '3.4'],
+  ['content-search', '3.4'],
+  ['document-compare', '3.4'],
+  ['subtitle-workbench', '3.4'],
+  ['folder-automation', '3.4'],
+  ['batch-rename', '3.4'],
+  ['task-center', '3.4'],
+  ['tool-workflows', '3.4'],
   ['file-search', '3.3'],
   ['word-to-pdf', '3.3'],
   ['pdf-to-word', '3.2'],

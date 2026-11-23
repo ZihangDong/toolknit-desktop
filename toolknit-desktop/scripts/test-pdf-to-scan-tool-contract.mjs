@@ -37,7 +37,7 @@ assert.match(controller, /byId\('OpenFolder'\)\.hidden = !isTauri \|\| !result\.
 assert.match(controller, /byId\('SuccessPath'\)\.textContent = isTauri \? displayFilesystemPath\(result\.path\)/);
 assert.match(processor, /return \{ bytes, path, name:/, 'PDF scan must return the final published file path');
 assert.match(styles, /input:focus-visible, \.pdf-scan summary:focus-visible \{ outline: 2px solid var\(--scan-ink\); outline-offset: -2px; \}/);
-assert.match(styles, /html\[data-theme="light"\] \.pdf-scan #pdfScanRange:focus,\s*html\[data-theme="light"\] \.pdf-scan #pdfScanRange:focus-visible \{ outline: 2px solid #171717; outline-offset: -2px; box-shadow: none; \}/);
+assert.match(styles, /html:root\[data-theme\] \.pdf-scan #pdfScanRange:focus,\s*html:root\[data-theme\] \.pdf-scan #pdfScanRange:focus-visible \{ outline: 2px solid var\(--tk-accent\); outline-offset: -2px; box-shadow: none; \}/);
 assert.match(processor, /discard_pdf_enhance_write/);
 for (const source of [controller, processor]) assert.doesNotMatch(source, /fetch\(|ai_request|@tauri-apps\/|__TAURI|localStorage/);
 const zh = JSON.parse(await read('src/locales/zh.json')), en = JSON.parse(await read('src/locales/en.json'));

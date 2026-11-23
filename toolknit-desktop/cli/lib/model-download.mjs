@@ -83,7 +83,7 @@ export async function downloadVerifiedModel({ model, destination, sources, signa
           }
           await unlink(partial); start = 0;
         }
-        const headers = { 'User-Agent': 'ToolKnit/3.3.0 offline-model-manager' };
+        const headers = { 'User-Agent': 'ToolKnit/3.4.0 offline-model-manager' };
         if (start) headers.Range = `bytes=${start}-`;
         resetTimeout();
         response = await fetchImpl(source.url, { headers, redirect: 'error', signal: requestSignal });

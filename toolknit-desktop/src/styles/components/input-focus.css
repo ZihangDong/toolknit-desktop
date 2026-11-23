@@ -2,7 +2,7 @@
 @property --tk-field-height { syntax: '<length>'; inherits: false; initial-value: 1px; }
 
 :root { --tk-field-ink: #fff; --tk-field-idle: #727272; --tk-field-error: #f19b95; }
-html[data-theme="light"] { --tk-field-ink: #111; --tk-field-idle: #999; --tk-field-error: #a52b24; }
+html:root[data-theme] { --tk-field-ink: var(--tk-ink); --tk-field-idle: var(--tk-border-strong); --tk-field-error: var(--tk-danger); }
 
 /* A shared invariant across legacy and lazy-loaded themes: text-entry focus stays
    inside the existing box. Important declarations here avoid specificity races

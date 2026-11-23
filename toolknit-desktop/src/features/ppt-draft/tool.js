@@ -1,11 +1,11 @@
 import { applyTranslations } from '../../i18n.js';
 import { prepareToolPageChrome } from '../../shared/tool-page-chrome.js';
 import '../../styles/components/ppt-workbench.css';
-import '../../styles/themes/ppt-tools-light.css';
+
 import { createPptDraftController } from './controller.js';
 import { pptDraftPageTemplate, pptDraftPortalTemplate } from './template.js';
 import './ppt-draft.css';
-import './ppt-draft-light.css';
+
 
 function mountPortal() {
   const portal = document.createElement('div');

@@ -81,7 +81,7 @@ export function createPdfCompressProcessor({
       operation.cancelPromise = getInvoke()
         .then(invoke => operation.writeSessionId != null
           ? invoke('discard_pdf_compress_write', { sessionId: operation.writeSessionId })
-          : operation.nativeCompression ? invoke('cancel_convert') : undefined)
+          : operation.nativeCompression ? invoke('cancel_convert', { toolknitTaskTool: 'pdf-compress' }) : undefined)
         .catch(() => {});
     }
     return operation.cancelPromise;

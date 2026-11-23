@@ -1,0 +1,31 @@
+{
+  "task": "TK-012-B-M",
+  "auditedOn": "2026-11-22",
+  "timezone": "Asia/Shanghai",
+  "status": "complete",
+  "parentTaskComplete": false,
+  "scope": {
+    "annotation": "Stamp with a closed, uniquely owned reciprocal Popup on the same page",
+    "exactMatching": "only the selected pair",
+    "export": "detach both page annotation entries"
+  },
+  "tests": {
+    "popupPairs": 2,
+    "removedPairs": 1,
+    "rejectedProfiles": 12,
+    "popplerReferencePages": 2,
+    "pdfjsReferencePages": 2,
+    "qpdfChecks": 2,
+    "edgeChecks": 438,
+    "fullObjectRemovalRegression": "passed",
+    "productionBuildAndEntry": "passed",
+    "newNsisPackageTested": false
+  },
+  "evidence": [
+    "toolknit-desktop/tmp/pdf-stamp-popup/report.json",
+    "toolknit-desktop/tmp/pdf-stamp-popup-regression.log",
+    "toolknit-desktop/tmp/pdf-stamp-popup-browser.log",
+    "toolknit-desktop/tmp/pdf-stamp-popup-build.log",
+    "toolknit-desktop/tmp/pdf-stamp-popup-production.log"
+  ]
+}
