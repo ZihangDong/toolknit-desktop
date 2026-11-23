@@ -1,5 +1,4 @@
 export const LAZY_TOOL_SPECS = Object.freeze({
-  'pdf-object-remove': Object.freeze({ overlayId: 'pdfRemoveOverlay', markup: () => import('./pdf-object-remove/template.js'), load: () => import('./pdf-object-remove/tool.js'), init: 'initPdfObjectRemoveTool' }),
   'disk-space': Object.freeze({ overlayId: 'diskSpaceOverlay', markup: () => import('./disk-space/template.js'), load: () => import('./disk-space/tool.js'), init: 'initDiskSpaceTool' }),
   'ocr-editor': Object.freeze({ overlayId: 'ocrEditOverlay', markup: () => import('./ocr-editor/template.js'), load: () => import('./ocr-editor/tool.js'), init: 'initOcrEditorTool' }),
   'quick-launcher': Object.freeze({ overlayId: 'quickLauncherOverlay', load: () => import('./workbench/launcher-tool.js'), init: 'initQuickLauncherTool' }),

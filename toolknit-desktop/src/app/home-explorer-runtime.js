@@ -7,7 +7,6 @@ const PAGE_SIZE = 12;
 // Keep the release attached to each card so new-feature discovery remains
 // browsable after the current release is no longer the newest one.
 const NEW_FEATURE_VERSIONS = new Map([
-  ['pdf-object-remove', '3.4'],
   ['disk-space', '3.4'],
   ['ocr-editor', '3.4'],
   ['meeting-notes', '3.4'],

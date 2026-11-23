@@ -7,6 +7,7 @@ validateEditInput({name:'扫描件.PDF',size:100});
 for (const file of [{name:'a.svg',size:10},{name:'a.png',size:0},{name:'a.jpg',size:OCR_EDIT_LIMITS.inputBytes+1}]) assert.throws(()=>validateEditInput(file));
 validateEditDimensions(3000,4000); for (const args of [[0,20],[4000,4000],[12001,2],[3000,4000,40_000_000]]) assert.throws(()=>validateEditDimensions(...args));
 const region=normalizeRegion({x:20,y:20,width:200,height:50,text:'中文 2026',size:24},300,160);
+for (const text of ['', ' \n\t', '\u200b\u00a0']) assert.throws(()=>normalizeRegion({...region,edited:true,text},300,160), /empty-replacement/);
 for(const changes of [{x:-1},{width:300},{height:NaN},{angle:Infinity},{size:0},{size:601},{text:'a'.repeat(2001)}]) assert.throws(()=>normalizeRegion({...region,...changes},300,160));
 const scaled=regionsFromOcr({width:150,height:80,lines:[{text:'OCR',x:10,y:10,width:100,height:25}]},300,160)[0];assert.equal(scaled.x,20);assert.equal(scaled.width,200);assert.equal(scaled.edited,false);
 assert.throws(()=>regionsFromOcr({width:1,height:1,lines:[{x:NaN}]},100,100));
@@ -16,13 +17,14 @@ assert.deepEqual(rotateRect({x:20,y:30,width:50,height:10},300,160,270),{x:30,y:
 assert.deepEqual(rotatedSize(300,160,90),{width:160,height:300});
 const history=createEditHistory({regions:[],rotation:0},3);history.push({regions:[region],rotation:0});history.push({regions:[],rotation:90});assert.equal(history.undo().regions[0].text,'中文 2026');assert.equal(history.redo().rotation,90);history.undo();history.push({regions:[],rotation:180});assert(!history.canRedo);assert.equal(history.undo().regions[0].text,'中文 2026');
 const source=createCanvas(300,160),ctx=source.getContext('2d');ctx.fillStyle='#ffeed0';ctx.fillRect(0,0,300,160);ctx.fillStyle='#222222';ctx.fillRect(20,20,200,50);ctx.fillStyle='#123456';ctx.fillRect(280,140,10,10);
-const original=Buffer.from(ctx.getImageData(0,0,300,160).data),page={source,rotation:0,regions:[{...region,edited:true,text:'',background:'#ffeed0'}]};
+const original=Buffer.from(ctx.getImageData(0,0,300,160).data),page={source,rotation:0,regions:[normalizeRegion({...region,edited:true,text:'新文字',background:'#ffeed0'},300,160)]};
 const rendered=renderEditedPage(page,{makeCanvas:()=>createCanvas(1,1)}),pixels=rendered.getContext('2d').getImageData(0,0,300,160).data;
-for(let y=0;y<160;y++)for(let x=0;x<300;x++){const at=(y*300+x)*4;const expected=x>=20&&x<220&&y>=20&&y<70?[255,238,208,255]:[...original.subarray(at,at+4)];assert.deepEqual([...pixels.subarray(at,at+4)],expected);}
+for(let y=0;y<160;y++)for(let x=0;x<300;x++){const at=(y*300+x)*4;if(!(x>=20&&x<220&&y>=20&&y<70))assert.deepEqual([...pixels.subarray(at,at+4)],[...original.subarray(at,at+4)]);}
+assert.notDeepEqual(Buffer.from(pixels),original,'nonempty correction updates the selected region');
 assert.deepEqual(Buffer.from(ctx.getImageData(0,0,300,160).data),original,'source pixels immutable');
 for(const rotation of [90,180,270]){page.rotation=rotation;const result=renderEditedPage(page,{makeCanvas:()=>createCanvas(1,1)});const box=rotateRect(region,300,160,rotation);assert.deepEqual([...result.getContext('2d').getImageData(box.x+2,box.y+2,1,1).data],[255,238,208,255]);}
 assert(!layoutRegion(ctx,region).overflow);assert(layoutRegion(ctx,{...region,text:'x'.repeat(2000)}).overflow);
 assert(layoutRegion(ctx,{...region,angle:90}).overflow,'rotated glyph overflow is rejected');
 assert(!layoutRegion(ctx,{...region,width:140,height:140,text:'中文',angle:45}).overflow,'rotated text fits a larger cover');
 assert.equal(editOutputName('合同:<1>.pdf','png',2),'合同__1_-edited-2.png');
-console.log('OCR editor core passed: limits, OCR scaling, all rotations, undo branches, immutable source and full pixel erasure with unchanged surroundings.');
+console.log('OCR editor core passed: limits, OCR scaling, rotations, history, blank replacement rejection, and scoped text correction.');

@@ -59,19 +59,14 @@ try {
  check(await q('Background').inputValue()==='#fff6df','Solid background estimated from source boundary');
  check(await q('Text').inputValue()==='项目验收 2026','Chinese OCR result editable');
  await q('Text').fill('x'.repeat(500));await q('Apply').click();check((await notice()).includes('放不下'),'Overflow rejected without discarding the original region');
- await q('Text').fill('');await q('Apply').click();check((await notice()).includes('已应用'),'Empty replacement accepted for pixel erasure');
- await q('Png').click();await idle();const erased=writes.at(-1);check(!!erased,'Desktop binary transport writes actual PNG bytes');
- const decoded=await sharp(erased).ensureAlpha().raw().toBuffer({resolveWithObject:true});check(decoded.info.width===800&&decoded.info.height===400,'PNG retains source resolution');
- for(let y=38;y<98;y++)for(let x=38;x<368;x++){const at=(y*800+x)*4;assert.deepEqual([...decoded.data.subarray(at,at+4)],[255,246,223,255]);}report.checks.push('Exported PNG fully erases every original pixel in the selected rectangle');
- const original=await sharp(source).ensureAlpha().raw().toBuffer();for(let y=0;y<400;y++)for(let x=0;x<800;x++)if(!(x>=38&&x<368&&y>=38&&y<98)){const at=(y*800+x)*4;assert.deepEqual(decoded.data.subarray(at,at+4),original.subarray(at,at+4));}report.checks.push('Every pixel outside the edit remains unchanged');
- await q('Pdf').click();await idle();
- const searchableErased=await inspectPdf(writes.at(-1));
- check(searchableErased[0].items.map(item=>item.str).join(' ') === 'Invoice 123','Blank replacement omits erased OCR text from the searchable PDF');
- await q('Searchable').uncheck();await q('Pdf').click();await idle();const erasedPdf=writes.at(-1);await q('FileInput').setInputFiles(erasedPdf);await idle();const reopenedPixels=await q('Canvas').evaluate(canvas=>Array.from(canvas.getContext('2d').getImageData(40,45,300,40).data));check(reopenedPixels.every((value,index)=>value===[255,246,223,255][index%4]),'Actual PDF.js reopen confirms erased PDF pixels contain no original glyphs');
- // Return to the original editable session after inspecting the rendered PDF.
- await load();await ocr();await q('Text').fill('');await q('Apply').click();
- await q('Undo').click();check(await q('Text').inputValue()==='项目验收 2026','Undo restores recognized text');await q('Redo').click();check(await q('Text').inputValue()==='','Redo restores erasure');
- await q('Restore').click();check(await q('Text').inputValue()==='项目验收 2026','Restore retains original OCR text');
+ for(const text of ['', ' \u200b ']){
+  await q('Text').fill(text);await q('Apply').click();
+  check((await notice()).includes('请输入替换文字'),'Blank replacement is rejected');
+ }
+ await q('Png').click();await idle();
+ const decoded=await sharp(writes.at(-1)).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+ check(decoded.info.width===800&&decoded.info.height===400,'PNG retains source resolution');
+ check(decoded.data.equals(await sharp(source).ensureAlpha().raw().toBuffer()),'Rejected replacement preserves every source pixel');
  await q('Text').fill('新版 2027');await q('Size').fill('28');await q('Apply').click();check((await notice()).includes('已应用'),'Chinese and numbers redraw with bundled font');
  await q('Searchable').check();await q('Text').fill('Unapplied draft');
  await q('Pdf').click();await idle();
@@ -120,7 +115,7 @@ try {
  await q('Add').click();await q('X').fill('38');await q('Y').fill('138');await q('Width').fill('60');await q('Apply').click();
  await q('Pdf').click();await idle();
  const covered=await inspectPdf(writes.at(-1));
- check(covered[0].items.map(item=>item.str).join(' ') === 'PDF 2027','A separate overlapping erase box suppresses the obscured OCR line');
+ check(covered[0].items.map(item=>item.str).join(' ') === 'PDF 2027 Invoice 123','A blank overlapping box cannot suppress recognized text');
  // Reopen the exported PDF through the actual PDF.js input path.
  await q('FileInput').setInputFiles(writes.at(-1));await idle();check(await q('Page').locator('option').count()===2,'Exported PDF reopens in the editor');
  await q('Add').click();await q('Text').fill('保持编辑');await q('Apply').click();await page.evaluate(()=>{window.ocrEditTest.failSave=true;});await q('Png').click();await idle();check((await notice()).includes('处理失败')&&await q('Text').inputValue()==='保持编辑','Disk failure retains applied edits');await page.evaluate(()=>{window.ocrEditTest.failSave=false;window.ocrEditTest.holdSave=true;});

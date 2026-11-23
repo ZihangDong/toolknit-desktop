@@ -91,7 +91,7 @@
 
 ## 桌面覆盖
 
-89 个桌面工具：61 项支持、6 项按明确范围部分支持、22 项保留桌面。MCP 另有 PDF 检查、模型管理和工程编辑等辅助接口，因此数量与桌面卡片数不同。
+88 个桌面工具：61 项支持、6 项按明确范围部分支持、21 项保留桌面。MCP 另有 PDF 检查、模型管理和工程编辑等辅助接口，因此数量与桌面卡片数不同。
 
 | 桌面工具 ID | 覆盖 | MCP 接口 / 说明 |
 | --- | --- | --- |
@@ -103,7 +103,6 @@
 | `folder-automation` | 保留桌面 |  Local folder rules, monitoring and controls currently belong to the desktop session. |
 | `meeting-notes` | 保留桌面 |  Microphone recording, transcript review and minutes currently use the desktop workflow. |
 | `ocr-editor` | 保留桌面 |  Visual OCR boxes, pixel replacement and export require the desktop editor. |
-| `pdf-object-remove` | 保留桌面 |  Per-object review and mandatory before/after preview have no CLI/MCP entry. |
 | `pdf-to-ppt` | 保留桌面 |  The new page-selection and image-slide workflow currently has no CLI/MCP entry. |
 | `quick-launcher` | 保留桌面 |  Personal launcher and interactive hotkeys belong to the desktop session. |
 | `subtitle-workbench` | 保留桌面 |  Interactive subtitle editing and preview currently have no CLI/MCP entry. |
