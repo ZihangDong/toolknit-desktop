@@ -15,7 +15,6 @@ import './test-pdf-word-source-font.mjs';
 import './test-pdf-word-native-fallback.mjs';
 import './test-pdf-word-numeric-label.mjs';
 import './test-pdf-word-ocr-small-punctuation.mjs';
-import './test-pdf-word-ocr-colons.mjs';
 import './test-pdf-word-source-face-boundary.mjs';
 import './test-pdf-word-source-owned-table-fit.mjs';
 import './test-pdf-word-native-courier-baseline.mjs';
@@ -35,8 +34,6 @@ import './test-pdf-word-encoding.mjs';
 import './test-pdf-word-ocr-typography.mjs';
 import './test-pdf-word-ocr-line-bands.mjs';
 import './test-pdf-word-ocr-line-typography.mjs';
-import './test-pdf-word-ocr-writing-lines.mjs';
-import './test-pdf-word-ocr-glyph-alignment.mjs';
 import './test-pdf-word-ocr-figures.mjs';
 import './test-pdf-word-ocr-photo-regions.mjs';
 import './test-pdf-word-ocr-symbols.mjs';
@@ -111,6 +108,8 @@ import './test-pdf-word-ai.mjs';
 import './test-pdf-word-ai-scheduling.mjs';
 import './test-pdf-word-semantic-audit.mjs';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { PDFDocument, StandardFonts, rgb, degrees, pushGraphicsState, popGraphicsState, setTextRenderingMode, TextRenderingMode,
   rectangle, clip, endPath } from 'pdf-lib';
 import { createCanvas } from '@napi-rs/canvas';
@@ -125,6 +124,15 @@ import { parsePageRange, validateInput, outputName, LIMITS } from '../src/featur
 import { aiPageRequest, validateAiStructure, applyAiStructure } from '../src/features/pdf-to-word/core/ai.js';
 import { paragraphLineHeight, planParagraphPagination } from '../src/features/pdf-to-word/core/pagination.js';
 import { groupLines } from '../src/features/pdf-to-word/core/text.js';
+
+// These fixtures register a synthetic font alias. A separate process prevents
+// top-level-await imports from sharing or removing another test's font handle.
+for (const fixture of ['test-pdf-word-ocr-colons.mjs', 'test-pdf-word-ocr-writing-lines.mjs', 'test-pdf-word-ocr-glyph-alignment.mjs']) {
+  execFileSync(process.execPath, [fileURLToPath(new URL(fixture, import.meta.url))], {
+    cwd: fileURLToPath(new URL('../', import.meta.url)), stdio: 'inherit',
+    windowsHide: true, timeout: 120_000,
+  });
+}
 
 const output = 'tmp/pdf-to-word-core'; await mkdir(output, { recursive: true });
 const checks = [];

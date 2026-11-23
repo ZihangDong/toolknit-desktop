@@ -1,14 +1,18 @@
 import assert from 'node:assert/strict';
-import {createCanvas} from '@napi-rs/canvas';
+import {createCanvas,GlobalFonts} from '@napi-rs/canvas';
 import {refineScanTextTypography} from '../src/features/pdf-to-word/adapters/scan-text-typography.js';
 import {inferDocument,validateCoverage} from '../src/features/pdf-to-word/core/layout.js';
 import {createWordBytes} from '../src/features/pdf-to-word/adapters/docx.js';
 import JSZip from 'jszip';
 
+const bodyFont=GlobalFonts.has('KaiTi')?'KaiTi':'SimSun';
+assert(GlobalFonts.has(bodyFont),'A real installed CJK face must generate the scan fixture');
+if(bodyFont!=='KaiTi')console.log('Optional real-KaiTi unavailable; scan emphasis uses installed SimSun source pixels.');
+
 function fixture(scale=4,{residual=false,clippedInk=false}={}){
  const width=1600,height=2200,canvas=createCanvas(width,height),ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,width,height);
  const items=[],sources=[];
- function line(text,x,y,{font='KaiTi',size=11,bold=false,mixed=false,badWeights=true,option=false}={}){
+ function line(text,x,y,{font=bodyFont,size=11,bold=false,mixed=false,badWeights=true,option=false}={}){
   const mc=createCanvas(1,1).getContext('2d'),words=[];let cursor=x;
   for(const [i,ch]of [...text].entries()){
    const family=option?(i<2?'Times New Roman':'SimSun'):font,weight=bold||mixed&&i>=text.length-3;

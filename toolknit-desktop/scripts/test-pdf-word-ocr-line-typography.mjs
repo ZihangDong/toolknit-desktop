@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createCanvas } from '@napi-rs/canvas';
+import { fixtureFonts } from './lib/pdf-word-font-fixture.mjs';
 import { fitOcrLineTypography, fitOcrBracketedLabel } from '../src/features/pdf-to-word/adapters/ocr-line-typography.js';
 import { createOcrTypography } from '../src/features/pdf-to-word/adapters/ocr-typography.js';
 const text='Computer Self-Efficacy',source=createCanvas(500,100),ctx=source.getContext('2d');
@@ -37,7 +38,7 @@ function labelFixture(value='（二）',font='SimSun'){
  return{canvas,pixels,chars,ordered:chars.map(c=>({text:c.text,confidence:.999})),line:{text:value,confidence:.96},tight,
   width:250,height:120,sx:3,sy:3,inkAt,fonts:['SimSun','SimHei','Microsoft YaHei','FangSong','KaiTi'],weights:[false,true],lineFitBudget:{remaining:4_000_000}};
 }
-for(const font of ['SimSun','FangSong','Microsoft YaHei'])for(const value of ['（一）','（二）','（三）','（四）','（五）','（十）']){
+for(const font of fixtureFonts(['SimSun','FangSong','Microsoft YaHei']))for(const value of ['（一）','（二）','（三）','（四）','（五）','（十）']){
  const f=labelFixture(value,font),saved=structuredClone(f.chars);
  const result=fitOcrBracketedLabel(createCanvas,f);
  assert(result?.ocrShortLabelFit,`${font} ${value} retains its three complete source glyphs`);
