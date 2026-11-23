@@ -127,7 +127,7 @@ mod tests {
             }),
         )
         .unwrap();
-        run_with_checkpoint(&root, plan, false, |current, index| {
+        run_with_checkpoint(&root, plan, None, |current, index| {
             if current == phase && index == 0 {
                 std::process::exit(71);
             }
@@ -294,7 +294,7 @@ fn finish(folder: &Path, record: &Journal) -> Result<(), String> {
                 ));
             }
             let path = item.target.to_string_lossy().into_owned();
-            let (bytes, modified_ms) = fingerprint(&path)?;
+            let (bytes, modified_ms) = fingerprint(&item.target)?;
             entries.push(UndoEntry {
                 rename: Entry {
                     path,
@@ -307,6 +307,7 @@ fn finish(folder: &Path, record: &Journal) -> Result<(), String> {
                 },
                 bytes,
                 modified_ms,
+                identity: Some(item.identity),
             });
         }
         save(&undo_path, &UndoJournal { entries })?;
@@ -337,14 +338,18 @@ pub(super) fn recover(folder: &Path) -> Result<usize, String> {
     Ok(record.moves.len())
 }
 
-pub(super) fn run(folder: &Path, plan: Vec<(PathBuf, PathBuf)>, undo: bool) -> Result<(), String> {
+pub(super) fn run(
+    folder: &Path,
+    plan: Vec<(PathBuf, PathBuf)>,
+    undo: Option<&[UndoEntry]>,
+) -> Result<(), String> {
     run_with_checkpoint(folder, plan, undo, |_, _| {})
 }
 
 fn run_with_checkpoint(
     folder: &Path,
     plan: Vec<(PathBuf, PathBuf)>,
-    undo: bool,
+    undo: Option<&[UndoEntry]>,
     checkpoint: impl Fn(Phase, usize),
 ) -> Result<(), String> {
     fs::create_dir_all(folder).map_err(|error| error.to_string())?;
@@ -362,19 +367,32 @@ fn run_with_checkpoint(
                 ".toolknit-rename-{}-{id}-{index}",
                 std::process::id()
             ));
-            let identity = identity(&source)?.ok_or("Source is missing")?;
+            let file_id = identity(&source)?.ok_or("Source is missing")?;
+            if let Some(entries) = undo {
+                let entry = &entries[index];
+                let expected = entry.identity.ok_or("Undo record has no file identity")?;
+                if file_id != expected
+                    || identity(Path::new(&entry.rename.path))? != Some(expected)
+                    || fingerprint(&source)? != (entry.bytes, entry.modified_ms)
+                {
+                    return Err(format!(
+                        "File changed after rename; undo stopped: {}",
+                        source.display()
+                    ));
+                }
+            }
             Ok(Move {
                 source,
                 temporary,
                 target,
-                identity,
+                identity: file_id,
             })
         })
         .collect::<Result<Vec<_>, String>>()?;
     let mut record = Journal {
         version: 1,
         phase: Phase::Staging,
-        undo,
+        undo: undo.is_some(),
         moves,
     };
     save(&pending, &record)?;

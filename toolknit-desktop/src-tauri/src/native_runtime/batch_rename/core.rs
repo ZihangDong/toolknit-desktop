@@ -103,7 +103,7 @@ pub fn execute(entries: &[RenameEntry]) -> Result<Vec<RenameEntry>, String> {
         .parent()
         .unwrap();
     let plan = validate(entries)?;
-    super::journal::run(folder, plan.clone(), false)?;
+    super::journal::run(folder, plan.clone(), None)?;
     Ok(plan
         .into_iter()
         .map(|(source, target)| RenameEntry {

@@ -24,13 +24,14 @@ struct UndoEntry {
     rename: Entry,
     bytes: u64,
     modified_ms: u64,
+    identity: Option<(u64, u64)>,
 }
 #[derive(Serialize, Deserialize)]
 struct UndoJournal {
     entries: Vec<UndoEntry>,
 }
 
-fn fingerprint(path: &str) -> Result<(u64, u64), String> {
+fn fingerprint(path: &std::path::Path) -> Result<(u64, u64), String> {
     let metadata = std::fs::symlink_metadata(path).map_err(|e| e.to_string())?;
     if !metadata.is_file() || metadata.file_type().is_symlink() {
         return Err("Undo source is no longer a regular file".into());
@@ -70,7 +71,7 @@ fn rename_in_folder(
         journal::preflight(&plan)?;
         return Ok(entries.len());
     }
-    journal::run(folder, plan, false)?;
+    journal::run(folder, plan, None)?;
     Ok(entries.len())
 }
 
@@ -121,15 +122,7 @@ fn undo_in_folder(folder: &std::path::Path, preview: bool) -> Result<usize, Stri
     if preview {
         return Ok(plan.len());
     }
-    for entry in &record.entries {
-        if fingerprint(&entry.rename.path)? != (entry.bytes, entry.modified_ms) {
-            return Err(format!(
-                "File changed after rename; undo stopped: {}",
-                entry.rename.path
-            ));
-        }
-    }
-    journal::run(folder, core::validate(&plan)?, true)?;
+    journal::run(folder, core::validate(&plan)?, Some(&record.entries))?;
     Ok(plan.len())
 }
 
@@ -177,6 +170,74 @@ mod tests {
             "changed since rename"
         );
         std::fs::remove_dir_all(folder).unwrap();
+    }
+    #[test]
+    fn undo_worker() {
+        let Some(folder) = std::env::var_os("TOOLKNIT_TEST_UNDO_ROOT") else {
+            return;
+        };
+        assert_eq!(
+            undo_in_folder(std::path::Path::new(&folder), false).unwrap(),
+            2
+        );
+    }
+    #[test]
+    fn replacement_with_matching_metadata_blocks_entire_undo() {
+        use std::fs::{self, File, FileTimes};
+
+        let folder = fixture();
+        let entries = [("other", "other-renamed"), ("A", "B")]
+            .map(|(from, to)| {
+                let path = folder.join(from);
+                fs::write(&path, "1111").unwrap();
+                Entry {
+                    path: path.to_string_lossy().into_owned(),
+                    new_name: to.into(),
+                }
+            })
+            .to_vec();
+        rename_in_folder(&folder, entries, false).unwrap();
+        let renamed = folder.join("B");
+        let original = folder.join("original-B");
+        let modified = fs::metadata(&renamed).unwrap().modified().unwrap();
+        let expected = fingerprint(&renamed).unwrap();
+        fs::rename(&renamed, &original).unwrap();
+        fs::write(&renamed, "2222").unwrap();
+        File::options()
+            .write(true)
+            .open(&renamed)
+            .unwrap()
+            .set_times(FileTimes::new().set_modified(modified))
+            .unwrap();
+        assert_eq!(fingerprint(&renamed).unwrap(), expected);
+        let undo_path = folder.join(journal::UNDO);
+        let record = fs::read(&undo_path).unwrap();
+        assert!(undo_in_folder(&folder, false)
+            .unwrap_err()
+            .contains("File changed"));
+        assert_eq!(fs::read(&undo_path).unwrap(), record);
+        assert_eq!(journal::status(&folder).unwrap(), 0);
+        assert!(!folder.join("A").exists());
+        assert!(!folder.join("other").exists());
+        assert_eq!(fs::read(folder.join("other-renamed")).unwrap(), b"1111");
+        assert_eq!(fs::read(&renamed).unwrap(), b"2222");
+
+        fs::rename(&renamed, folder.join("replacement")).unwrap();
+        fs::rename(&original, &renamed).unwrap();
+        let worker = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "native_runtime::batch_rename::tests::undo_worker",
+            ])
+            .env("TOOLKNIT_TEST_UNDO_ROOT", &folder)
+            .output()
+            .unwrap();
+        assert!(worker.status.success(), "{worker:?}");
+        assert_eq!(fs::read(folder.join("A")).unwrap(), b"1111");
+        assert_eq!(fs::read(folder.join("other")).unwrap(), b"1111");
+        assert_eq!(fs::read(folder.join("replacement")).unwrap(), b"2222");
+        assert!(!undo_path.exists());
+        fs::remove_dir_all(folder).unwrap();
     }
     #[test]
     fn existing_recovery_manifest_blocks_new_mutation() {
